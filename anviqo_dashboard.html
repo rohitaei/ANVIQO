@@ -586,7 +586,7 @@ body {
 <script>
 
 const API =
-    "http://127.0.0.1:5001";
+    "https://anviqo.onrender.com";
 
 
 async function getAPI(path) {
@@ -967,7 +967,7 @@ CV-101 requires controlled maintenance review and verification of process impact
 <script>
 async function load(){
 try{
-let r=await fetch("http://127.0.0.1:5001/api/plant_snapshot");
+let r=await fetch("https://anviqo.onrender.com/api/plant_snapshot");
 let d=await r.json();
 
 document.getElementById("live").textContent="● API CONNECTED";
