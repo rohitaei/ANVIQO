@@ -8,7 +8,7 @@ No SCADA control.
 No automatic authorization.
 """
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from datetime import datetime
 
 app = Flask(__name__)
@@ -53,6 +53,10 @@ def safe_import(module_name, function_name):
 # ============================================================
 # SYSTEM
 # ============================================================
+
+@app.route("/")
+def dashboard():
+    return send_from_directory(".", "anviqo_dashboard.html")
 
 @app.route("/api/status")
 def status():
