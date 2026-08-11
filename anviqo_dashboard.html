@@ -104,18 +104,24 @@ body {
 
 .cards {
     display: grid;
-    grid-template-columns:
-        repeat(5, minmax(140px, 1fr));
-
-    gap: 12px;
+    grid-template-columns: repeat(5, minmax(140px, 1fr));
+    gap: 14px;
     margin-top: 24px;
 }
 
 .card {
-    background: #0d1d30;
-    border: 1px solid #213952;
-    border-radius: 8px;
-    padding: 16px;
+    background: linear-gradient(145deg, #0d1d30, #10243a);
+    border: 1px solid #294761;
+    border-radius: 10px;
+    padding: 18px;
+    min-height: 82px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    transition: transform .2s ease, border-color .2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    border-color: #38d6e8;
 }
 
 .card-label {
@@ -276,6 +282,125 @@ body {
 
     .safety-grid {
         grid-template-columns: 1fr 1fr;
+    }
+}
+
+
+@media(max-width:600px) {
+    .content {
+        padding: 12px;
+    }
+
+    .page-title {
+        font-size: 21px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    .card {
+        min-height: 68px;
+        padding: 15px;
+    }
+
+    .card-value {
+        font-size: 20px;
+    }
+}
+
+
+/* ANVIQO V1.1 PRODUCT POLISH */
+
+.connection {
+    padding: 7px 12px;
+    border: 1px solid #294761;
+    border-radius: 999px;
+    background: #0d1d30;
+    color: #2bd47c;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .7px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.18);
+}
+
+.page-title {
+    font-size: 27px;
+    font-weight: 800;
+    letter-spacing: -.3px;
+}
+
+.subtitle {
+    margin-top: 6px;
+    color: #8095aa;
+    font-size: 12px;
+    letter-spacing: .3px;
+}
+
+.card-label {
+    font-size: 10px;
+    color: #7890a6;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.card-value {
+    margin-top: 10px;
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.footer {
+    margin-top: 22px;
+    padding-top: 12px;
+    border-top: 1px solid #1b3349;
+    color: #60788f;
+    font-size: 10px;
+    text-align: right;
+    letter-spacing: .3px;
+}
+
+@media(max-width:600px) {
+    .header {
+        padding: 14px;
+    }
+
+    .tagline {
+        font-size: 10px;
+    }
+
+    .connection {
+        font-size: 9px;
+        padding: 6px 9px;
+    }
+
+    .content {
+        padding: 12px;
+    }
+
+    .page-title {
+        font-size: 21px;
+    }
+
+    .subtitle {
+        font-size: 11px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    .card {
+        min-height: 68px;
+        padding: 15px;
+    }
+
+    .card-value {
+        font-size: 20px;
     }
 }
 
@@ -830,179 +955,4 @@ setInterval(
 
 </body>
 
-</html>
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ANVIQO Command Center</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#06101b;color:#eaf4fb;font-family:Arial,sans-serif}
-header{height:72px;background:#091827;border-bottom:1px solid #1c344b;display:flex;align-items:center;padding:0 25px}
-.logo{font-size:28px;font-weight:900;letter-spacing:2px;color:#39d9e9}
-.tag{margin-left:18px;color:#718aa0;font-size:11px;letter-spacing:1.5px}
-.live{margin-left:auto;color:#35dc86;font-size:11px;font-weight:bold}
-main{padding:24px;max-width:1500px;margin:auto}
-h1{margin:0;font-size:26px}
-.sub{color:#728ba0;font-size:12px;margin-top:6px}
-.top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:14px;margin-top:22px}
-.card,.panel{background:#0b1b2c;border:1px solid #1c354c;border-radius:10px}
-.card{padding:18px}
-.label{font-size:10px;color:#7892a8;font-weight:bold;letter-spacing:1px}
-.big{font-size:25px;font-weight:800;margin-top:9px}
-.att{color:#f3c64b}.red{color:#ff6666}.green{color:#35dc86}.cyan{color:#39d9e9}.blue{color:#61a9ff}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px}
-.panel{padding:18px}
-.title{color:#39d9e9;font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:15px}
-.eq{display:grid;grid-template-columns:1fr 90px 85px;gap:10px;padding:13px 0;border-bottom:1px solid #172d41;align-items:center}
-.eq:last-child{border:0}
-.badge{font-size:9px;padding:5px 7px;border-radius:4px;text-align:center;background:#291d1d;color:#ff7777}
-.chain{display:flex;align-items:center;justify-content:center;gap:12px;padding:24px 5px;font-weight:bold}
-.node{padding:13px 18px;border:1px solid #2d526b;border-radius:8px;background:#10273a}
-.arrow{color:#39d9e9;font-size:20px}
-.notice{border-left:3px solid #f3c64b;padding:10px 13px;line-height:1.6}
-.safety{margin-top:15px;background:#092219;border:1px solid #205d45;border-radius:10px;padding:17px}
-.safegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-.safe{color:#35dc86;font-size:10px}
-.footer{text-align:right;color:#526c82;font-size:10px;margin-top:15px}
-@media(max-width:900px){.top,.grid{grid-template-columns:1fr 1fr}.safegrid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.top,.grid{grid-template-columns:1fr}.chain{flex-wrap:wrap}}
-</style>
-</head>
-
-<body>
-<header>
-<div class="logo">ANVIQO</div>
-<div class="tag">THINK • PREDICT • PROTECT</div>
-<div class="live" id="live">● CONNECTING</div>
-</header>
-
-<main>
-<h1>Plant Intelligence Command Center</h1>
-<div class="sub">V5 FROZEN CORE · PRODUCT V1.0 · LIVE INDUSTRIAL INTELLIGENCE</div>
-
-<div class="top">
-<div class="card">
-<div class="label">PLANT CONDITION</div>
-<div class="big att" id="plant">LOADING</div>
-<div class="sub" id="area">—</div>
-</div>
-<div class="card">
-<div class="label">PRIMARY EQUIPMENT</div>
-<div class="big red" id="primary">—</div>
-<div class="sub">Highest management priority</div>
-</div>
-<div class="card">
-<div class="label">MAINTENANCE DECISION</div>
-<div class="big cyan" id="maint">—</div>
-<div class="sub">Human review required</div>
-</div>
-<div class="card">
-<div class="label">SYSTEM STATUS</div>
-<div class="big green" id="system">READY</div>
-<div class="sub">V5 intelligence connected</div>
-</div>
-</div>
-
-<div class="grid">
-
-<div class="panel">
-<div class="title">EQUIPMENT RISK HIERARCHY</div>
-<div id="equipment"></div>
-</div>
-
-<div class="panel">
-<div class="title">PLANT EVENT CHAIN</div>
-<div class="chain">
-<div class="node" id="c1">CV-101</div>
-<div class="arrow">↔</div>
-<div class="node" id="c2">CV-102</div>
-<div class="arrow">↔</div>
-<div class="node" id="c3">PT-201</div>
-</div>
-<div class="sub" style="text-align:center">Relationship-aware developing event chain · Causation not established</div>
-</div>
-
-<div class="panel">
-<div class="title">MANAGEMENT DECISION</div>
-<div class="notice">
-<strong id="decision">MAINTENANCE REVIEW REQUIRED</strong>
-<br><br>
-CV-101 requires controlled maintenance review and verification of process impact.
-<br><br>
-<strong>Human authorization required.</strong>
-</div>
-</div>
-
-<div class="panel">
-<div class="title">WHAT ANVIQO KNOWS</div>
-<div id="evidence">
-<div>✓ Multiple equipment signals abnormal</div>
-<div>✓ Relationship-aware correlation detected</div>
-<div>✓ Developing plant event chain detected</div>
-<div>✓ Maintenance intelligence available</div>
-<div>✓ Evidence-backed decision support</div>
-</div>
-</div>
-
-</div>
-
-<div class="safety">
-<div class="title" style="color:#35dc86">SAFETY / CONTROL BOUNDARY</div>
-<div class="safegrid">
-<div class="safe">✓ READ-ONLY</div>
-<div class="safe">✓ PLC WRITE BLOCKED</div>
-<div class="safe">✓ SCADA CONTROL BLOCKED</div>
-<div class="safe">✓ HUMAN DECISION REQUIRED</div>
-<div class="safe">✓ AUTOMATIC AUTHORIZATION DISABLED</div>
-<div class="safe">✓ CAUSATION CLAIM FALSE</div>
-</div>
-</div>
-
-<div class="footer">ANVIQO PRODUCT V1.0 · V5 FROZEN · HUMAN-GOVERNED INDUSTRIAL INTELLIGENCE</div>
-</main>
-
-<script>
-async function load(){
-try{
-let r=await fetch("https://anviqo.onrender.com/api/plant_snapshot");
-let d=await r.json();
-
-document.getElementById("live").textContent="● API CONNECTED";
-document.getElementById("plant").textContent=d.plant?.status||"UNKNOWN";
-document.getElementById("area").textContent=d.plant?.area||"—";
-document.getElementById("primary").textContent=d.plant?.primary_equipment||"—";
-document.getElementById("maint").textContent=d.maintenance?.equipment||"—";
-document.getElementById("decision").textContent=d.maintenance?.decision||"REVIEW REQUIRED";
-
-let html="";
-(d.equipment||[]).forEach(x=>{
-let cls=x.priority>=80?"red":x.priority>=65?"att":"cyan";
-html+=`<div class="eq">
-<strong>${x.tag}</strong>
-<span class="big ${cls}" style="font-size:17px">${x.priority}</span>
-<span class="badge">${x.status}</span>
-</div>`;
-});
-document.getElementById("equipment").innerHTML=html||"No equipment data.";
-
-let ev=d.events||[];
-if(ev.length>=2){
-let a=ev[0].split(" ↔ ");
-let b=ev[1].split(" ↔ ");
-document.getElementById("c1").textContent=a[0]||"—";
-document.getElementById("c2").textContent=a[1]||"—";
-document.getElementById("c3").textContent=b[1]||"—";
-}
-}catch(e){
-document.getElementById("live").textContent="● API OFFLINE";
-document.getElementById("live").style.color="#ff6666";
-document.getElementById("system").textContent="OFFLINE";
-}}
-load();
-setInterval(load,10000);
-</script>
-</body>
 </html>
