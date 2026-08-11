@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>ANVIQO | Command Center</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #07111f;
+    color: #e8f0f7;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.header {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    background: #0b1728;
+    border-bottom: 1px solid #21364d;
+}
+
+.logo {
+    font-size: 27px;
+    font-weight: 800;
+    color: #36d5e7;
+    letter-spacing: 1px;
+}
+
+.tagline {
+    margin-left: 18px;
+    color: #8197ac;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.connection {
+    margin-left: auto;
+    font-size: 11px;
+    color: #2bd47c;
+}
+
+.layout {
+    display: flex;
+    min-height: calc(100vh - 72px);
+}
+
+.sidebar {
+    width: 225px;
+    background: #0a1829;
+    border-right: 1px solid #20364d;
+    padding: 18px 10px;
+}
+
+.section-title {
+    color: #637d95;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 10px;
+    letter-spacing: 1px;
+}
+
+.nav {
+    padding: 12px;
+    margin: 3px 0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #c9d7e3;
+}
+
+.nav.active {
+    background: #122c43;
+    color: #38d6e8;
+}
+
+.content {
+    flex: 1;
+    padding: 25px;
+    overflow-x: hidden;
+}
+
+.page-title {
+    font-size: 25px;
+    font-weight: 700;
+}
+
+.subtitle {
+    margin-top: 5px;
+    color: #8095aa;
+    font-size: 12px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns:
+        repeat(5, minmax(140px, 1fr));
+
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.card {
+    background: #0d1d30;
+    border: 1px solid #213952;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.card-label {
+    font-size: 10px;
+    color: #7890a6;
+    font-weight: bold;
+    letter-spacing: .5px;
+}
+
+.card-value {
+    margin-top: 9px;
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.attention {
+    color: #f4c542;
+}
+
+.good {
+    color: #2bd47c;
+}
+
+.blue {
+    color: #55a7ff;
+}
+
+.cyan {
+    color: #38d6e8;
+}
+
+.red {
+    color: #ff6262;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.panel {
+    background: #0d1d30;
+    border: 1px solid #213952;
+    border-radius: 8px;
+    padding: 18px;
+}
+
+.panel-title {
+    color: #38d6e8;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: .7px;
+    margin-bottom: 14px;
+}
+
+.equipment {
+    display: grid;
+    grid-template-columns:
+        1fr auto auto;
+
+    gap: 10px;
+
+    padding: 11px 0;
+
+    border-bottom: 1px solid #172c42;
+
+    font-size: 13px;
+}
+
+.equipment:last-child {
+    border-bottom: none;
+}
+
+.score {
+    font-weight: bold;
+}
+
+.badge {
+    padding: 4px 7px;
+    border-radius: 4px;
+    font-size: 9px;
+    background: #291c1c;
+    color: #ff6a6a;
+}
+
+.event {
+    padding: 9px 0;
+    border-bottom: 1px solid #172c42;
+    font-size: 12px;
+}
+
+.event:last-child {
+    border-bottom: none;
+}
+
+.decision {
+    border-left: 3px solid #f4c542;
+    padding-left: 13px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.safety {
+    margin-top: 15px;
+    background: #0c241b;
+    border: 1px solid #1d5d43;
+    border-radius: 8px;
+    padding: 17px;
+}
+
+.safety-title {
+    color: #2bd47c;
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.safety-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 8px;
+}
+
+.safe {
+    color: #2bd47c;
+    font-size: 10px;
+}
+
+.footer {
+    margin-top: 18px;
+    color: #60788f;
+    font-size: 10px;
+    text-align: right;
+}
+
+@media(max-width:950px) {
+
+    .sidebar {
+        display: none;
+    }
+
+    .content {
+        padding: 15px;
+    }
+
+    .cards {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .safety-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header class="header">
+
+    <div class="logo">
+        ANVIQO
+    </div>
+
+    <div class="tagline">
+        THINK • PREDICT • PROTECT
+    </div>
+
+    <div class="connection"
+         id="connection">
+
+        ● CONNECTING
+
+    </div>
+
+</header>
+
+
+<div class="layout">
+
+
+<aside class="sidebar">
+
+    <div class="section-title">
+        COMMAND CENTER
+    </div>
+
+    <div class="nav active">
+        ◉ Command Center
+    </div>
+
+    <div class="nav">
+        ◉ Plant Health
+    </div>
+
+    <div class="nav">
+        ⚙ Equipment
+    </div>
+
+    <div class="nav">
+        ⚠ Events & Correlation
+    </div>
+
+    <div class="nav">
+        ↗ What Changed
+    </div>
+
+    <div class="nav">
+        ◆ Maintenance
+    </div>
+
+    <div class="nav">
+        ⇄ Shift Intelligence
+    </div>
+
+    <div class="nav">
+        ▣ Management
+    </div>
+
+    <div class="nav">
+        ★ Executive / HOD
+    </div>
+
+    <div class="nav">
+        ✓ Evidence & Learning
+    </div>
+
+</aside>
+
+
+<main class="content">
+
+    <div class="page-title">
+        Plant Intelligence Command Center
+    </div>
+
+    <div class="subtitle">
+        ANVIQO V5 Frozen Intelligence • Live Product View
+    </div>
+
+
+    <section class="cards">
+
+        <div class="card">
+
+            <div class="card-label">
+                PLANT STATUS
+            </div>
+
+            <div id="plantStatus"
+                 class="card-value attention">
+
+                LOADING
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-label">
+                MANAGEMENT PRIORITY
+            </div>
+
+            <div id="priority"
+                 class="card-value red">
+
+                --
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-label">
+                ACTIVE RISKS
+            </div>
+
+            <div id="riskCount"
+                 class="card-value blue">
+
+                --
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-label">
+                EVENT CHAINS
+            </div>
+
+            <div id="eventCount"
+                 class="card-value cyan">
+
+                --
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-label">
+                SYSTEM
+            </div>
+
+            <div id="systemStatus"
+                 class="card-value good">
+
+                --
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="grid">
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                TOP EQUIPMENT RISK
+            </div>
+
+            <div id="equipmentList">
+
+                Loading equipment intelligence...
+
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                WHAT CHANGED
+            </div>
+
+            <div id="changes">
+
+                Loading operational evidence...
+
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                EVENT / RELATIONSHIP CORRELATION
+            </div>
+
+            <div id="events">
+
+                Loading event intelligence...
+
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                MANAGEMENT DECISION
+            </div>
+
+            <div class="decision">
+
+                <strong id="decisionEquipment">
+                    --
+                </strong>
+
+                <br>
+
+                <strong id="decision">
+                    Loading...
+                </strong>
+
+                <p id="recommendation">
+                    --
+                </p>
+
+                <strong>
+                    Human authorization required
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="safety">
+
+        <div class="safety-title">
+            SAFETY / CONTROL BOUNDARY
+        </div>
+
+        <div class="safety-grid">
+
+            <div class="safe">
+                ● READ-ONLY
+            </div>
+
+            <div class="safe">
+                ● PLC WRITE BLOCKED
+            </div>
+
+            <div class="safe">
+                ● SCADA CONTROL BLOCKED
+            </div>
+
+            <div class="safe">
+                ● HUMAN DECISION REQUIRED
+            </div>
+
+            <div class="safe">
+                ● AUTOMATIC AUTHORIZATION DISABLED
+            </div>
+
+            <div class="safe">
+                ● CAUSATION NOT CLAIMED
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <div class="footer">
+
+        ANVIQO PRODUCT V1.0 |
+        V5 FROZEN CORE |
+        READ-ONLY INTELLIGENCE
+
+    </div>
+
+</main>
+
+</div>
+
+
+<script>
+
+const API =
+    "http://127.0.0.1:5001";
+
+
+async function getAPI(path) {
+
+    const response =
+        await fetch(API + path);
+
+    if (!response.ok) {
+
+        throw new Error(
+            "API " +
+            response.status
+        );
+
+    }
+
+    return response.json();
+
+}
+
+
+function equipmentHTML(items) {
+
+    if (!items ||
+        items.length === 0) {
+
+        return "No equipment data available.";
+
+    }
+
+    return items.map(item => {
+
+        return `
+            <div class="equipment">
+
+                <strong>
+                    ${item.tag || "UNKNOWN"}
+                </strong>
+
+                <span class="score">
+                    ${item.priority ?? "--"}
+                </span>
+
+                <span class="badge">
+                    ${item.status || "UNKNOWN"}
+                </span>
+
+            </div>
+        `;
+
+    }).join("");
+
+}
+
+
+function eventHTML(events) {
+
+    if (!events ||
+        events.length === 0) {
+
+        return `
+            <div class="event">
+                No event chain data available.
+            </div>
+        `;
+
+    }
+
+    return events.map(event => {
+
+        return `
+            <div class="event">
+                ✓ ${event}
+            </div>
+        `;
+
+    }).join("");
+
+}
+
+
+async function loadDashboard() {
+
+    try {
+
+        const data =
+            await getAPI(
+                "/api/plant_snapshot"
+            );
+
+
+        document
+            .getElementById("connection")
+            .innerText =
+                "● API CONNECTED";
+
+
+        document
+            .getElementById("connection")
+            .style.color =
+                "#2bd47c";
+
+
+        document
+            .getElementById("plantStatus")
+            .innerText =
+                data.plant?.status ||
+                "UNKNOWN";
+
+
+        const equipment =
+            data.equipment || [];
+
+
+        document
+            .getElementById("riskCount")
+            .innerText =
+                equipment.length;
+
+
+        document
+            .getElementById("priority")
+            .innerText =
+                data.maintenance?.equipment ||
+                "--";
+
+
+        const events =
+            data.events || [];
+
+
+        document
+            .getElementById("eventCount")
+            .innerText =
+                events.length;
+
+
+        document
+            .getElementById("systemStatus")
+            .innerText =
+                "READY";
+
+
+        document
+            .getElementById("equipmentList")
+            .innerHTML =
+                equipmentHTML(
+                    equipment
+                );
+
+
+        document
+            .getElementById("events")
+            .innerHTML =
+                eventHTML(
+                    events
+                );
+
+
+        document
+            .getElementById("changes")
+            .innerHTML = `
+
+                <div class="event">
+                    ✓ ${data.plant?.area ||
+                    "Plant"} intelligence active
+                </div>
+
+                <div class="event">
+                    ✓ Primary equipment:
+                    ${data.plant?.primary_equipment ||
+                    "UNKNOWN"}
+                </div>
+
+                <div class="event">
+                    ✓ Maintenance evidence available
+                </div>
+
+                <div class="event">
+                    ✓ Relationship/event intelligence active
+                </div>
+
+            `;
+
+
+        document
+            .getElementById("decisionEquipment")
+            .innerText =
+                data.maintenance?.equipment ||
+                "UNKNOWN";
+
+
+        document
+            .getElementById("decision")
+            .innerText =
+                data.maintenance?.decision ||
+                "REVIEW REQUIRED";
+
+
+        document
+            .getElementById("recommendation")
+            .innerText =
+                "Controlled maintenance review and process-condition verification recommended.";
+
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+        document
+            .getElementById("connection")
+            .innerText =
+                "● API OFFLINE";
+
+        document
+            .getElementById("connection")
+            .style.color =
+                "#ff6262";
+
+        document
+            .getElementById("systemStatus")
+            .innerText =
+                "OFFLINE";
+
+    }
+
+}
+
+
+loadDashboard();
+
+
+setInterval(
+    loadDashboard,
+    10000
+);
+
+</script>
+
+</body>
+
+</html>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ANVIQO Command Center</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#06101b;color:#eaf4fb;font-family:Arial,sans-serif}
+header{height:72px;background:#091827;border-bottom:1px solid #1c344b;display:flex;align-items:center;padding:0 25px}
+.logo{font-size:28px;font-weight:900;letter-spacing:2px;color:#39d9e9}
+.tag{margin-left:18px;color:#718aa0;font-size:11px;letter-spacing:1.5px}
+.live{margin-left:auto;color:#35dc86;font-size:11px;font-weight:bold}
+main{padding:24px;max-width:1500px;margin:auto}
+h1{margin:0;font-size:26px}
+.sub{color:#728ba0;font-size:12px;margin-top:6px}
+.top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:14px;margin-top:22px}
+.card,.panel{background:#0b1b2c;border:1px solid #1c354c;border-radius:10px}
+.card{padding:18px}
+.label{font-size:10px;color:#7892a8;font-weight:bold;letter-spacing:1px}
+.big{font-size:25px;font-weight:800;margin-top:9px}
+.att{color:#f3c64b}.red{color:#ff6666}.green{color:#35dc86}.cyan{color:#39d9e9}.blue{color:#61a9ff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px}
+.panel{padding:18px}
+.title{color:#39d9e9;font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:15px}
+.eq{display:grid;grid-template-columns:1fr 90px 85px;gap:10px;padding:13px 0;border-bottom:1px solid #172d41;align-items:center}
+.eq:last-child{border:0}
+.badge{font-size:9px;padding:5px 7px;border-radius:4px;text-align:center;background:#291d1d;color:#ff7777}
+.chain{display:flex;align-items:center;justify-content:center;gap:12px;padding:24px 5px;font-weight:bold}
+.node{padding:13px 18px;border:1px solid #2d526b;border-radius:8px;background:#10273a}
+.arrow{color:#39d9e9;font-size:20px}
+.notice{border-left:3px solid #f3c64b;padding:10px 13px;line-height:1.6}
+.safety{margin-top:15px;background:#092219;border:1px solid #205d45;border-radius:10px;padding:17px}
+.safegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.safe{color:#35dc86;font-size:10px}
+.footer{text-align:right;color:#526c82;font-size:10px;margin-top:15px}
+@media(max-width:900px){.top,.grid{grid-template-columns:1fr 1fr}.safegrid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.top,.grid{grid-template-columns:1fr}.chain{flex-wrap:wrap}}
+</style>
+</head>
+
+<body>
+<header>
+<div class="logo">ANVIQO</div>
+<div class="tag">THINK • PREDICT • PROTECT</div>
+<div class="live" id="live">● CONNECTING</div>
+</header>
+
+<main>
+<h1>Plant Intelligence Command Center</h1>
+<div class="sub">V5 FROZEN CORE · PRODUCT V1.0 · LIVE INDUSTRIAL INTELLIGENCE</div>
+
+<div class="top">
+<div class="card">
+<div class="label">PLANT CONDITION</div>
+<div class="big att" id="plant">LOADING</div>
+<div class="sub" id="area">—</div>
+</div>
+<div class="card">
+<div class="label">PRIMARY EQUIPMENT</div>
+<div class="big red" id="primary">—</div>
+<div class="sub">Highest management priority</div>
+</div>
+<div class="card">
+<div class="label">MAINTENANCE DECISION</div>
+<div class="big cyan" id="maint">—</div>
+<div class="sub">Human review required</div>
+</div>
+<div class="card">
+<div class="label">SYSTEM STATUS</div>
+<div class="big green" id="system">READY</div>
+<div class="sub">V5 intelligence connected</div>
+</div>
+</div>
+
+<div class="grid">
+
+<div class="panel">
+<div class="title">EQUIPMENT RISK HIERARCHY</div>
+<div id="equipment"></div>
+</div>
+
+<div class="panel">
+<div class="title">PLANT EVENT CHAIN</div>
+<div class="chain">
+<div class="node" id="c1">CV-101</div>
+<div class="arrow">↔</div>
+<div class="node" id="c2">CV-102</div>
+<div class="arrow">↔</div>
+<div class="node" id="c3">PT-201</div>
+</div>
+<div class="sub" style="text-align:center">Relationship-aware developing event chain · Causation not established</div>
+</div>
+
+<div class="panel">
+<div class="title">MANAGEMENT DECISION</div>
+<div class="notice">
+<strong id="decision">MAINTENANCE REVIEW REQUIRED</strong>
+<br><br>
+CV-101 requires controlled maintenance review and verification of process impact.
+<br><br>
+<strong>Human authorization required.</strong>
+</div>
+</div>
+
+<div class="panel">
+<div class="title">WHAT ANVIQO KNOWS</div>
+<div id="evidence">
+<div>✓ Multiple equipment signals abnormal</div>
+<div>✓ Relationship-aware correlation detected</div>
+<div>✓ Developing plant event chain detected</div>
+<div>✓ Maintenance intelligence available</div>
+<div>✓ Evidence-backed decision support</div>
+</div>
+</div>
+
+</div>
+
+<div class="safety">
+<div class="title" style="color:#35dc86">SAFETY / CONTROL BOUNDARY</div>
+<div class="safegrid">
+<div class="safe">✓ READ-ONLY</div>
+<div class="safe">✓ PLC WRITE BLOCKED</div>
+<div class="safe">✓ SCADA CONTROL BLOCKED</div>
+<div class="safe">✓ HUMAN DECISION REQUIRED</div>
+<div class="safe">✓ AUTOMATIC AUTHORIZATION DISABLED</div>
+<div class="safe">✓ CAUSATION CLAIM FALSE</div>
+</div>
+</div>
+
+<div class="footer">ANVIQO PRODUCT V1.0 · V5 FROZEN · HUMAN-GOVERNED INDUSTRIAL INTELLIGENCE</div>
+</main>
+
+<script>
+async function load(){
+try{
+let r=await fetch("http://127.0.0.1:5001/api/plant_snapshot");
+let d=await r.json();
+
+document.getElementById("live").textContent="● API CONNECTED";
+document.getElementById("plant").textContent=d.plant?.status||"UNKNOWN";
+document.getElementById("area").textContent=d.plant?.area||"—";
+document.getElementById("primary").textContent=d.plant?.primary_equipment||"—";
+document.getElementById("maint").textContent=d.maintenance?.equipment||"—";
+document.getElementById("decision").textContent=d.maintenance?.decision||"REVIEW REQUIRED";
+
+let html="";
+(d.equipment||[]).forEach(x=>{
+let cls=x.priority>=80?"red":x.priority>=65?"att":"cyan";
+html+=`<div class="eq">
+<strong>${x.tag}</strong>
+<span class="big ${cls}" style="font-size:17px">${x.priority}</span>
+<span class="badge">${x.status}</span>
+</div>`;
+});
+document.getElementById("equipment").innerHTML=html||"No equipment data.";
+
+let ev=d.events||[];
+if(ev.length>=2){
+let a=ev[0].split(" ↔ ");
+let b=ev[1].split(" ↔ ");
+document.getElementById("c1").textContent=a[0]||"—";
+document.getElementById("c2").textContent=a[1]||"—";
+document.getElementById("c3").textContent=b[1]||"—";
+}
+}catch(e){
+document.getElementById("live").textContent="● API OFFLINE";
+document.getElementById("live").style.color="#ff6666";
+document.getElementById("system").textContent="OFFLINE";
+}}
+load();
+setInterval(load,10000);
+</script>
+</body>
+</html>
