@@ -404,6 +404,90 @@ body {
     }
 }
 
+
+/* ANVIQO V1.2 ASK ANVI */
+
+.ask-anvi {
+    margin-top: 18px;
+    background: linear-gradient(145deg, #0d1d30, #10243a);
+    border: 1px solid #294761;
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+}
+
+.ask-title {
+    color: #38d6e8;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .8px;
+}
+
+.ask-subtitle {
+    margin-top: 5px;
+    color: #8095aa;
+    font-size: 11px;
+}
+
+.ask-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.ask-input {
+    flex: 1;
+    background: #081624;
+    color: #dce8f2;
+    border: 1px solid #294761;
+    border-radius: 7px;
+    padding: 12px;
+    font-size: 13px;
+    outline: none;
+}
+
+.ask-input:focus {
+    border-color: #38d6e8;
+}
+
+.ask-button {
+    border: 0;
+    border-radius: 7px;
+    padding: 0 18px;
+    background: #38d6e8;
+    color: #06111d;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.ask-answer {
+    margin-top: 14px;
+    padding: 14px;
+    background: #081624;
+    border-left: 3px solid #38d6e8;
+    border-radius: 5px;
+    color: #dce8f2;
+    font-size: 12px;
+    line-height: 1.65;
+    min-height: 42px;
+}
+
+.ask-evidence {
+    margin-top: 8px;
+    color: #8095aa;
+    font-size: 10px;
+}
+
+@media(max-width:600px) {
+    .ask-row {
+        flex-direction: column;
+    }
+
+    .ask-button {
+        min-height: 42px;
+    }
+}
+
 </style>
 
 </head>
@@ -695,7 +779,50 @@ body {
     </section>
 
 
-    <div class="footer">
+    
+<section class="ask-anvi">
+
+    <div class="ask-title">
+        ASK ANVI
+    </div>
+
+    <div class="ask-subtitle">
+        Evidence-backed plant intelligence assistant
+    </div>
+
+    <div class="ask-row">
+
+        <input
+            id="anviQuestion"
+            class="ask-input"
+            type="text"
+            placeholder="Ask ANVI about the plant, equipment or maintenance..."
+            autocomplete="off"
+        >
+
+        <button
+            class="ask-button"
+            onclick="askAnvi()">
+            ASK
+        </button>
+
+    </div>
+
+    <div
+        id="anviAnswer"
+        class="ask-answer">
+        Ask a question to view ANVIQO evidence.
+    </div>
+
+    <div
+        id="anviEvidence"
+        class="ask-evidence">
+        V5 FROZEN CORE · READ-ONLY · HUMAN DECISION REQUIRED
+    </div>
+
+</section>
+
+<div class="footer">
 
         ANVIQO PRODUCT V1.0 |
         V5 FROZEN CORE |
@@ -950,6 +1077,225 @@ setInterval(
     loadDashboard,
     10000
 );
+
+
+/* ANVIQO V1.2 ASK ANVI */
+
+async function askAnvi() {
+
+    const input = document.getElementById("anviQuestion");
+    const answer = document.getElementById("anviAnswer");
+    const evidence = document.getElementById("anviEvidence");
+
+    const question = input.value.trim().toLowerCase();
+
+    if (!question) {
+        answer.textContent = "Please ask ANVI a question.";
+        return;
+    }
+
+    answer.textContent = "ANVI is reviewing current evidence...";
+    evidence.textContent = "Reading ANVIQO plant snapshot...";
+
+    try {
+
+        const response =
+            await fetch(API + "/api/plant_snapshot");
+
+        if (!response.ok) {
+            throw new Error("API unavailable");
+        }
+
+        const data = await response.json();
+
+        const equipment =
+            data.equipment || [];
+
+        const events =
+            data.events || [];
+
+        const maintenance =
+            data.maintenance || {};
+
+        const plant =
+            data.plant || {};
+
+        const safety =
+            data.safety || {};
+
+        let text = "";
+
+        if (
+            question.includes("cv-101") ||
+            question.includes("urgent") ||
+            question.includes("risk")
+        ) {
+
+            const item =
+                equipment.find(
+                    x => String(x.tag).toLowerCase() === "cv-101"
+                );
+
+            if (item) {
+
+                text =
+                    "CV-101 is currently " +
+                    item.status +
+                    " with a management priority of " +
+                    item.priority +
+                    "/100. ";
+
+                text +=
+                    "ANVIQO has identified it as the primary equipment requiring management attention.";
+
+                if (maintenance.decision) {
+                    text +=
+                        " Current decision: " +
+                        maintenance.decision +
+                        ".";
+                }
+
+            } else {
+
+                text =
+                    "Current evidence does not contain a CV-101 record.";
+
+            }
+
+        } else if (
+            question.includes("what changed") ||
+            question.includes("change")
+        ) {
+
+            text =
+                "Current plant evidence shows " +
+                equipment.length +
+                " equipment risk records and " +
+                events.length +
+                " relationship/event records.";
+
+            if (plant.primary_equipment) {
+                text +=
+                    " Primary equipment: " +
+                    plant.primary_equipment +
+                    ".";
+            }
+
+        } else if (
+            question.includes("plant status") ||
+            question.includes("plant condition") ||
+            question.includes("how is the plant")
+        ) {
+
+            text =
+                "Current plant status is " +
+                (plant.status || "ATTENTION") +
+                ".";
+
+            if (plant.area) {
+                text +=
+                    " Area: " +
+                    plant.area +
+                    ".";
+            }
+
+            if (plant.primary_equipment) {
+                text +=
+                    " Primary equipment: " +
+                    plant.primary_equipment +
+                    ".";
+            }
+
+        } else if (
+            question.includes("maintenance") ||
+            question.includes("what should")
+        ) {
+
+            text =
+                maintenance.decision ||
+                "Maintenance review information is currently available.";
+
+            if (maintenance.equipment) {
+                text +=
+                    " Equipment requiring review: " +
+                    maintenance.equipment +
+                    ".";
+            }
+
+            text +=
+                " Human verification and authorization are required.";
+
+        } else if (
+            question.includes("event") ||
+            question.includes("relationship") ||
+            question.includes("correlation")
+        ) {
+
+            if (events.length) {
+
+                text =
+                    "ANVIQO currently detects " +
+                    events.length +
+                    " relationship/event records: " +
+                    events.join(", ") +
+                    ". ";
+
+                text +=
+                    "These relationships are presented as evidence; causation is not automatically claimed.";
+
+            } else {
+
+                text =
+                    "No current event relationship records were returned.";
+
+            }
+
+        } else if (
+            question.includes("safety") ||
+            question.includes("control") ||
+            question.includes("plc") ||
+            question.includes("scada")
+        ) {
+
+            text =
+                "ANVIQO is operating within a read-only safety boundary. " +
+                "PLC write is blocked, SCADA control is blocked, " +
+                "automatic authorization is disabled, and human decision is required.";
+
+        } else {
+
+            text =
+                "I can answer questions about current plant status, " +
+                "equipment risk, CV-101, maintenance decisions, " +
+                "event relationships and the ANVIQO safety boundary.";
+
+        }
+
+        answer.textContent = text;
+
+        evidence.textContent =
+            "Evidence source: ANVIQO /api/plant_snapshot · " +
+            "Read-only · Human decision required";
+
+    } catch (error) {
+
+        answer.textContent =
+            "ANVI cannot retrieve current plant evidence right now.";
+
+        evidence.textContent =
+            "API connection required.";
+
+    }
+}
+
+document.getElementById("anviQuestion")
+?.addEventListener("keydown", function(event) {
+
+    if (event.key === "Enter") {
+        askAnvi();
+    }
+
+});
 
 </script>
 
