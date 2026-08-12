@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANVIQO | Secure Login</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at top,#122c43,#06111d 65%);font-family:Arial,sans-serif;color:#dce8f2}
+.login{width:min(430px,92%);background:#0d1d30;border:1px solid #294761;border-radius:14px;padding:32px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.logo{color:#38d6e8;font-size:30px;font-weight:900;letter-spacing:2px}
+.tagline{margin-top:5px;color:#8095aa;font-size:11px;letter-spacing:1px}
+.title{margin-top:28px;font-size:21px;font-weight:800}
+.subtitle{margin-top:7px;color:#8095aa;font-size:11px;line-height:1.5}
+input{width:100%;margin-top:14px;padding:14px;border-radius:7px;border:1px solid #294761;background:#081624;color:#fff;outline:none;font-size:14px}
+input:focus{border-color:#38d6e8}
+button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:7px;background:#38d6e8;color:#06111d;font-weight:900;cursor:pointer}
+.security{margin-top:22px;padding:13px;background:#081624;border-left:3px solid #2bd47c;color:#8fa7bb;font-size:10px;line-height:1.8}
+.footer{margin-top:18px;text-align:center;color:#60788c;font-size:9px}
+</style>
+</head>
+<body>
+<div class="login">
+  <div class="logo">ANVIQO</div>
+  <div class="tagline">THINK • PREDICT • PROTECT</div>
+  <div class="title">Secure Command Center</div>
+  <div class="subtitle">Authorized access to ANVIQO industrial intelligence</div>
+
+  <form action="https://anviqo.onrender.com/login" method="POST">
+    <input name="username" type="text" placeholder="Username" autocomplete="username" required>
+    <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit">SIGN IN</button>
+  </form>
+
+  <div class="security">
+    ✓ READ-ONLY INTELLIGENCE<br>
+    ✓ PLC WRITE BLOCKED<br>
+    ✓ SCADA CONTROL BLOCKED<br>
+    ✓ HUMAN DECISION REQUIRED<br>
+    ✓ AUTOMATIC AUTHORIZATION DISABLED
+  </div>
+
+  <div class="footer">V5 FROZEN CORE • HUMAN DECISION REQUIRED</div>
+</div>
+</body>
+</html>
