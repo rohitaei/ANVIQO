@@ -2,21 +2,119 @@
 ANVIQO PRODUCT API
 V5 FROZEN INTELLIGENCE -> WEB API
 
+V1.2 SECURED PRODUCT LAYER
+
 Read-only product integration layer.
 No PLC write.
 No SCADA control.
 No automatic authorization.
+Human decision required.
 """
 
-from flask import Flask, jsonify, send_from_directory
+from flask import (
+    Flask,
+    jsonify,
+    send_from_directory,
+    request,
+    session,
+    redirect,
+    url_for,
+)
 from datetime import datetime
+from functools import wraps
+import os
+
 
 app = Flask(__name__)
 
+# ------------------------------------------------------------
+# SECURITY CONFIGURATION
+# ------------------------------------------------------------
 
-# ============================================================
+app.secret_key = os.environ.get("ANVIQO_SECRET_KEY")
+
+ADMIN_USER = os.environ.get("ANVIQO_ADMIN_USER")
+ADMIN_PASSWORD = os.environ.get("ANVIQO_ADMIN_PASSWORD")
+
+if not app.secret_key:
+    raise RuntimeError(
+        "ANVIQO_SECRET_KEY environment variable is required"
+    )
+
+if not ADMIN_USER or not ADMIN_PASSWORD:
+    raise RuntimeError(
+        "ANVIQO_ADMIN_USER and ANVIQO_ADMIN_PASSWORD "
+        "environment variables are required"
+    )
+
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = True
+
+
+# ------------------------------------------------------------
+# AUTHENTICATION
+# ------------------------------------------------------------
+
+def authenticated():
+    return bool(session.get("authenticated"))
+
+
+def login_required(function):
+
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+
+        if authenticated():
+            return function(*args, **kwargs)
+
+        if request.path.startswith("/api/"):
+            return jsonify({
+                "status": "UNAUTHORIZED",
+                "message": "ANVIQO authentication required"
+            }), 401
+
+        return redirect(url_for("login"))
+
+    return wrapper
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    error = ""
+
+    if request.method == "POST":
+
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+
+        if username == ADMIN_USER and password == ADMIN_PASSWORD:
+
+            session.clear()
+
+            session["authenticated"] = True
+            session["username"] = username
+            session["role"] = "ADMIN"
+
+            return redirect(url_for("dashboard"))
+
+        error = "Invalid username or password"
+
+    return send_from_directory(".", "login.html")
+
+
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    return redirect(url_for("login"))
+
+
+# ------------------------------------------------------------
 # SAFETY
-# ============================================================
+# ------------------------------------------------------------
 
 SAFETY = {
     "read_only": True,
@@ -28,9 +126,9 @@ SAFETY = {
 }
 
 
-# ============================================================
+# ------------------------------------------------------------
 # SAFE IMPORT
-# ============================================================
+# ------------------------------------------------------------
 
 def safe_import(module_name, function_name):
 
@@ -50,22 +148,29 @@ def safe_import(module_name, function_name):
         return None
 
 
-# ============================================================
+# ------------------------------------------------------------
 # SYSTEM
-# ============================================================
+# ------------------------------------------------------------
 
 @app.route("/")
+@login_required
 def dashboard():
-    return send_from_directory(".", "anviqo_dashboard.html")
+
+    return send_from_directory(
+        ".",
+        "anviqo_dashboard.html"
+    )
+
 
 @app.route("/api/status")
+@login_required
 def status():
 
     return jsonify({
 
         "product": "ANVIQO",
 
-        "version": "PRODUCT V1.0",
+        "version": "PRODUCT V1.2",
 
         "core": "V5 FROZEN",
 
@@ -76,16 +181,22 @@ def status():
                 timespec="seconds"
             ),
 
-        "safety": SAFETY
+        "safety": SAFETY,
+
+        "authenticated": True,
+
+        "role":
+            session.get("role", "ADMIN")
 
     })
 
 
-# ============================================================
+# ------------------------------------------------------------
 # SAFETY
-# ============================================================
+# ------------------------------------------------------------
 
 @app.route("/api/safety")
+@login_required
 def safety():
 
     return jsonify({
@@ -97,11 +208,12 @@ def safety():
     })
 
 
-# ============================================================
+# ------------------------------------------------------------
 # EQUIPMENT
-# ============================================================
+# ------------------------------------------------------------
 
 @app.route("/api/equipment/<tag>")
+@login_required
 def equipment(tag):
 
     function = safe_import(
@@ -148,11 +260,12 @@ def equipment(tag):
         })
 
 
-# ============================================================
+# ------------------------------------------------------------
 # RELATIONSHIPS
-# ============================================================
+# ------------------------------------------------------------
 
 @app.route("/api/equipment/<tag>/relationships")
+@login_required
 def relationships(tag):
 
     function = safe_import(
@@ -189,11 +302,12 @@ def relationships(tag):
         })
 
 
-# ============================================================
+# ------------------------------------------------------------
 # EVENTS
-# ============================================================
+# ------------------------------------------------------------
 
 @app.route("/api/equipment/<tag>/events")
+@login_required
 def events(tag):
 
     function = safe_import(
@@ -230,11 +344,12 @@ def events(tag):
         })
 
 
-# ============================================================
+# ------------------------------------------------------------
 # PLANT BRAIN
-# ============================================================
+# ------------------------------------------------------------
 
 @app.route("/api/plant/<area>")
+@login_required
 def plant(area):
 
     function = safe_import(
@@ -273,11 +388,12 @@ def plant(area):
         })
 
 
-# ============================================================
+# ------------------------------------------------------------
 # MAINTENANCE
-# ============================================================
+# ------------------------------------------------------------
 
 @app.route("/api/maintenance")
+@login_required
 def maintenance():
 
     return jsonify({
@@ -313,11 +429,12 @@ def maintenance():
     })
 
 
-# ============================================================
+# ------------------------------------------------------------
 # MANAGEMENT
-# ============================================================
+# ------------------------------------------------------------
 
 @app.route("/api/management")
+@login_required
 def management():
 
     return jsonify({
@@ -346,11 +463,12 @@ def management():
     })
 
 
-# ============================================================
+# ------------------------------------------------------------
 # FULL PLANT SNAPSHOT
-# ============================================================
+# ------------------------------------------------------------
 
 @app.route("/api/plant_snapshot")
+@login_required
 def plant_snapshot():
 
     return jsonify({
@@ -410,61 +528,26 @@ def plant_snapshot():
 
         },
 
-        "safety": SAFETY
+        "safety": SAFETY,
+
+        "authenticated": True,
+
+        "role":
+            session.get("role", "ADMIN")
 
     })
 
 
-# ============================================================
+# ------------------------------------------------------------
 # SERVER
-# ============================================================
+# ------------------------------------------------------------
 
 if __name__ == "__main__":
 
     print("=" * 68)
-
-    print(
-        "ANVIQO PRODUCT API"
-    )
-
+    print("ANVIQO PRODUCT API")
+    print("V1.2 SECURED")
+    print("V5 FROZEN CORE")
+    print("READ-ONLY")
     print("=" * 68)
 
-    print()
-
-    print(
-        "V5 CORE       : FROZEN"
-    )
-
-    print(
-        "PRODUCT API   : READY"
-    )
-
-    print(
-        "READ-ONLY     : TRUE"
-    )
-
-    print(
-        "PLC WRITE     : FALSE"
-    )
-
-    print(
-        "SCADA CONTROL : FALSE"
-    )
-
-    print()
-
-    print(
-        "API:"
-    )
-
-    print(
-        "http://127.0.0.1:5001/api/status"
-    )
-
-    print()
-
-    app.run(
-        host="0.0.0.0",
-        port=5001,
-        debug=False
-    )

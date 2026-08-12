@@ -3,3 +3,4 @@ __pycache__/
 *.pyo
 *_backup*.py
 *_backup*.html
+requirements_v1.2_security_backup.txt
