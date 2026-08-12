@@ -1,0 +1,61 @@
+ANVIQO V5 ARCHITECTURE FREEZE
+================================
+
+Freeze Date:
+2026-08-12
+
+Status:
+V5 VALIDATED
+
+Master Validation:
+PASS
+
+Architecture Freeze:
+READY
+
+Validated Intelligence Layers:
+- Equipment Intelligence
+- Plant Intelligence
+- Event / Correlation
+- Plant Brain
+- Evidence / Learning
+- Prediction / Verification
+- Maintenance Intelligence
+- Shift Intelligence
+- Management Intelligence
+- Decision Intelligence
+- Executive / HOD Intelligence
+
+Governance:
+Human decision required
+
+Safety Boundary:
+READ-ONLY
+
+PLC Write:
+FALSE
+
+SCADA Control:
+FALSE
+
+Automatic Authorization:
+FALSE
+
+Automatic Execution:
+FALSE
+
+Causation Claim:
+FALSE
+
+Validated Release Baselines:
+- V5.4
+- V5.5
+- V5.6
+- V5.7
+
+Next Stage:
+PRODUCT / LAUNCH BUILD
+
+IMPORTANT:
+No new V5 intelligence capability is to be added after this freeze
+unless a documented product audit proves a genuine missing capability.
