@@ -496,7 +496,7 @@ updateClock();
 
 @app.route("/")
 def dashboard():
-    return send_from_directory(".", "anviqo_dashboard.html")
+    return send_from_directory(".", "anviqo_public_website_index.html")
 
 @app.route("/api/ask", methods=["POST"])
 def ask_anvi():
