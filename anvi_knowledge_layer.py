@@ -164,26 +164,66 @@ def _equipment(q):
     )
 
 
+def _build_area_results():
+    """
+    Build area-health evidence using the existing V5 area-health engine.
+    No new health/reasoning logic is created here.
+    """
+    from equipment_database import get_equipment
+    from area_health import build_area_health
+
+    equipment = get_equipment() or []
+
+    areas = []
+    seen = set()
+
+    for item in equipment:
+        area = str(item.get("area", "")).strip()
+        if not area:
+            continue
+
+        key = area.upper()
+        if key in seen:
+            continue
+
+        seen.add(key)
+        areas.append(area)
+
+    return [
+        build_area_health(area)
+        for area in areas
+    ]
+
+
 def _plant(q):
     from anviqo_product import AnviqoProduct
 
     p = AnviqoProduct()
-
     ql = q.lower()
+
+    area_results = _build_area_results()
 
     if "what changed" in ql or "changed" in ql:
         from plant_what_changed import build_plant_what_changed
-        result = build_plant_what_changed()
+
+        result = build_plant_what_changed(
+            "PLANT",
+            area_results,
+            equipment_events=[]
+        )
+
         return "ANVI — What Changed:\n" + json.dumps(
             result, ensure_ascii=False
         )
 
     if "health" in ql:
         from plant_health_intelligence import build_plant_health_intelligence
-        try:
-            result = build_plant_health_intelligence()
-        except TypeError:
-            result = p.plant_brain("PLANT")
+
+        result = build_plant_health_intelligence(
+            "PLANT",
+            area_results
+        )
+
         return "ANVI — Plant Health:\n" + json.dumps(
             result, ensure_ascii=False
         )
@@ -203,28 +243,77 @@ def _plant(q):
 def _maintenance(q):
     ql = q.lower()
 
-    if "recommend" in ql or "action" in ql or "what should" in ql:
-        from maintenance_recommendations import build_maintenance_recommendation
-        tag, _ = _tag_from_question(q)
-        tag = tag or "CV-101"
+    from maintenance_recommendations import (
+        build_maintenance_recommendation
+    )
+    from maintenance_patterns import normalize_pattern
 
-        try:
-            result = build_maintenance_recommendation(tag)
-        except TypeError:
-            result = build_maintenance_recommendation(
-                {"equipment": tag}
-            )
+    tag, item = _tag_from_question(q)
 
+    if tag:
+        pattern_source = " ".join([
+            str(item.get("description", "")) if item else "",
+            q
+        ])
+    else:
+        pattern_source = q
+
+    pattern = normalize_pattern(pattern_source)
+
+    recommendation = build_maintenance_recommendation(
+        pattern
+    )
+
+    if (
+        "recommend" in ql
+        or "action" in ql
+        or "what should" in ql
+        or "maintenance" in ql
+        or "repair" in ql
+        or "inspection" in ql
+        or "fix" in ql
+    ):
         return "ANVI — Maintenance Intelligence:\n" + json.dumps(
-            result, ensure_ascii=False
+            {
+                "equipment": tag or "NOT IDENTIFIED",
+                "pattern": pattern,
+                "recommendation": recommendation,
+                "read_only": True,
+                "human_decision_required": True
+            },
+            ensure_ascii=False
         )
 
     from maintenance_management_report import build_management_report
 
-    try:
-        result = build_management_report()
-    except TypeError:
-        result = build_management_report("CV-101")
+    equipment_name = tag or "PLANT"
+    area = (
+        item.get("area", "UNKNOWN")
+        if item
+        else "UNKNOWN"
+    )
+
+    current_condition = {
+        "equipment": equipment_name,
+        "area": area,
+        "reason": (
+            f"ANVI evaluated the existing maintenance evidence "
+            f"for pattern {pattern}."
+        )
+    }
+
+    base_recommendation = {
+        "priority": 0,
+        "recommendation": recommendation.get(
+            "message",
+            "No verified maintenance recommendation available."
+        )
+    }
+
+    result = build_management_report(
+        current_condition,
+        base_recommendation
+    )
 
     return "ANVI — Maintenance / Management Intelligence:\n" + json.dumps(
         result, ensure_ascii=False
@@ -259,7 +348,7 @@ def ask_anvi(question):
             "instrument tag", "transmitter", "control valve",
             "flow meter", "pressure transmitter",
             "temperature transmitter", "level transmitter"
-        ]:
+        ]):
             return {
                 "answer": _pci_answer(q),
                 "domain": "pci_instrumentation",
