@@ -165,26 +165,53 @@ def dashboard():
 
 @app.route("/api/pci")
 def pci_data():
-    path=os.path.join("database","pci","pci_instrument_database.json")
     try:
-        with open(path,encoding="utf-8") as f:
-            d=json.load(f)
-        records=d.get("records",[])
-        from collections import Counter
-        areas=Counter(r.get("area","UNKNOWN") for r in records)
-        io_types=Counter(r.get("io_type","UNKNOWN") for r in records)
-        critical=[r for r in records if r.get("criticality")=="HIGH"]
-        return {
-            "status":"OK",
-            "record_count":len(records),
-            "areas":dict(areas),
-            "io_types":dict(io_types),
-            "critical":critical,
-            "records":records
-        }
-    except Exception as e:
-        return {"status":"ERROR","message":str(e)},500
+        from pci_live_simulator import get_live_pci_snapshot
+        snapshot = get_live_pci_snapshot()
 
+        return jsonify({
+            "status": "OK",
+            "mode": snapshot["mode"],
+            "source": snapshot["source"],
+            "record_count": snapshot["total_io"],
+            "healthy": snapshot["healthy"],
+            "warning": snapshot["warning"],
+            "critical_count": snapshot["critical"],
+            "changed": snapshot["changed"],
+            "active_events": snapshot["active_events"],
+            "plant_health_score": snapshot["plant_health_score"],
+            "area_count": snapshot["area_count"],
+            "areas": snapshot["areas"],
+            "records": snapshot["points"],
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "ERROR",
+            "message": str(e),
+            "read_only": True
+        }), 500
+
+
+@app.route("/api/pci/live")
+def pci_live_data():
+    """
+    ANVIQO DEMO LIVE PCI STREAM
+    Uses the existing 1,064-record PCI database through the
+    simulation layer. No PLC/SCADA write or V5 reasoning changes.
+    """
+    try:
+        from pci_live_simulator import get_live_pci_snapshot
+        return jsonify(get_live_pci_snapshot())
+    except Exception as e:
+        return jsonify({
+            "status": "ERROR",
+            "mode": "SIMULATION",
+            "message": str(e),
+            "read_only": True
+        }), 500
 
 @app.route("/api/ask", methods=["POST"])
 def ask_anvi():
