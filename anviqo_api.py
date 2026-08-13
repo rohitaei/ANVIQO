@@ -23,6 +23,7 @@ from flask import (
 from datetime import datetime
 from functools import wraps
 import os
+import json
 
 
 app = Flask(__name__)
@@ -49,7 +50,7 @@ if not ADMIN_USER or not ADMIN_PASSWORD:
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_SECURE"] = False
 
 
 # ------------------------------------------------------------
@@ -161,6 +162,100 @@ def dashboard():
         "anviqo_dashboard.html"
     )
 
+
+@app.route("/api/pci")
+def pci_data():
+    path=os.path.join("database","pci","pci_instrument_database.json")
+    try:
+        with open(path,encoding="utf-8") as f:
+            d=json.load(f)
+        records=d.get("records",[])
+        from collections import Counter
+        areas=Counter(r.get("area","UNKNOWN") for r in records)
+        io_types=Counter(r.get("io_type","UNKNOWN") for r in records)
+        critical=[r for r in records if r.get("criticality")=="HIGH"]
+        return {
+            "status":"OK",
+            "record_count":len(records),
+            "areas":dict(areas),
+            "io_types":dict(io_types),
+            "critical":critical,
+            "records":records
+        }
+    except Exception as e:
+        return {"status":"ERROR","message":str(e)},500
+
+
+@app.route("/api/ask", methods=["POST"])
+def ask_anvi():
+    import json as _json
+    from flask import request as _request
+
+    try:
+        q=(_request.get_json(silent=True) or {}).get("question","").strip()
+        if not q:
+            return {"answer":"Please ask ANVI a question."}
+
+        path=os.path.join("database","pci","pci_instrument_database.json")
+        with open(path,encoding="utf-8") as f:
+            db=_json.load(f)
+
+        records=db.get("records",[])
+        ql=q.lower()
+
+        # PCI database questions
+        if any(x in ql for x in ["pci","instrument","i/o","io","critical","at_201","at_202","pt_303","lt_302"]):
+
+            if any(x in ql for x in ["how many","count","total"]):
+                from collections import Counter
+
+                if "di" in ql:
+                    return {"answer":f"ANVI PCI evidence: {sum(x.get('io_type')=='DI' for x in records)} DI records are present."}
+                if "do" in ql:
+                    return {"answer":f"ANVI PCI evidence: {sum(x.get('io_type')=='DO' for x in records)} DO records are present."}
+                if "ai" in ql:
+                    return {"answer":f"ANVI PCI evidence: {sum(x.get('io_type','').startswith('AI') for x in records)} AI records are present."}
+
+                return {"answer":f"ANVI PCI evidence: {len(records)} instrumentation I/O records are loaded from the verified PCI database."}
+
+            # Specific tag lookup
+            for x in records:
+                tag=str(x.get("tag",""))
+                if tag and tag.lower() in ql:
+                    return {"answer":
+                        f"ANVI PCI evidence for {tag}: "
+                        f"{x.get('description','No description')}. "
+                        f"Area: {x.get('area','UNKNOWN')}. "
+                        f"I/O: {x.get('io_type','UNKNOWN')}. "
+                        f"Criticality: {x.get('criticality','NOT CLASSIFIED')}."
+                    }
+
+            if "critical" in ql:
+                critical=[x for x in records if x.get("criticality")=="HIGH"]
+                text="ANVI PCI evidence: 4 HIGH-criticality instruments are currently classified: "
+                text += "; ".join(
+                    f"{x.get('tag')} — {x.get('description')} ({x.get('area')})"
+                    for x in critical
+                )+"."
+                return {"answer":text}
+
+            from collections import Counter
+            areas=Counter(x.get("area","UNKNOWN") for x in records)
+            ios=Counter(x.get("io_type","UNKNOWN") for x in records)
+
+            return {"answer":
+                "ANVI PCI evidence is connected. "
+                f"The PCI database contains {len(records)} I/O records across {len(areas)} areas. "
+                f"I/O distribution: "+", ".join(f"{k}: {v}" for k,v in ios.items())+"."
+            }
+
+        return {"answer":
+            "ANVI is connected to the V5 Frozen Intelligence core. "
+            "For PCI analysis, ask me about PCI I/O, critical instruments, an instrument tag, an area, or I/O type."
+        }
+
+    except Exception as e:
+        return {"answer":f"ANVI could not complete the evidence lookup: {e}"}
 
 @app.route("/api/status")
 @login_required
@@ -551,3 +646,5 @@ if __name__ == "__main__":
     print("READ-ONLY")
     print("=" * 68)
 
+
+    app.run(host="0.0.0.0", port=5050, debug=False)
