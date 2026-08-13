@@ -159,7 +159,7 @@ def dashboard():
 
     return send_from_directory(
         ".",
-        "anviqo_public_website_index.html"
+        "anviqo_dashboard.html"
     )
 
 
