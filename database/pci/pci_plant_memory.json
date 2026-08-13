@@ -1,0 +1,19 @@
+{
+  "records": [
+    {
+      "memory_id": 1,
+      "timestamp": "2026-08-13T19:45:46.940140+00:00",
+      "tag": "",
+      "report": "CV-101 was not working. Technician checked pneumatic air pressure and found it low. Air pressure was restored and the valve started working.",
+      "source": "TECHNICIAN / OPERATOR REPORT",
+      "verified": false,
+      "verification_status": "UNVERIFIED HUMAN REPORT",
+      "read_only": true,
+      "plc_write": false,
+      "scada_control": false,
+      "human_verification_required": true
+    }
+  ],
+  "read_only": true,
+  "human_verification_required": true
+}

@@ -49,6 +49,30 @@ def _tag_from_question(q):
 
 def _pci_answer(q):
     ql = q.lower()
+
+    # --------------------------------------------------------
+    # CONSOLIDATED CONVERSATIONAL ROUTING
+    # Explicit current intent ALWAYS beats remembered context.
+    # --------------------------------------------------------
+
+    if _anvi_explicit_pci_question(q):
+        return __import__("pci_conversation").answer(q)
+
+    if _anvi_field_report_question(q):
+        try:
+            return __import__("pci_conversation").answer(q)
+        except Exception:
+            pass
+
+    if _anvi_memory_question(q):
+        try:
+            return __import__("pci_plant_memory").search_reports(q)
+        except Exception:
+            try:
+                return __import__("pci_plant_memory").similar_reports(q)
+            except Exception:
+                pass
+
     records = _records()
 
     tag, item = _tag_from_question(q)
@@ -329,34 +353,565 @@ def _executive(q):
     )
 
 
+
+def _pci_memory_route(question):
+    """
+    ANVIQO Plant Memory conversational router.
+
+    This layer stores human field experience and retrieves
+    previous experience. It does NOT create a new reasoning
+    engine and does NOT claim automatic causation.
+    """
+
+    q = str(question or "").strip()
+    ql = q.lower()
+
+    memory_question = any(x in ql for x in [
+        "have we seen this before",
+        "seen this before",
+        "previous experience",
+        "previous report",
+        "past experience",
+        "past report",
+        "similar problem",
+        "similar issue",
+        "similar failure",
+        "history of this problem",
+        "plant memory",
+    ])
+
+    field_report = any(x in ql for x in [
+        "was not working",
+        "wasn't working",
+        "not working",
+        "was faulty",
+        "was failed",
+        "checked and found",
+        "found that",
+        "found ",
+        "inspection found",
+        "during inspection",
+        "technician checked",
+        "operator checked",
+        "air pressure was low",
+        "pneumatic pressure was low",
+        "pneumatic air pressure",
+        "valve was jammed",
+        "valve jammed",
+        "controller was faulty",
+        "controller fault",
+        "replaced ",
+        "repaired ",
+        "restored ",
+        "after repair",
+        "after replacement",
+        "issue resolved",
+        "problem resolved",
+        "failure occurred",
+    ])
+
+    if not memory_question and not field_report:
+        return None
+
+    from pci_plant_memory import (
+        save_report,
+        search_reports,
+        similar_reports,
+    )
+
+    # --------------------------------------------------------
+    # Find exact PCI tag from the 1064-record registry
+    # --------------------------------------------------------
+
+    tag = None
+
+    try:
+        from pci_registry import search
+
+        registry = search(
+            query=None,
+            limit=1064
+        )
+
+        qu = q.upper()
+
+        for item in registry:
+            candidate = str(
+                item.get("tag", "")
+            ).strip()
+
+            if candidate and candidate.upper() in qu:
+                tag = candidate
+                break
+
+    except Exception:
+        pass
+
+    # --------------------------------------------------------
+    # RETRIEVE PREVIOUS EXPERIENCE
+    # --------------------------------------------------------
+
+    if memory_question:
+
+        results = similar_reports(
+            q,
+            tag=tag
+        )
+
+        if not results and tag:
+            results = search_reports(
+                tag=tag
+            )
+
+        if not results:
+            return {
+                "answer": (
+                    "I could not find a previous human field report "
+                    "matching this request. I will not invent plant "
+                    "history."
+                ),
+                "domain": "pci_plant_memory",
+                "evidence": "plant memory",
+                "count": 0,
+                "tag": tag,
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "human_verification_required": True,
+            }
+
+        return {
+            "answer": (
+                f"I found {len(results)} previous human field "
+                "report(s)"
+                + (f" associated with {tag}." if tag else ".")
+                + " These are technician/operator experience "
+                  "records. They are not automatically treated "
+                  "as proven causation."
+            ),
+            "domain": "pci_plant_memory",
+            "evidence": "plant memory",
+            "count": len(results),
+            "tag": tag,
+            "reports": results,
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "human_verification_required": True,
+        }
+
+    # --------------------------------------------------------
+    # SAVE NEW HUMAN EXPERIENCE
+    # --------------------------------------------------------
+
+    entry = save_report(
+        q,
+        tag=tag,
+        source="TECHNICIAN / OPERATOR REPORT"
+    )
+
+    previous = similar_reports(
+        q,
+        tag=tag
+    )
+
+    # Current report will normally appear in the similarity
+    # results. Exclude its own memory_id when counting previous.
+    previous = [
+        x for x in previous
+        if x.get("memory_id") != entry.get("memory_id")
+    ]
+
+    if previous:
+        answer = (
+            "I have saved this as a human field report."
+            + (f" It is associated with {tag}." if tag else "")
+            + f" I also found {len(previous)} previous related "
+              "experience record(s). The reported cause remains "
+              "unverified until a human confirms it."
+        )
+    else:
+        answer = (
+            "I have saved this as a human field report."
+            + (f" It is associated with {tag}." if tag else "")
+            + " The report is currently marked UNVERIFIED HUMAN "
+              "REPORT. ANVI will not treat the reported cause as "
+              "proven until a human verifies it."
+        )
+
+    return {
+        "answer": answer,
+        "domain": "pci_plant_memory",
+        "evidence": "human field report",
+        "memory_id": entry["memory_id"],
+        "tag": tag,
+        "previous_related_reports": len(previous),
+        "verification_status": "UNVERIFIED HUMAN REPORT",
+        "read_only": True,
+        "plc_write": False,
+        "scada_control": False,
+        "human_verification_required": True,
+    }
+
+
+
+
+# ============================================================
+# ANVIQO CONVERSATIONAL CONTEXT ENGINE
+# ============================================================
+
+_ANVI_CONVERSATION_CONTEXT = {
+    "last_pci_record": None,
+    "last_pci_results": [],
+}
+
+
+def _pci_context_record(question):
+    """
+    Resolve a PCI instrument from:
+      1. explicit tag in the current question
+      2. current conversational context
+      3. verified PCI semantic search
+
+    PCI evidence remains the source of identity.
+    """
+    try:
+        import pci_conversation as pc
+
+        q = str(question or "").strip()
+
+        # Explicit tag / exact PCI lookup first.
+        try:
+            record = pc.find_tag(q)
+            if record:
+                return record
+        except Exception:
+            pass
+
+        # Search for engineering identifiers such as
+        # LP_1_Healthy / MCV_201_Healthy / PT_303.
+        ids = re.findall(
+            r"\b[A-Za-z]{1,16}[-_][A-Za-z0-9_]+\b",
+            q.upper()
+        )
+
+        for ident in ids:
+            try:
+                record = pc.find_tag(ident)
+                if record:
+                    return record
+            except Exception:
+                pass
+
+        # Follow-up question: use previous PCI context.
+        previous = _ANVI_CONVERSATION_CONTEXT.get(
+            "last_pci_record"
+        )
+
+        if previous:
+            return previous
+
+        return None
+
+    except Exception:
+        return None
+
+
+def _is_memory_question(q):
+    ql = str(q or "").lower()
+
+    return any(x in ql for x in [
+        "have we seen this before",
+        "seen this before",
+        "seen this pattern before",
+        "previous experience",
+        "past experience",
+        "previous report",
+        "past report",
+        "previous problem",
+        "past problem",
+        "last time",
+        "earlier experience",
+        "what happened before",
+        "any previous",
+    ])
+
+
+def _is_pci_question(q):
+    ql = str(q or "").lower()
+
+    return any(x in ql for x in [
+        "pci",
+        "instrument",
+        "i/o",
+        " io ",
+        "plc address",
+        "plc tag",
+        "instrument tag",
+        "pressure transmitter",
+        "pressure transmitters",
+        "temperature transmitter",
+        "level transmitter",
+        "flow meter",
+        "control valve",
+        "terminal",
+        "termination",
+        "panel",
+        "jb",
+        "junction box",
+        "tb",
+        "valve",
+        "transmitter",
+    ])
+
+
+def _pci_followup_question(q):
+    """
+    Questions that naturally refer to the instrument currently
+    being discussed.
+    """
+    ql = str(q or "").lower()
+
+    return any(x in ql for x in [
+        "what is the plc address",
+        "what's the plc address",
+        "plc address",
+        "where is it",
+        "which area is it",
+        "what area is it",
+        "which area",
+        "what panel",
+        "which panel",
+        "what tb",
+        "which tb",
+        "terminal",
+        "termination",
+        "is it healthy",
+        "is it working",
+        "what is its status",
+        "what is the status",
+        "what changed",
+        "why are you concerned",
+        "why are you concerned about this instrument",
+        "what should i check",
+        "what should we check",
+        "what could be wrong",
+        "what is wrong",
+        "tell me more",
+        "explain this instrument",
+    ])
+
+
+def _remember_pci_context(record=None, results=None):
+    if record:
+        _ANVI_CONVERSATION_CONTEXT["last_pci_record"] = record
+
+    if results is not None:
+        _ANVI_CONVERSATION_CONTEXT["last_pci_results"] = list(results)
+
+
+def _pci_context_answer(question, record):
+    """
+    Use the existing PCI conversation capability for the actual
+    evidence response. This function only supplies conversational
+    context; it does not duplicate PCI reasoning.
+    """
+    import pci_conversation as pc
+
+    q = str(question or "").strip()
+
+    # For a context-only follow-up, append the known tag so the
+    # existing PCI evidence layer can answer against the correct record.
+    tag = str(record.get("tag", "")).strip()
+
+    if tag and not re.search(
+        r"\b[A-Za-z]{1,16}[-_][A-Za-z0-9_]+\b",
+        q
+    ):
+        q = f"{q} [{tag}]"
+
+    result = pc.answer(q)
+
+    _remember_pci_context(record=record)
+
+    if isinstance(result, dict):
+        result["context_tag"] = tag
+        result["conversation_context"] = True
+
+    return result
+
+
+
+def _anvi_explicit_pci_question(question):
+    ql=str(question or "").lower()
+
+    phrases=[
+        "pressure transmitter",
+        "pressure transmitters",
+        "temperature transmitter",
+        "level transmitter",
+        "flow meter",
+        "flow meters",
+        "control valve",
+        "critical i/o",
+        "critical io",
+        "critical instruments",
+        "which instruments",
+        "which i/o",
+        "which io",
+        "show all",
+        "list all",
+        "vrm / mill",
+        "vrm/mill",
+        "vrm mill",
+        "pci",
+        "instrument tag",
+        "plc tag",
+    ]
+
+    return any(x in ql for x in phrases)
+
+
+def _anvi_field_report_question(question):
+    ql=str(question or "").lower()
+
+    markers=[
+        "was not working",
+        "not working",
+        "was faulty",
+        "checked",
+        "found",
+        "restored",
+        "repaired",
+        "replaced",
+        "started working",
+        "working again",
+        "pneumatic air",
+        "air pressure",
+        "valve jam",
+        "valve jammed",
+        "controller fault",
+        "controller was fault",
+        "technician",
+        "operator report",
+        "field report",
+    ]
+
+    return any(x in ql for x in markers)
+
+
+def _anvi_memory_question(question):
+    ql=str(question or "").lower()
+
+    markers=[
+        "have we seen this before",
+        "seen this before",
+        "previous experience",
+        "previous report",
+        "past experience",
+        "similar report",
+        "similar reports",
+        "last time",
+        "previously",
+        "earlier report",
+        "plant memory",
+    ]
+
+    return any(x in ql for x in markers)
+
+
 def ask_anvi(question):
     q = (question or "").strip()
 
     if not q:
         return {
             "answer": "Please ask ANVI a question.",
-            "domain": "general"
+            "domain": "general",
+            "read_only": True,
         }
 
     ql = q.lower()
 
     try:
-        # PCI / instrumentation evidence
-        if any(x in ql for x in [
-            "pci", "instrument", "i/o", " io ",
-            "critical instrument", "plc tag",
-            "instrument tag", "transmitter", "control valve",
-            "flow meter", "pressure transmitter",
-            "temperature transmitter", "level transmitter"
-        ]):
+        # ----------------------------------------------------
+        # 1. PLANT MEMORY HAS PRIORITY FOR EXPERIENCE QUESTIONS
+        # ----------------------------------------------------
+        if _is_memory_question(q):
+
+            try:
+                result = _pci_memory_route(q)
+
+                if result:
+                    return result
+
+            except Exception:
+                pass
+
             return {
-                "answer": _pci_answer(q),
-                "domain": "pci_instrumentation",
-                "evidence": "PCI database",
-                "read_only": True
+                "answer": (
+                    "I can search ANVIQO Plant Memory for previous "
+                    "human field experience, but I could not complete "
+                    "that search."
+                ),
+                "domain": "pci_plant_memory",
+                "read_only": True,
             }
 
-        # Equipment
+        # ----------------------------------------------------
+        # 2. RESOLVE PCI CONTEXT BEFORE GENERAL DOMAIN ROUTING
+        # ----------------------------------------------------
+        pci_record = _pci_context_record(q)
+
+        # Explicit or contextual PCI instrument.
+        if pci_record:
+            _remember_pci_context(record=pci_record)
+
+            return _pci_context_answer(
+                q,
+                pci_record
+            )
+
+        # ----------------------------------------------------
+        # 3. PCI SEMANTIC QUESTIONS WITHOUT A SPECIFIC TAG
+        # ----------------------------------------------------
+        if _is_pci_question(q):
+
+            import pci_conversation as pc
+
+            result = pc.answer(q)
+
+            if isinstance(result, dict):
+
+                record = result.get("record")
+
+                if isinstance(record, dict):
+                    _remember_pci_context(record=record)
+
+                records = result.get("records")
+
+                if isinstance(records, list):
+                    _remember_pci_context(results=records)
+
+            return result
+
+        # ----------------------------------------------------
+        # 4. FOLLOW-UP WITHOUT A RESOLVED TAG
+        # ----------------------------------------------------
+        if _pci_followup_question(q):
+
+            previous = _ANVI_CONVERSATION_CONTEXT.get(
+                "last_pci_record"
+            )
+
+            if previous:
+                return _pci_context_answer(
+                    q,
+                    previous
+                )
+
+        # ----------------------------------------------------
+        # 5. EQUIPMENT — EXISTING V5 PATH
+        # ----------------------------------------------------
         if re.search(
             r"\b(CV|PT|FT|TT|LT|LIC|PIC|FIC|TIC|AT|P|FV|XV)[-_]?\d+\b",
             q.upper()
@@ -364,57 +919,85 @@ def ask_anvi(question):
             return {
                 "answer": _equipment(q),
                 "domain": "equipment",
-                "read_only": True
+                "read_only": True,
             }
 
-        # Maintenance
+        # ----------------------------------------------------
+        # 6. MAINTENANCE — EXISTING V5 PATH
+        # ----------------------------------------------------
         if any(x in ql for x in [
-            "maintenance", "repair", "recommendation",
-            "recommended action", "what should i check",
-            "what should we check", "fix", "inspection"
+            "maintenance",
+            "repair",
+            "recommendation",
+            "recommended action",
+            "what should i check",
+            "what should we check",
+            "fix",
+            "inspection",
         ]):
             return {
                 "answer": _maintenance(q),
                 "domain": "maintenance",
                 "read_only": True,
-                "human_decision_required": True
+                "human_decision_required": True,
             }
 
-        # Management / HOD
+        # ----------------------------------------------------
+        # 7. MANAGEMENT / EXECUTIVE — EXISTING V5 PATH
+        # ----------------------------------------------------
         if any(x in ql for x in [
-            "management", "hod", "executive",
-            "decision", "priority", "management report"
+            "management",
+            "hod",
+            "executive",
+            "decision",
+            "priority",
+            "management report",
         ]):
             return {
                 "answer": _executive(q),
                 "domain": "executive",
                 "read_only": True,
-                "human_decision_required": True
+                "human_decision_required": True,
             }
 
-        # Plant / event / health / situation
+        # ----------------------------------------------------
+        # 8. PLANT / EVENT / HEALTH — EXISTING V5 PATH
+        # ----------------------------------------------------
         if any(x in ql for x in [
-            "plant", "health", "changed", "event",
-            "events", "event chain", "situation",
-            "condition", "status", "risk"
+            "plant",
+            "health",
+            "changed",
+            "event",
+            "events",
+            "event chain",
+            "situation",
+            "condition",
+            "status",
+            "risk",
         ]):
             return {
                 "answer": _plant(q),
                 "domain": "plant",
                 "read_only": True,
-                "human_decision_required": True
+                "human_decision_required": True,
             }
 
+        # ----------------------------------------------------
+        # 9. NATURAL GENERAL RESPONSE
+        # ----------------------------------------------------
         return {
             "answer": (
-                "ANVI is connected to the ANVIQO intelligence core. "
-                "Ask me naturally about instruments, equipment, plant "
-                "condition, risks, events, maintenance, recommendations, "
-                "management decisions or verified evidence."
+                "I am ANVI, the conversational intelligence layer "
+                "of ANVIQO. You can ask me naturally about plant "
+                "instruments, equipment, PLC information, areas, "
+                "events, plant health, maintenance, previous field "
+                "experience, risks, or what changed."
             ),
             "domain": "general",
             "capabilities": [
-                "Instrumentation / PCI",
+                "PCI / Instrument Intelligence",
+                "Conversational Context",
+                "Plant Memory",
                 "Equipment Intelligence",
                 "Plant Health",
                 "What Changed",
@@ -422,9 +1005,9 @@ def ask_anvi(question):
                 "Maintenance Intelligence",
                 "Management Intelligence",
                 "Executive Intelligence",
-                "Plant Brain"
+                "Plant Brain",
             ],
-            "read_only": True
+            "read_only": True,
         }
 
     except Exception as e:
@@ -434,5 +1017,5 @@ def ask_anvi(question):
                 f"Evidence-layer error: {e}"
             ),
             "domain": "error",
-            "read_only": True
+            "read_only": True,
         }
