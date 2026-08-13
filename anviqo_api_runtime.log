@@ -1,0 +1,11 @@
+nohup: ignoring input
+====================================================================
+ANVIQO PRODUCT API
+V1.2 SECURED
+V5 FROZEN CORE
+READ-ONLY
+====================================================================
+ * Serving Flask app 'anviqo_api'
+ * Debug mode: off
+Address already in use
+Port 5050 is in use by another program. Either identify and stop that program, or start the server with a different port.

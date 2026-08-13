@@ -1,0 +1,68 @@
+nohup: ignoring input
+====================================================================
+ANVIQO PRODUCT API
+V1.2 SECURED
+V5 FROZEN CORE
+READ-ONLY
+====================================================================
+ * Serving Flask app 'anviqo_api'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5050
+ * Running on http://10.95.130.21:5050
+[33mPress CTRL+C to quit[0m
+10.95.130.21 - - [13/Aug/2026 06:31:50] code 400, message Bad request version ('Ôà\x01NØñKÕ«¸')
+10.95.130.21 - - [13/Aug/2026 06:31:50] "[31m[1m\x16\x03\x01\x07\x06\x01\x00\x07\x02\x03\x03F,\x16YEm\\[S\x98í"îª5\x1b\x92Î5\x0c6ßùÀü]Ói+·$\x8d Ôà\x01NØñKÕ«¸[0m" 400 -
+10.95.130.21 - - [13/Aug/2026 06:31:50] code 400, message Bad HTTP/0.9 request type ("\x16\x03\x01\x06æ\x01\x00\x06â\x03\x03AÄdz\x91Õì\x9bÍttÏÄuâ(BP\x01oÝ\x90B'TWûüÄ\x9bé,")
+10.95.130.21 - - [13/Aug/2026 06:31:50] "[31m[1m\x16\x03\x01\x06æ\x01\x00\x06â\x03\x03AÄdz\x91Õì\x9bÍttÏÄuâ(BP\x01oÝ\x90B'TWûüÄ\x9bé, \x98_C*Bs-\x82\x17#Í\x8dýÈhÜkÚÚý*\x97§Î\x86qßÓ`p½t\x00 [0m" 400 -
+10.95.130.21 - - [13/Aug/2026 06:31:52] "[32mGET / HTTP/1.1[0m" 302 -
+10.95.130.21 - - [13/Aug/2026 06:31:52] "GET /login HTTP/1.1" 200 -
+10.95.130.21 - - [13/Aug/2026 06:31:52] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+10.95.130.21 - - [13/Aug/2026 06:32:40] "[32mPOST /login HTTP/1.1[0m" 302 -
+10.95.130.21 - - [13/Aug/2026 06:32:40] "GET / HTTP/1.1" 200 -
+10.95.130.21 - - [13/Aug/2026 06:32:41] "GET /api/status HTTP/1.1" 200 -
+10.95.130.21 - - [13/Aug/2026 06:32:41] "GET /api/pci HTTP/1.1" 200 -
+10.95.130.21 - - [13/Aug/2026 06:32:56] "GET /api/status HTTP/1.1" 200 -
+10.95.130.21 - - [13/Aug/2026 06:33:11] "GET /api/status HTTP/1.1" 200 -
+10.95.130.21 - - [13/Aug/2026 06:33:26] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:33:27] "[31m[1mGET /api/status HTTP/1.1[0m" 401 -
+127.0.0.1 - - [13/Aug/2026 06:33:27] "GET /api/pci HTTP/1.1" 200 -
+10.95.130.21 - - [13/Aug/2026 06:33:41] "GET /api/status HTTP/1.1" 200 -
+10.95.130.21 - - [13/Aug/2026 06:33:56] "GET /api/status HTTP/1.1" 200 -
+10.95.130.21 - - [13/Aug/2026 06:34:11] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:36:22] "GET /api/pci HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:36:57] "GET /api/pci HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:37:38] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:38:08] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:38:08] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+127.0.0.1 - - [13/Aug/2026 06:39:14] "[32mPOST /login HTTP/1.1[0m" 302 -
+127.0.0.1 - - [13/Aug/2026 06:39:14] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:39:14] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:39:14] "GET /api/pci HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:39:29] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:39:37] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:39:44] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:39:59] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:40:00] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:40:02] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:40:14] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:40:23] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:40:24] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:40:29] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:40:45] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:41:00] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:41:15] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:41:30] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:44:25] "GET /api/pci HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:44:25] "[31m[1mGET /api/status HTTP/1.1[0m" 401 -
+127.0.0.1 - - [13/Aug/2026 06:45:55] "[31m[1mGET /api/status HTTP/1.1[0m" 401 -
+127.0.0.1 - - [13/Aug/2026 06:45:55] "GET /api/pci HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:45:55] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:45:55] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:45:55] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:45:55] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:45:55] "[31m[1mGET /api/safety HTTP/1.1[0m" 401 -
+127.0.0.1 - - [13/Aug/2026 06:48:00] "GET /api/pci HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:48:00] "POST /api/ask HTTP/1.1" 200 -
+127.0.0.1 - - [13/Aug/2026 06:53:06] "POST /api/ask HTTP/1.1" 200 -

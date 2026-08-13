@@ -1,0 +1,22 @@
+nohup: ignoring input
+====================================================================
+        ANVIQO PRODUCT WEB SERVER
+====================================================================
+
+Version : ANVIQO PRODUCT V1.0
+Core    : V5 FROZEN
+Mode    : READ-ONLY
+
+Dashboard:
+http://127.0.0.1:5000
+
+API:
+http://127.0.0.1:5000/api/status
+
+Health:
+http://127.0.0.1:5000/health
+====================================================================
+ * Serving Flask app 'anviqo_web'
+ * Debug mode: off
+Address already in use
+Port 5000 is in use by another program. Either identify and stop that program, or start the server with a different port.
