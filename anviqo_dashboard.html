@@ -284,4 +284,244 @@ function startLivePCI(){
 
 document.addEventListener('DOMContentLoaded',()=>{startLivePCI();loadPCI();const s=document.getElementById('pciSearch');if(s)s.addEventListener('input',e=>renderPCI(e.target.value));});
 </script>
+
+<!-- ANVIQO VOICE INTERFACE -->
+<style>
+#anviVoicePanel{
+    position:fixed;
+    right:18px;
+    bottom:18px;
+    z-index:99999;
+    background:rgba(15,23,42,.97);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:16px;
+    padding:14px;
+    width:310px;
+    box-shadow:0 12px 40px rgba(0,0,0,.35);
+    font-family:Arial,sans-serif;
+}
+#anviVoicePanel .av-title{
+    font-weight:700;
+    font-size:16px;
+    margin-bottom:8px;
+}
+#anviVoiceButton{
+    width:100%;
+    border:0;
+    border-radius:12px;
+    padding:12px;
+    cursor:pointer;
+    font-weight:700;
+    font-size:15px;
+}
+#anviVoiceButton.listening{
+    outline:3px solid rgba(239,68,68,.35);
+}
+#anviVoiceStatus{
+    margin-top:8px;
+    font-size:12px;
+    opacity:.9;
+}
+#anviVoiceTranscript{
+    margin-top:8px;
+    padding:8px;
+    min-height:35px;
+    background:rgba(255,255,255,.08);
+    border-radius:8px;
+    font-size:12px;
+    line-height:1.4;
+}
+#anviVoiceResponse{
+    margin-top:8px;
+    padding:8px;
+    background:rgba(255,255,255,.06);
+    border-radius:8px;
+    font-size:12px;
+    line-height:1.4;
+    max-height:120px;
+    overflow:auto;
+}
+@media(max-width:600px){
+    #anviVoicePanel{
+        right:10px;
+        left:10px;
+        bottom:10px;
+        width:auto;
+    }
+}
+</style>
+
+<div id="anviVoicePanel">
+    <div class="av-title">🎙 ANVI Voice</div>
+    <button id="anviVoiceButton" type="button">🎤 Speak to ANVI</button>
+    <div id="anviVoiceStatus">Ready — same ANVI intelligence and command layer.</div>
+    <div id="anviVoiceTranscript">Transcript will appear here.</div>
+    <div id="anviVoiceResponse">ANVI response will appear here.</div>
+</div>
+
+<script>
+(function(){
+    const button = document.getElementById("anviVoiceButton");
+    const status = document.getElementById("anviVoiceStatus");
+    const transcript = document.getElementById("anviVoiceTranscript");
+    const responseBox = document.getElementById("anviVoiceResponse");
+
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+    let recognition = null;
+    let listening = false;
+    let transcriptHistory = [];
+
+    function speak(text){
+        if (!("speechSynthesis" in window)) return;
+        try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "en-IN";
+            utterance.rate = 0.95;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        } catch(e) {}
+    }
+
+    function saveTranscript(question, answer){
+        transcriptHistory.push({
+            timestamp: new Date().toISOString(),
+            technician: question,
+            anvi: answer
+        });
+
+        try {
+            localStorage.setItem(
+                "anviqo_voice_transcript",
+                JSON.stringify(transcriptHistory)
+            );
+        } catch(e) {}
+    }
+
+    async function askANVI(question){
+        status.textContent = "ANVI is processing...";
+        responseBox.textContent = "Processing...";
+
+        try {
+            const r = await fetch("/api/ask", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({question: question})
+            });
+
+            const data = await r.json();
+
+            const answer =
+                data.answer ||
+                data.response ||
+                data.message ||
+                "ANVI returned no response.";
+
+            responseBox.textContent = answer;
+            saveTranscript(question, answer);
+            speak(answer);
+
+            status.textContent =
+                data.control_request
+                ? "Command request created — human approval required."
+                : "ANVI response ready.";
+
+            return data;
+
+        } catch(e) {
+            const msg = "Voice request failed: " + e.message;
+            responseBox.textContent = msg;
+            status.textContent = msg;
+        }
+    }
+
+    if (!SpeechRecognition){
+        button.disabled = true;
+        button.textContent = "🎤 Voice unavailable";
+        status.textContent =
+            "This browser does not expose Speech Recognition. Use Chrome/Edge with microphone permission.";
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = function(){
+        listening = true;
+        button.classList.add("listening");
+        button.textContent = "🔴 Listening...";
+        status.textContent = "Listening. Speak naturally to ANVI.";
+    };
+
+    recognition.onresult = function(event){
+        let finalText = "";
+        let interimText = "";
+
+        for(let i=event.resultIndex; i<event.results.length; i++){
+            const t = event.results[i][0].transcript;
+
+            if(event.results[i].isFinal)
+                finalText += t;
+            else
+                interimText += t;
+        }
+
+        transcript.textContent =
+            finalText || interimText || "Listening...";
+
+        if(finalText.trim()){
+            askANVI(finalText.trim());
+        }
+    };
+
+    recognition.onerror = function(event){
+        status.textContent = "Voice error: " + event.error;
+    };
+
+    recognition.onend = function(){
+        listening = false;
+        button.classList.remove("listening");
+        button.textContent = "🎤 Speak to ANVI";
+
+        if(!status.textContent.startsWith("ANVI") &&
+           !status.textContent.startsWith("Voice error")){
+            status.textContent = "Ready.";
+        }
+    };
+
+    button.addEventListener("click", function(){
+        if(listening){
+            recognition.stop();
+            return;
+        }
+
+        transcript.textContent = "Listening...";
+        responseBox.textContent = "Waiting for your command...";
+
+        try {
+            recognition.start();
+        } catch(e) {
+            status.textContent = "Voice start error: " + e.message;
+        }
+    });
+
+    window.ANVIQOVoice = {
+        ask: askANVI,
+        speak: speak,
+        getTranscript: function(){
+            return transcriptHistory.slice();
+        }
+    };
+})();
+</script>
+<!-- END ANVIQO VOICE INTERFACE -->
+
 </body></html>
