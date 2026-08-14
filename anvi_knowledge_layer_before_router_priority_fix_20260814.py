@@ -563,29 +563,24 @@ def _pci_memory_route(question):
 _ANVI_CONVERSATION_CONTEXT = {
     "last_pci_record": None,
     "last_pci_results": [],
-    "last_equipment_tag": None,
-    "last_domain": None,
 }
 
 
 def _pci_context_record(question):
     """
-    Resolve PCI context in strict conversational order:
+    Resolve a PCI instrument from:
+      1. explicit tag in the current question
+      2. current conversational context
+      3. verified PCI semantic search
 
-    1. Explicit instrument/tag in current question
-    2. Existing conversational PCI record
-    3. Verified PCI semantic lookup
-
-    Never silently choose an unrelated instrument.
+    PCI evidence remains the source of identity.
     """
     try:
         import pci_conversation as pc
 
         q = str(question or "").strip()
 
-        # ----------------------------------------------------
-        # 1. Explicit tag / exact PCI lookup
-        # ----------------------------------------------------
+        # Explicit tag / exact PCI lookup first.
         try:
             record = pc.find_tag(q)
             if record:
@@ -593,8 +588,10 @@ def _pci_context_record(question):
         except Exception:
             pass
 
+        # Search for engineering identifiers such as
+        # LP_1_Healthy / MCV_201_Healthy / PT_303.
         ids = re.findall(
-            r"\\b[A-Za-z]{1,16}[-_][A-Za-z0-9_]+\\b",
+            r"\b[A-Za-z]{1,16}[-_][A-Za-z0-9_]+\b",
             q.upper()
         )
 
@@ -606,30 +603,18 @@ def _pci_context_record(question):
             except Exception:
                 pass
 
-        # ----------------------------------------------------
-        # 2. Conversational context
-        # ----------------------------------------------------
-        previous = _ANVI_CONVERSATION_CONTEXT.get("last_pci_record")
+        # Follow-up question: use previous PCI context.
+        previous = _ANVI_CONVERSATION_CONTEXT.get(
+            "last_pci_record"
+        )
 
-        if isinstance(previous, dict) and previous.get("tag"):
+        if previous:
             return previous
 
         return None
 
     except Exception:
         return None
-
-
-def _remember_pci_context(record=None, results=None):
-    if isinstance(record, dict):
-        _ANVI_CONVERSATION_CONTEXT["last_pci_record"] = record
-        _ANVI_CONVERSATION_CONTEXT["last_equipment_tag"] = (
-            record.get("tag")
-        )
-        _ANVI_CONVERSATION_CONTEXT["last_domain"] = "pci"
-
-    if results is not None:
-        _ANVI_CONVERSATION_CONTEXT["last_pci_results"] = list(results)
 
 
 def _is_memory_question(q):
@@ -682,14 +667,15 @@ def _is_pci_question(q):
 
 def _pci_followup_question(q):
     """
-    Questions that refer to the instrument currently being discussed.
-    These may contain no instrument tag at all.
+    Questions that naturally refer to the instrument currently
+    being discussed.
     """
     ql = str(q or "").lower()
 
     return any(x in ql for x in [
         "what is the plc address",
         "what's the plc address",
+        "plc address",
         "where is it",
         "which area is it",
         "what area is it",
@@ -698,24 +684,21 @@ def _pci_followup_question(q):
         "which panel",
         "what tb",
         "which tb",
-        "which terminal",
         "terminal",
         "termination",
         "is it healthy",
         "is it working",
         "what is its status",
         "what is the status",
-        "why is it critical",
-        "why is it warning",
         "what changed",
+        "why are you concerned",
+        "why are you concerned about this instrument",
         "what should i check",
         "what should we check",
         "what could be wrong",
         "what is wrong",
         "tell me more",
         "explain this instrument",
-        "this transmitter",
-        "this instrument",
     ])
 
 
@@ -1099,223 +1082,7 @@ def _anvi_troubleshooting_question(question):
     return any(x in ql for x in markers)
 
 
-
-
-def _anvi_establish_explicit_pci_context(question):
-    """
-    Establish conversational PCI context from an explicit instrument tag.
-
-    This is deterministic evidence retrieval only.
-    """
-    try:
-        import pci_conversation as pc
-
-        q = str(question or "").strip()
-
-        # First allow the existing PCI resolver to recognize the
-        # complete question, e.g. "Tell me about PT_303".
-        try:
-            record = pc.find_tag(q)
-            if isinstance(record, dict) and record.get("tag"):
-                _remember_pci_context(record=record)
-                return record
-        except Exception:
-            pass
-
-        # Then extract explicit instrument-like identifiers.
-        ids = re.findall(
-            r"\b[A-Za-z]{1,16}[-_]?\d+\b",
-            q.upper()
-        )
-
-        for ident in ids:
-            try:
-                record = pc.find_tag(ident)
-                if isinstance(record, dict) and record.get("tag"):
-                    _remember_pci_context(record=record)
-                    return record
-            except Exception:
-                pass
-
-    except Exception:
-        pass
-
-    return None
-
-
-def _anvi_direct_pci_followup(question):
-    """
-    Resolve simple conversational follow-ups against the last
-    verified PCI instrument.
-
-    This is deterministic evidence retrieval, not a second
-    reasoning engine.
-    """
-    record = _ANVI_CONVERSATION_CONTEXT.get("last_pci_record")
-
-    if not isinstance(record, dict):
-        return None
-
-    ql = str(question or "").lower().strip()
-
-    tag = (
-        record.get("tag")
-        or record.get("instrument_tag")
-        or record.get("name")
-        or ""
-    )
-
-    if not tag:
-        return None
-
-    description = (
-        record.get("description")
-        or record.get("instrument")
-        or record.get("title")
-        or ""
-    )
-
-    area = (
-        record.get("area")
-        or record.get("location")
-        or ""
-    )
-
-    plc = (
-        record.get("plc_address")
-        or record.get("plc")
-        or record.get("address")
-        or ""
-    )
-
-    panel = record.get("panel") or ""
-
-    tb = (
-        record.get("tb")
-        or record.get("terminal_block")
-        or ""
-    )
-
-    terminals = (
-        record.get("terminal")
-        or record.get("terminals")
-        or record.get("terminal_reference")
-        or ""
-    )
-
-    # PLC address
-    if any(x in ql for x in [
-        "what is the plc address",
-        "what's the plc address",
-        "plc address",
-        "which plc address",
-        "plc tag",
-    ]):
-        if plc:
-            return {
-                "answer": f"The PLC address for {tag} is {plc}.",
-                "domain": "pci",
-                "context_tag": tag,
-                "conversation_context": True,
-                "read_only": True,
-            }
-
-    # Location / area
-    if any(x in ql for x in [
-        "where is it",
-        "where is this",
-        "which area is it",
-        "what area is it",
-        "which area",
-        "what area",
-    ]):
-        if area:
-            return {
-                "answer": (
-                    f"{tag} is in {area}."
-                    + (
-                        f" It is described as {description}."
-                        if description else ""
-                    )
-                ),
-                "domain": "pci",
-                "context_tag": tag,
-                "conversation_context": True,
-                "read_only": True,
-            }
-
-    # Panel
-    if any(x in ql for x in [
-        "which panel",
-        "what panel",
-        "panel is it connected to",
-        "which panel is it connected to",
-    ]):
-        if panel:
-            return {
-                "answer": f"{tag} is mapped to panel {panel}.",
-                "domain": "pci",
-                "context_tag": tag,
-                "conversation_context": True,
-                "read_only": True,
-            }
-
-    # What does it measure?
-    if any(x in ql for x in [
-        "what does it measure",
-        "what is it measuring",
-        "what does this measure",
-        "what is this measuring",
-    ]):
-        if description:
-            return {
-                "answer": (
-                    f"The verified PCI description for {tag} is "
-                    f"'{description}'."
-                ),
-                "domain": "pci",
-                "context_tag": tag,
-                "conversation_context": True,
-                "read_only": True,
-            }
-
-    # TB / terminal block
-    if any(x in ql for x in [
-        "which tb",
-        "what tb",
-        "terminal block",
-        "which terminal",
-        "what terminal",
-        "termination",
-    ]):
-        if tb or terminals:
-            answer = f"{tag} is associated with"
-            if tb:
-                answer += f" TB {tb}"
-            if terminals:
-                answer += f" and terminal reference {terminals}"
-            answer += "."
-
-            return {
-                "answer": answer,
-                "domain": "pci",
-                "context_tag": tag,
-                "conversation_context": True,
-                "read_only": True,
-            }
-
-    return None
-
-
 def ask_anvi(question):
-    """
-    ANVI conversational intelligence router.
-
-    Existing evidence/V5 systems remain authoritative.
-    Conversation context is used to resolve follow-up questions.
-    No PLC or SCADA write is performed here.
-    """
-
     q = (question or "").strip()
 
     if not q:
@@ -1328,34 +1095,96 @@ def ask_anvi(question):
     ql = q.lower()
 
     try:
-        # ============================================================
-        # 0. EXPLICIT PCI TAG -> ESTABLISH CONTEXT FIRST
-        # ============================================================
+        # ----------------------------------------------------
+        # 0. TROUBLESHOOTING INTENT
+        # ----------------------------------------------------
         #
-        # This MUST happen before direct follow-up routing.
-        # Example:
-        #   Tell me about PT_303
-        # establishes PT_303 as the active PCI context.
+        # Troubleshooting questions must not be swallowed by the
+        # generic PCI record route.
         #
-        explicit_pci_record = _anvi_establish_explicit_pci_context(q)
+        # Resolve the current instrument from the existing
+        # conversational PCI context, then send the question
+        # through the existing Maintenance/V5 intelligence.
+        #
+        # No new diagnostic/reasoning engine is created here.
+        # ----------------------------------------------------
+        if _anvi_troubleshooting_question(q):
 
-        # ============================================================
-        # DIRECT PCI FOLLOW-UP FROM VERIFIED CONVERSATION CONTEXT
-        # ============================================================
-        direct_pci = _anvi_direct_pci_followup(q)
+            troubleshooting_question = q
+            pci_record_for_troubleshooting = _pci_context_record(q)
 
-        if direct_pci:
-            return direct_pci
+            if pci_record_for_troubleshooting:
+                _remember_pci_context(
+                    record=pci_record_for_troubleshooting
+                )
 
+                tag = str(
+                    pci_record_for_troubleshooting.get("tag", "")
+                ).strip()
 
-        # ============================================================
-        # 1. PLANT MEMORY — HIGHEST PRIORITY FOR EXPERIENCE QUESTIONS
-        # ============================================================
+                if tag and tag.upper() not in q.upper():
+                    troubleshooting_question = (
+                        f"{q} [{tag}]"
+                    )
+
+            raw_maintenance_result = _maintenance(
+                troubleshooting_question
+            )
+
+            formatted = _anvi_conversational_maintenance_answer(
+                q,
+                {
+                    "answer": raw_maintenance_result,
+                },
+                pci_record_for_troubleshooting,
+            )
+
+            evidence = None
+
+            if pci_record_for_troubleshooting:
+                evidence = {
+                    "tag": pci_record_for_troubleshooting.get("tag"),
+                    "description": pci_record_for_troubleshooting.get(
+                        "description"
+                    ),
+                    "area": pci_record_for_troubleshooting.get(
+                        "area"
+                    ),
+                    "io_type": pci_record_for_troubleshooting.get(
+                        "io_type"
+                    ),
+                    "plc_address": pci_record_for_troubleshooting.get(
+                        "plc_address"
+                    ),
+                    "panel": pci_record_for_troubleshooting.get(
+                        "panel"
+                    ),
+                    "tb_name": pci_record_for_troubleshooting.get(
+                        "tb_name"
+                    ),
+                    "tb_no": pci_record_for_troubleshooting.get(
+                        "tb_no"
+                    ),
+                    "criticality": pci_record_for_troubleshooting.get(
+                        "criticality"
+                    ),
+                    "source": "verified PCI database",
+                }
+
+            formatted["evidence_context"] = evidence
+            return formatted
+
+        # ----------------------------------------------------
+        # 1. PLANT MEMORY HAS PRIORITY FOR EXPERIENCE QUESTIONS
+        # ----------------------------------------------------
         if _is_memory_question(q):
+
             try:
                 result = _pci_memory_route(q)
+
                 if result:
                     return result
+
             except Exception:
                 pass
 
@@ -1369,78 +1198,31 @@ def ask_anvi(question):
                 "read_only": True,
             }
 
-        # ============================================================
-        # 2. PLANT-WIDE QUESTIONS
-        # Do this BEFORE remembered PCI context.
-        # ============================================================
-        plant_wide_question = any(x in ql for x in [
-            "what changed in the plant",
-            "what has changed in the plant",
-            "plant health",
-            "health of the plant",
-            "overall plant",
-            "plant status",
-            "plant condition",
-            "plant situation",
-            "management summary",
-            "executive summary",
-            "hod summary",
-            "management report",
-        ])
-
-        if plant_wide_question:
-            if any(x in ql for x in [
-                "management",
-                "summary",
-                "executive",
-                "hod",
-                "report",
-            ]):
-                return {
-                    "answer": _executive(q),
-                    "domain": "executive",
-                    "read_only": True,
-                    "human_decision_required": True,
-                }
-
-            return {
-                "answer": _plant(q),
-                "domain": "plant",
-                "read_only": True,
-                "human_decision_required": True,
-            }
-
-        # ============================================================
-        # 3. EXPLICIT PCI / INSTRUMENT IDENTIFICATION
-        # ============================================================
+        # ----------------------------------------------------
+        # 2. RESOLVE PCI CONTEXT BEFORE GENERAL DOMAIN ROUTING
+        # ----------------------------------------------------
         pci_record = _pci_context_record(q)
 
+        # Explicit or contextual PCI instrument.
         if pci_record:
             _remember_pci_context(record=pci_record)
-            return _pci_context_answer(q, pci_record)
 
-        # ============================================================
-        # 4. FOLLOW-UP QUESTIONS — REMEMBER LAST PCI INSTRUMENT
-        # ============================================================
-        previous_pci = _ANVI_CONVERSATION_CONTEXT.get(
-            "last_pci_record"
-        )
-
-        if previous_pci and _pci_followup_question(q):
             return _pci_context_answer(
                 q,
-                previous_pci
+                pci_record
             )
 
-        # ============================================================
-        # 5. PCI SEMANTIC QUESTIONS WITHOUT CURRENT TAG
-        # ============================================================
+        # ----------------------------------------------------
+        # 3. PCI SEMANTIC QUESTIONS WITHOUT A SPECIFIC TAG
+        # ----------------------------------------------------
         if _is_pci_question(q):
+
             import pci_conversation as pc
 
             result = pc.answer(q)
 
             if isinstance(result, dict):
+
                 record = result.get("record")
 
                 if isinstance(record, dict):
@@ -1453,62 +1235,24 @@ def ask_anvi(question):
 
             return result
 
-        # ============================================================
-        # 6. TROUBLESHOOTING / MAINTENANCE
-        # ============================================================
-        troubleshooting = any(x in ql for x in [
-            "troubleshoot",
-            "not working",
-            "is not working",
-            "what should i check",
-            "what should we check",
-            "what could be wrong",
-            "what is wrong",
-            "fault",
-            "failure",
-            "failed",
-            "diagnose",
-            "diagnosis",
-            "repair",
-            "maintenance",
-            "fix",
-            "inspection",
-        ])
+        # ----------------------------------------------------
+        # 4. FOLLOW-UP WITHOUT A RESOLVED TAG
+        # ----------------------------------------------------
+        if _pci_followup_question(q):
 
-        if troubleshooting:
             previous = _ANVI_CONVERSATION_CONTEXT.get(
                 "last_pci_record"
             )
 
             if previous:
-                tag = str(previous.get("tag", "")).strip()
+                return _pci_context_answer(
+                    q,
+                    previous
+                )
 
-                if tag:
-                    try:
-                        answer = _maintenance(
-                            f"{q} [{tag}]"
-                        )
-                    except Exception:
-                        answer = _maintenance(q)
-
-                    return {
-                        "answer": answer,
-                        "domain": "troubleshooting",
-                        "read_only": True,
-                        "human_decision_required": True,
-                        "context_tag": tag,
-                    }
-
-            return {
-                "answer": _maintenance(q),
-                "domain": "maintenance",
-                "read_only": True,
-                "human_decision_required": True,
-            }
-
-        # ============================================================
-        # 7. EQUIPMENT — EXISTING V5 PATH
-        # ============================================================
+        # ----------------------------------------------------
+        # 5. EQUIPMENT — EXISTING V5 PATH
+        # ----------------------------------------------------
         if re.search(
             r"\b(CV|PT|FT|TT|LT|LIC|PIC|FIC|TIC|AT|P|FV|XV)[-_]?\d+\b",
             q.upper()
@@ -1519,9 +1263,29 @@ def ask_anvi(question):
                 "read_only": True,
             }
 
-        # ============================================================
-        # 8. MANAGEMENT / EXECUTIVE
-        # ============================================================
+        # ----------------------------------------------------
+        # 6. MAINTENANCE — EXISTING V5 PATH
+        # ----------------------------------------------------
+        if any(x in ql for x in [
+            "maintenance",
+            "repair",
+            "recommendation",
+            "recommended action",
+            "what should i check",
+            "what should we check",
+            "fix",
+            "inspection",
+        ]):
+            return {
+                "answer": _maintenance(q),
+                "domain": "maintenance",
+                "read_only": True,
+                "human_decision_required": True,
+            }
+
+        # ----------------------------------------------------
+        # 7. MANAGEMENT / EXECUTIVE — EXISTING V5 PATH
+        # ----------------------------------------------------
         if any(x in ql for x in [
             "management",
             "hod",
@@ -1537,9 +1301,9 @@ def ask_anvi(question):
                 "human_decision_required": True,
             }
 
-        # ============================================================
-        # 9. PLANT / EVENT / HEALTH
-        # ============================================================
+        # ----------------------------------------------------
+        # 8. PLANT / EVENT / HEALTH — EXISTING V5 PATH
+        # ----------------------------------------------------
         if any(x in ql for x in [
             "plant",
             "health",
@@ -1559,68 +1323,31 @@ def ask_anvi(question):
                 "human_decision_required": True,
             }
 
-        # ============================================================
-        # 10. LLM CONVERSATIONAL FALLBACK
-        # ============================================================
-        try:
-            from anvi_conversation_engine import conversational_answer
-
-            evidence = {
-                "system": "ANVIQO",
-                "available_intelligence": [
-                    "PCI / Instrument Intelligence",
-                    "Equipment Intelligence",
-                    "Plant Health",
-                    "What Changed",
-                    "Event Intelligence",
-                    "Maintenance Intelligence",
-                    "Plant Memory",
-                    "Management Intelligence",
-                    "Executive Intelligence",
-                    "Plant Brain",
-                    "V5 Reasoning",
-                ],
-                "conversation_context": _ANVI_CONVERSATION_CONTEXT,
-                "note": (
-                    "Existing ANVIQO evidence and V5 intelligence are "
-                    "authoritative. Never invent plant facts."
-                ),
-            }
-
-            result = conversational_answer(
-                q,
-                evidence=evidence,
-                conversation=[],
-            )
-
-            if isinstance(result, dict):
-                result.setdefault("domain", "conversation")
-                result.setdefault("read_only", True)
-                result.setdefault(
-                    "human_decision_required",
-                    True
-                )
-                return result
-
-        except Exception as conversation_error:
-            return {
-                "answer": (
-                    "ANVI could not start its conversational intelligence "
-                    "layer. Existing evidence intelligence remains available. "
-                    f"Error: {conversation_error}"
-                ),
-                "domain": "conversation_error",
-                "read_only": True,
-            }
-
+        # ----------------------------------------------------
+        # 9. NATURAL GENERAL RESPONSE
+        # ----------------------------------------------------
         return {
             "answer": (
                 "I am ANVI, the conversational intelligence layer "
-                "of ANVIQO. I can work with verified plant evidence "
-                "and existing V5 intelligence, but I do not have "
-                "enough verified evidence to answer that question yet."
+                "of ANVIQO. You can ask me naturally about plant "
+                "instruments, equipment, PLC information, areas, "
+                "events, plant health, maintenance, previous field "
+                "experience, risks, or what changed."
             ),
             "domain": "general",
+            "capabilities": [
+                "PCI / Instrument Intelligence",
+                "Conversational Context",
+                "Plant Memory",
+                "Equipment Intelligence",
+                "Plant Health",
+                "What Changed",
+                "Event Intelligence",
+                "Maintenance Intelligence",
+                "Management Intelligence",
+                "Executive Intelligence",
+                "Plant Brain",
+            ],
             "read_only": True,
         }
 
@@ -1633,4 +1360,3 @@ def ask_anvi(question):
             "domain": "error",
             "read_only": True,
         }
-

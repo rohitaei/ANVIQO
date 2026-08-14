@@ -1100,49 +1100,6 @@ def _anvi_troubleshooting_question(question):
 
 
 
-
-def _anvi_establish_explicit_pci_context(question):
-    """
-    Establish conversational PCI context from an explicit instrument tag.
-
-    This is deterministic evidence retrieval only.
-    """
-    try:
-        import pci_conversation as pc
-
-        q = str(question or "").strip()
-
-        # First allow the existing PCI resolver to recognize the
-        # complete question, e.g. "Tell me about PT_303".
-        try:
-            record = pc.find_tag(q)
-            if isinstance(record, dict) and record.get("tag"):
-                _remember_pci_context(record=record)
-                return record
-        except Exception:
-            pass
-
-        # Then extract explicit instrument-like identifiers.
-        ids = re.findall(
-            r"\b[A-Za-z]{1,16}[-_]?\d+\b",
-            q.upper()
-        )
-
-        for ident in ids:
-            try:
-                record = pc.find_tag(ident)
-                if isinstance(record, dict) and record.get("tag"):
-                    _remember_pci_context(record=record)
-                    return record
-            except Exception:
-                pass
-
-    except Exception:
-        pass
-
-    return None
-
-
 def _anvi_direct_pci_followup(question):
     """
     Resolve simple conversational follow-ups against the last
@@ -1260,25 +1217,6 @@ def _anvi_direct_pci_followup(question):
                 "read_only": True,
             }
 
-    # What does it measure?
-    if any(x in ql for x in [
-        "what does it measure",
-        "what is it measuring",
-        "what does this measure",
-        "what is this measuring",
-    ]):
-        if description:
-            return {
-                "answer": (
-                    f"The verified PCI description for {tag} is "
-                    f"'{description}'."
-                ),
-                "domain": "pci",
-                "context_tag": tag,
-                "conversation_context": True,
-                "read_only": True,
-            }
-
     # TB / terminal block
     if any(x in ql for x in [
         "which tb",
@@ -1328,17 +1266,6 @@ def ask_anvi(question):
     ql = q.lower()
 
     try:
-        # ============================================================
-        # 0. EXPLICIT PCI TAG -> ESTABLISH CONTEXT FIRST
-        # ============================================================
-        #
-        # This MUST happen before direct follow-up routing.
-        # Example:
-        #   Tell me about PT_303
-        # establishes PT_303 as the active PCI context.
-        #
-        explicit_pci_record = _anvi_establish_explicit_pci_context(q)
-
         # ============================================================
         # DIRECT PCI FOLLOW-UP FROM VERIFIED CONVERSATION CONTEXT
         # ============================================================
