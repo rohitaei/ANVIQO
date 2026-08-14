@@ -1310,7 +1310,48 @@ def _anvi_direct_pci_followup(question):
     return None
 
 
+
+def _normalize_pci_instrument_tags(question):
+    """
+    Normalize natural-language instrument tag variants before PCI routing.
+
+    Examples:
+      PT_303 -> PT_303
+      PT-303 -> PT_303
+      PT 303 -> PT_303
+      PT303  -> PT_303
+      CV-101 -> CV_101
+      CV 101 -> CV_101
+
+    Only known industrial instrument/equipment prefixes are normalized.
+    No database values are invented or changed.
+    """
+    text = str(question or "")
+
+    prefixes = (
+        "PT", "FT", "TT", "LT", "AT", "CV", "FV", "XV",
+        "PV", "TV", "LV", "PCV", "FCV", "TCV", "LCV",
+        "PIC", "FIC", "TIC", "LIC", "P", "M", "AI", "AO",
+        "DI", "DO"
+    )
+
+    prefix_pattern = "|".join(sorted(prefixes, key=len, reverse=True))
+
+    pattern = re.compile(
+        rf"(?<![A-Za-z0-9])({prefix_pattern})[\s_-]*(\d{{1,6}})(?![A-Za-z0-9])",
+        re.IGNORECASE,
+    )
+
+    def repl(match):
+        return f"{match.group(1).upper()}_{match.group(2)}"
+
+    return pattern.sub(repl, text)
+
+
 def ask_anvi(question):
+    # Normalize natural-language PCI/instrument tag variants before
+    # any routing, context lookup, PCI lookup, troubleshooting or LLM fallback.
+    question = _normalize_pci_instrument_tags(question)
     """
     ANVI conversational intelligence router.
 
