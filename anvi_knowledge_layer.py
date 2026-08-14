@@ -845,201 +845,204 @@ def _anvi_conversational_maintenance_answer(
     pci_record=None,
 ):
     """
-    Convert the existing V5 maintenance result into a technician-friendly
+    Convert existing V5 maintenance intelligence into a technician-friendly
     conversational response.
 
-    IMPORTANT:
-    - Does not create new diagnostic reasoning.
-    - Does not invent a failure cause.
-    - Uses only information already returned by V5/PCI.
+    Rules:
+    - Never invent maintenance history.
+    - Preserve V5 evidence and uncertainty.
+    - Use verified PCI context when available.
+    - Read-only guidance only.
     """
+
+    data = maintenance_result if isinstance(maintenance_result, dict) else {}
+
+    record = pci_record
+    if not isinstance(record, dict):
+        record = _ANVI_CONVERSATION_CONTEXT.get("last_pci_record")
 
     tag = ""
     description = ""
     area = ""
-    plc_address = ""
+    plc = ""
     panel = ""
     tb = ""
+    terminals = ""
+    io_type = ""
 
-    if isinstance(pci_record, dict):
-        tag = str(pci_record.get("tag") or "").strip()
+    if isinstance(record, dict):
+        tag = str(
+            record.get("tag")
+            or record.get("instrument_tag")
+            or record.get("name")
+            or ""
+        ).strip()
+
         description = str(
-            pci_record.get("description") or ""
+            record.get("description")
+            or record.get("instrument")
+            or record.get("title")
+            or ""
         ).strip()
-        area = str(pci_record.get("area") or "").strip()
-        plc_address = str(
-            pci_record.get("plc_address") or ""
+
+        area = str(
+            record.get("area")
+            or record.get("location")
+            or ""
         ).strip()
-        panel = str(pci_record.get("panel") or "").strip()
-        tb = " ".join(
-            str(x).strip()
-            for x in [
-                pci_record.get("tb_name") or "",
-                pci_record.get("tb_no") or "",
-            ]
-            if str(x).strip()
-        )
 
-    if not isinstance(maintenance_result, dict):
-        maintenance_result = {
-            "raw_result": maintenance_result
-        }
+        plc = str(
+            record.get("plc_address")
+            or record.get("plc")
+            or record.get("address")
+            or ""
+        ).strip()
 
-    # _maintenance() normally returns a JSON string prefixed by ANVI.
-    raw = maintenance_result.get("raw_result")
+        panel = str(record.get("panel") or "").strip()
 
-    if raw is None:
-        raw = maintenance_result.get("answer", "")
+        tb = str(
+            record.get("tb")
+            or record.get("terminal_block")
+            or record.get("tb_name")
+            or ""
+        ).strip()
 
-    import json
+        terminals = str(
+            record.get("terminal")
+            or record.get("terminals")
+            or record.get("terminal_reference")
+            or record.get("tb_no")
+            or ""
+        ).strip()
 
-    data = None
+        io_type = str(record.get("io_type") or "").strip()
 
-    if isinstance(raw, dict):
-        data = raw
-    elif isinstance(raw, str):
-        text = raw.strip()
-
-        # Remove known ANVI prefix before parsing JSON.
-        prefixes = [
-            "ANVI — Maintenance Intelligence:",
-            "ANVI — Maintenance / Management Intelligence:",
-        ]
-
-        for prefix in prefixes:
-            if text.startswith(prefix):
-                text = text[len(prefix):].strip()
-                break
-
-        try:
-            data = json.loads(text)
-        except Exception:
-            data = None
-
-    if not isinstance(data, dict):
-        return {
-            "answer": str(raw),
-            "domain": "troubleshooting",
-            "read_only": True,
-            "human_decision_required": True,
-        }
+    equipment = str(
+        data.get("equipment")
+        or tag
+        or "the instrument"
+    ).strip()
 
     recommendation = data.get("recommendation")
+    if not isinstance(recommendation, dict):
+        recommendation = {}
 
-    if isinstance(recommendation, dict):
-        recommendation_message = (
-            recommendation.get("message")
-            or recommendation.get("recommendation")
-            or "No verified maintenance recommendation is available."
-        )
-        evidence_status = recommendation.get(
-            "evidence_status",
-            "UNKNOWN"
-        )
-    else:
-        recommendation_message = (
-            recommendation
-            or "No verified maintenance recommendation is available."
-        )
-        evidence_status = data.get(
-            "evidence_status",
-            "UNKNOWN"
-        )
+    message = str(
+        recommendation.get("message")
+        or data.get("recommendation")
+        or ""
+    ).strip()
 
-    priority = data.get("priority")
-    decision = data.get("decision")
-    why = data.get("why") or []
+    evidence_status = str(
+        recommendation.get("evidence_status")
+        or data.get("evidence_status")
+        or ""
+    ).strip()
+
+    decision = str(data.get("decision") or "").strip()
 
     lines = []
 
+    # ------------------------------------------------------------
+    # VERIFIED IDENTITY
+    # ------------------------------------------------------------
     if tag:
-        intro = f"{tag}"
+        identity = f"{tag}"
         if description:
-            intro += f" is {description}"
+            identity += f" is {description}"
         if area:
-            intro += f" in {area}"
-        intro += "."
+            identity += f" in {area}"
+        identity += "."
 
-        lines.append(intro)
+        lines.append(identity)
 
-    if plc_address:
-        lines.append(
-            f"The verified PLC address is {plc_address}."
-        )
-
-    if panel or tb:
-        location = []
+        details = []
+        if io_type:
+            details.append(f"I/O: {io_type}")
+        if plc:
+            details.append(f"PLC address: {plc}")
         if panel:
-            location.append(f"panel {panel}")
+            details.append(f"Panel: {panel}")
         if tb:
-            location.append(f"TB {tb}")
+            details.append(f"TB: {tb}")
+        if terminals:
+            details.append(f"Terminals: {terminals}")
+
+        if details:
+            lines.append("Verified field information: " + "; ".join(details) + ".")
+
+    # ------------------------------------------------------------
+    # EVIDENCE BOUNDARY
+    # ------------------------------------------------------------
+    no_verified_data = (
+        "NO VERIFIED DATA" in evidence_status.upper()
+        or "NO DATA" in evidence_status.upper()
+        or "no verified maintenance evidence" in message.lower()
+        or "no sufficiently strong verified maintenance history" in message.lower()
+    )
+
+    if no_verified_data:
         lines.append(
-            "The verified field connection information is "
-            + " and ".join(location)
-            + "."
+            "I don't have verified maintenance history identifying a specific "
+            "failure cause for this problem, so I won't guess."
         )
 
-    # Never convert absence of evidence into a guessed fault.
-    if str(evidence_status).upper() in {
-        "NO VERIFIED DATA",
-        "NONE",
-        "NO DATA",
-        "UNKNOWN",
-    }:
         lines.append(
-            "I don't have verified maintenance evidence that "
-            "establishes a specific failure cause for this problem, "
-            "so I won't guess."
+            "For a field investigation, check the signal chain systematically: "
+            "instrument condition and power, the 4–20 mA loop, field wiring, "
+            "termination connections, the corresponding PLC input, and the "
+            "PLC/SCADA indication."
         )
 
-        lines.append(
-            "For a field investigation, verify the instrument and "
-            "its signal chain systematically, including the field "
-            "condition, instrument power, signal loop, termination "
-            "connections and the corresponding PLC input. Compare "
-            "the field condition with the PLC/SCADA indication before "
-            "concluding that the transmitter itself has failed."
-        )
+        if tb or terminals or panel or plc:
+            path = []
+
+            if tb:
+                tb_text = f"TB {tb}"
+                if terminals:
+                    tb_text += f" terminals {terminals}"
+                path.append(tb_text)
+
+            if panel:
+                path.append(f"panel {panel}")
+
+            if plc:
+                path.append(f"PLC input {plc}")
+
+            if path:
+                lines.append(
+                    "For this instrument, the verified signal path includes "
+                    + ", ".join(path)
+                    + ". Compare the field signal with the PLC/SCADA value "
+                      "before concluding that the transmitter itself has failed."
+                )
+
     else:
-        lines.append(
-            f"Existing V5 maintenance evidence indicates: "
-            f"{recommendation_message}"
-        )
+        if message:
+            lines.append(message)
 
+    # ------------------------------------------------------------
+    # V5 DECISION / EVIDENCE
+    # ------------------------------------------------------------
     if decision:
-        lines.append(
-            f"V5 decision: {decision}."
-        )
+        lines.append(f"V5 decision: {decision}.")
 
-    if priority is not None:
-        lines.append(
-            f"Priority: {priority}."
-        )
+    if evidence_status and not no_verified_data:
+        lines.append(f"Evidence status: {evidence_status}.")
 
-    if why:
-        valid_why = [
-            str(x).strip()
-            for x in why
-            if str(x).strip()
-        ]
-        if valid_why:
-            lines.append(
-                "Evidence considered: "
-                + " ".join(valid_why)
-            )
-
+    # ------------------------------------------------------------
+    # SAFETY BOUNDARY
+    # ------------------------------------------------------------
     lines.append(
-        "This is a read-only recommendation. Human verification, "
-        "permit requirements, isolation and risk assessment remain "
-        "mandatory before field intervention."
+        "This is read-only maintenance guidance. Human verification, "
+        "permit requirements, isolation and risk assessment remain mandatory "
+        "before field intervention."
     )
 
     return {
         "answer": " ".join(lines),
         "domain": "troubleshooting",
-        "evidence": (
-            "verified PCI database + existing V5 maintenance intelligence"
-        ),
+        "evidence": "verified PCI database + existing V5 maintenance intelligence",
         "equipment": tag or data.get("equipment"),
         "read_only": True,
         "human_decision_required": True,
@@ -1340,13 +1343,111 @@ def ask_anvi(question):
         explicit_pci_record = _anvi_establish_explicit_pci_context(q)
 
         # ============================================================
+        # FORCE VERIFIED PCI TROUBLESHOOTING PATH
+        # ============================================================
+        # If the user is troubleshooting the currently identified
+        # instrument, resolve it directly through existing V5
+        # maintenance intelligence and the conversational formatter.
+        #
+        # This MUST return here so older maintenance fallback routes
+        # cannot intercept the question.
+
+        if _anvi_troubleshooting_question(q):
+
+            pci_context = (
+                explicit_pci_record
+                if isinstance(explicit_pci_record, dict)
+                else _ANVI_CONVERSATION_CONTEXT.get("last_pci_record")
+            )
+
+            if isinstance(pci_context, dict):
+
+                tag = str(
+                    pci_context.get("tag")
+                    or pci_context.get("instrument_tag")
+                    or pci_context.get("name")
+                    or ""
+                ).strip()
+
+                if tag:
+
+                    try:
+                        maintenance_result = _maintenance(
+                            f"{q} [{tag}]"
+                        )
+                    except Exception:
+                        maintenance_result = _maintenance(q)
+
+                    formatted = _anvi_conversational_maintenance_answer(
+                        q,
+                        maintenance_result,
+                        pci_record=pci_context,
+                    )
+
+                    if isinstance(formatted, dict):
+                        return formatted
+
+                    return {
+                        "answer": str(formatted),
+                        "domain": "troubleshooting",
+                        "equipment": tag,
+                        "context_tag": tag,
+                        "read_only": True,
+                        "human_decision_required": True,
+                        "plc_write": False,
+                        "scada_control": False,
+                    }
+
+
+        # ============================================================
+        # TROUBLESHOOTING PRIORITY — BEFORE PCI ANSWER ROUTING
+        # ============================================================
+        # PCI context is established first, but troubleshooting questions
+        # MUST go to the existing V5/Maintenance intelligence layer.
+        # This prevents the PCI semantic route from answering with only
+        # the instrument record.
+
+        troubleshooting_intent = _anvi_troubleshooting_question(q)
+
+        if troubleshooting_intent:
+            previous = _ANVI_CONVERSATION_CONTEXT.get("last_pci_record")
+
+            if isinstance(previous, dict):
+                tag = str(
+                    previous.get("tag")
+                    or previous.get("instrument_tag")
+                    or previous.get("name")
+                    or ""
+                ).strip()
+
+                if tag:
+                    try:
+                        answer = _maintenance(f"{q} [{tag}]")
+                    except Exception:
+                        answer = _maintenance(q)
+
+                    return {
+                        "answer": answer,
+                        "domain": "troubleshooting",
+                        "read_only": True,
+                        "human_decision_required": True,
+                        "context_tag": tag,
+                    }
+
+            return {
+                "answer": _maintenance(q),
+                "domain": "maintenance",
+                "read_only": True,
+                "human_decision_required": True,
+            }
+
+        # ============================================================
         # DIRECT PCI FOLLOW-UP FROM VERIFIED CONVERSATION CONTEXT
         # ============================================================
         direct_pci = _anvi_direct_pci_followup(q)
 
         if direct_pci:
             return direct_pci
-
 
         # ============================================================
         # 1. PLANT MEMORY — HIGHEST PRIORITY FOR EXPERIENCE QUESTIONS
@@ -1456,55 +1557,74 @@ def ask_anvi(question):
         # ============================================================
         # 6. TROUBLESHOOTING / MAINTENANCE
         # ============================================================
-        troubleshooting = any(x in ql for x in [
-            "troubleshoot",
-            "not working",
-            "is not working",
-            "what should i check",
-            "what should we check",
-            "what could be wrong",
-            "what is wrong",
-            "fault",
-            "failure",
-            "failed",
-            "diagnose",
-            "diagnosis",
-            "repair",
-            "maintenance",
-            "fix",
-            "inspection",
-        ])
+        # Single authoritative troubleshooting route.
+        #
+        # Flow:
+        #   verified PCI context
+        #       -> existing V5 maintenance intelligence
+        #       -> conversational technician response
+        #
+        # No second reasoning engine is created.
+        # No PLC/SCADA write is performed.
+
+        troubleshooting = _anvi_troubleshooting_question(q)
 
         if troubleshooting:
+
             previous = _ANVI_CONVERSATION_CONTEXT.get(
                 "last_pci_record"
             )
 
-            if previous:
-                tag = str(previous.get("tag", "")).strip()
+            # --------------------------------------------------------
+            # PCI-CONTEXT TROUBLESHOOTING
+            # --------------------------------------------------------
+            if isinstance(previous, dict):
+
+                tag = str(
+                    previous.get("tag")
+                    or previous.get("instrument_tag")
+                    or previous.get("name")
+                    or ""
+                ).strip()
 
                 if tag:
+
+                    # Existing V5 maintenance intelligence remains
+                    # authoritative for evidence and uncertainty.
                     try:
-                        answer = _maintenance(
+                        maintenance_result = _maintenance(
                             f"{q} [{tag}]"
                         )
                     except Exception:
-                        answer = _maintenance(q)
+                        maintenance_result = _maintenance(q)
 
-                    return {
-                        "answer": answer,
-                        "domain": "troubleshooting",
-                        "read_only": True,
-                        "human_decision_required": True,
-                        "context_tag": tag,
-                    }
+                    # Convert the existing V5 result into the
+                    # technician-friendly ANVI response.
+                    return _anvi_conversational_maintenance_answer(
+                        q,
+                        maintenance_result,
+                        pci_record=previous,
+                    )
 
-            return {
-                "answer": _maintenance(q),
-                "domain": "maintenance",
-                "read_only": True,
-                "human_decision_required": True,
-            }
+            # --------------------------------------------------------
+            # NON-PCI TROUBLESHOOTING
+            # --------------------------------------------------------
+            try:
+                maintenance_result = _maintenance(q)
+            except Exception:
+                maintenance_result = {
+                    "equipment": "",
+                    "evidence_status": "NO VERIFIED DATA",
+                    "recommendation": {
+                        "message": "No verified maintenance evidence was found."
+                    },
+                }
+
+            return _anvi_conversational_maintenance_answer(
+                q,
+                maintenance_result,
+                pci_record=None,
+            )
 
         # ============================================================
         # 7. EQUIPMENT — EXISTING V5 PATH
