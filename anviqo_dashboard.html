@@ -98,7 +98,226 @@
     .livegrid{grid-template-columns:repeat(2,1fr)}
 }
 
-</style></head>
+</style>
+<style id="anviqo-command-centre-v2">
+/* ============================================================
+   ANVIQO COMMAND CENTRE V2
+   Presentation layer only.
+   Existing V5 / PCI / API / Voice JavaScript is preserved.
+   ============================================================ */
+
+:root{
+  --cc-bg:#050a10;
+  --cc-panel:#0a111a;
+  --cc-panel2:#0d1722;
+  --cc-line:#1a2a39;
+  --cc-text:#e7f0f7;
+  --cc-muted:#8193a5;
+  --cc-cyan:#20d9ff;
+  --cc-green:#35e38b;
+  --cc-amber:#ffc857;
+  --cc-red:#ff5368;
+  --cc-purple:#9d7cff;
+}
+
+body{
+  background:
+    radial-gradient(circle at 80% 0%,rgba(32,217,255,.07),transparent 30%),
+    radial-gradient(circle at 10% 100%,rgba(157,124,255,.05),transparent 35%),
+    var(--cc-bg)!important;
+}
+
+.main{
+  background:transparent!important;
+}
+
+.top{
+  border-bottom:1px solid var(--cc-line)!important;
+}
+
+.top h1{
+  letter-spacing:-.5px;
+}
+
+.api{
+  border:1px solid var(--cc-line);
+  background:rgba(10,17,26,.8);
+  padding:10px 14px;
+  border-radius:10px;
+}
+
+/* command-centre sections */
+.cc-section{
+  margin-top:18px;
+}
+
+.cc-section-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:0 0 10px;
+}
+
+.cc-section-title h2{
+  margin:0;
+  font-size:13px;
+  letter-spacing:1.8px;
+  color:var(--cc-text);
+}
+
+.cc-section-title span{
+  color:var(--cc-muted);
+  font-size:9px;
+  letter-spacing:1px;
+}
+
+.cc-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+
+.cc-panel{
+  background:linear-gradient(145deg,rgba(13,23,34,.96),rgba(7,13,20,.96));
+  border:1px solid var(--cc-line);
+  border-radius:13px;
+  padding:15px;
+  min-height:105px;
+  box-shadow:0 8px 30px rgba(0,0,0,.18);
+}
+
+.cc-panel:hover{
+  border-color:#29445a;
+}
+
+.cc-label{
+  color:var(--cc-muted);
+  font-size:8px;
+  letter-spacing:1.5px;
+  font-weight:700;
+}
+
+.cc-value{
+  margin-top:9px;
+  font-size:20px;
+  font-weight:800;
+  color:var(--cc-text);
+}
+
+.cc-small{
+  margin-top:5px;
+  color:var(--cc-muted);
+  font-size:9px;
+}
+
+.cc-live{
+  color:var(--cc-green);
+}
+
+.cc-warning{
+  color:var(--cc-amber);
+}
+
+.cc-danger{
+  color:var(--cc-red);
+}
+
+.cc-info{
+  color:var(--cc-cyan);
+}
+
+.cc-command{
+  display:grid;
+  grid-template-columns:1.4fr 1fr 1fr;
+  gap:12px;
+}
+
+.cc-command .cc-panel{
+  min-height:130px;
+}
+
+.cc-action{
+  margin-top:14px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border:1px solid #25465a;
+  background:#0b1b27;
+  color:var(--cc-cyan);
+  border-radius:8px;
+  padding:8px 11px;
+  font-size:9px;
+  cursor:pointer;
+}
+
+.cc-action:hover{
+  background:#102b3b;
+}
+
+.cc-feed{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:12px;
+}
+
+.cc-feed-row{
+  display:grid;
+  grid-template-columns:70px 1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:9px;
+  background:rgba(255,255,255,.018);
+  border:1px solid rgba(255,255,255,.035);
+  border-radius:8px;
+}
+
+.cc-feed-time{
+  color:var(--cc-muted);
+  font-size:8px;
+}
+
+.cc-feed-text{
+  color:#cbd8e2;
+  font-size:9px;
+}
+
+.cc-state{
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.7px;
+}
+
+.cc-empty{
+  padding:18px;
+  text-align:center;
+  border:1px dashed #263746;
+  border-radius:10px;
+  color:var(--cc-muted);
+  font-size:9px;
+}
+
+.cc-note{
+  margin-top:10px;
+  padding:9px 11px;
+  border-left:2px solid var(--cc-cyan);
+  background:rgba(32,217,255,.035);
+  color:#8fa5b7;
+  font-size:8px;
+  line-height:1.5;
+}
+
+@media(max-width:1050px){
+  .cc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cc-command{grid-template-columns:1fr}
+}
+
+@media(max-width:650px){
+  .cc-grid{grid-template-columns:1fr}
+}
+</style>
+
+</head>
 <body>
 <aside class="side" id="side"><div class="logo">ANVIQO<small>THINK • PREDICT • PROTECT</small></div>
 <div class="nav"><button class="active">⌂ &nbsp; COMMAND CENTER</button><button>◈ &nbsp; PLANT OVERVIEW</button><button>⚙ &nbsp; EQUIPMENT INTELLIGENCE</button><button>◌ &nbsp; WHAT CHANGED</button><button>⛓ &nbsp; EVENT CORRELATION</button><button>▣ &nbsp; MANAGEMENT DECISION</button><button onclick="focusAsk()">✦ &nbsp; ASK ANVI</button><button>▤ &nbsp; REPORTS</button><button>⚙ &nbsp; SETTINGS</button></div>
@@ -178,6 +397,678 @@
 </div>
 </div></section>
 <div class="card safety"><span class="pill ok">● V5 FROZEN CORE</span><span class="pill ok">◈ READ-ONLY</span><span class="pill">PLC WRITE BLOCKED</span><span class="pill">SCADA CONTROL BLOCKED</span><span class="pill">HUMAN DECISION REQUIRED</span><span class="pill">AUTOMATIC AUTHORIZATION DISABLED</span><span class="pill">CAUSATION NOT CLAIMED</span></div><footer>ANVIQO PRODUCT V1.2 | V5 FROZEN CORE | THINK • PREDICT • PROTECT</footer>
+
+<!-- =========================================================
+     ANVIQO COMMAND CENTRE V2
+     UI layer only — existing dashboard logic remains active.
+     ========================================================= -->
+
+<section class="cc-section" id="anviqo-command-centre">
+
+  <div class="cc-section-title">
+    <h2>LIVE COMMAND CENTRE</h2>
+    <span>PLANT INTELLIGENCE • HUMAN GOVERNED</span>
+  </div>
+
+  <div class="cc-grid">
+
+    <div class="cc-panel">
+      <div class="cc-label">LIVE ALARMS</div>
+      <div class="cc-value cc-warning" id="cc-alarm-count">—</div>
+      <div class="cc-small">Awaiting verified live alarm feed</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">CRITICAL RISKS</div>
+      <div class="cc-value cc-danger" id="cc-risk-count">—</div>
+      <div class="cc-small">Derived from available intelligence</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">EVENT CHAINS</div>
+      <div class="cc-value" id="cc-chain-count">—</div>
+      <div class="cc-small">Correlated events</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">SYSTEM</div>
+      <div class="cc-value cc-live" id="cc-system-state">ONLINE</div>
+      <div class="cc-small">ANVIQO intelligence interface</div>
+    </div>
+
+  </div>
+</section>
+
+<section class="cc-section">
+
+  <div class="cc-section-title">
+    <h2>ALARM & EVENT ANALYSIS</h2>
+    <span>VERIFY • CORRELATE • EXPLAIN</span>
+  </div>
+
+  <div class="cc-command">
+
+    <div class="cc-panel">
+      <div class="cc-label">LIVE ALARM ANALYSIS</div>
+      <div class="cc-feed">
+        <div class="cc-empty">
+          Live alarm records will appear here when supplied by the connected plant/API source.
+          ANVIQO will not invent alarm states.
+        </div>
+      </div>
+      <div class="cc-note">
+        Alarm interpretation must remain evidence-backed. Process consequences and
+        troubleshooting should come from verified plant/process knowledge.
+      </div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">WHAT CHANGED</div>
+      <div class="cc-feed">
+        <div class="cc-feed-row">
+          <div class="cc-feed-time">LIVE</div>
+          <div class="cc-feed-text">Existing ANVIQO change intelligence</div>
+          <div class="cc-state cc-info">VIEW</div>
+        </div>
+        <div class="cc-feed-row">
+          <div class="cc-feed-time">EVENT</div>
+          <div class="cc-feed-text">Existing event correlation layer</div>
+          <div class="cc-state cc-info">VIEW</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">PROCESS ANALYSIS</div>
+      <div class="cc-value cc-info">ANVI</div>
+      <div class="cc-small">
+        Engineering evidence + process philosophy + V5 intelligence
+      </div>
+      <button class="cc-action" onclick="focusAsk()">✦ ASK ANVI</button>
+    </div>
+
+  </div>
+</section>
+
+<section class="cc-section">
+
+  <div class="cc-section-title">
+    <h2>COMMAND</h2>
+    <span>READ-ONLY • HUMAN DECISION REQUIRED</span>
+  </div>
+
+  <div class="cc-grid">
+
+    <div class="cc-panel">
+      <div class="cc-label">EQUIPMENT</div>
+      <div class="cc-value">IDENTITY</div>
+      <div class="cc-small">Instrument, equipment and relationship context</div>
+      <button class="cc-action" onclick="focusAsk()">ASK ABOUT EQUIPMENT</button>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">ENGINEERING</div>
+      <div class="cc-value">KNOWLEDGE</div>
+      <div class="cc-small">Range • PLC/DCS • Spares • Cable • Source</div>
+      <button class="cc-action" onclick="focusAsk()">ASK ENGINEERING</button>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">TROUBLESHOOTING</div>
+      <div class="cc-value">EVIDENCE</div>
+      <div class="cc-small">Cause → consequence → checks → safe recommendation</div>
+      <button class="cc-action" onclick="focusAsk()">ASK ANVI</button>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">VOICE</div>
+      <div class="cc-value">🎤 ANVI</div>
+      <div class="cc-small">Natural-language field interaction</div>
+      <button class="cc-action" onclick="document.getElementById('anviVoiceButton')?.click()">SPEAK TO ANVI</button>
+    </div>
+
+  </div>
+</section>
+
+<section class="cc-section">
+
+  <div class="cc-section-title">
+    <h2>ENGINEERING & PROCESS INTELLIGENCE</h2>
+    <span>SOURCE-BACKED</span>
+  </div>
+
+  <div class="cc-grid">
+
+    <div class="cc-panel">
+      <div class="cc-label">PCI INSTRUMENTATION</div>
+      <div class="cc-value">CONNECTED</div>
+      <div class="cc-small">Existing PCI registry and engineering index</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">PLC / DCS I/O</div>
+      <div class="cc-value">INDEXED</div>
+      <div class="cc-small">Verified source records only</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">SPARES / CABLES</div>
+      <div class="cc-value">INDEXED</div>
+      <div class="cc-small">Source provenance preserved</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">PROCESS PHILOSOPHY</div>
+      <div class="cc-value">EVIDENCE</div>
+      <div class="cc-small">Process behaviour and interlocks can be grounded in source documents</div>
+    </div>
+
+  </div>
+</section>
+
+<section class="cc-section">
+
+  <div class="cc-section-title">
+    <h2>ANVI DECISION SUPPORT</h2>
+    <span>EXPLAIN • EVIDENCE • CONFIDENCE</span>
+  </div>
+
+  <div class="cc-panel">
+    <div class="cc-feed">
+      <div class="cc-feed-row">
+        <div class="cc-feed-time">01</div>
+        <div class="cc-feed-text">Observe verified plant condition</div>
+        <div class="cc-state cc-info">EVIDENCE</div>
+      </div>
+      <div class="cc-feed-row">
+        <div class="cc-feed-time">02</div>
+        <div class="cc-feed-text">Correlate equipment, process and event information</div>
+        <div class="cc-state cc-info">ANALYSIS</div>
+      </div>
+      <div class="cc-feed-row">
+        <div class="cc-feed-time">03</div>
+        <div class="cc-feed-text">Explain possible consequence and troubleshooting path</div>
+        <div class="cc-state cc-warning">REVIEW</div>
+      </div>
+      <div class="cc-feed-row">
+        <div class="cc-feed-time">04</div>
+        <div class="cc-feed-text">Human confirms any maintenance or operational action</div>
+        <div class="cc-state cc-live">HUMAN</div>
+      </div>
+    </div>
+
+    <div class="cc-note">
+      ANVIQO remains read-only. It does not directly operate PLC/SCADA equipment.
+      Recommendations remain subject to human verification and plant procedures.
+    </div>
+  </div>
+
+</section>
+
+<!-- END ANVIQO COMMAND CENTRE V2 -->
+
+
+<!-- =========================================================
+     ANVIQO COMMAND CENTRE V2
+     UI layer only — existing dashboard logic remains active.
+     ========================================================= -->
+
+<section class="cc-section" id="anviqo-command-centre">
+
+  <div class="cc-section-title">
+    <h2>LIVE COMMAND CENTRE</h2>
+    <span>PLANT INTELLIGENCE • HUMAN GOVERNED</span>
+  </div>
+
+  <div class="cc-grid">
+
+    <div class="cc-panel">
+      <div class="cc-label">LIVE ALARMS</div>
+      <div class="cc-value cc-warning" id="cc-alarm-count">—</div>
+      <div class="cc-small">Awaiting verified live alarm feed</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">CRITICAL RISKS</div>
+      <div class="cc-value cc-danger" id="cc-risk-count">—</div>
+      <div class="cc-small">Derived from available intelligence</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">EVENT CHAINS</div>
+      <div class="cc-value" id="cc-chain-count">—</div>
+      <div class="cc-small">Correlated events</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">SYSTEM</div>
+      <div class="cc-value cc-live" id="cc-system-state">ONLINE</div>
+      <div class="cc-small">ANVIQO intelligence interface</div>
+    </div>
+
+  </div>
+</section>
+
+<section class="cc-section">
+
+  <div class="cc-section-title">
+    <h2>ALARM & EVENT ANALYSIS</h2>
+    <span>VERIFY • CORRELATE • EXPLAIN</span>
+  </div>
+
+  <div class="cc-command">
+
+    <div class="cc-panel">
+      <div class="cc-label">LIVE ALARM ANALYSIS</div>
+      <div class="cc-feed">
+        <div class="cc-empty">
+          Live alarm records will appear here when supplied by the connected plant/API source.
+          ANVIQO will not invent alarm states.
+        </div>
+      </div>
+      <div class="cc-note">
+        Alarm interpretation must remain evidence-backed. Process consequences and
+        troubleshooting should come from verified plant/process knowledge.
+      </div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">WHAT CHANGED</div>
+      <div class="cc-feed">
+        <div class="cc-feed-row">
+          <div class="cc-feed-time">LIVE</div>
+          <div class="cc-feed-text">Existing ANVIQO change intelligence</div>
+          <div class="cc-state cc-info">VIEW</div>
+        </div>
+        <div class="cc-feed-row">
+          <div class="cc-feed-time">EVENT</div>
+          <div class="cc-feed-text">Existing event correlation layer</div>
+          <div class="cc-state cc-info">VIEW</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">PROCESS ANALYSIS</div>
+      <div class="cc-value cc-info">ANVI</div>
+      <div class="cc-small">
+        Engineering evidence + process philosophy + V5 intelligence
+      </div>
+      <button class="cc-action" onclick="focusAsk()">✦ ASK ANVI</button>
+    </div>
+
+  </div>
+</section>
+
+<section class="cc-section">
+
+  <div class="cc-section-title">
+    <h2>COMMAND</h2>
+    <span>READ-ONLY • HUMAN DECISION REQUIRED</span>
+  </div>
+
+  <div class="cc-grid">
+
+    <div class="cc-panel">
+      <div class="cc-label">EQUIPMENT</div>
+      <div class="cc-value">IDENTITY</div>
+      <div class="cc-small">Instrument, equipment and relationship context</div>
+      <button class="cc-action" onclick="focusAsk()">ASK ABOUT EQUIPMENT</button>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">ENGINEERING</div>
+      <div class="cc-value">KNOWLEDGE</div>
+      <div class="cc-small">Range • PLC/DCS • Spares • Cable • Source</div>
+      <button class="cc-action" onclick="focusAsk()">ASK ENGINEERING</button>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">TROUBLESHOOTING</div>
+      <div class="cc-value">EVIDENCE</div>
+      <div class="cc-small">Cause → consequence → checks → safe recommendation</div>
+      <button class="cc-action" onclick="focusAsk()">ASK ANVI</button>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">VOICE</div>
+      <div class="cc-value">🎤 ANVI</div>
+      <div class="cc-small">Natural-language field interaction</div>
+      <button class="cc-action" onclick="document.getElementById('anviVoiceButton')?.click()">SPEAK TO ANVI</button>
+    </div>
+
+  </div>
+</section>
+
+<section class="cc-section">
+
+  <div class="cc-section-title">
+    <h2>ENGINEERING & PROCESS INTELLIGENCE</h2>
+    <span>SOURCE-BACKED</span>
+  </div>
+
+  <div class="cc-grid">
+
+    <div class="cc-panel">
+      <div class="cc-label">PCI INSTRUMENTATION</div>
+      <div class="cc-value">CONNECTED</div>
+      <div class="cc-small">Existing PCI registry and engineering index</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">PLC / DCS I/O</div>
+      <div class="cc-value">INDEXED</div>
+      <div class="cc-small">Verified source records only</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">SPARES / CABLES</div>
+      <div class="cc-value">INDEXED</div>
+      <div class="cc-small">Source provenance preserved</div>
+    </div>
+
+    <div class="cc-panel">
+      <div class="cc-label">PROCESS PHILOSOPHY</div>
+      <div class="cc-value">EVIDENCE</div>
+      <div class="cc-small">Process behaviour and interlocks can be grounded in source documents</div>
+    </div>
+
+  </div>
+</section>
+
+<section class="cc-section">
+
+  <div class="cc-section-title">
+    <h2>ANVI DECISION SUPPORT</h2>
+    <span>EXPLAIN • EVIDENCE • CONFIDENCE</span>
+  </div>
+
+  <div class="cc-panel">
+    <div class="cc-feed">
+      <div class="cc-feed-row">
+        <div class="cc-feed-time">01</div>
+        <div class="cc-feed-text">Observe verified plant condition</div>
+        <div class="cc-state cc-info">EVIDENCE</div>
+      </div>
+      <div class="cc-feed-row">
+        <div class="cc-feed-time">02</div>
+        <div class="cc-feed-text">Correlate equipment, process and event information</div>
+        <div class="cc-state cc-info">ANALYSIS</div>
+      </div>
+      <div class="cc-feed-row">
+        <div class="cc-feed-time">03</div>
+        <div class="cc-feed-text">Explain possible consequence and troubleshooting path</div>
+        <div class="cc-state cc-warning">REVIEW</div>
+      </div>
+      <div class="cc-feed-row">
+        <div class="cc-feed-time">04</div>
+        <div class="cc-feed-text">Human confirms any maintenance or operational action</div>
+        <div class="cc-state cc-live">HUMAN</div>
+      </div>
+    </div>
+
+    <div class="cc-note">
+      ANVIQO remains read-only. It does not directly operate PLC/SCADA equipment.
+      Recommendations remain subject to human verification and plant procedures.
+    </div>
+  </div>
+
+</section>
+
+<!-- END ANVIQO COMMAND CENTRE V2 -->
+
+
+<style id="anviqo-reference-v3">
+/* ANVIQO REFERENCE COMMAND CENTRE V3 */
+:root{
+  --ref-bg:#071018;
+  --ref-panel:#0b1620;
+  --ref-panel2:#0e1c28;
+  --ref-border:rgba(125,170,195,.18);
+  --ref-text:#e7f1f7;
+  --ref-muted:#7f96a7;
+  --ref-cyan:#20d8ff;
+  --ref-green:#39e29b;
+  --ref-amber:#ffc857;
+  --ref-red:#ff5d6c;
+}
+#anviqo-reference-v3{
+  display:grid;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:14px;
+  margin:18px 0;
+}
+.ref-panel{
+  background:linear-gradient(145deg,var(--ref-panel),var(--ref-panel2));
+  border:1px solid var(--ref-border);
+  border-radius:12px;
+  padding:16px;
+  min-height:120px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+}
+.ref-wide{grid-column:span 8}
+.ref-half{grid-column:span 4}
+.ref-third{grid-column:span 4}
+.ref-full{grid-column:1/-1}
+.ref-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  color:var(--ref-text);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.08em;
+  margin-bottom:14px;
+}
+.ref-live{
+  color:var(--ref-green);
+  font-size:10px;
+  letter-spacing:.04em;
+}
+.ref-alarm{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 0;
+  border-bottom:1px solid var(--ref-border);
+  font-size:11px;
+}
+.ref-alarm:last-child{border-bottom:0}
+.ref-dot{
+  width:7px;height:7px;border-radius:50%;
+  display:inline-block;margin-right:7px;
+}
+.ref-red{background:var(--ref-red)}
+.ref-amber{background:var(--ref-amber)}
+.ref-green{background:var(--ref-green)}
+.ref-value{
+  color:var(--ref-text);
+  font-weight:700;
+}
+.ref-muted{color:var(--ref-muted)}
+.ref-analysis{
+  padding:10px 0;
+  border-bottom:1px solid var(--ref-border);
+}
+.ref-analysis:last-child{border-bottom:0}
+.ref-analysis strong{
+  display:block;
+  color:var(--ref-text);
+  font-size:12px;
+  margin-bottom:5px;
+}
+.ref-analysis span{
+  color:var(--ref-muted);
+  font-size:10px;
+  line-height:1.5;
+}
+.ref-command{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.ref-command button{
+  border:1px solid rgba(32,216,255,.28);
+  background:rgba(32,216,255,.07);
+  color:var(--ref-cyan);
+  border-radius:8px;
+  padding:9px 12px;
+  cursor:pointer;
+  font-size:10px;
+}
+.ref-command button:hover{
+  background:rgba(32,216,255,.14);
+}
+.ref-process{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.ref-process-card{
+  border:1px solid var(--ref-border);
+  border-radius:8px;
+  padding:11px;
+}
+.ref-process-card b{
+  color:var(--ref-text);
+  font-size:11px;
+}
+.ref-process-card small{
+  display:block;
+  color:var(--ref-muted);
+  margin-top:5px;
+  line-height:1.45;
+}
+@media(max-width:900px){
+  .ref-wide,.ref-half,.ref-third{grid-column:1/-1}
+  .ref-process{grid-template-columns:1fr}
+}
+</style>
+
+<!-- ANVIQO_REFERENCE_COMMAND_CENTRE_V3 -->
+<section id="anviqo-reference-v3">
+
+  <div class="ref-panel ref-wide">
+    <div class="ref-title">
+      <span>LIVE PLANT COMMAND CENTRE</span>
+      <span class="ref-live">● LIVE</span>
+    </div>
+    <div class="ref-process">
+      <div class="ref-process-card">
+        <b>PLANT HEALTH</b>
+        <small id="ref-health">Reading live plant intelligence…</small>
+      </div>
+      <div class="ref-process-card">
+        <b>SYSTEM STATE</b>
+        <small id="ref-system">Connected to ANVIQO intelligence layer</small>
+      </div>
+      <div class="ref-process-card">
+        <b>TOP EQUIPMENT RISK</b>
+        <small id="ref-risk">Reading V5 equipment intelligence…</small>
+      </div>
+      <div class="ref-process-card">
+        <b>EVENT CORRELATION</b>
+        <small id="ref-events">Reading correlated plant events…</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="ref-panel ref-half">
+    <div class="ref-title">
+      <span>LIVE ALARMS</span>
+      <span class="ref-live">● MONITORING</span>
+    </div>
+    <div class="ref-alarm">
+      <span><i class="ref-dot ref-red"></i>Critical condition</span>
+      <span class="ref-value">ANVI</span>
+    </div>
+    <div class="ref-alarm">
+      <span><i class="ref-dot ref-amber"></i>Attention required</span>
+      <span class="ref-muted">Evidence</span>
+    </div>
+    <div class="ref-alarm">
+      <span><i class="ref-dot ref-green"></i>Stable condition</span>
+      <span class="ref-muted">Normal</span>
+    </div>
+    <div class="ref-alarm">
+      <span class="ref-muted">Live alarm feed</span>
+      <span class="ref-muted">API-backed</span>
+    </div>
+  </div>
+
+  <div class="ref-panel ref-wide">
+    <div class="ref-title">
+      <span>ANALYSIS</span>
+      <span class="ref-live">V5 + ENGINEERING + PROCESS</span>
+    </div>
+    <div class="ref-analysis">
+      <strong>Equipment Intelligence</strong>
+      <span>Risk, trend, evidence and relationships from the existing V5 intelligence stack.</span>
+    </div>
+    <div class="ref-analysis">
+      <strong>Engineering Intelligence</strong>
+      <span>Instrument identity, range, PLC/DCS I/O, spares and cable information from verified sources.</span>
+    </div>
+    <div class="ref-analysis">
+      <strong>Process Intelligence</strong>
+      <span>Process conditions and interlocks are grounded in the extracted PCI Process Control Philosophy.</span>
+    </div>
+  </div>
+
+  <div class="ref-panel ref-half">
+    <div class="ref-title">
+      <span>COMMAND</span>
+      <span class="ref-live">HUMAN GOVERNED</span>
+    </div>
+    <div class="ref-command">
+      <button onclick="focusAsk()">ASK ANVI</button>
+      <button onclick="window.ANVIQOVoice && window.ANVIQOVoice.ask('What is the current plant condition?')">PLANT STATUS</button>
+      <button onclick="window.ANVIQOVoice && window.ANVIQOVoice.ask('Show active risks')">ACTIVE RISKS</button>
+      <button onclick="window.ANVIQOVoice && window.ANVIQOVoice.ask('What changed in the plant?')">WHAT CHANGED</button>
+    </div>
+  </div>
+
+  <div class="ref-panel ref-full">
+    <div class="ref-title">
+      <span>PROCESS TROUBLESHOOTING</span>
+      <span class="ref-live">SOURCE-BACKED</span>
+    </div>
+    <div class="ref-process">
+      <div class="ref-process-card">
+        <b>HGG TEMPERATURE</b>
+        <small>
+          Verified source relationship: TE-203 monitors HGG temperature.
+          The PCI philosophy specifies emergency isolation when HGG inside temperature
+          exceeds 1000 deg. C.
+        </small>
+      </div>
+      <div class="ref-process-card">
+        <b>EMERGENCY CONDITIONS</b>
+        <small>
+          Verified conditions include PT-203 combustion-air pressure below 150 mmWC,
+          PT-201 BFG pressure below 200 mmWC, CA fan trip/off and flame-off condition.
+        </small>
+      </div>
+      <div class="ref-process-card">
+        <b>ISOLATION SEQUENCE</b>
+        <small>
+          Verified source sequence includes closing MSV-201 LPG, FSV-201 BFG,
+          fully closing MCV-201 and subsequently closing MCV-202 after air purging.
+        </small>
+      </div>
+      <div class="ref-process-card">
+        <b>SOURCE / LIMITATION</b>
+        <small>
+          Source: PCI Process Control Philosophy.
+          The normal HGG temperature limit contains an incomplete value in the source;
+          ANVIQO must not invent that missing value.
+        </small>
+      </div>
+    </div>
+  </div>
+
+</section>
 </main>
 <script>
 const API=location.origin;
@@ -523,5 +1414,51 @@ document.addEventListener('DOMContentLoaded',()=>{startLivePCI();loadPCI();const
 })();
 </script>
 <!-- END ANVIQO VOICE INTERFACE -->
+
+
+<script id="anviqo-command-centre-v2-js">
+(function(){
+  const oldLoad = window.load;
+
+  async function refreshCC(){
+    try{
+      const r = await fetch("/api/status",{credentials:"same-origin"});
+      if(!r.ok) return;
+
+      const s = await r.json();
+
+      const health = s.plant_health || {};
+      const risks = s.risks || s.active_risks || [];
+      const chains = s.event_chains || s.chains || [];
+
+      const rc = Array.isArray(risks) ? risks.length :
+                 (typeof risks === "number" ? risks : null);
+
+      const ccRisk = document.getElementById("cc-risk-count");
+      if(ccRisk && rc !== null) ccRisk.textContent = rc;
+
+      const ccChain = document.getElementById("cc-chain-count");
+      const chainCount = Array.isArray(chains) ? chains.length :
+                         (typeof chains === "number" ? chains : null);
+      if(ccChain && chainCount !== null) ccChain.textContent = chainCount;
+
+      const ccSystem = document.getElementById("cc-system-state");
+      if(ccSystem) ccSystem.textContent = "ONLINE";
+
+    }catch(e){
+      const ccSystem = document.getElementById("cc-system-state");
+      if(ccSystem) ccSystem.textContent = "API CHECK";
+    }
+  }
+
+  window.addEventListener("load", function(){
+    setTimeout(refreshCC,500);
+  });
+
+  window.ANVIQOCommandCentre = {
+    refresh: refreshCC
+  };
+})();
+</script>
 
 </body></html>
