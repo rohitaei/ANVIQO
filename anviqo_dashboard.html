@@ -317,355 +317,366 @@ body{
 }
 </style>
 
+
+<style id="anviqo-reference-command-centre-v4">
+:root{
+  --v4-bg:#061019;--v4-panel:#091824;--v4-panel2:#0c1d2b;
+  --v4-border:#17354a;--v4-text:#e8f3f8;--v4-muted:#7891a2;
+  --v4-cyan:#16d9ff;--v4-green:#31e49a;--v4-red:#ff4f61;
+  --v4-amber:#ffbf3f;--v4-purple:#a66cff;--v4-blue:#258eff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--v4-bg);color:var(--v4-text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{min-height:100vh}
+.v4-shell{display:flex;min-height:100vh;background:
+ radial-gradient(circle at 78% 0%,rgba(16,100,145,.11),transparent 28%),
+ linear-gradient(180deg,#061019,#07131d 60%,#061019)}
+.v4-side{width:232px;flex:0 0 232px;border-right:1px solid #123044;background:rgba(3,14,22,.96);padding:18px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.v4-brand{font-size:28px;font-weight:800;letter-spacing:2px;color:var(--v4-cyan);padding:5px 10px 20px}
+.v4-brand small{display:block;color:#8ea5b4;font-size:7px;letter-spacing:1.8px;margin-top:3px}
+.v4-nav{display:flex;flex-direction:column;gap:5px}
+.v4-nav button{border:0;background:transparent;color:#9bb0bd;text-align:left;padding:11px 12px;border-radius:7px;font-size:12px;cursor:pointer}
+.v4-nav button:hover,.v4-nav button.active{background:linear-gradient(90deg,#087bc6,#07568f);color:#fff}
+.v4-nav .badge{float:right;background:#9d2633;color:#fff;border-radius:4px;padding:2px 6px;font-size:9px}
+.v4-core{border:1px solid #17354a;border-radius:10px;padding:13px;margin-top:18px;background:#071722}
+.v4-core h4{margin:0 0 9px;font-size:10px;color:#87a4b4}
+.v4-core p{margin:6px 0;font-size:9px;color:#9eb1bd}
+.v4-core .ok{color:var(--v4-green)}
+.v4-footer{font-size:8px;color:#617988;margin:25px 7px 8px}
+.v4-main{flex:1;min-width:0;padding:20px 18px 12px}
+.v4-top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:12px}
+.v4-title h1{margin:0;font-size:23px;letter-spacing:.5px}
+.v4-title p{margin:5px 0 0;color:#7e96a6;font-size:10px}
+.v4-topright{display:flex;gap:8px;align-items:center}
+.v4-status{border:1px solid #164158;background:#071722;border-radius:8px;padding:8px 12px;font-size:9px;color:#94aebb}
+.v4-status strong{display:block;color:var(--v4-green);font-size:10px;margin-bottom:3px}
+.v4-time{font-size:10px;color:#9eb2bd;text-align:right;min-width:78px}
+.v4-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.v4-card{background:linear-gradient(180deg,#0a1925,#091722);border:1px solid #15374b;border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.v4-metric{padding:14px 15px;min-height:88px}
+.v4-label{font-size:9px;color:#849aa9;text-transform:uppercase;letter-spacing:.6px}
+.v4-value{font-size:25px;font-weight:800;margin-top:8px}
+.v4-sub{font-size:9px;color:#8095a4;margin-top:3px}
+.green{color:var(--v4-green)}.red{color:var(--v4-red)}.amber{color:var(--v4-amber)}.purple{color:var(--v4-purple)}.cyan{color:var(--v4-cyan)}
+.v4-grid-main{display:grid;grid-template-columns:1.05fr 1.25fr .95fr;gap:8px;margin-top:8px}
+.v4-grid-bottom{display:grid;grid-template-columns:1fr 1.2fr 1.1fr;gap:8px;margin-top:8px}
+.v4-panel{padding:12px;min-height:180px}
+.v4-panel h3{font-size:11px;margin:0 0 10px;display:flex;justify-content:space-between}
+.v4-panel h3 span{font-size:9px;color:var(--v4-cyan);font-weight:500}
+.v4-tabs{display:flex;gap:5px;margin-bottom:8px}
+.v4-tabs button{background:#102434;border:1px solid #173d53;color:#91a6b2;border-radius:5px;padding:6px 8px;font-size:8px}
+.v4-tabs .hot{color:#fff;border-color:#7f2632;background:#35141a}
+.v4-table{width:100%;border-collapse:collapse;font-size:9px}
+.v4-table th{text-align:left;color:#718999;font-weight:500;padding:5px 3px;border-bottom:1px solid #173144}
+.v4-table td{padding:7px 3px;border-bottom:1px solid #102837;color:#b6c7d0}
+.v4-tag{font-weight:700;color:var(--v4-red)}
+.v4-pri{display:inline-block;border-radius:4px;padding:2px 5px;font-size:8px}
+.v4-p1{background:#43141c;color:#ff6b78}.v4-p2{background:#3e3212;color:#ffd064}.v4-p3{background:#102d3e;color:#63d6ff}
+.v4-chart{height:190px;border:1px solid #123044;border-radius:7px;background:#07131e;position:relative;overflow:hidden}
+.v4-chart svg{width:100%;height:100%}
+.v4-insight{margin-top:7px;padding:8px;background:#0b202c;border:1px solid #164358;border-radius:6px;font-size:8px;color:#9bb0bc}
+.v4-risk{border:1px solid #43202a;background:#160f16;border-radius:8px;padding:12px}
+.v4-risk h4{margin:0;font-size:12px}.v4-risk .score{font-size:27px;color:#ff5668;font-weight:800;margin:8px 0}
+.v4-kv{display:flex;justify-content:space-between;border-top:1px solid #34202a;padding:7px 0;font-size:8px;color:#8197a4}
+.v4-kv b{color:#d8e4e9}
+.v4-risk-list{margin-top:7px}
+.v4-risk-row{display:flex;justify-content:space-between;padding:8px 3px;border-top:1px solid #102837;font-size:9px}
+.v4-risk-row strong{color:#7fe1ff}.v4-risk-row b{color:#ff6b78}
+.v4-list{list-style:none;margin:0;padding:0}
+.v4-list li{padding:9px 3px;border-bottom:1px solid #102837;font-size:9px}
+.v4-list li small{display:block;color:#6f8796;margin-top:3px}
+.v4-correlation{display:flex;gap:5px;align-items:center;overflow:auto;padding:10px 0}
+.v4-node{min-width:88px;text-align:center;padding:9px 6px;border:1px solid #6c2632;background:#171016;border-radius:7px;font-size:8px;color:#ff7882}
+.v4-arrow{color:#8199a8;font-size:16px}
+.v4-decision{display:grid;grid-template-columns:100px 1fr 115px;gap:10px;align-items:center}
+.v4-priority{border:1px solid #702431;background:#1b1115;border-radius:7px;padding:10px;text-align:center}
+.v4-priority small{display:block;color:#e15a67;font-size:8px}.v4-priority strong{display:block;color:#ff6470;font-size:16px;margin-top:5px}
+.v4-actions{font-size:9px;color:#a9bac4;line-height:1.8}
+.v4-owner{font-size:9px;color:#8197a5}.v4-owner b{display:block;color:#e4edf1;font-size:11px;margin-top:4px}
+.v4-anvi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.v4-ask,.v4-voice{padding:12px;min-height:150px}
+.v4-chiprow{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
+.v4-chip{border:1px solid #1a4157;background:#0d2230;color:#9eb3be;border-radius:10px;padding:5px 8px;font-size:8px;cursor:pointer}
+.v4-askline{display:flex;gap:6px;margin-top:8px}
+.v4-askline input{flex:1;background:#07131e;border:1px solid #23485c;border-radius:6px;padding:11px;color:#e8f3f8;outline:none}
+.v4-askline button,.v4-voice button{background:linear-gradient(90deg,#16bfe8,#19d9ff);border:0;border-radius:6px;padding:0 15px;font-weight:800;color:#06202b}
+.v4-response{margin-top:8px;background:#06111a;border:1px solid #123447;border-radius:6px;min-height:55px;padding:8px;font-size:9px;color:#a9bac4;white-space:pre-wrap}
+.v4-voicebox{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.v4-mic{width:54px;height:54px;border-radius:50%;border:1px solid #1a6c83;background:#092532;display:grid;place-items:center;font-size:24px;color:#19d9ff}
+.v4-wave{flex:1;height:42px;background:repeating-linear-gradient(90deg,#0d3140 0 3px,transparent 3px 8px);opacity:.7;border-radius:4px}
+.v4-transcript{font-size:8px;color:#7893a2;margin-top:7px}
+.v4-bottombar{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px;padding:9px 0 2px;border-top:1px solid #123044;color:#78919f;font-size:8px}
+.v4-bottombar b{display:block;color:#b9cbd4;font-size:9px;margin-top:4px}
+.v4-green{color:var(--v4-green)}.v4-red{color:var(--v4-red)}
+@media(max-width:1100px){
+ .v4-side{width:190px;flex-basis:190px}.v4-metrics{grid-template-columns:repeat(3,1fr)}
+ .v4-grid-main,.v4-grid-bottom{grid-template-columns:1fr 1fr}.v4-grid-main .v4-panel:last-child{grid-column:1/-1}
+ .v4-anvi{grid-template-columns:1fr}.v4-bottombar{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:720px){
+ .v4-shell{display:block}.v4-side{position:relative;width:100%;height:auto;display:none}.v4-side.open{display:block}
+ .v4-main{padding:10px}.v4-top{align-items:flex-start}.v4-title h1{font-size:17px}
+ .v4-topright{display:none}.v4-metrics{grid-template-columns:repeat(2,1fr)}
+ .v4-grid-main,.v4-grid-bottom{grid-template-columns:1fr}.v4-grid-main .v4-panel:last-child{grid-column:auto}
+ .v4-decision{grid-template-columns:1fr}.v4-bottombar{grid-template-columns:repeat(2,1fr)}
+ .v4-mobile-menu{display:block!important}
+}
+.v4-mobile-menu{display:none;background:#0b1d29;border:1px solid #1a4358;color:#d9edf4;border-radius:6px;padding:8px 10px;margin-bottom:8px}
+</style>
+
 </head>
 <body>
-<aside class="side" id="side"><div class="logo">ANVIQO<small>THINK • PREDICT • PROTECT</small></div>
-<div class="nav"><button class="active">⌂ &nbsp; COMMAND CENTER</button><button>◈ &nbsp; PLANT OVERVIEW</button><button>⚙ &nbsp; EQUIPMENT INTELLIGENCE</button><button>◌ &nbsp; WHAT CHANGED</button><button>⛓ &nbsp; EVENT CORRELATION</button><button>▣ &nbsp; MANAGEMENT DECISION</button><button onclick="focusAsk()">✦ &nbsp; ASK ANVI</button><button>▤ &nbsp; REPORTS</button><button>⚙ &nbsp; SETTINGS</button></div>
-<div class="freeze"><b>V5 FROZEN CORE</b>READ-ONLY SYSTEM<span>● PLC WRITE BLOCKED</span><span>● SCADA CONTROL BLOCKED</span><span>● HUMAN DECISION REQUIRED</span><span>● CAUSATION NOT CLAIMED</span></div></aside>
-<button class="menu" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
-<main class="main"><header class="top"><div><h1>Plant Intelligence Command Center</h1><p>ANVIQO V5 Frozen Intelligence • Live Product View</p></div><div class="api" id="api">● API CONNECTED<small id="time">Live</small></div></header>
-<section class="grid"><div class="card metric"><div class="lab">PLANT STATUS</div><div class="val green" id="ps">ATTENTION</div><div class="sub" id="score">Health Score: 72.4/100</div></div><div class="card metric"><div class="lab">MANAGEMENT PRIORITY</div><div class="val red" id="pri">P1 — URGENT</div><div class="sub">Top Priority Risk</div></div><div class="card metric"><div class="lab">ACTIVE RISKS</div><div class="val amber" id="riskcount">3</div><div class="sub">Equipment At Risk</div></div><div class="card metric"><div class="lab">EVENT CHAINS</div><div class="val purple" id="chains">2</div><div class="sub">Active Correlated Chains</div></div><div class="card metric"><div class="lab">SYSTEM STATUS</div><div class="val cyan">ONLINE</div><div class="sub">All Systems Operational</div></div></section>
-<section class="row"><div class="card box"><h3>TOP EQUIPMENT RISK <span>VIEW ALL →</span></h3><div class="risk"><div class="riskhead"><div class="equip">CV-101 | MBF</div><div class="badge">P1 — URGENT</div></div><div class="score">84.7<small>/100</small></div><div style="font-size:10px;color:#9cafbd">Valve position increasing significantly with worsening operational trend.</div><div class="kv"><span>Issue</span><b>Valve position increasing</b></div><div class="kv"><span>Impact</span><b>High Operational Risk</b></div><div class="kv"><span>Evidence</span><b>Available</b></div><div class="kv"><span>Trend</span><b style="color:#ff6678">WORSENING</b></div></div></div>
-<div class="card box"><h3>WHAT CHANGED <span>VIEW ALL →</span></h3><div class="item"><i class="dot"></i><div><b>CV-101 valve position increased significantly</b><small>Live evidence</small></div></div><div class="item"><i class="dot"></i><div><b>CV-102 valve position is in warning</b><small>Related event activity</small></div></div><div class="item"><i class="dot"></i><div><b>PT-201 pressure requires attention</b><small>Condition requires investigation</small></div></div><div class="item"><i class="dot" style="background:var(--g)"></i><div><b>Temperature stable</b><small>No significant change</small></div></div><div class="item"><i class="dot" style="background:var(--g)"></i><div><b>Vibration stable</b><small>No significant change</small></div></div></div>
-<div class="card box"><h3>EVENT / RELATIONSHIP CORRELATION <span>VIEW ALL →</span></h3><div class="corr"><div class="node n1">FT-101<br>Flow</div><div class="node n2">P-101<br>Loading</div><div class="node n3">TT-101<br>Stable</div><div class="node n4">LIC-101<br>Stable</div><div class="node n5">PT-201<br>Pressure</div><div class="node center">CV-101<br>HIGH RISK</div></div><div style="text-align:center;color:#8195a7;font-size:9px">2 developing event chains • Causation not claimed</div></div></section>
-<section class="card box" id="pci-intelligence" style="margin-top:18px;">
-<h3>PCI INSTRUMENTATION INTELLIGENCE <span id="pciStatus">LOADING...</span></h3>
-<div class="grid" style="margin-top:12px;">
-<div class="card metric"><div class="lab">PCI I/O</div><div class="val cyan" id="pciTotal">—</div><div class="sub">Instrumentation Records</div></div>
-<div class="card metric"><div class="lab">HIGH CRITICAL</div><div class="val red" id="pciCritical">—</div><div class="sub">Critical Instruments</div></div>
-<div class="card metric"><div class="lab">AREAS</div><div class="val green" id="pciAreas">—</div><div class="sub">PCI Operational Areas</div></div>
-<div class="card metric"><div class="lab">I/O TYPES</div><div class="val amber" id="pciTypes">—</div><div class="sub">Configured Types</div></div>
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
-<div class="card box">
-<h3>PCI AREA COVERAGE</h3>
-<div id="pciAreaList"></div>
-</div>
-<div class="card box">
-<h3>I/O TYPE DISTRIBUTION</h3>
-<div id="pciTypeList"></div>
-</div>
-</div>
-<div class="card box" style="margin-top:14px;">
-<h3>HIGH-CRITICALITY PCI INSTRUMENTS</h3>
-<div id="pciCriticalList"></div>
-</div>
-<div class="card box" style="margin-top:14px;">
-<h3>PCI INSTRUMENT DATABASE <span>1,064 I/O</span></h3>
-<input id="pciSearch" placeholder="Search tag, description, area or I/O type..." style="width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:1px solid #304354;background:#0b151f;color:#fff;margin:8px 0 12px;">
-<div style="overflow:auto;max-height:420px;">
-<table style="width:100%;border-collapse:collapse;font-size:11px;">
-<thead><tr><th style="text-align:left;padding:8px;">TAG</th><th style="text-align:left;padding:8px;">DESCRIPTION</th><th style="text-align:left;padding:8px;">AREA</th><th style="text-align:left;padding:8px;">I/O</th><th style="text-align:left;padding:8px;">CRITICALITY</th></tr></thead>
-<tbody id="pciTable"></tbody>
-</table>
-</div>
-</div>
-</section>
-<section class="card decision"><div><h4>MANAGEMENT DECISION</h4><strong>MAINTENANCE REVIEW REQUIRED</strong><p>Level: <b style="color:var(--r)">P1 — URGENT</b><br>Priority: <b>84.7/100</b></p></div><div><h4>WHY ANVIQO IS CONCERNED</h4><ul><li>Valve position increasing significantly.</li><li>High operational impact if not addressed.</li><li>Multiple related parameters show deviation.</li><li>Evidence supports controlled review.</li></ul></div><div><h4>RECOMMENDED ACTIONS</h4><ol><li>Verify valve position</li><li>Check actuator / I/P condition</li><li>Review control-loop performance</li><li>Validate setpoint and tuning</li></ol></div><div class="confidence"><h4>CONFIDENCE</h4><div class="circle">92%</div><p style="color:var(--g);font-size:9px">High Confidence</p></div></section>
 
-<section class="card livepci" id="livepci">
-    <div class="livepci-title">
-        <span>◉ LIVE PCI ANALYSIS</span>
-        <span class="livebadge" id="liveMode">SIMULATION • LIVE STREAM</span>
+<div class="v4-shell" id="anviqo-v4-shell">
+  <aside class="v4-side" id="v4Side">
+    <div class="v4-brand">ANVIQO<small>THINK • PREDICT • PROTECT</small></div>
+    <nav class="v4-nav">
+      <button class="active">⌂ &nbsp; COMMAND CENTER</button>
+      <button>◈ &nbsp; PLANT OVERVIEW</button>
+      <button>♧ &nbsp; LIVE ALARMS <span class="badge" id="v4AlarmBadge">—</span></button>
+      <button>⚙ &nbsp; EQUIPMENT INTELLIGENCE</button>
+      <button>◌ &nbsp; ANALYSIS</button>
+      <button>◌ &nbsp; WHAT CHANGED</button>
+      <button>⛓ &nbsp; EVENT CORRELATION</button>
+      <button>▣ &nbsp; MANAGEMENT DECISION</button>
+      <button onclick="document.getElementById('q').focus()">✦ &nbsp; ASK ANVI</button>
+      <button>▤ &nbsp; REPORTS</button>
+      <button>⚙ &nbsp; SETTINGS</button>
+    </nav>
+    <div class="v4-core">
+      <h4>V5 FROZEN CORE</h4>
+      <p class="ok">● READ-ONLY SYSTEM</p>
+      <p class="ok">● PLC WRITE BLOCKED</p>
+      <p class="ok">● SCADA CONTROL BLOCKED</p>
+      <p class="ok">● HUMAN DECISION REQUIRED</p>
+      <p class="ok">● CAUSATION NOT CLAIMED</p>
     </div>
-    <div class="livegrid">
-        <div class="liveitem"><small>PCI I/O</small><b id="liveTotal">—</b></div>
-        <div class="liveitem"><small>HEALTHY</small><b id="liveHealthy" class="green">—</b></div>
-        <div class="liveitem"><small>WARNING</small><b id="liveWarning" class="amber">—</b></div>
-        <div class="liveitem"><small>CRITICAL</small><b id="liveCritical" class="red">—</b></div>
-        <div class="liveitem"><small>PLANT HEALTH</small><b id="liveHealth" class="cyan">—</b></div>
-    </div>
-    <div style="margin-top:7px;font-size:8px;color:#71899b">
-        Active events: <span id="liveEvents">—</span>
-        &nbsp;•&nbsp;
-        Changed I/O: <span id="liveChanged">—</span>
-        &nbsp;•&nbsp;
-        Areas: <span id="liveAreas">—</span>
-    </div>
-</section>
+    <div class="v4-footer">© ANVIQO V5 &nbsp; | &nbsp; All rights reserved</div>
+  </aside>
 
-<section class="card ask" id="ask"><div class="anvi"><div class="face">AI</div><h2>ANVI</h2><p>Evidence-backed plant intelligence assistant<br>Read-only • Human governed</p></div><div><h2>✦ ASK ANVI</h2><div class="desc">Ask about equipment, plant condition, events, maintenance or management decisions.</div><div class="quick"><button onclick="ask('Why is CV-101 high risk?')">Why is CV-101 high risk?</button><button onclick="ask('What changed in the plant?')">What changed?</button><button onclick="ask('Show active event chains')">Show active event chains</button><button onclick="ask('What is the plant health score?')">Plant health score</button></div><div class="askline"><input id="q" placeholder="Type your question to ANVI..." onkeydown="if(event.key==='Enter')ask()"><button onclick="ask()">ASK ANVI</button></div>
-<div class="chatbox" id="chatbox">
-    <div class="msg anvi">
-        <span class="who">ANVI</span>
-        I am online. I can analyze the simulated 1,064-I/O PCI stream,
-        plant health, active events, changes, instrumentation and
-        maintenance evidence.
-        <br><br>
-        <span style="color:#45e69a">Demo Live Mode • Read-only • Human governed</span>
-    </div>
-</div>
-</div></section>
-<div class="card safety"><span class="pill ok">● V5 FROZEN CORE</span><span class="pill ok">◈ READ-ONLY</span><span class="pill">PLC WRITE BLOCKED</span><span class="pill">SCADA CONTROL BLOCKED</span><span class="pill">HUMAN DECISION REQUIRED</span><span class="pill">AUTOMATIC AUTHORIZATION DISABLED</span><span class="pill">CAUSATION NOT CLAIMED</span></div><footer>ANVIQO PRODUCT V1.2 | V5 FROZEN CORE | THINK • PREDICT • PROTECT</footer>
-
-<!-- =========================================================
-
-
-<!-- =========================================================
-
-
-<style id="anviqo-reference-v3">
-<style id="anviqo-v3-primary">
-/* V3 is the primary Command Centre */
-[id*="command-centre-v2"],
-[id*="commandCentreV2"],
-.anviqo-command-centre-v2,
-.anviqo-v2-command-centre,
-.anviqo-cc-v2 {
-  display:none !important;
-}
-</style>
-/* ANVIQO REFERENCE COMMAND CENTRE V3 */
-:root{
-  --ref-bg:#071018;
-  --ref-panel:#0b1620;
-  --ref-panel2:#0e1c28;
-  --ref-border:rgba(125,170,195,.18);
-  --ref-text:#e7f1f7;
-  --ref-muted:#7f96a7;
-  --ref-cyan:#20d8ff;
-  --ref-green:#39e29b;
-  --ref-amber:#ffc857;
-  --ref-red:#ff5d6c;
-}
-#anviqo-reference-v3{
-  display:grid;
-  grid-template-columns:repeat(12,minmax(0,1fr));
-  gap:14px;
-  margin:18px 0;
-}
-.ref-panel{
-  background:linear-gradient(145deg,var(--ref-panel),var(--ref-panel2));
-  border:1px solid var(--ref-border);
-  border-radius:12px;
-  padding:16px;
-  min-height:120px;
-  box-shadow:0 10px 30px rgba(0,0,0,.18);
-}
-.ref-wide{grid-column:span 8}
-.ref-half{grid-column:span 4}
-.ref-third{grid-column:span 4}
-.ref-full{grid-column:1/-1}
-.ref-title{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  color:var(--ref-text);
-  font-size:12px;
-  font-weight:700;
-  letter-spacing:.08em;
-  margin-bottom:14px;
-}
-.ref-live{
-  color:var(--ref-green);
-  font-size:10px;
-  letter-spacing:.04em;
-}
-.ref-alarm{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:9px 0;
-  border-bottom:1px solid var(--ref-border);
-  font-size:11px;
-}
-.ref-alarm:last-child{border-bottom:0}
-.ref-dot{
-  width:7px;height:7px;border-radius:50%;
-  display:inline-block;margin-right:7px;
-}
-.ref-red{background:var(--ref-red)}
-.ref-amber{background:var(--ref-amber)}
-.ref-green{background:var(--ref-green)}
-.ref-value{
-  color:var(--ref-text);
-  font-weight:700;
-}
-.ref-muted{color:var(--ref-muted)}
-.ref-analysis{
-  padding:10px 0;
-  border-bottom:1px solid var(--ref-border);
-}
-.ref-analysis:last-child{border-bottom:0}
-.ref-analysis strong{
-  display:block;
-  color:var(--ref-text);
-  font-size:12px;
-  margin-bottom:5px;
-}
-.ref-analysis span{
-  color:var(--ref-muted);
-  font-size:10px;
-  line-height:1.5;
-}
-.ref-command{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.ref-command button{
-  border:1px solid rgba(32,216,255,.28);
-  background:rgba(32,216,255,.07);
-  color:var(--ref-cyan);
-  border-radius:8px;
-  padding:9px 12px;
-  cursor:pointer;
-  font-size:10px;
-}
-.ref-command button:hover{
-  background:rgba(32,216,255,.14);
-}
-.ref-process{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-.ref-process-card{
-  border:1px solid var(--ref-border);
-  border-radius:8px;
-  padding:11px;
-}
-.ref-process-card b{
-  color:var(--ref-text);
-  font-size:11px;
-}
-.ref-process-card small{
-  display:block;
-  color:var(--ref-muted);
-  margin-top:5px;
-  line-height:1.45;
-}
-@media(max-width:900px){
-  .ref-wide,.ref-half,.ref-third{grid-column:1/-1}
-  .ref-process{grid-template-columns:1fr}
-}
-</style>
-
-<!-- ANVIQO_REFERENCE_COMMAND_CENTRE_V3 -->
-<section id="anviqo-reference-v3">
-
-  <div class="ref-panel ref-wide">
-    <div class="ref-title">
-      <span>LIVE PLANT COMMAND CENTRE</span>
-      <span class="ref-live">● LIVE</span>
-    </div>
-    <div class="ref-process">
-      <div class="ref-process-card">
-        <b>PLANT HEALTH</b>
-        <small id="ref-health">Reading live plant intelligence…</small>
+  <main class="v4-main">
+    <button class="v4-mobile-menu" onclick="document.getElementById('v4Side').classList.toggle('open')">☰ &nbsp; MENU</button>
+    <header class="v4-top">
+      <div class="v4-title">
+        <h1>PLANT INTELLIGENCE COMMAND CENTER</h1>
+        <p>ANVIQO V5 Frozen Intelligence • Live Product View</p>
       </div>
-      <div class="ref-process-card">
-        <b>SYSTEM STATE</b>
-        <small id="ref-system">Connected to ANVIQO intelligence layer</small>
+      <div class="v4-topright">
+        <div class="v4-status"><strong id="api">● API CONNECTED</strong><span id="v4ApiSub">Live</span></div>
+        <div class="v4-status"><strong>◔ DATA STREAM</strong><span>Live</span></div>
+        <div class="v4-time"><b id="v4Clock">--:--</b><br><span>Live</span></div>
       </div>
-      <div class="ref-process-card">
-        <b>TOP EQUIPMENT RISK</b>
-        <small id="ref-risk">Reading V5 equipment intelligence…</small>
-      </div>
-      <div class="ref-process-card">
-        <b>EVENT CORRELATION</b>
-        <small id="ref-events">Reading correlated plant events…</small>
-      </div>
-    </div>
-  </div>
+    </header>
 
-  <div class="ref-panel ref-half">
-    <div class="ref-title">
-      <span>LIVE ALARMS</span>
-      <span class="ref-live">● MONITORING</span>
-    </div>
-    <div class="ref-alarm">
-      <span><i class="ref-dot ref-red"></i>Critical condition</span>
-      <span class="ref-value">ANVI</span>
-    </div>
-    <div class="ref-alarm">
-      <span><i class="ref-dot ref-amber"></i>Attention required</span>
-      <span class="ref-muted">Evidence</span>
-    </div>
-    <div class="ref-alarm">
-      <span><i class="ref-dot ref-green"></i>Stable condition</span>
-      <span class="ref-muted">Normal</span>
-    </div>
-    <div class="ref-alarm">
-      <span class="ref-muted">Live alarm feed</span>
-      <span class="ref-muted">API-backed</span>
-    </div>
-  </div>
+    <section class="v4-metrics">
+      <div class="v4-card v4-metric"><div class="v4-label">PLANT HEALTH SCORE</div><div class="v4-value green" id="ps">—</div><div class="v4-sub" id="score">Health Score: —/100</div></div>
+      <div class="v4-card v4-metric"><div class="v4-label">TOTAL ALARMS</div><div class="v4-value red" id="v4TotalAlarms">—</div><div class="v4-sub">Live alarm state</div></div>
+      <div class="v4-card v4-metric"><div class="v4-label">ACTIVE EQUIPMENT AT RISK</div><div class="v4-value amber" id="riskcount">—</div><div class="v4-sub">High risk</div></div>
+      <div class="v4-card v4-metric"><div class="v4-label">EVENT CHAINS</div><div class="v4-value purple" id="chains">—</div><div class="v4-sub">Active correlated chains</div></div>
+      <div class="v4-card v4-metric"><div class="v4-label">SYSTEM STATUS</div><div class="v4-value cyan">ONLINE</div><div class="v4-sub">Read-only • Human governed</div></div>
+    </section>
 
-  <div class="ref-panel ref-wide">
-    <div class="ref-title">
-      <span>ANALYSIS</span>
-      <span class="ref-live">V5 + ENGINEERING + PROCESS</span>
-    </div>
-    <div class="ref-analysis">
-      <strong>Equipment Intelligence</strong>
-      <span>Risk, trend, evidence and relationships from the existing V5 intelligence stack.</span>
-    </div>
-    <div class="ref-analysis">
-      <strong>Engineering Intelligence</strong>
-      <span>Instrument identity, range, PLC/DCS I/O, spares and cable information from verified sources.</span>
-    </div>
-    <div class="ref-analysis">
-      <strong>Process Intelligence</strong>
-      <span>Process conditions and interlocks are grounded in the extracted PCI Process Control Philosophy.</span>
-    </div>
-  </div>
+    <section class="v4-grid-main">
+      <div class="v4-card v4-panel">
+        <h3>LIVE ALARMS <span>View all →</span></h3>
+        <div class="v4-tabs"><button class="hot">P1 - CRITICAL</button><button>P2 - WARNING</button><button>P3 - INFO</button></div>
+        <table class="v4-table"><thead><tr><th>TIME</th><th>TAG</th><th>DESCRIPTION</th><th>PRI</th></tr></thead>
+        <tbody id="v4AlarmRows"><tr><td colspan="4">Reading live alarm intelligence…</td></tr></tbody></table>
+      </div>
 
-  <div class="ref-panel ref-half">
-    <div class="ref-title">
-      <span>COMMAND</span>
-      <span class="ref-live">HUMAN GOVERNED</span>
-    </div>
-    <div class="ref-command">
-      <button onclick="focusAsk()">ASK ANVI</button>
-      <button onclick="window.ANVIQOVoice && window.ANVIQOVoice.ask('What is the current plant condition?')">PLANT STATUS</button>
-      <button onclick="window.ANVIQOVoice && window.ANVIQOVoice.ask('Show active risks')">ACTIVE RISKS</button>
-      <button onclick="window.ANVIQOVoice && window.ANVIQOVoice.ask('What changed in the plant?')">WHAT CHANGED</button>
-    </div>
-  </div>
+      <div class="v4-card v4-panel">
+        <h3>PLANT ANALYSIS <span>View all →</span></h3>
+        <div class="v4-tabs"><button class="hot">TREND ANALYSIS</button><button>HEALTH TREND</button><button>PREDICTIONS</button></div>
+        <div class="v4-chart">
+          <svg viewBox="0 0 600 220" preserveAspectRatio="none" aria-label="Plant trend">
+            <g stroke="#143448" stroke-width="1">
+              <path d="M0 40H600M0 80H600M0 120H600M0 160H600M0 200H600"/>
+              <path d="M70 0V220M170 0V220M270 0V220M370 0V220M470 0V220M570 0V220"/>
+            </g>
+            <polyline fill="none" stroke="#ff4f61" stroke-width="3" points="0,155 45,135 90,148 135,112 180,126 225,94 270,115 315,82 360,105 405,72 450,92 495,65 540,82 600,55"/>
+            <polyline fill="none" stroke="#31e49a" stroke-width="2.5" points="0,145 45,152 90,132 135,141 180,120 225,128 270,104 315,120 360,92 405,111 450,95 495,102 540,80 600,92"/>
+            <polyline fill="none" stroke="#258eff" stroke-width="2.5" points="0,178 45,165 90,171 135,151 180,160 225,142 270,154 315,132 360,143 405,126 450,140 495,116 540,130 600,112"/>
+            <polyline fill="none" stroke="#ffbf3f" stroke-width="2" points="0,190 45,181 90,188 135,170 180,183 225,166 270,178 315,155 360,170 405,149 450,161 495,145 540,153 600,138"/>
+          </svg>
+        </div>
+        <div class="v4-insight"><b>INSIGHT</b><br><span id="v4Insight">ANVI is correlating live plant conditions and evidence.</span></div>
+      </div>
 
-  <div class="ref-panel ref-full">
-    <div class="ref-title">
-      <span>PROCESS TROUBLESHOOTING</span>
-      <span class="ref-live">SOURCE-BACKED</span>
-    </div>
-    <div class="ref-process">
-      <div class="ref-process-card">
-        <b>HGG TEMPERATURE</b>
-        <small>
-          Verified source relationship: TE-203 monitors HGG temperature.
-          The PCI philosophy specifies emergency isolation when HGG inside temperature
-          exceeds 1000 deg. C.
-        </small>
+      <div class="v4-card v4-panel">
+        <h3>TOP EQUIPMENT RISKS <span>View all →</span></h3>
+        <div class="v4-risk">
+          <h4 id="v4RiskTag">Reading risk…</h4>
+          <div class="score" id="v4RiskScore">—<small>/100</small></div>
+          <div class="v4-kv"><span>Issue</span><b id="v4RiskIssue">—</b></div>
+          <div class="v4-kv"><span>Impact</span><b id="v4RiskImpact">—</b></div>
+          <div class="v4-kv"><span>Evidence</span><b id="v4RiskEvidence">—</b></div>
+          <div class="v4-kv"><span>Trend</span><b id="v4RiskTrend">—</b></div>
+        </div>
+        <div class="v4-risk-list" id="v4RiskList"><div class="v4-risk-row"><span>Waiting for live equipment intelligence</span><b>—</b></div></div>
       </div>
-      <div class="ref-process-card">
-        <b>EMERGENCY CONDITIONS</b>
-        <small>
-          Verified conditions include PT-203 combustion-air pressure below 150 mmWC,
-          PT-201 BFG pressure below 200 mmWC, CA fan trip/off and flame-off condition.
-        </small>
-      </div>
-      <div class="ref-process-card">
-        <b>ISOLATION SEQUENCE</b>
-        <small>
-          Verified source sequence includes closing MSV-201 LPG, FSV-201 BFG,
-          fully closing MCV-201 and subsequently closing MCV-202 after air purging.
-        </small>
-      </div>
-      <div class="ref-process-card">
-        <b>SOURCE / LIMITATION</b>
-        <small>
-          Source: PCI Process Control Philosophy.
-          The normal HGG temperature limit contains an incomplete value in the source;
-          ANVIQO must not invent that missing value.
-        </small>
-      </div>
-    </div>
-  </div>
+    </section>
 
-</section>
-</main>
+    <section class="v4-grid-bottom">
+      <div class="v4-card v4-panel">
+        <h3>WHAT CHANGED <span>View all →</span></h3>
+        <ul class="v4-list" id="v4Changed"><li>Reading live event timeline…</li></ul>
+      </div>
+
+      <div class="v4-card v4-panel">
+        <h3>EVENT CORRELATION <span>View all →</span></h3>
+        <div class="v4-correlation" id="v4Correlation">
+          <div class="v4-node">HGG Temp<br>—</div><div class="v4-arrow">→</div>
+          <div class="v4-node">BFG Pressure<br>—</div><div class="v4-arrow">→</div>
+          <div class="v4-node">Combustion Air<br>—</div><div class="v4-arrow">→</div>
+          <div class="v4-node">Valve Position<br>—</div>
+        </div>
+        <div class="v4-insight">Correlation strength: <b id="v4CorrelationStrength">Reading…</b></div>
+      </div>
+
+      <div class="v4-card v4-panel">
+        <h3>MANAGEMENT DECISION <span>View all →</span></h3>
+        <div class="v4-decision">
+          <div class="v4-priority"><small>RECOMMENDED PRIORITY</small><strong id="v4Priority">—</strong></div>
+          <div class="v4-actions" id="v4Actions">Evidence-backed recommended actions will appear here.</div>
+          <div class="v4-owner">Owner<b>Operations</b>Due Time<b id="v4Due">—</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="v4-anvi">
+      <div class="v4-card v4-ask">
+        <h3>ANVI COMMAND <span>Evidence-backed • Read-only</span></h3>
+        <div class="v4-chiprow">
+          <button class="v4-chip" onclick="v4Ask('Instrument Info')">Instrument Info</button>
+          <button class="v4-chip" onclick="v4Ask('Process and Logic')">Process & Logic</button>
+          <button class="v4-chip" onclick="v4Ask('Active Alarms and Events')">Alarms & Events</button>
+          <button class="v4-chip" onclick="v4Ask('Troubleshooting')">Troubleshooting</button>
+          <button class="v4-chip" onclick="v4Ask('What changed in the plant?')">What Changed</button>
+        </div>
+        <div class="v4-askline"><input id="q" placeholder="Ask ANVI…" onkeydown="if(event.key==='Enter')v4Ask()"><button onclick="v4Ask()">ASK ANVI</button></div>
+        <div class="v4-response" id="v4AskResponse">Ask about equipment, process, alarms, events, maintenance or plant condition.</div>
+      </div>
+
+      <div class="v4-card v4-voice">
+        <h3>ANVI VOICE <span>Same ANVI orchestrator</span></h3>
+        <div class="v4-voicebox">
+          <div class="v4-mic">🎙</div>
+          <div style="flex:1"><div class="v4-wave"></div><div class="v4-transcript" id="anviVoiceTranscript">Transcript will appear here…</div></div>
+          <button id="anviVoiceButton" type="button">🎤 Speak to ANVI</button>
+        </div>
+        <div class="v4-response" id="anviVoiceResponse">Voice response will appear here.</div>
+        <div id="anviVoiceStatus" class="v4-transcript">Ready.</div>
+      </div>
+    </section>
+
+    <footer class="v4-bottombar">
+      <div>Data Quality<b class="v4-green">Excellent</b></div>
+      <div>Last Updated<b id="v4Updated">—</b></div>
+      <div>Active Users<b>—</b></div>
+      <div>Data Source<b>Live Plant Systems</b></div>
+      <div>Read-only Mode<b class="v4-green">🔒 Active</b></div>
+      <div>Safety Boundary<b class="v4-red">ENFORCED</b></div>
+    </footer>
+  </main>
+</div>
+
+
+<script id="anviqo-reference-v4-runtime">
+(function(){
+  const esc = s => String(s ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  const arr = v => Array.isArray(v) ? v : [];
+  const pickArray = (o, keys) => {
+    for(const k of keys){ if(o && Array.isArray(o[k])) return o[k]; }
+    return [];
+  };
+  function set(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
+  function clock(){ const d=new Date(); set("v4Clock",d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})); set("v4Updated",d.toLocaleTimeString());}
+  async function getJSON(url, opts={}){
+    const r=await fetch(url,{credentials:"same-origin",...opts});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    return await r.json();
+  }
+  function normalizeStatus(s){
+    if(!s || typeof s!=="object") return {};
+    const ph=s.plant_health||s.health||{};
+    set("ps",(ph.status||s.status||"ATTENTION").toUpperCase());
+    if(ph.score!=null) set("score","Health Score: "+ph.score+"/100");
+    const risks=pickArray(s,["equipment_risks","risks","active_risks"]);
+    const chains=pickArray(s,["event_chains","chains","correlated_events"]);
+    const alarms=pickArray(s,["alarms","active_alarms","live_alarms"]);
+    set("riskcount",s.active_equipment_risk ?? s.active_risks_count ?? risks.length ?? "—");
+    set("chains",s.event_chains_count ?? chains.length ?? "—");
+    set("v4TotalAlarms",s.total_alarms ?? s.alarm_count ?? alarms.length ?? "—");
+    set("v4AlarmBadge",s.total_alarms ?? s.alarm_count ?? alarms.length ?? "—");
+    if(s.management_priority) set("v4Priority",s.management_priority);
+    return {risks,chains,alarms,ph};
+  }
+  function renderAlarms(alarms){
+    const e=document.getElementById("v4AlarmRows"); if(!e)return;
+    if(!alarms.length){e.innerHTML='<tr><td colspan="4">No live alarm records returned.</td></tr>';return;}
+    e.innerHTML=alarms.slice(0,6).map(a=>{
+      const tag=a.tag||a.instrument||a.name||"—";
+      const desc=a.description||a.message||a.condition||a.status||"—";
+      const pri=(a.priority||a.severity||a.level||"P3").toString().toUpperCase();
+      const cls=pri.includes("1")||pri.includes("CRIT")?"v4-p1":pri.includes("2")||pri.includes("WARN")?"v4-p2":"v4-p3";
+      return `<tr><td>${esc(a.time||a.timestamp||"—")}</td><td class="v4-tag">${esc(tag)}</td><td>${esc(desc)}</td><td><span class="v4-pri ${cls}">${esc(pri)}</span></td></tr>`;
+    }).join("");
+  }
+  function renderRisks(risks){
+    if(!risks.length)return;
+    const r=risks[0]||{};
+    set("v4RiskTag",r.tag||r.equipment||r.name||"TOP EQUIPMENT RISK");
+    set("v4RiskScore",r.score!=null?String(r.score):r.risk_score!=null?String(r.risk_score):"—");
+    set("v4RiskIssue",r.issue||r.reason||r.description||"—");
+    set("v4RiskImpact",r.impact||"Operational risk");
+    set("v4RiskEvidence",r.evidence?"Available":"Available");
+    set("v4RiskTrend",r.trend||r.direction||"—");
+    const box=document.getElementById("v4RiskList");
+    box.innerHTML=risks.slice(1,5).map(x=>`<div class="v4-risk-row"><span>${esc(x.tag||x.equipment||x.name||"—")}</span><b>${esc(x.score??x.risk_score??"—")}/100</b></div>`).join("");
+  }
+  function renderChanged(changed){
+    const e=document.getElementById("v4Changed"); if(!e)return;
+    if(!changed.length){e.innerHTML="<li>No recent changes returned.</li>";return;}
+    e.innerHTML=changed.slice(0,4).map(x=>`<li>● ${esc(x.title||x.description||x.message||x.change||x)}<small>${esc(x.time||x.timestamp||"Live evidence")}</small></li>`).join("");
+  }
+  async function loadV4(){
+    try{
+      const s=await getJSON("/api/status");
+      const n=normalizeStatus(s);
+      renderAlarms(n.alarms);
+      renderRisks(n.risks);
+      renderChanged(pickArray(s,["what_changed","changes","events","recent_changes"]));
+      set("v4ApiSub","Live");
+      const insight=(s.plant_analysis&&s.plant_analysis.insight)||s.insight;
+      if(insight)set("v4Insight",insight);
+    }catch(e){
+      const api=document.getElementById("api"); if(api)api.textContent="● API OFFLINE";
+      set("v4ApiSub","Waiting for API");
+    }
+    try{
+      const p=await getJSON("/api/pci/live");
+      const recs=pickArray(p,["records","instruments","io","data","live"]);
+      if(recs.length && !document.getElementById("v4AlarmRows").innerText.includes("No live")) renderAlarms(recs.filter(x=>String(x.severity||x.priority||"").match(/1|2|3|critical|warning/i)).slice(0,6));
+    }catch(e){}
+    clock();
+  }
+  window.v4Ask=async function(q){
+    const input=document.getElementById("q");
+    const question=(q || (input&&input.value) || "").trim();
+    if(!question)return;
+    set("v4AskResponse","ANVI is analysing plant evidence…");
+    try{
+      const r=await getJSON("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question,query:question})});
+      const answer=r.answer||r.response||r.message||r.result||JSON.stringify(r);
+      set("v4AskResponse",answer);
+      if(input)input.value="";
+    }catch(e){set("v4AskResponse","ANVI request could not be completed. API response: "+e.message);}
+  };
+  window.v4Load=loadV4;
+  clock(); loadV4(); setInterval(loadV4,15000);
+})();
+</script>
+
 <script>
 const API=location.origin;
 function focusAsk(){document.getElementById('ask').scrollIntoView({behavior:'smooth'});document.getElementById('q').focus()}
@@ -771,82 +782,6 @@ function startLivePCI(){
 
 document.addEventListener('DOMContentLoaded',()=>{startLivePCI();loadPCI();const s=document.getElementById('pciSearch');if(s)s.addEventListener('input',e=>renderPCI(e.target.value));});
 </script>
-
-<!-- ANVIQO VOICE INTERFACE -->
-<style>
-#anviVoicePanel{
-    position:fixed;
-    right:18px;
-    bottom:18px;
-    z-index:99999;
-    background:rgba(15,23,42,.97);
-    color:#fff;
-    border:1px solid rgba(255,255,255,.18);
-    border-radius:16px;
-    padding:14px;
-    width:310px;
-    box-shadow:0 12px 40px rgba(0,0,0,.35);
-    font-family:Arial,sans-serif;
-}
-#anviVoicePanel .av-title{
-    font-weight:700;
-    font-size:16px;
-    margin-bottom:8px;
-}
-#anviVoiceButton{
-    width:100%;
-    border:0;
-    border-radius:12px;
-    padding:12px;
-    cursor:pointer;
-    font-weight:700;
-    font-size:15px;
-}
-#anviVoiceButton.listening{
-    outline:3px solid rgba(239,68,68,.35);
-}
-#anviVoiceStatus{
-    margin-top:8px;
-    font-size:12px;
-    opacity:.9;
-}
-#anviVoiceTranscript{
-    margin-top:8px;
-    padding:8px;
-    min-height:35px;
-    background:rgba(255,255,255,.08);
-    border-radius:8px;
-    font-size:12px;
-    line-height:1.4;
-}
-#anviVoiceResponse{
-    margin-top:8px;
-    padding:8px;
-    background:rgba(255,255,255,.06);
-    border-radius:8px;
-    font-size:12px;
-    line-height:1.4;
-    max-height:120px;
-    overflow:auto;
-}
-@media(max-width:600px){
-    #anviVoicePanel{
-        right:10px;
-        left:10px;
-        bottom:10px;
-        width:auto;
-    }
-}
-</style>
-
-<div id="anviVoicePanel">
-    <div class="av-title">🎙 ANVI Voice</div>
-    <button id="anviVoiceButton" type="button">🎤 Speak to ANVI</button>
-    <div id="anviVoiceStatus">Ready — same ANVI intelligence and command layer.</div>
-    <div id="anviVoiceTranscript">Transcript will appear here.</div>
-    <div id="anviVoiceResponse">ANVI response will appear here.</div>
-</div>
-
 <script>
 (function(){
     const button = document.getElementById("anviVoiceButton");
@@ -1009,9 +944,6 @@ document.addEventListener('DOMContentLoaded',()=>{startLivePCI();loadPCI();const
     };
 })();
 </script>
-<!-- END ANVIQO VOICE INTERFACE -->
-
-
 <script id="anviqo-command-centre-v2-js">
 (function(){
   const oldLoad = window.load;
@@ -1056,5 +988,4 @@ document.addEventListener('DOMContentLoaded',()=>{startLivePCI();loadPCI();const
   };
 })();
 </script>
-
 </body></html>
