@@ -527,6 +527,31 @@ font-size:6px;
 }
 </style>
 
+<style id="ANVI_SHIFT_REPORT_V3_CURRENT">
+.anvi-v3-current-shift{background:linear-gradient(180deg,#071b28,#06141d);border:1px solid #1a455a;border-radius:16px;overflow:hidden}
+.anvi-v3-current-head{padding:18px;border-bottom:1px solid #17394a;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.anvi-v3-current-head h2{margin:0;color:#e8fbff;font-size:18px;letter-spacing:.5px}
+.anvi-v3-current-head p{margin:5px 0 0;color:#7895a5;font-size:11px}
+.anvi-v3-current-badge{font-size:9px;color:#55dfff;border:1px solid #1e6b84;padding:7px 9px;border-radius:8px}
+.anvi-v3-current-controls,.anvi-v3-current-quick{display:flex;gap:7px;flex-wrap:wrap;padding:12px;border-bottom:1px solid #143647;align-items:center}
+.anvi-v3-current-controls button,.anvi-v3-current-quick button{border:1px solid #21506a;background:#082331;color:#a8d8e7;border-radius:9px;padding:8px 10px;font-size:10px;cursor:pointer}
+.anvi-v3-current-controls button[data-shift].active{background:#0b4560;border-color:#31ddff;color:#fff}
+.anvi-v3-current-controls label{font-size:10px;color:#7895a5;display:flex;align-items:center;gap:5px}
+.anvi-v3-current-controls input{background:#06151f;border:1px solid #28546a;color:#d8f7ff;border-radius:8px;padding:7px}
+#anvi-v3-current-get{background:#28d5f4;color:#03202b;border-color:#28d5f4;font-weight:800}
+.anvi-v3-current-card{margin:12px;border:1px solid #21475a;border-radius:13px;background:#081d29;overflow:hidden}
+.anvi-v3-current-title{display:flex;justify-content:space-between;padding:11px 13px;border-bottom:1px solid #173747;color:#31ddff;font-size:11px;font-weight:800}
+#anvi-v3-current-meta{color:#708c9b;font-weight:400}
+.anvi-v3-current-report{padding:16px;color:#c7dbe5;line-height:1.65;font-size:12px;min-height:180px;white-space:pre-wrap}
+.anvi-v3-current-note{margin:12px;padding:12px;border:1px solid #1b4253;border-radius:10px;background:#071822;color:#8ea9b6;font-size:10px;line-height:1.55}
+.anvi-v3-current-note b{color:#bfeaf5}
+@media(max-width:650px){
+  .anvi-v3-current-head{align-items:flex-start;flex-direction:column}
+  .anvi-v3-current-controls input{max-width:140px}
+}
+</style>
+
+
 <style id="ANVI_CHAT_COMMAND_CENTRE_V1_HIDE_OLD">
 /* The new ANVI Command Centre is the visible shell. Existing dashboard
    logic is intentionally left loaded for API compatibility. */
@@ -1750,6 +1775,7 @@ else
       <button data-page="chat">▣ ANVI Chat</button>
       <button data-page="instruments">⌁ Instruments</button>
       <button data-page="equipment">◇ Equipment</button>
+      <button data-page="shift">⇄ Shift Report</button>
     </nav>
     <div class="anvi-v1-safety">
       <b>● ANVI ONLINE</b><br>
@@ -1809,6 +1835,54 @@ else
       <div class="anvi-v1-card"><h3>PCI Instruments</h3><div id="instrument-list" class="anvi-v1-list"><div class="anvi-v1-empty">Ask ANVI for any instrument or I/O.</div></div></div>
     </section>
 
+
+    <section class="anvi-v1-page" data-view="shift">
+      <div class="anvi-v3-current-shift">
+        <div class="anvi-v3-current-head">
+          <div>
+            <h2>SHIFT REPORT</h2>
+            <p>Ask ANVI about any A, B or C shift using verified plant intelligence.</p>
+          </div>
+          <div class="anvi-v3-current-badge">V5.2 SHIFT INTELLIGENCE</div>
+        </div>
+
+        <div class="anvi-v3-current-controls">
+          <button class="anvi-v3-current-chip active" data-shift="A">A Shift</button>
+          <button class="anvi-v3-current-chip" data-shift="B">B Shift</button>
+          <button class="anvi-v3-current-chip" data-shift="C">C Shift</button>
+          <label>Date <input id="anvi-v3-current-date" type="date"></label>
+          <button id="anvi-v3-current-yesterday">Yesterday</button>
+          <button id="anvi-v3-current-today">Today</button>
+          <button id="anvi-v3-current-get">GET REPORT</button>
+        </div>
+
+        <div class="anvi-v3-current-quick">
+          <button data-v3-current-q="ANVI, tell me yesterday's A shift report.">Yesterday A Shift</button>
+          <button data-v3-current-q="ANVI, tell me yesterday's B shift report.">Yesterday B Shift</button>
+          <button data-v3-current-q="ANVI, tell me yesterday's C shift report.">Yesterday C Shift</button>
+          <button data-v3-current-q="Tell me today's A shift report.">Today A Shift</button>
+          <button data-v3-current-q="Show me the latest shift handover report.">Latest Handover</button>
+        </div>
+
+        <div class="anvi-v3-current-card">
+          <div class="anvi-v3-current-title">
+            <span>ANVI SHIFT INTELLIGENCE</span>
+            <span id="anvi-v3-current-meta">Ready</span>
+          </div>
+          <div id="anvi-v3-current-report" class="anvi-v3-current-report">
+            Select a shift and date, then ask ANVI for the report.
+          </div>
+        </div>
+
+        <div class="anvi-v3-current-note">
+          <b>Evidence boundary:</b>
+          ANVI uses the existing V5.2 shift intelligence and available plant evidence.
+          It does not fabricate historical events. If verified historical evidence is unavailable,
+          ANVI must say so.
+        </div>
+      </div>
+    </section>
+
     <section class="anvi-v1-page" data-view="equipment">
       <div class="anvi-v1-card"><h3>Equipment Intelligence</h3><div id="equipment-list" class="anvi-v1-list"><div class="anvi-v1-empty">Ask ANVI about equipment to open its evidence view.</div></div></div>
     </section>
@@ -1826,7 +1900,8 @@ else
     events:['Events Timeline','Chronological and correlated plant events'],
     chat:['ANVI Chat','Natural-language conversation with the ANVI orchestrator'],
     instruments:['Instruments','Verified PCI instruments and I/O'],
-    equipment:['Equipment','Equipment intelligence and related evidence']
+    equipment:['Equipment','Equipment intelligence and related evidence'],
+    shift:['Shift Report','Historical shift intelligence from ANVI / V5.2']
   };
 
   function page(name){
@@ -1917,6 +1992,99 @@ else
     document.getElementById('ov-changed').innerHTML='<div class="anvi-v1-rowcard"><b>Live plant simulation</b><br><span>ANVIQO evidence layer is available. Open ANVI Chat to interrogate instruments, I/O, equipment and plant context.</span></div>';
   }
   overview();
+})();
+</script>
+
+
+<script id="ANVI_SHIFT_REPORT_V3_CURRENT_JS">
+(function(){
+  const root=document.getElementById('anvi-chat-command-centre-v1');
+  if(!root)return;
+
+  let selectedShift='A';
+  const dateEl=document.getElementById('anvi-v3-current-date');
+  const reportEl=document.getElementById('anvi-v3-current-report');
+  const metaEl=document.getElementById('anvi-v3-current-meta');
+
+  function localDateOffset(days){
+    const d=new Date();
+    d.setHours(12,0,0,0);
+    d.setDate(d.getDate()+days);
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function prettyDate(iso){
+    if(!iso)return '';
+    const p=iso.split('-');
+    if(p.length!==3)return iso;
+    return `${p[2]}-${p[1]}-${p[0]}`;
+  }
+
+  async function askAnvi(question){
+    reportEl.textContent='ANVI is retrieving verified shift evidence…';
+    metaEl.textContent='Querying ANVI';
+
+    try{
+      const r=await fetch('/api/ask',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        credentials:'same-origin',
+        body:JSON.stringify({question:question})
+      });
+
+      const text=await r.text();
+      let data={};
+      try{data=JSON.parse(text)}catch(e){data={answer:text}}
+
+      const answer=data.answer || data.response || data.message || data.raw;
+
+      if(answer){
+        reportEl.textContent=typeof answer==='string'
+          ? answer
+          : JSON.stringify(answer,null,2);
+        metaEl.textContent='Evidence-backed • Read-only';
+      }else{
+        reportEl.textContent='ANVI returned no verified shift report. No historical information was invented.';
+        metaEl.textContent='No verified result';
+      }
+    }catch(e){
+      reportEl.textContent='ANVI could not retrieve the shift report right now. Please try again.';
+      metaEl.textContent='Unavailable';
+    }
+  }
+
+  function buildQuestion(){
+    const date=dateEl.value || localDateOffset(-1);
+    return `ANVI, tell me the ${selectedShift} shift report for ${prettyDate(date)}. Include important alarms, events, what changed, equipment or instrument issues, maintenance attention, plant health context, risks and handover points. Use existing verified ANVI/V5.2 shift intelligence and clearly state when historical evidence is unavailable.`;
+  }
+
+  document.querySelectorAll('.anvi-v3-current-chip').forEach(b=>{
+    b.addEventListener('click',()=>{
+      selectedShift=b.dataset.shift||'A';
+      document.querySelectorAll('.anvi-v3-current-chip').forEach(x=>x.classList.toggle('active',x===b));
+    });
+  });
+
+  document.getElementById('anvi-v3-current-yesterday')?.addEventListener('click',()=>{
+    dateEl.value=localDateOffset(-1);
+  });
+
+  document.getElementById('anvi-v3-current-today')?.addEventListener('click',()=>{
+    dateEl.value=localDateOffset(0);
+  });
+
+  document.getElementById('anvi-v3-current-get')?.addEventListener('click',()=>{
+    askAnvi(buildQuestion());
+  });
+
+  document.querySelectorAll('[data-v3-current-q]').forEach(b=>{
+    b.addEventListener('click',()=>askAnvi(b.dataset.v3CurrentQ));
+  });
+
+  dateEl.value=localDateOffset(-1);
 })();
 </script>
 
