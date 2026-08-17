@@ -1278,5 +1278,353 @@ box-shadow:12px 0 40px #000b;
 })();
 </script>
 
+
+<style id="anviqo-live-demo-style">
+.anviqo-live-demo{
+  margin:12px 0;
+  border:1px solid #1d536c;
+  border-radius:14px;
+  background:linear-gradient(145deg,#071b2b,#03101a);
+  box-shadow:0 10px 35px #0006;
+  overflow:hidden;
+}
+.anviqo-live-demo-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 14px;
+  border-bottom:1px solid #16384d;
+}
+.anviqo-live-demo-title{
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.7px;
+}
+.anviqo-live-demo-title small{
+  display:block;
+  margin-top:3px;
+  color:#7892a5;
+  font-size:7px;
+  font-weight:400;
+}
+.anviqo-demo-badge{
+  font-size:7px;
+  padding:5px 8px;
+  border-radius:20px;
+  color:#28df8b;
+  border:1px solid #1e7657;
+  background:#06241c;
+}
+.anviqo-demo-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:7px;
+  padding:10px;
+}
+.anviqo-demo-value{
+  min-width:0;
+  padding:9px;
+  border:1px solid #183d52;
+  border-radius:9px;
+  background:#061522;
+}
+.anviqo-demo-value .tag{
+  color:#8198aa;
+  font-size:7px;
+  letter-spacing:.7px;
+}
+.anviqo-demo-value .num{
+  margin-top:7px;
+  color:#31d9f5;
+  font-size:18px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.anviqo-demo-value .unit{
+  color:#7890a1;
+  font-size:7px;
+}
+.anviqo-demo-value .state{
+  margin-top:5px;
+  color:#28df8b;
+  font-size:7px;
+}
+.anviqo-demo-body{
+  display:grid;
+  grid-template-columns:1.15fr 1fr;
+  gap:10px;
+  padding:0 10px 10px;
+}
+.anviqo-demo-panel{
+  border:1px solid #183d52;
+  border-radius:10px;
+  background:#04111b;
+  padding:10px;
+}
+.anviqo-demo-panel h4{
+  margin:0 0 8px;
+  color:#dcebf3;
+  font-size:9px;
+}
+.anviqo-demo-alarm{
+  display:grid;
+  grid-template-columns:58px 1fr auto;
+  gap:7px;
+  align-items:center;
+  padding:7px 0;
+  border-top:1px solid #132d3e;
+  font-size:8px;
+}
+.anviqo-demo-alarm .sev{
+  color:#ff6072;
+  font-weight:800;
+}
+.anviqo-demo-alarm .tag{
+  color:#c9d9e4;
+}
+.anviqo-demo-alarm small{
+  display:block;
+  color:#72899a;
+  margin-top:2px;
+}
+.anviqo-demo-alarm b{
+  color:#ffb53d;
+  font-size:8px;
+}
+.anviqo-demo-chart{
+  width:100%;
+  height:155px;
+  display:block;
+}
+.anviqo-demo-footer{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px 10px;
+  border-top:1px solid #16384d;
+  color:#6f8798;
+  font-size:7px;
+}
+.anviqo-demo-footer b{color:#28df8b}
+@media(max-width:700px){
+  .anviqo-live-demo{margin:9px 0}
+  .anviqo-demo-grid{
+    grid-template-columns:repeat(2,1fr);
+    gap:6px;
+  }
+  .anviqo-demo-body{
+    grid-template-columns:1fr;
+  }
+  .anviqo-demo-value .num{font-size:17px}
+  .anviqo-demo-chart{height:145px}
+}
+</style>
+
+<script id="ANVIQO LIVE PLANT SIMULATION V1">
+(function(){
+"use strict";
+
+const DATA = {
+  instruments:[
+    {tag:"PT-303",label:"PCI Pressure",unit:"bar",base:5.82,amp:.42},
+    {tag:"TT-201",label:"Process Temperature",unit:"°C",base:814,amp:18},
+    {tag:"FT-101",label:"Fuel Flow",unit:"t/h",base:126.4,amp:4.8},
+    {tag:"DP-401",label:"Filter DP",unit:"kPa",base:18.6,amp:1.7},
+    {tag:"LT-502",label:"Level",unit:"%",base:62.3,amp:5.2}
+  ],
+  history:[]
+};
+
+for(let i=0;i<32;i++){
+  DATA.history.push(
+    DATA.instruments.map((x,j)=>
+      x.base + Math.sin(i*.48+j*.7)*x.amp +
+      Math.sin(i*.17+j)*x.amp*.35
+    )
+  );
+}
+
+function q(sel,root=document){return root.querySelector(sel)}
+
+function esc(v){
+  return String(v).replace(/[&<>"']/g,m=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+function currentValues(){
+  const t=Date.now()/1000;
+  return DATA.instruments.map((x,j)=>
+    x.base +
+    Math.sin(t*.48+j*.9)*x.amp +
+    Math.sin(t*.17+j)*x.amp*.32
+  );
+}
+
+function health(vals){
+  const deviations=vals.map((v,i)=>
+    Math.abs((v-DATA.instruments[i].base)/DATA.instruments[i].amp)
+  );
+  return Math.max(82,Math.min(99,Math.round(
+    98-Math.max(...deviations)*4
+  )));
+}
+
+function makeChart(vals){
+  DATA.history.push(vals.slice());
+  if(DATA.history.length>36) DATA.history.shift();
+
+  const w=520,h=155,p=18;
+  const names=["PT","TT","FT","DP","LT"];
+  const paths=[];
+
+  const all=[];
+  DATA.history.forEach(row=>row.forEach(v=>all.push(v)));
+  const mn=Math.min(...all), mx=Math.max(...all);
+  const range=(mx-mn)||1;
+
+  DATA.instruments.forEach((x,j)=>{
+    let d="";
+    DATA.history.forEach((row,i)=>{
+      const px=p+i*((w-p*2)/(DATA.history.length-1));
+      const normalized=(row[j]-mn)/range;
+      const py=h-p-normalized*(h-p*2);
+      d+=(i?"L":"M")+px.toFixed(1)+" "+py.toFixed(1)+" ";
+    });
+    paths.push(
+      '<path d="'+d+'" fill="none" stroke="'+
+      ["#31d9f5","#ff5064","#28df8b","#ffb53d","#a66cff"][j]+
+      '" stroke-width="2"/>'
+    );
+  });
+
+  let grid="";
+  for(let i=0;i<6;i++){
+    const y=p+i*((h-p*2)/5);
+    grid+='<line x1="'+p+'" y1="'+y+'" x2="'+(w-p)+
+      '" y2="'+y+'" stroke="#123247" stroke-width="1"/>';
+  }
+
+  return '<svg class="anviqo-demo-chart" viewBox="0 0 '+w+' '+h+
+    '" preserveAspectRatio="none">'+grid+paths.join("")+
+    '<text x="18" y="15" fill="#70899a" font-size="8">LIVE PROCESS TREND</text>'+
+    '<text x="18" y="'+(h-5)+'" fill="#31d9f5" font-size="7">PT</text>'+
+    '<text x="55" y="'+(h-5)+'" fill="#ff5064" font-size="7">TT</text>'+
+    '<text x="92" y="'+(h-5)+'" fill="#28df8b" font-size="7">FT</text>'+
+    '<text x="129" y="'+(h-5)+'" fill="#ffb53d" font-size="7">DP</text>'+
+    '<text x="166" y="'+(h-5)+'" fill="#a66cff" font-size="7">LT</text>'+
+    '</svg>';
+}
+
+function build(){
+  const main=q(".main");
+  if(!main) return false;
+
+  if(q("#anviqo-live-demo")) return true;
+
+  const el=document.createElement("section");
+  el.id="anviqo-live-demo";
+  el.className="anviqo-live-demo";
+
+  el.innerHTML=`
+    <div class="anviqo-live-demo-head">
+      <div class="anviqo-live-demo-title">
+        LIVE PLANT SIMULATION
+        <small>PCI / V5 demonstration stream • 1,064 I/O reference • read-only</small>
+      </div>
+      <div class="anviqo-demo-badge">● SIMULATION LIVE</div>
+    </div>
+
+    <div class="anviqo-demo-grid" id="anviqo-demo-values"></div>
+
+    <div class="anviqo-demo-body">
+      <div class="anviqo-demo-panel">
+        <h4>ACTIVE ALARMS</h4>
+        <div id="anviqo-demo-alarms"></div>
+      </div>
+
+      <div class="anviqo-demo-panel">
+        <h4>PROCESS TRENDS</h4>
+        <div id="anviqo-demo-chart"></div>
+      </div>
+    </div>
+
+    <div class="anviqo-demo-footer">
+      <span>Plant Health <b id="anviqo-demo-health">--</b></span>
+      <span>Events <b id="anviqo-demo-events">4</b></span>
+      <span>I/O <b>1,064</b></span>
+      <span>PLC Write <b>BLOCKED</b></span>
+      <span>SCADA Control <b>BLOCKED</b></span>
+    </div>
+  `;
+
+  const anchor=
+    main.querySelector(".grid") ||
+    main.querySelector(".v4-grid-main") ||
+    main.children[1] ||
+    main.firstElementChild;
+
+  if(anchor) main.insertBefore(el,anchor);
+  else main.appendChild(el);
+
+  return true;
+}
+
+function render(){
+  if(!build()) return;
+
+  const vals=currentValues();
+  const h=health(vals);
+
+  const valueBox=q("#anviqo-demo-values");
+  if(valueBox){
+    valueBox.innerHTML=DATA.instruments.map((x,i)=>`
+      <div class="anviqo-demo-value">
+        <div class="tag">${esc(x.tag)}</div>
+        <div class="num">${vals[i].toFixed(x.unit==="°C"?1:2)}
+          <span class="unit">${esc(x.unit)}</span>
+        </div>
+        <div class="state">● HEALTHY</div>
+      </div>
+    `).join("");
+  }
+
+  const alarmBox=q("#anviqo-demo-alarms");
+  if(alarmBox){
+    const phase=Math.floor(Date.now()/5000)%3;
+    const alarms=[
+      ["P1","PT-303","Pressure deviation detected",(vals[0]).toFixed(2)+" bar"],
+      ["P2","TT-201","Temperature approaching limit",(vals[1]).toFixed(1)+" °C"],
+      ["P2","DP-401","Filter differential pressure trend",(vals[3]).toFixed(2)+" kPa"]
+    ];
+    alarmBox.innerHTML=alarms.map((a,i)=>`
+      <div class="anviqo-demo-alarm">
+        <span class="sev">${phase===i?"● ":""}${a[0]}</span>
+        <span class="tag">${esc(a[1])}<small>${esc(a[2])}</small></span>
+        <b>${esc(a[3])}</b>
+      </div>
+    `).join("");
+  }
+
+  const chart=q("#anviqo-demo-chart");
+  if(chart) chart.innerHTML=makeChart(vals);
+
+  const healthBox=q("#anviqo-demo-health");
+  if(healthBox) healthBox.textContent=h+"/100";
+}
+
+function start(){
+  render();
+  setInterval(render,2000);
+}
+
+if(document.readyState==="loading")
+  document.addEventListener("DOMContentLoaded",start);
+else
+  start();
+
+})();
+</script>
+
 </body>
 </html>
