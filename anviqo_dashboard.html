@@ -980,5 +980,351 @@ box-shadow:12px 0 40px #000b;
 }
 </style>
 
+
+<style id="anviqo-live-demo-style">
+.demo-live{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin-left:8px;
+  padding:4px 7px;
+  border:1px solid #1d8064;
+  border-radius:12px;
+  color:#36e6a0;
+  background:#06251d;
+  font-size:7px;
+  letter-spacing:.8px;
+}
+.demo-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:#31e89b;
+  box-shadow:0 0 8px #31e89b;
+  animation:anviqoPulse 1.2s infinite;
+}
+@keyframes anviqoPulse{
+  0%,100%{opacity:1}
+  50%{opacity:.35}
+}
+.live-value{
+  transition:all .35s ease;
+}
+</style>
+
+<script id="anviqo-live-demo-engine">
+(function(){
+
+  if(window.__ANVIQO_LIVE_DEMO__) return;
+  window.__ANVIQO_LIVE_DEMO__ = true;
+
+  const state = {
+    health: 94.2,
+    temp: 842,
+    pressure: 4.82,
+    flow: 118.4,
+    vibration: 2.7,
+    alarms: 2,
+    risk: 31,
+    chains: 3,
+    tick: 0
+  };
+
+  function rnd(a,b){
+    return a + Math.random()*(b-a);
+  }
+
+  function clamp(v,a,b){
+    return Math.max(a,Math.min(b,v));
+  }
+
+  function fmt(v,d=1){
+    return Number(v).toFixed(d);
+  }
+
+  function addLiveBadge(){
+
+    const title =
+      document.querySelector(".top h1") ||
+      document.querySelector("h1");
+
+    if(!title || document.getElementById("anviqoDemoBadge")) return;
+
+    const b=document.createElement("span");
+    b.id="anviqoDemoBadge";
+    b.className="demo-live";
+    b.innerHTML='<span class="demo-dot"></span> LIVE SIMULATION';
+
+    title.appendChild(b);
+  }
+
+  function allText(){
+    return Array.from(document.querySelectorAll(
+      "body *:not(script):not(style)"
+    ));
+  }
+
+  function findText(text){
+    const t=text.toLowerCase();
+    return allText().find(e =>
+      e.children.length===0 &&
+      (e.textContent||"").trim().toLowerCase().includes(t)
+    );
+  }
+
+  function valueAfter(label,value){
+
+    const e=findText(label);
+    if(!e) return;
+
+    let parent=e.parentElement;
+    if(!parent) return;
+
+    const candidates=parent.querySelectorAll(
+      ".val,.score,strong,b,[id]"
+    );
+
+    if(candidates.length){
+      const target=candidates[candidates.length-1];
+      if(target!==e){
+        target.textContent=value;
+        target.classList.add("live-value");
+        return;
+      }
+    }
+  }
+
+  function setId(id,value){
+    const e=document.getElementById(id);
+    if(e){
+      e.textContent=value;
+      e.classList.add("live-value");
+    }
+  }
+
+  function update(){
+
+    state.tick++;
+
+    state.health=clamp(
+      state.health+rnd(-1.4,1.2),
+      88,
+      98
+    );
+
+    state.temp=clamp(
+      state.temp+rnd(-7,7),
+      805,
+      875
+    );
+
+    state.pressure=clamp(
+      state.pressure+rnd(-.12,.12),
+      4.35,
+      5.25
+    );
+
+    state.flow=clamp(
+      state.flow+rnd(-3.5,3.5),
+      102,
+      132
+    );
+
+    state.vibration=clamp(
+      state.vibration+rnd(-.25,.25),
+      1.4,
+      4.8
+    );
+
+    state.risk=clamp(
+      100-state.health+rnd(-5,5),
+      8,
+      45
+    );
+
+    state.alarms =
+      state.tick%7===0 ? 3 :
+      state.tick%11===0 ? 1 : 2;
+
+    state.chains =
+      state.tick%9===0 ? 4 :
+      state.tick%5===0 ? 3 : 2;
+
+    /* Existing KPI IDs where available */
+    setId("ps", "READY");
+    setId("score", "Health Score: "+fmt(state.health,1)+"/100");
+
+    setId("cc-risk-count", String(state.alarms));
+    setId("cc-chain-count", String(state.chains));
+    setId("cc-system-state", "ONLINE");
+
+    /* Human-readable dashboard fields */
+    valueAfter("TOTAL ALARMS", String(state.alarms));
+    valueAfter("ACTIVE EQUIPMENT AT RISK", state.risk.toFixed(0));
+    valueAfter("EVENT CHAINS", String(state.chains));
+
+    /* Equipment/process values */
+    valueAfter("TEMPERATURE", fmt(state.temp,0)+" °C");
+    valueAfter("PRESSURE", fmt(state.pressure,2)+" bar");
+    valueAfter("FLOW", fmt(state.flow,1)+" t/h");
+    valueAfter("VIBRATION", fmt(state.vibration,1)+" mm/s");
+
+    /* Risk */
+    const riskScore=findText("Reading risk");
+    if(riskScore){
+      const parent=riskScore.parentElement;
+      if(parent){
+        const score=parent.querySelector(".score");
+        if(score){
+          score.innerHTML=
+            state.risk.toFixed(0)+
+            '<small>/100</small>';
+        }
+      }
+    }
+
+    /* Alarm badge */
+    const badge=document.getElementById("v4AlarmBadge");
+    if(badge) badge.textContent=state.alarms;
+
+    /* Live alarm table */
+    const alarmBox=findText("No live alarm records returned.");
+    if(alarmBox){
+      alarmBox.textContent =
+        state.alarms+
+        " live simulated alarm records • Plant demo stream active";
+    }
+
+    /* Risk waiting message */
+    const waiting=findText("Waiting for live equipment intelligence");
+    if(waiting){
+      waiting.textContent =
+        "Live equipment intelligence • Simulation stream active";
+    }
+
+    /* What Changed */
+    const changed=findText("No recent changes returned.");
+    if(changed){
+      changed.textContent =
+        "Process temperature +"+
+        fmt(rnd(2,8),1)+
+        " °C • Pressure stable • Flow responding";
+    }
+
+    /* Correlation */
+    const corr=findText("Correlation strength");
+    if(corr){
+      corr.textContent =
+        "Correlation strength: "+
+        Math.round(rnd(72,94))+
+        "% • Live simulation";
+    }
+
+    /* Management decision */
+    const decision=findText("OPERATIONS");
+    if(decision){
+      const parent=decision.parentElement;
+      if(parent){
+        const p=parent.querySelector("p");
+        if(p){
+          p.textContent =
+            "Monitor process trend. No automatic action authorised.";
+        }
+      }
+    }
+
+    /* Update canvas graphs if present */
+    document.querySelectorAll("canvas").forEach(function(canvas){
+
+      const ctx=canvas.getContext && canvas.getContext("2d");
+      if(!ctx) return;
+
+      const w=canvas.width;
+      const h=canvas.height;
+
+      ctx.clearRect(0,0,w,h);
+
+      /* grid */
+      ctx.strokeStyle="#16364a";
+      ctx.lineWidth=1;
+
+      for(let x=0;x<w;x+=35){
+        ctx.beginPath();
+        ctx.moveTo(x,0);
+        ctx.lineTo(x,h);
+        ctx.stroke();
+      }
+
+      for(let y=0;y<h;y+=25){
+        ctx.beginPath();
+        ctx.moveTo(0,y);
+        ctx.lineTo(w,y);
+        ctx.stroke();
+      }
+
+      const lines=[
+        {c:"#ff5064",base:.32,amp:.13},
+        {c:"#31d9f5",base:.48,amp:.10},
+        {c:"#28df8b",base:.40,amp:.09},
+        {c:"#ffb53d",base:.66,amp:.07}
+      ];
+
+      lines.forEach(function(line,li){
+
+        ctx.strokeStyle=line.c;
+        ctx.lineWidth=2;
+        ctx.beginPath();
+
+        for(let x=0;x<w;x+=12){
+
+          const n=x/12;
+
+          const y =
+            h*line.base -
+            Math.sin(
+              n*.8+
+              state.tick*.12+
+              li
+            )*h*line.amp -
+            (n/(w/12))*h*.13;
+
+          if(x===0) ctx.moveTo(x,y);
+          else ctx.lineTo(x,y);
+        }
+
+        ctx.stroke();
+      });
+    });
+
+  }
+
+  function start(){
+
+    addLiveBadge();
+
+    /* Initial render immediately */
+    update();
+
+    /* Live plant refresh */
+    setInterval(update,2200);
+
+    /* Make the simulation state available for debugging */
+    window.ANVIQOLiveDemo = {
+      state:state,
+      refresh:update,
+      mode:"SIMULATION_ONLY",
+      plc_write:false,
+      scada_control:false,
+      human_approval_required:true
+    };
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",start);
+  }else{
+    start();
+  }
+
+})();
+</script>
+
 </body>
 </html>
