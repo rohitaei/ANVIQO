@@ -552,12 +552,7 @@ font-size:6px;
 </style>
 
 
-<style id="ANVI_CHAT_COMMAND_CENTRE_V1_HIDE_OLD">
-/* The new ANVI Command Centre is the visible shell. Existing dashboard
-   logic is intentionally left loaded for API compatibility. */
-body > *:not(#anvi-chat-command-centre-v1){display:none !important}
-body{margin:0!important;background:#061019!important;overflow-x:hidden!important}
-</style>
+
 
 
 <style id="ANVI_COMMAND_CENTRE_V2_CSS">
@@ -655,9 +650,155 @@ color:#fff;
 }
 </style>
 
+
+<style id="ANVI_PROFESSIONAL_COMMAND_CENTRE">
+*{box-sizing:border-box}
+body{background:#050b12!important;color:#dcecf4!important;font-family:Inter,system-ui,sans-serif!important}
+.anvi-pro{display:flex;min-height:100vh;background:#050b12}
+.anvi-pro-side{width:245px;background:#07121b;border-right:1px solid #17303d;padding:20px 14px;position:fixed;top:0;bottom:0;left:0;z-index:50}
+.anvi-pro-brand{padding:8px 12px 22px;border-bottom:1px solid #17303d;margin-bottom:15px}
+.anvi-pro-brand b{font-size:25px;letter-spacing:2px;color:#e8fbff}
+.anvi-pro-brand span{display:block;font-size:9px;color:#35d9f5;letter-spacing:2px;margin-top:5px}
+.anvi-pro-nav{display:flex;flex-direction:column;gap:5px}
+.anvi-pro-nav button{background:transparent;border:0;color:#8faab8;text-align:left;padding:12px;border-radius:8px;font-size:11px;cursor:pointer}
+.anvi-pro-nav button:hover,.anvi-pro-nav button.active{background:#0b2633;color:#42ddfa}
+.anvi-pro-safe{position:absolute;left:14px;right:14px;bottom:18px;border:1px solid #173d4c;background:#071a24;border-radius:10px;padding:12px;font-size:9px;line-height:1.8;color:#7393a2}
+.anvi-pro-safe strong{color:#48e0fa}
+.anvi-pro-main{margin-left:245px;width:calc(100% - 245px);padding:18px 22px}
+.anvi-pro-top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #17303d;padding:3px 0 17px;margin-bottom:18px}
+.anvi-pro-top h1{font-size:18px;margin:0;color:#eefbff;letter-spacing:.8px}
+.anvi-pro-top p{margin:5px 0 0;font-size:10px;color:#6f8998}
+.anvi-pro-live{display:flex;gap:10px;align-items:center;font-size:9px;color:#62e5f7}
+.anvi-pro-dot{width:7px;height:7px;border-radius:50%;background:#28e6a2;box-shadow:0 0 10px #28e6a2}
+.anvi-pro-hero{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+.anvi-pro-panel{background:linear-gradient(145deg,#091b27,#07121a);border:1px solid #183846;border-radius:13px;padding:18px}
+.anvi-pro-hero h2{font-size:24px;margin:5px 0 8px;color:#effcff}
+.anvi-pro-hero p{font-size:11px;color:#819ba8;line-height:1.7;margin:0}
+.anvi-pro-badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+.anvi-pro-badge{border:1px solid #1b5264;border-radius:20px;padding:6px 9px;font-size:8px;color:#54dbf5}
+.anvi-pro-brain{text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.anvi-pro-brain-ring{width:82px;height:82px;border:1px solid #2ddcf8;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#43e2ff;font-weight:800;box-shadow:0 0 35px #0b5264 inset,0 0 25px #0b5264}
+.anvi-pro-brain small{margin-top:12px;color:#7794a3;font-size:9px}
+.anvi-pro-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.anvi-pro-kpi{background:#081722;border:1px solid #183542;border-radius:10px;padding:13px}
+.anvi-pro-kpi label{font-size:8px;color:#66818f;display:block}
+.anvi-pro-kpi b{display:block;font-size:22px;margin:6px 0;color:#e9fbff}
+.anvi-pro-kpi small{font-size:8px;color:#5d7886}
+.anvi-pro-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.anvi-pro-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.anvi-pro-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
+.anvi-pro-title h3{font-size:11px;margin:0;color:#dff8ff;letter-spacing:.7px}
+.anvi-pro-title span{font-size:8px;color:#39d9f5}
+.anvi-pro-list{display:flex;flex-direction:column;gap:7px}
+.anvi-pro-row{display:grid;grid-template-columns:55px 85px 1fr;gap:8px;padding:9px;background:#06131c;border:1px solid #122c38;border-radius:7px;font-size:8px;color:#7895a3}
+.anvi-pro-row b{color:#d9f6fd}
+.anvi-pro-risk{display:flex;align-items:center;gap:12px}
+.anvi-pro-risk-score{font-size:30px;color:#ffbd55;font-weight:800}
+.anvi-pro-bar{height:6px;background:#10242e;border-radius:10px;overflow:hidden;margin:10px 0}
+.anvi-pro-bar i{display:block;width:35%;height:100%;background:#ffbd55}
+.anvi-pro-chain{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.anvi-pro-node{padding:10px;border:1px solid #285264;background:#081c27;border-radius:8px;font-size:8px;color:#b9dce6;text-align:center}
+.anvi-pro-arrow{color:#38d8f5}
+.anvi-pro-decision{border-left:3px solid #36dcf6}
+.anvi-pro-decision b{font-size:16px;color:#f0fcff}
+.anvi-pro-command{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.anvi-pro-input{display:flex;gap:7px}
+.anvi-pro-input input{flex:1;background:#06131b;border:1px solid #214452;border-radius:8px;padding:11px;color:#eafaff;outline:0}
+.anvi-pro-input button{background:#26d6f4;border:0;border-radius:8px;padding:0 15px;font-weight:800;color:#04202a}
+.anvi-pro-answer{margin-top:10px;min-height:95px;background:#06131b;border:1px solid #173542;border-radius:8px;padding:12px;font-size:10px;color:#b9d2dc;white-space:pre-wrap;line-height:1.6}
+.anvi-pro-tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.anvi-pro-tool{padding:13px;background:#071822;border:1px solid #173844;border-radius:9px;text-align:center;color:#8da8b5;font-size:9px}
+.anvi-pro-tool b{display:block;color:#dff9ff;margin-bottom:5px}
+@media(max-width:900px){
+.anvi-pro-side{width:190px}.anvi-pro-main{margin-left:190px;width:calc(100% - 190px)}
+.anvi-pro-kpis{grid-template-columns:repeat(2,1fr)}.anvi-pro-grid{grid-template-columns:1fr}
+.anvi-pro-hero,.anvi-pro-grid2,.anvi-pro-command{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+.anvi-pro-side{display:none}.anvi-pro-main{margin-left:0;width:100%;padding:12px}
+.anvi-pro-top h1{font-size:14px}.anvi-pro-kpis{grid-template-columns:1fr 1fr}
+}
+</style>
 </head>
 
 <body>
+<div id="anvi-professional-command-centre" class="anvi-pro">
+<aside class="anvi-pro-side">
+<div class="anvi-pro-brand"><b>ANVIQO</b><span>THINK • PREDICT • PROTECT</span></div>
+<nav class="anvi-pro-nav">
+<button class="active" onclick="anviProView('overview')">◉ Command Centre</button>
+<button onclick="anviProView('overview')">◈ Plant Overview</button>
+<button onclick="anviProView('alarms')">◆ Live Alarms</button>
+<button onclick="anviProView('events')">◌ Events Timeline</button>
+<button onclick="anviProView('equipment')">◇ Equipment Intelligence</button>
+<button onclick="anviProView('analysis')">◇ Plant Analysis</button>
+<button onclick="anviProView('changed')">◌ What Changed</button>
+<button onclick="anviProView('correlation')">⛓ Event Correlation</button>
+<button onclick="anviProView('maintenance')">⚙ Maintenance Intelligence</button>
+<button onclick="anviProView('shift')">⇄ Shift Intelligence</button>
+<button onclick="anviProView('decision')">▣ Management Decision</button>
+<button onclick="anviProView('chat')">✦ Ask ANVI</button>
+<button onclick="anviProView('reports')">▤ Reports</button>
+</nav>
+<div class="anvi-pro-safe"><strong>● V5 FROZEN INTELLIGENCE</strong><br>READ-ONLY SYSTEM<br>PLC WRITE BLOCKED<br>SCADA CONTROL BLOCKED<br>HUMAN DECISION REQUIRED<br>CAUSATION NOT CLAIMED</div>
+</aside>
+
+<main class="anvi-pro-main">
+<header class="anvi-pro-top">
+<div><h1>PLANT INTELLIGENCE COMMAND CENTRE</h1><p>ANVIQO V5 • Plant Brain • Evidence-backed operational intelligence</p></div>
+<div class="anvi-pro-live"><i class="anvi-pro-dot"></i><span id="proApi">API CONNECTED</span><span>READ-ONLY</span></div>
+</header>
+
+<section class="anvi-pro-hero">
+<div class="anvi-pro-panel">
+<div style="font-size:8px;color:#39d9f5;letter-spacing:1.5px">THE INTELLIGENCE LAYER FOR THE INDUSTRIAL PLANT</div>
+<h2>From Plant Data to Plant Understanding.</h2>
+<p>ANVIQO connects plant evidence, instruments, equipment, alarms, maintenance, events and operational context into one explainable intelligence layer.</p>
+<div class="anvi-pro-badges"><span class="anvi-pro-badge">EVIDENCE FIRST</span><span class="anvi-pro-badge">PLANT MEMORY</span><span class="anvi-pro-badge">EQUIPMENT INTELLIGENCE</span><span class="anvi-pro-badge">CROSS-DOMAIN REASONING</span><span class="anvi-pro-badge">HUMAN DECISION SUPPORT</span></div>
+</div>
+<div class="anvi-pro-panel anvi-pro-brain"><div class="anvi-pro-brain-ring">ANVI</div><b style="margin-top:10px">PLANT BRAIN</b><small>Understanding the plant, not just displaying it.</small></div>
+</section>
+
+<section class="anvi-pro-kpis">
+<div class="anvi-pro-kpi"><label>PLANT HEALTH</label><b id="proHealth">—</b><small>Live intelligence</small></div>
+<div class="anvi-pro-kpi"><label>ACTIVE ALARMS</label><b id="proAlarms">—</b><small>Evidence-linked</small></div>
+<div class="anvi-pro-kpi"><label>EQUIPMENT AT RISK</label><b id="proRisks">—</b><small>Priority equipment</small></div>
+<div class="anvi-pro-kpi"><label>EVENT CHAINS</label><b id="proChains">—</b><small>Correlated events</small></div>
+<div class="anvi-pro-kpi"><label>PCI I/O</label><b>1,064</b><small>Verified reference database</small></div>
+</section>
+
+<section class="anvi-pro-grid">
+<div class="anvi-pro-panel"><div class="anvi-pro-title"><h3>LIVE ALARM INTELLIGENCE</h3><span>VIEW →</span></div><div class="anvi-pro-list"><div class="anvi-pro-row"><span>P1</span><b>LIVE</b><span id="alarmText">Waiting for evidence-linked alarm data</span></div><div class="anvi-pro-row"><span>P2</span><b>WARN</b><span>Existing alarm intelligence available through ANVI</span></div><div class="anvi-pro-row"><span>P3</span><b>INFO</b><span>Read-only plant event context</span></div></div></div>
+<div class="anvi-pro-panel"><div class="anvi-pro-title"><h3>EQUIPMENT RISK</h3><span>EXPLAIN →</span></div><div class="anvi-pro-risk"><div class="anvi-pro-risk-score" id="proRiskScore">—</div><div><b>Priority equipment</b><div style="font-size:8px;color:#7895a3">Evidence-backed risk intelligence</div></div></div><div class="anvi-pro-bar"><i></i></div><div style="font-size:8px;color:#7895a3">Risk • Impact • Evidence • Trend</div></div>
+<div class="anvi-pro-panel"><div class="anvi-pro-title"><h3>PLANT HEALTH</h3><span>V5 INTELLIGENCE</span></div><div style="font-size:38px;font-weight:800;color:#45dfb0" id="proHealthBig">—</div><div style="font-size:9px;color:#7895a3">Plant condition synthesizer / health intelligence</div><div class="anvi-pro-bar"><i style="width:65%;background:#45dfb0"></i></div></div>
+</section>
+
+<section class="anvi-pro-grid2">
+<div class="anvi-pro-panel"><div class="anvi-pro-title"><h3>WHAT CHANGED</h3><span>COMPARE →</span></div><div class="anvi-pro-row" style="grid-template-columns:1fr"><b>ANVI CHANGE DETECTION</b><span>Current plant context is compared with verified previous state. No historical event is fabricated.</span></div></div>
+<div class="anvi-pro-panel"><div class="anvi-pro-title"><h3>EVENT CORRELATION</h3><span>VIEW CHAIN →</span></div><div class="anvi-pro-chain"><div class="anvi-pro-node">PROCESS<br>CHANGE</div><div class="anvi-pro-arrow">→</div><div class="anvi-pro-node">ALARM<br>EVENT</div><div class="anvi-pro-arrow">→</div><div class="anvi-pro-node">EQUIPMENT<br>RISK</div><div class="anvi-pro-arrow">→</div><div class="anvi-pro-node">ANVI<br>ANALYSIS</div></div></div>
+</section>
+
+<section class="anvi-pro-panel" style="margin-bottom:14px">
+<div class="anvi-pro-title"><h3>INTELLIGENCE MODULES</h3><span>EXISTING V5 STACK</span></div>
+<div class="anvi-pro-tools">
+<div class="anvi-pro-tool"><b>Digital Equipment</b>Identity + Twin</div>
+<div class="anvi-pro-tool"><b>Maintenance</b>Actions + Decisions</div>
+<div class="anvi-pro-tool"><b>Plant Brain</b>Cross-domain reasoning</div>
+<div class="anvi-pro-tool"><b>Shift Intelligence</b>V5.2 handover</div>
+<div class="anvi-pro-tool"><b>Plant Memory</b>Verified experience</div>
+<div class="anvi-pro-tool"><b>Event Timeline</b>Chronology</div>
+<div class="anvi-pro-tool"><b>What Changed</b>State comparison</div>
+<div class="anvi-pro-tool"><b>Executive Intelligence</b>Management view</div>
+</div>
+</section>
+
+<section class="anvi-pro-command">
+<div class="anvi-pro-panel"><div class="anvi-pro-title"><h3>ANVI COMMAND</h3><span>SAME ORCHESTRATOR</span></div><div class="anvi-pro-input"><input id="proQuestion" placeholder="Ask ANVI about the plant..."><button onclick="anviProAsk()">ASK</button></div><div class="anvi-pro-answer" id="proAnswer">ANVI is ready. Ask about instruments, equipment, alarms, maintenance, events, shift intelligence, plant health or plant context.</div></div>
+<div class="anvi-pro-panel"><div class="anvi-pro-title"><h3>MANAGEMENT DECISION</h3><span>EVIDENCE →</span></div><b id="proDecision">AWAITING SUFFICIENT EVIDENCE</b><p style="font-size:9px;color:#7895a3;line-height:1.6">ANVI provides decision support only. Human approval remains required.</p><div class="anvi-pro-risk"><div>OWNER<br><b>Operations</b></div><div>URGENCY<br><b>Evidence dependent</b></div></div></div>
+</section>
+</main>
+</div>
+
 
 <button class="mobile-menu" onclick="toggleSidebar()">☰ MENU</button>
 
@@ -2524,6 +2665,36 @@ status();setInterval(status,30000);
 })();
 </script>
 
+
+<script id="ANVI_PROFESSIONAL_COMMAND_CENTRE_JS">
+(function(){
+function apiAsk(q){
+return fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},credentials:'same-origin',body:JSON.stringify({question:q})}).then(r=>r.text()).then(t=>{try{return JSON.parse(t)}catch(e){return {answer:t}}})
+}
+window.anviProAsk=function(){
+var q=document.getElementById('proQuestion').value.trim();if(!q)return;
+var out=document.getElementById('proAnswer');out.textContent='ANVI is retrieving verified plant evidence…';
+apiAsk(q).then(d=>{out.textContent=d.answer||d.response||d.message||d.raw||'No verified answer returned.'}).catch(e=>out.textContent='ANVI connection error.')
+}
+document.getElementById('proQuestion').addEventListener('keydown',function(e){if(e.key==='Enter')window.anviProAsk()});
+window.anviProView=function(v){
+var qs={overview:'Give me a current plant overview',alarms:'Show current plant alarms and their evidence',events:'Show recent plant events and event timeline',equipment:'Show equipment intelligence and highest risk equipment',analysis:'Analyze current plant condition',changed:'What changed in the plant?',correlation:'Show important correlated plant event chains',maintenance:'Show current maintenance intelligence and priorities',shift:'Show the latest shift handover intelligence',decision:'What is the current management decision support?',chat:'Give me a plant intelligence summary',reports:'Show available plant intelligence reports'};
+var q=qs[v]||qs.overview;document.getElementById('proQuestion').value=q;window.anviProAsk()
+}
+async function status(){
+try{
+var r=await fetch('/api/status',{credentials:'same-origin'});var d=await r.json();var s=d.snapshot||d.data||d;
+function pick(a){for(var i=0;i<a.length;i++)if(s[a[i]]!==undefined)return s[a[i]];return null}
+var h=pick(['plant_health','health_score','health']);var a=pick(['active_alarms','alarms']);var e=pick(['active_events','events']);var k=pick(['equipment_at_risk','risks','risk_count']);
+if(h!==null){document.getElementById('proHealth').textContent=h;document.getElementById('proHealthBig').textContent=h}
+if(a!==null)document.getElementById('proAlarms').textContent=a;
+if(k!==null){document.getElementById('proRisks').textContent=k;document.getElementById('proRiskScore').textContent=k}
+if(e!==null)document.getElementById('proChains').textContent=e;
+}catch(x){document.getElementById('proApi').textContent='API CHECK REQUIRED'}
+}
+status();
+})();
+</script>
 </body>
 </html>
 
