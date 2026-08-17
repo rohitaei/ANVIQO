@@ -526,6 +526,14 @@ font-size:6px;
 }
 }
 </style>
+
+<style id="ANVI_CHAT_COMMAND_CENTRE_V1_HIDE_OLD">
+/* The new ANVI Command Centre is the visible shell. Existing dashboard
+   logic is intentionally left loaded for API compatibility. */
+body > *:not(#anvi-chat-command-centre-v1){display:none !important}
+body{margin:0!important;background:#061019!important;overflow-x:hidden!important}
+</style>
+
 </head>
 
 <body>
@@ -1623,6 +1631,292 @@ if(document.readyState==="loading")
 else
   start();
 
+})();
+</script>
+
+
+<style id="ANVI_CHAT_COMMAND_CENTRE_V1">
+/* ==========================================================
+   ANVIQO — HUMAN-FRIENDLY ANVI CHAT COMMAND CENTRE V1
+   UI only. Existing /api/ask, PCI, V5 and Voice remain intact.
+   ========================================================== */
+#anvi-chat-command-centre-v1{
+  position:relative; z-index:999; min-height:100vh;
+  display:flex; background:#061019; color:#d9edf7;
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+#anvi-chat-command-centre-v1 *{box-sizing:border-box}
+.anvi-v1-sidebar{
+  width:238px; flex:0 0 238px; min-height:100vh;
+  background:linear-gradient(180deg,#071a27,#06131d 65%,#07101a);
+  border-right:1px solid #16394d; padding:18px 14px; position:sticky; top:0;
+}
+.anvi-v1-brand{font-size:25px;font-weight:800;letter-spacing:.5px;color:#f4fbff;margin:2px 8px}
+.anvi-v1-brand span{color:#20d9ff}
+.anvi-v1-tag{font-size:10px;color:#58cce7;margin:0 8px 22px}
+.anvi-v1-nav{display:flex;flex-direction:column;gap:7px}
+.anvi-v1-nav button{
+  width:100%; text-align:left; border:1px solid transparent; background:transparent;
+  color:#9db6c5; border-radius:10px; padding:11px 12px; cursor:pointer;
+  font-size:13px; transition:.18s;
+}
+.anvi-v1-nav button:hover,.anvi-v1-nav button.active{
+  color:#eaffff; background:#0b2b3c; border-color:#15536e;
+  box-shadow:inset 3px 0 0 #23d8ff;
+}
+.anvi-v1-safety{
+  margin-top:22px;border:1px solid #284253;border-radius:12px;padding:12px;
+  background:#071923;font-size:10px;color:#8faab8;line-height:1.65
+}
+.anvi-v1-safety b{color:#36e7a1}
+.anvi-v1-main{flex:1;min-width:0;padding:16px 18px 20px}
+.anvi-v1-top{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  border-bottom:1px solid #153447;padding:3px 2px 14px;margin-bottom:14px
+}
+.anvi-v1-top h1{font-size:20px;margin:0;color:#eefaff}
+.anvi-v1-top p{margin:4px 0 0;color:#7894a3;font-size:11px}
+.anvi-v1-status{display:flex;gap:8px;flex-wrap:wrap}
+.anvi-v1-pill{padding:7px 10px;border:1px solid #21475b;border-radius:999px;color:#7fa6b8;font-size:10px}
+.anvi-v1-pill.live{color:#39e7a4;border-color:#17634f;background:#08231d}
+.anvi-v1-page{display:none}.anvi-v1-page.active{display:block}
+.anvi-v1-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.anvi-v1-card{
+  background:linear-gradient(180deg,#09202d,#071923);border:1px solid #173e52;
+  border-radius:13px;padding:14px;box-shadow:0 7px 20px rgba(0,0,0,.2)
+}
+.anvi-v1-card h3{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#71a8bd}
+.anvi-v1-big{font-size:25px;font-weight:800;color:#31ddff}
+.anvi-v1-muted{font-size:11px;color:#718c9c}
+.anvi-v1-wide{grid-column:1/-1}
+.anvi-v1-chat{
+  height:calc(100vh - 115px);min-height:620px;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#071b28,#06131c);border:1px solid #1a4357;
+  border-radius:15px;overflow:hidden
+}
+.anvi-v1-chat-head{padding:16px 18px;border-bottom:1px solid #15384a;display:flex;justify-content:space-between;gap:10px}
+.anvi-v1-chat-head h2{margin:0;font-size:18px}.anvi-v1-chat-head p{margin:4px 0 0;color:#7895a5;font-size:11px}
+.anvi-v1-chat-tools{display:flex;gap:7px}
+.anvi-v1-chat-tools button,.anvi-v1-chip{
+  border:1px solid #21506a;background:#082331;color:#9fd5e5;border-radius:9px;
+  padding:8px 10px;font-size:10px;cursor:pointer
+}
+.anvi-v1-messages{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+.anvi-v1-user{align-self:flex-end;max-width:78%;background:linear-gradient(135deg,#1479cf,#1260b0);
+  color:white;border-radius:15px 15px 4px 15px;padding:11px 14px;font-size:13px}
+.anvi-v1-anvi-row{display:flex;gap:9px;max-width:96%}
+.anvi-v1-avatar{width:34px;height:34px;border:1px solid #22d7ff;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;color:#23ddff;font-size:10px;flex:0 0 34px;background:#071c27}
+.anvi-v1-answer{background:#0a202d;border:1px solid #21475a;border-radius:4px 15px 15px 15px;padding:14px;flex:1}
+.anvi-v1-answer p{margin:0 0 9px;line-height:1.5;font-size:13px}
+.anvi-v1-source{font-size:10px;color:#668797;margin-top:10px;padding-top:9px;border-top:1px solid #173747}
+.anvi-v1-io-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:10px 0}
+.anvi-v1-io-stat{background:#071722;border:1px solid #173b4d;border-radius:8px;padding:9px}
+.anvi-v1-io-stat b{display:block;font-size:16px;color:#36dfff}.anvi-v1-io-stat span{font-size:9px;color:#718c9b}
+.anvi-v1-table{width:100%;border-collapse:collapse;font-size:10px;margin-top:9px}
+.anvi-v1-table th{color:#74a5b7;text-align:left;background:#071923;padding:8px;border-bottom:1px solid #1b4052}
+.anvi-v1-table td{padding:8px;border-bottom:1px solid #143344;color:#c7dbe5}
+.anvi-v1-badge{display:inline-block;padding:4px 7px;border-radius:7px;font-weight:700;font-size:9px}
+.anvi-v1-do{background:#164c28;color:#72f1a0}.anvi-v1-di{background:#143f70;color:#75c7ff}
+.anvi-v1-ai{background:#4c3d13;color:#f2d978}.anvi-v1-ao{background:#48214d;color:#e6a1ee}
+.anvi-v1-meaning{margin-top:10px;padding:10px;border:1px solid #1d4658;border-radius:9px;background:#071822;color:#a9c0cb;font-size:11px;line-height:1.55}
+.anvi-v1-quick{display:flex;gap:7px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid #143648}
+.anvi-v1-input{display:flex;gap:8px;padding:12px 16px 16px;border-top:1px solid #15384a}
+.anvi-v1-input input{flex:1;background:#06151f;border:1px solid #28546a;border-radius:10px;color:white;padding:13px;font-size:13px;outline:none}
+.anvi-v1-input button{background:#28d5f4;color:#03202b;border:0;border-radius:10px;padding:0 18px;font-weight:800;cursor:pointer}
+.anvi-v1-list{display:flex;flex-direction:column;gap:8px}
+.anvi-v1-rowcard{background:#081b26;border:1px solid #173b4d;border-radius:10px;padding:11px}
+.anvi-v1-rowcard b{color:#d8f4ff}.anvi-v1-rowcard span{color:#7894a3;font-size:10px}
+.anvi-v1-empty{padding:35px;text-align:center;color:#7894a3}
+@media(max-width:850px){
+  #anvi-chat-command-centre-v1{display:block}
+  .anvi-v1-sidebar{width:100%;min-height:auto;position:relative;border-right:0;border-bottom:1px solid #16394d}
+  .anvi-v1-nav{display:grid;grid-template-columns:repeat(2,1fr)}
+  .anvi-v1-safety{display:none}
+  .anvi-v1-grid{grid-template-columns:repeat(2,1fr)}
+  .anvi-v1-chat{height:calc(100vh - 300px);min-height:520px}
+  .anvi-v1-io-summary{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+
+<div id="anvi-chat-command-centre-v1">
+  <aside class="anvi-v1-sidebar">
+    <div class="anvi-v1-brand"><span>◉</span> ANVIQO</div>
+    <div class="anvi-v1-tag">Think • Predict • Protect</div>
+    <nav class="anvi-v1-nav">
+      <button data-page="overview" class="active">◉ Live Overview</button>
+      <button data-page="alarms">♢ Live Alarms</button>
+      <button data-page="events">◌ Events Timeline</button>
+      <button data-page="chat">▣ ANVI Chat</button>
+      <button data-page="instruments">⌁ Instruments</button>
+      <button data-page="equipment">◇ Equipment</button>
+    </nav>
+    <div class="anvi-v1-safety">
+      <b>● ANVI ONLINE</b><br>
+      Evidence-backed<br>
+      Read-only<br>
+      No PLC Write<br>
+      No SCADA Control<br>
+      Human Decision Required
+    </div>
+  </aside>
+
+  <main class="anvi-v1-main">
+    <header class="anvi-v1-top">
+      <div><h1 id="anvi-v1-title">Live Overview</h1><p id="anvi-v1-subtitle">ANVIQO Plant Intelligence Command Centre</p></div>
+      <div class="anvi-v1-status"><span class="anvi-v1-pill live">● LIVE</span><span class="anvi-v1-pill">PCI 1,064 I/O</span><span class="anvi-v1-pill">V5 FROZEN</span></div>
+    </header>
+
+    <section class="anvi-v1-page active" data-view="overview">
+      <div class="anvi-v1-grid">
+        <div class="anvi-v1-card"><h3>Plant Health</h3><div class="anvi-v1-big" id="ov-health">—</div><div class="anvi-v1-muted">Live simulated health</div></div>
+        <div class="anvi-v1-card"><h3>Active Alarms</h3><div class="anvi-v1-big" id="ov-alarms">—</div><div class="anvi-v1-muted">Evidence-linked</div></div>
+        <div class="anvi-v1-card"><h3>Active Events</h3><div class="anvi-v1-big" id="ov-events">—</div><div class="anvi-v1-muted">Correlated events</div></div>
+        <div class="anvi-v1-card"><h3>PCI Records</h3><div class="anvi-v1-big">1,064</div><div class="anvi-v1-muted">Verified reference database</div></div>
+        <div class="anvi-v1-card anvi-v1-wide"><h3>What changed</h3><div id="ov-changed" class="anvi-v1-list"><div class="anvi-v1-empty">Loading live changes…</div></div></div>
+      </div>
+    </section>
+
+    <section class="anvi-v1-page" data-view="alarms">
+      <div class="anvi-v1-card anvi-v1-wide"><h3>Live Alarms</h3><div id="alarm-list" class="anvi-v1-list"><div class="anvi-v1-empty">Loading…</div></div></div>
+    </section>
+
+    <section class="anvi-v1-page" data-view="events">
+      <div class="anvi-v1-card anvi-v1-wide"><h3>Events Timeline</h3><div id="event-list" class="anvi-v1-list"><div class="anvi-v1-empty">Loading…</div></div></div>
+    </section>
+
+    <section class="anvi-v1-page" data-view="chat">
+      <div class="anvi-v1-chat">
+        <div class="anvi-v1-chat-head">
+          <div><h2>ANVI Chat</h2><p>Ask naturally about instruments, I/O, equipment, alarms, events, maintenance or plant intelligence.</p></div>
+          <div class="anvi-v1-chat-tools"><button id="anvi-v1-voice">🎙 Voice</button><button id="anvi-v1-clear">Clear Chat</button></div>
+        </div>
+        <div id="anvi-v1-messages" class="anvi-v1-messages">
+          <div class="anvi-v1-anvi-row"><div class="anvi-v1-avatar">ANVI</div><div class="anvi-v1-answer"><p>Hello. I’m ANVI. Ask me anything about the verified PCI plant data.</p><div class="anvi-v1-meaning">Try: <b>“Show me all I/O for MCV-302”</b> — I will group the DO and DI signals and explain what each one means.</div><div class="anvi-v1-source">Evidence-backed • Read-only • Human decision required</div></div></div>
+        </div>
+        <div class="anvi-v1-quick">
+          <button class="anvi-v1-chip" data-q="Show me all I/O for MCV-302">All I/O for MCV-302</button>
+          <button class="anvi-v1-chip" data-q="Show me all DI for MCV-302">All DI</button>
+          <button class="anvi-v1-chip" data-q="Show me all DO for MCV-302">All DO</button>
+          <button class="anvi-v1-chip" data-q="Show me critical PCI instruments">Critical PCI</button>
+          <button class="anvi-v1-chip" data-q="How many AI, DI, DO and AO are in PCI?">I/O counts</button>
+        </div>
+        <div class="anvi-v1-input"><input id="anvi-v1-input" placeholder="Ask ANVI anything…"><button id="anvi-v1-send">SEND</button></div>
+      </div>
+    </section>
+
+    <section class="anvi-v1-page" data-view="instruments">
+      <div class="anvi-v1-card"><h3>PCI Instruments</h3><div id="instrument-list" class="anvi-v1-list"><div class="anvi-v1-empty">Ask ANVI for any instrument or I/O.</div></div></div>
+    </section>
+
+    <section class="anvi-v1-page" data-view="equipment">
+      <div class="anvi-v1-card"><h3>Equipment Intelligence</h3><div id="equipment-list" class="anvi-v1-list"><div class="anvi-v1-empty">Ask ANVI about equipment to open its evidence view.</div></div></div>
+    </section>
+  </main>
+</div>
+
+<script id="ANVI_CHAT_COMMAND_CENTRE_V1_JS">
+(function(){
+  const root=document.getElementById('anvi-chat-command-centre-v1');
+  if(!root)return;
+
+  const titles={
+    overview:['Live Overview','ANVIQO Plant Intelligence Command Centre'],
+    alarms:['Live Alarms','Evidence-linked plant alarm situation'],
+    events:['Events Timeline','Chronological and correlated plant events'],
+    chat:['ANVI Chat','Natural-language conversation with the ANVI orchestrator'],
+    instruments:['Instruments','Verified PCI instruments and I/O'],
+    equipment:['Equipment','Equipment intelligence and related evidence']
+  };
+
+  function page(name){
+    document.querySelectorAll('#anvi-chat-command-centre-v1 .anvi-v1-page').forEach(x=>x.classList.toggle('active',x.dataset.view===name));
+    document.querySelectorAll('#anvi-chat-command-centre-v1 .anvi-v1-nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));
+    document.getElementById('anvi-v1-title').textContent=titles[name][0];
+    document.getElementById('anvi-v1-subtitle').textContent=titles[name][1];
+    history.replaceState(null,'','#'+name);
+  }
+
+  document.querySelectorAll('#anvi-chat-command-centre-v1 .anvi-v1-nav button').forEach(b=>b.addEventListener('click',()=>page(b.dataset.page)));
+  const hash=location.hash.slice(1);
+  if(titles[hash]) page(hash);
+
+  async function api(url, opts){
+    try{
+      const r=await fetch(url,opts||{headers:{'Accept':'application/json'}});
+      const text=await r.text();
+      try{return JSON.parse(text)}catch(e){return {raw:text}}
+    }catch(e){return {error:e.message}}
+  }
+
+  function val(o,keys,def='—'){
+    for(const k of keys){
+      if(o && o[k]!==undefined && o[k]!==null) return o[k];
+    }
+    return def;
+  }
+
+  function addUser(q){
+    const box=document.getElementById('anvi-v1-messages');
+    const u=document.createElement('div');u.className='anvi-v1-user';u.textContent=q;box.appendChild(u);box.scrollTop=box.scrollHeight;
+  }
+
+  function esc(s){
+    return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  }
+
+  function renderRecords(records){
+    if(!Array.isArray(records)||!records.length)return '';
+    const rows=records.map(r=>{
+      const t=String(val(r,['io_type','type'],'')).toUpperCase();
+      const cls=t.includes('DO')?'anvi-v1-do':t.includes('DI')?'anvi-v1-di':t.includes('AI')?'anvi-v1-ai':t.includes('AO')?'anvi-v1-ao':'';
+      return `<tr><td><span class="anvi-v1-badge ${cls}">${esc(val(r,['io_type','type']))}</span></td><td>${esc(val(r,['tag','fox_plc_tag']))}</td><td>${esc(val(r,['plc_address','address']))}</td><td>${esc(val(r,['panel']))}</td><td>${esc(val(r,['tb_name','tb']))} ${esc(val(r,['tb_no','terminal']))}</td><td>${esc(val(r,['description']))}</td></tr>`;
+    }).join('');
+    return `<table class="anvi-v1-table"><thead><tr><th>I/O</th><th>Tag</th><th>PLC</th><th>Panel</th><th>TB</th><th>Description</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function formatAnswer(data){
+    const answer=val(data,['answer','message','response'],'I could not get a response from ANVI.');
+    const records=data.records || (data.record?[data.record]:[]);
+    let extra='';
+    if(records.length){
+      const counts={AI:0,AO:0,DI:0,DO:0};
+      records.forEach(r=>{const t=String(val(r,['io_type','type'],'')).toUpperCase();for(const k in counts)if(t.includes(k))counts[k]++});
+      extra=`<div class="anvi-v1-io-stat" style="margin-top:8px"><b>${records.length}</b><span>related I/O records</span></div>${renderRecords(records)}<div class="anvi-v1-meaning"><b>What this means:</b><br>${records.filter(r=>String(val(r,['io_type'],'')).toUpperCase().includes('DO')).length} DO command signal(s) and ${records.filter(r=>String(val(r,['io_type'],'')).toUpperCase().includes('DI')).length} DI feedback signal(s) are shown where present. ANVI is using the verified PCI records and will not invent missing data.</div>`;
+    }
+    return {answer,extra,source:val(data,['evidence','source'],'Verified ANVIQO evidence')};
+  }
+
+  async function ask(q){
+    if(!q.trim())return;
+    addUser(q);
+    const box=document.getElementById('anvi-v1-messages');
+    const row=document.createElement('div');row.className='anvi-v1-anvi-row';
+    row.innerHTML='<div class="anvi-v1-avatar">ANVI</div><div class="anvi-v1-answer"><p>Thinking…</p></div>';
+    box.appendChild(row);box.scrollTop=box.scrollHeight;
+    const payload=JSON.stringify({question:q});
+    let data=await api('/api/ask',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:payload});
+    if(data && data.error){row.querySelector('.anvi-v1-answer').innerHTML='<p>ANVI could not reach the plant intelligence API.</p>';return}
+    const f=formatAnswer(data);
+    row.querySelector('.anvi-v1-answer').innerHTML=`<p>${esc(f.answer)}</p>${f.extra}<div class="anvi-v1-source">Evidence: ${esc(f.source)} • Read-only • Human decision required</div>`;
+    box.scrollTop=box.scrollHeight;
+  }
+
+  document.getElementById('anvi-v1-send').onclick=()=>{const i=document.getElementById('anvi-v1-input');ask(i.value);i.value=''};
+  document.getElementById('anvi-v1-input').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('anvi-v1-send').click()});
+  document.querySelectorAll('.anvi-v1-chip').forEach(b=>b.onclick=()=>ask(b.dataset.q));
+  document.getElementById('anvi-v1-clear').onclick=()=>document.getElementById('anvi-v1-messages').innerHTML='';
+  document.getElementById('anvi-v1-voice').onclick=()=>document.getElementById('anvi-v1-input').focus();
+
+  async function overview(){
+    const d=await api('/api/status');
+    const s=d.snapshot||d.data||d;
+    document.getElementById('ov-health').textContent=val(s,['plant_health','health_score','health'],'—');
+    document.getElementById('ov-alarms').textContent=val(s,['active_alarms','alarms'],'—');
+    document.getElementById('ov-events').textContent=val(s,['active_events','events'],'—');
+    document.getElementById('ov-changed').innerHTML='<div class="anvi-v1-rowcard"><b>Live plant simulation</b><br><span>ANVIQO evidence layer is available. Open ANVI Chat to interrogate instruments, I/O, equipment and plant context.</span></div>';
+  }
+  overview();
 })();
 </script>
 
