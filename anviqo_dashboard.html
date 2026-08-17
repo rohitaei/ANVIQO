@@ -1267,6 +1267,9 @@ height:260px;
 </style>
 
 
+
+
+
 <style id="ANVI_PRO_CHAT_MOBILE_FIX_CSS">
 .anvi-pro-chatbox{
   margin-top:14px;
@@ -1526,6 +1529,60 @@ Ask me about the plant, instruments, PCI I/O, equipment, alarms,
 maintenance, events, shift intelligence or plant health.
   </div>
 </section>
+
+<div id="anvi-pro-mobile-overlay" class="anvi-pro-mobile-overlay"
+     onclick="anviProToggleMobile(false)"></div>
+
+<button id="anvi-pro-mobile-menu" class="anvi-pro-mobile-menu"
+        onclick="anviProToggleMobile()">
+  ☰ MENU
+</button>
+
+<section id="anvi-pro-chat-panel" class="anvi-pro-chatbox">
+  <div class="anvi-pro-chat-head">
+    <h2>✦ ANVI COMMAND</h2>
+    <span>SAME ANVI ORCHESTRATOR</span>
+  </div>
+
+  <div class="anvi-pro-chat-sub">
+    Ask ANVI naturally about instruments, equipment, alarms, maintenance,
+    events, shift intelligence, plant health and plant context.
+    Answers use the existing evidence and V5 intelligence stack.
+  </div>
+
+  <div class="anvi-pro-chat-chips">
+    <button class="anvi-pro-chat-chip"
+      onclick="anviProQuick('What is the current plant health?')">PLANT HEALTH</button>
+    <button class="anvi-pro-chat-chip"
+      onclick="anviProQuick('Show active alarms')">ALARMS</button>
+    <button class="anvi-pro-chat-chip"
+      onclick="anviProQuick('Show equipment at risk')">EQUIPMENT RISK</button>
+    <button class="anvi-pro-chat-chip"
+      onclick="anviProQuick('What changed recently?')">WHAT CHANGED</button>
+    <button class="anvi-pro-chat-chip"
+      onclick="anviProQuick('Show latest shift handover report')">SHIFT</button>
+    <button class="anvi-pro-chat-chip"
+      onclick="anviProQuick('Explain the latest event correlation')">EVENTS</button>
+  </div>
+
+  <div class="anvi-pro-chat-input">
+    <input id="anvi-pro-chat-question"
+      placeholder="Ask ANVI about your plant..."
+      onkeydown="if(event.key==='Enter')anviProChatAsk()">
+
+    <button class="voice-btn"
+      onclick="anviProChatVoice()">🎤</button>
+
+    <button onclick="anviProChatAsk()">ASK ANVI</button>
+  </div>
+
+  <div id="anvi-pro-chat-answer" class="anvi-pro-chat-answer">
+ANVI is ready.
+
+Ask me about the plant, instruments, PCI I/O, equipment, alarms,
+maintenance, events, shift intelligence or plant health.
+  </div>
+</section>
 <aside class="anvi-pro-side">
 <div class="anvi-pro-brand"><b>ANVIQO</b><span>THINK • PREDICT • PROTECT</span></div>
 <nav class="anvi-pro-nav">
@@ -1664,6 +1721,7 @@ Evidence-backed • Explainable • Read-only • Human decision required
 <div class="anvi-pro-panel"><div class="anvi-pro-title"><h3>ANVI COMMAND</h3><span>SAME ORCHESTRATOR</span></div><div class="anvi-pro-input"><input id="proQuestion" placeholder="Ask ANVI about the plant..."><button onclick="anviProAsk()">ASK</button></div><div class="anvi-pro-answer" id="proAnswer">ANVI is ready. Ask about instruments, equipment, alarms, maintenance, events, shift intelligence, plant health or plant context.</div></div>
 <div class="anvi-pro-panel"><div class="anvi-pro-title"><h3>MANAGEMENT DECISION</h3><span>EVIDENCE →</span></div><b id="proDecision">AWAITING SUFFICIENT EVIDENCE</b><p style="font-size:9px;color:#7895a3;line-height:1.6">ANVI provides decision support only. Human approval remains required.</p><div class="anvi-pro-risk"><div>OWNER<br><b>Operations</b></div><div>URGENCY<br><b>Evidence dependent</b></div></div></div>
 </section>
+
 
 </main>
 </div>
@@ -3990,6 +4048,117 @@ document.querySelectorAll(
 
 });
 
+})();
+</script>
+
+
+<script id="ANVI_PRO_CHAT_MOBILE_FIX_JS">
+(function(){
+  const side=document.querySelector('.anvi-pro-side');
+  const overlay=document.getElementById('anvi-pro-mobile-overlay');
+
+  window.anviProToggleMobile=function(force){
+    if(!side)return;
+    const open=typeof force==="boolean"
+      ? force
+      : !side.classList.contains("mobile-open");
+
+    side.classList.toggle("mobile-open",open);
+    if(overlay) overlay.classList.toggle("open",open);
+  };
+
+  window.anviProQuick=function(q){
+    const input=document.getElementById('anvi-pro-chat-question');
+    if(input){
+      input.value=q;
+      anviProChatAsk();
+    }
+  };
+
+  window.anviProChatAsk=async function(){
+    const input=document.getElementById('anvi-pro-chat-question');
+    const out=document.getElementById('anvi-pro-chat-answer');
+    if(!input||!out)return;
+
+    const q=input.value.trim();
+    if(!q)return;
+
+    out.textContent="ANVI is retrieving verified plant evidence…";
+
+    try{
+      const r=await fetch('/api/ask',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Accept':'application/json'
+        },
+        credentials:'same-origin',
+        body:JSON.stringify({question:q})
+      });
+
+      const text=await r.text();
+      let data={};
+
+      try{
+        data=JSON.parse(text);
+      }catch(e){
+        data={answer:text};
+      }
+
+      const answer=data.answer ||
+                    data.response ||
+                    data.message ||
+                    data.raw ||
+                    "ANVI returned no answer.";
+
+      out.textContent=typeof answer==="string"
+        ? answer
+        : JSON.stringify(answer,null,2);
+
+    }catch(err){
+      out.textContent="ANVI connection error. Please try again.";
+      console.error(err);
+    }
+  };
+
+  window.anviProChatVoice=function(){
+    if(typeof startVoice==="function"){
+      startVoice();
+      return;
+    }
+
+    const SpeechRecognition=
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+
+    if(!SpeechRecognition){
+      alert("Voice input is not supported by this browser.");
+      return;
+    }
+
+    const rec=new SpeechRecognition();
+    rec.lang='en-IN';
+    rec.interimResults=false;
+    rec.maxAlternatives=1;
+
+    const input=document.getElementById('anvi-pro-chat-question');
+
+    rec.onresult=function(e){
+      if(input){
+        input.value=e.results[0][0].transcript;
+        anviProChatAsk();
+      }
+    };
+
+    rec.start();
+  };
+
+  // Close mobile menu after selecting a professional navigation item
+  document.querySelectorAll('.anvi-pro-nav button').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      if(window.innerWidth<=700) anviProToggleMobile(false);
+    });
+  });
 })();
 </script>
 
