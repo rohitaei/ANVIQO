@@ -2332,6 +2332,198 @@ setInterval(refreshV2,30000);
 })();
 </script>
 
+
+<style id="ANVI_PROFESSIONAL_COMMAND_CENTRE_V3">
+#anvi-professional-v3{position:fixed;inset:0;z-index:99999;background:#071018;color:#d9edf5;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:grid;grid-template-columns:245px 1fr;overflow:hidden}
+#anvi-professional-v3 *{box-sizing:border-box}
+.ap3-side{background:linear-gradient(180deg,#081923,#061018);border-right:1px solid #173847;padding:20px 14px;overflow:auto}
+.ap3-logo{font-size:22px;font-weight:900;letter-spacing:2px;color:#e9fbff;padding:5px 10px}
+.ap3-tag{font-size:8px;color:#42dfff;letter-spacing:1.5px;padding:0 10px 20px}
+.ap3-section{font-size:8px;color:#557786;letter-spacing:1.5px;padding:14px 10px 7px}
+.ap3-nav{display:flex;flex-direction:column;gap:4px}
+.ap3-nav button{border:0;background:transparent;color:#8daab7;text-align:left;padding:11px 12px;border-radius:8px;font-size:11px;cursor:pointer}
+.ap3-nav button:hover,.ap3-nav button.active{background:linear-gradient(90deg,#0d3d50,#0a2734);color:#fff;border-left:2px solid #29d9fa}
+.ap3-safe{margin-top:18px;border:1px solid #173c4c;border-radius:10px;padding:11px;color:#71919f;font-size:8px;line-height:1.8;background:#07151d}
+.ap3-safe b{color:#35d8f5}
+.ap3-main{min-width:0;overflow:auto}
+.ap3-top{height:68px;border-bottom:1px solid #17313d;display:flex;align-items:center;justify-content:space-between;padding:0 25px;background:#08141c;position:sticky;top:0;z-index:5}
+.ap3-title{font-size:15px;font-weight:800;letter-spacing:.8px}
+.ap3-sub{font-size:9px;color:#668491;margin-top:4px}
+.ap3-live{display:flex;gap:10px;align-items:center;font-size:8px;color:#67d5e8}
+.ap3-dot{width:7px;height:7px;border-radius:50%;background:#25e0b0;box-shadow:0 0 12px #25e0b0}
+.ap3-page{display:none;padding:24px;max-width:1600px;margin:auto}
+.ap3-page.active{display:block}
+.ap3-hero{display:grid;grid-template-columns:1.8fr .8fr;gap:14px;margin-bottom:15px}
+.ap3-hero-card{border:1px solid #173e4d;border-radius:14px;background:linear-gradient(135deg,#0b2430,#08151e);padding:22px}
+.ap3-kicker{font-size:8px;color:#35d9f5;letter-spacing:1.8px}
+.ap3-hero h1{font-size:27px;margin:8px 0;color:#effcff}
+.ap3-hero p{font-size:11px;color:#7996a4;max-width:720px;line-height:1.7}
+.ap3-brain{display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center}
+.ap3-orb{width:86px;height:86px;border-radius:50%;border:1px solid #28d9f5;display:flex;align-items:center;justify-content:center;color:#45e2ff;font-size:18px;font-weight:900;box-shadow:0 0 35px #083c4d;margin-bottom:10px}
+.ap3-grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:15px}
+.ap3-metric{background:#0a1821;border:1px solid #173744;border-radius:11px;padding:15px}
+.ap3-metric label{font-size:8px;color:#617e8c;display:block;letter-spacing:1px}
+.ap3-metric strong{display:block;font-size:23px;margin:7px 0;color:#e9fbff}
+.ap3-metric small{font-size:8px;color:#64818e}
+.ap3-green{color:#25ddb2!important}.ap3-red{color:#ff6075!important}.ap3-amber{color:#ffc257!important}.ap3-cyan{color:#35d9f5!important}
+.ap3-grid3{display:grid;grid-template-columns:1.25fr 1fr .8fr;gap:12px}
+.ap3-card{background:#091821;border:1px solid #173744;border-radius:12px;overflow:hidden}
+.ap3-head{height:45px;border-bottom:1px solid #173744;padding:0 14px;display:flex;align-items:center;justify-content:space-between}
+.ap3-head b{font-size:10px;letter-spacing:.7px}.ap3-head span{font-size:8px;color:#4e7483}
+.ap3-body{padding:14px}
+.ap3-row{display:grid;grid-template-columns:65px 90px 1fr;gap:8px;padding:10px 0;border-bottom:1px solid #102c37;font-size:9px;color:#91aeb9}
+.ap3-row b{color:#dff7fc}
+.ap3-status{padding:14px;border:1px solid #174052;border-radius:9px;background:#08151d;margin-bottom:9px}
+.ap3-status strong{display:block;font-size:16px;color:#2de0bb}.ap3-status span{font-size:9px;color:#708b98}
+.ap3-action{width:100%;border:1px solid #20556a;background:#0a2531;color:#9eddec;border-radius:8px;padding:10px;margin-top:7px;cursor:pointer;text-align:left}
+.ap3-action:hover{background:#0d3545;color:#fff}
+.ap3-command{border:1px solid #1b5265;border-radius:12px;background:linear-gradient(180deg,#09202b,#07151d);padding:16px}
+.ap3-command input{width:calc(100% - 110px);background:#06121a;border:1px solid #234b5c;color:#e8fbff;padding:12px;border-radius:8px}
+.ap3-command button{width:100px;margin-left:6px;border:0;background:#29d9f5;color:#03202a;font-weight:800;padding:12px;border-radius:8px;cursor:pointer}
+.ap3-answer{margin-top:12px;min-height:100px;background:#06131b;border:1px solid #173744;border-radius:8px;padding:13px;font-size:10px;line-height:1.7;color:#b9d1da;white-space:pre-wrap}
+.ap3-biggrid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}
+.ap3-feature{min-height:180px}
+.ap3-feature p{font-size:10px;color:#718d99;line-height:1.7}
+.ap3-chip{display:inline-block;border:1px solid #1c4859;border-radius:20px;padding:7px 10px;margin:3px;color:#83bdca;font-size:8px}
+@media(max-width:900px){#anvi-professional-v3{grid-template-columns:1fr}.ap3-side{display:none}.ap3-grid5{grid-template-columns:repeat(2,1fr)}.ap3-hero,.ap3-grid3,.ap3-biggrid{grid-template-columns:1fr}.ap3-page{padding:13px}.ap3-top{padding:0 14px}}
+</style>
+
+<div id="anvi-professional-v3">
+<aside class="ap3-side">
+<div class="ap3-logo">ANVIQO</div>
+<div class="ap3-tag">THINK • PREDICT • PROTECT</div>
+
+<div class="ap3-section">COMMAND</div>
+<div class="ap3-nav">
+<button class="active" data-ap3="command">◆ Command Centre</button>
+<button data-ap3="overview">◈ Plant Overview</button>
+<button data-ap3="alarms">◉ Live Alarms</button>
+<button data-ap3="equipment">◇ Equipment Intelligence</button>
+</div>
+
+<div class="ap3-section">INTELLIGENCE</div>
+<div class="ap3-nav">
+<button data-ap3="analysis">◇ Analysis</button>
+<button data-ap3="changed">◌ What Changed</button>
+<button data-ap3="events">⛓ Event Correlation</button>
+<button data-ap3="shift">⇄ Shift Report</button>
+</div>
+
+<div class="ap3-section">DECISION SUPPORT</div>
+<div class="ap3-nav">
+<button data-ap3="management">▣ Management Decision</button>
+<button data-ap3="ask">✦ Ask ANVI</button>
+<button data-ap3="reports">▤ Reports</button>
+<button data-ap3="voice">🎤 ANVI Voice</button>
+</div>
+
+<div class="ap3-section">SYSTEM</div>
+<div class="ap3-nav">
+<button data-ap3="settings">⚙ Settings</button>
+</div>
+
+<div class="ap3-safe"><b>● ANVI ONLINE</b><br>V5 FROZEN INTELLIGENCE<br>READ-ONLY<br>PLC WRITE BLOCKED<br>SCADA CONTROL BLOCKED<br>HUMAN DECISION REQUIRED</div>
+</aside>
+
+<main class="ap3-main">
+<header class="ap3-top">
+<div><div class="ap3-title" id="ap3-title">PLANT INTELLIGENCE COMMAND CENTRE</div><div class="ap3-sub">Evidence-backed industrial intelligence • Existing ANVIQO V5 intelligence stack</div></div>
+<div class="ap3-live"><i class="ap3-dot"></i><span id="ap3-api">API CONNECTED</span><span>READ-ONLY</span></div>
+</header>
+
+<section class="ap3-page active" data-ap3-page="command">
+<div class="ap3-hero">
+<div class="ap3-hero-card"><div class="ap3-kicker">THE INTELLIGENCE LAYER FOR THE INDUSTRIAL PLANT</div><h1>From Plant Data to Plant Understanding.</h1><p>ANVIQO brings plant health, alarms, equipment, events, maintenance, shift intelligence and operational context into one professional decision-support command centre.</p><span class="ap3-chip">Evidence First</span><span class="ap3-chip">Plant Memory</span><span class="ap3-chip">Equipment Intelligence</span><span class="ap3-chip">Cross-Domain Reasoning</span><span class="ap3-chip">Human Decision Support</span></div>
+<div class="ap3-hero-card ap3-brain"><div class="ap3-orb">ANVI</div><b>PLANT BRAIN</b><small style="color:#668491;margin-top:6px">Understand • Correlate • Explain</small></div>
+</div>
+
+<div class="ap3-grid5">
+<div class="ap3-metric"><label>PLANT HEALTH</label><strong id="ap3-health" class="ap3-green">READY</strong><small id="ap3-health-score">Health Score —/100</small></div>
+<div class="ap3-metric"><label>ACTIVE ALARMS</label><strong id="ap3-alarms" class="ap3-red">0</strong><small>Live alarm intelligence</small></div>
+<div class="ap3-metric"><label>EQUIPMENT RISK</label><strong id="ap3-risk" class="ap3-amber">0</strong><small>Priority equipment</small></div>
+<div class="ap3-metric"><label>EVENT CHAINS</label><strong id="ap3-events" class="ap3-cyan">0</strong><small>Correlated events</small></div>
+<div class="ap3-metric"><label>SYSTEM</label><strong class="ap3-green">ONLINE</strong><small>Human governed</small></div>
+</div>
+
+<div class="ap3-grid3">
+<div class="ap3-card"><div class="ap3-head"><b>LIVE PLANT SITUATION</b><span>REAL-TIME</span></div><div class="ap3-body"><div class="ap3-row"><span>STATUS</span><b>PLANT</b><span id="ap3-situation">Awaiting evidence</span></div><div class="ap3-row"><span>ALARMS</span><b>PRIORITY</b><span>ANVI alarm intelligence</span></div><div class="ap3-row"><span>EVENTS</span><b>CORRELATION</b><span>Cross-domain event analysis</span></div><div class="ap3-row"><span>RISK</span><b>EQUIPMENT</b><span>Equipment health intelligence</span></div></div></div>
+
+<div class="ap3-card"><div class="ap3-head"><b>INTELLIGENCE STATUS</b><span>V5</span></div><div class="ap3-body"><div class="ap3-status"><strong>● ONLINE</strong><span>ANVI orchestrator available</span></div><div class="ap3-status"><strong>● READ-ONLY</strong><span>No PLC or SCADA control</span></div><div class="ap3-status"><strong>● EVIDENCE</strong><span>Verified intelligence boundary</span></div></div></div>
+
+<div class="ap3-card"><div class="ap3-head"><b>QUICK INTELLIGENCE</b><span>ASK ANVI</span></div><div class="ap3-body"><button class="ap3-action" data-q="What is the current plant health?">Plant Health →</button><button class="ap3-action" data-q="Show me active alarms and their priority.">Active Alarms →</button><button class="ap3-action" data-q="Which equipment is at risk?">Equipment Risk →</button><button class="ap3-action" data-q="What changed in the plant?">What Changed →</button><button class="ap3-action" data-q="Show current event correlation.">Event Correlation →</button></div></div>
+</div>
+</section>
+
+<section class="ap3-page" data-ap3-page="overview"><div class="ap3-hero-card"><div class="ap3-kicker">PLANT OVERVIEW</div><h1>Plant Health & Operational State</h1><p>Current plant status, health, alarms, events and operational evidence from the existing ANVIQO intelligence layer.</p><div class="ap3-grid5"><div class="ap3-metric"><label>HEALTH</label><strong id="ov3-health">—</strong></div><div class="ap3-metric"><label>ALARMS</label><strong id="ov3-alarms">—</strong></div><div class="ap3-metric"><label>EVENTS</label><strong id="ov3-events">—</strong></div></div></div></section>
+
+<section class="ap3-page" data-ap3-page="alarms"><div class="ap3-hero-card"><div class="ap3-kicker">LIVE ALARMS</div><h1>Alarm Intelligence</h1><p>Use ANVI to interrogate current alarm conditions and evidence. No automatic control action is performed.</p><button class="ap3-action" data-q="Show me the current active alarms with priority and evidence.">QUERY ACTIVE ALARMS →</button><div class="ap3-answer" id="alarms3">Ask ANVI for the latest alarm situation.</div></div></section>
+
+<section class="ap3-page" data-ap3-page="equipment"><div class="ap3-hero-card"><div class="ap3-kicker">EQUIPMENT INTELLIGENCE</div><h1>Equipment Risk & Health</h1><p>Equipment identity, relationships, health, evidence and risk are interpreted through the existing V5 intelligence.</p><button class="ap3-action" data-q="Which equipment is currently at risk and why?">IDENTIFY EQUIPMENT RISK →</button><div class="ap3-answer">Evidence-backed equipment intelligence will appear here.</div></div></section>
+
+<section class="ap3-page" data-ap3-page="analysis"><div class="ap3-biggrid"><div class="ap3-card ap3-feature"><div class="ap3-head"><b>PLANT ANALYSIS</b><span>V5 INTELLIGENCE</span></div><div class="ap3-body"><p>Cross-domain analysis of process, instrumentation, equipment, events and plant condition.</p><button class="ap3-action" data-q="Give me the current plant analysis with evidence.">RUN PLANT ANALYSIS →</button></div></div><div class="ap3-card ap3-feature"><div class="ap3-head"><b>HEALTH TREND</b><span>HISTORY</span></div><div class="ap3-body"><p>Use existing plant health history and trend intelligence.</p><button class="ap3-action" data-q="Explain the recent plant health trend.">EXPLAIN HEALTH TREND →</button></div></div></div></section>
+
+<section class="ap3-page" data-ap3-page="changed"><div class="ap3-hero-card"><div class="ap3-kicker">WHAT CHANGED</div><h1>Plant Change Intelligence</h1><p>Compare verified plant context and identify meaningful changes without inventing historical events.</p><button class="ap3-action" data-q="What changed in the plant recently?">SHOW WHAT CHANGED →</button><div class="ap3-answer">ANVI will report only available evidence.</div></div></section>
+
+<section class="ap3-page" data-ap3-page="events"><div class="ap3-hero-card"><div class="ap3-kicker">EVENT CORRELATION</div><h1>Event Chains & Relationships</h1><p>Correlate plant events through the existing event timeline and plant-brain intelligence.</p><button class="ap3-action" data-q="Show the latest correlated plant events and explain the relationship.">ANALYSE EVENT CHAIN →</button><div class="ap3-answer">Correlation strength and evidence will be shown by ANVI.</div></div></section>
+
+<section class="ap3-page" data-ap3-page="shift"><div class="ap3-hero-card"><div class="ap3-kicker">SHIFT INTELLIGENCE</div><h1>Shift Report</h1><p>Existing V5.2 Shift Intelligence remains the source of truth.</p><button class="ap3-action" data-q="Show me the latest shift handover report.">LATEST SHIFT REPORT →</button><div class="ap3-answer">Historical shift intelligence is retrieved through the existing ANVI orchestrator.</div></div></section>
+
+<section class="ap3-page" data-ap3-page="management"><div class="ap3-hero-card"><div class="ap3-kicker">MANAGEMENT DECISION</div><h1>Decision Support</h1><p>Evidence-backed priorities, urgency and operational context. ANVI supports human decisions; it does not authorize or execute plant actions.</p><button class="ap3-action" data-q="What should management prioritize based on current plant evidence?">GENERATE DECISION SUPPORT →</button><div class="ap3-answer">Decision support appears only when sufficient evidence exists.</div></div></section>
+
+<section class="ap3-page" data-ap3-page="ask"><div class="ap3-hero-card"><div class="ap3-kicker">CONVERSATIONAL PLANT INTELLIGENCE</div><h1>Ask ANVI</h1><p>Natural-language access to the same ANVI orchestrator, PCI evidence, V5 intelligence and plant context.</p><div class="ap3-command"><input id="ap3-question" placeholder="Ask ANVI anything about the plant..."><button id="ap3-send">ASK ANVI</button><div class="ap3-answer" id="ap3-answer">ANVI is ready.</div></div></div></section>
+
+<section class="ap3-page" data-ap3-page="reports"><div class="ap3-hero-card"><div class="ap3-kicker">REPORTS</div><h1>Plant Intelligence Reports</h1><p>Access intelligence through natural-language queries while preserving the existing evidence boundary.</p><button class="ap3-action" data-q="Give me a management summary of the current plant condition.">MANAGEMENT SUMMARY →</button><button class="ap3-action" data-q="Give me a maintenance-focused plant intelligence report.">MAINTENANCE REPORT →</button></div></section>
+
+<section class="ap3-page" data-ap3-page="voice"><div class="ap3-hero-card"><div class="ap3-kicker">ANVI VOICE</div><h1>Speak Naturally to the Plant</h1><p>Voice remains connected to the same ANVI conversational orchestrator.</p><button class="ap3-action" id="ap3-voice">🎤 SPEAK TO ANVI</button><div class="ap3-answer">Voice uses the existing browser voice integration and safety boundary.</div></div></section>
+
+<section class="ap3-page" data-ap3-page="settings"><div class="ap3-hero-card"><div class="ap3-kicker">SYSTEM SETTINGS</div><h1>ANVIQO System Boundary</h1><p>Read-only integration. PLC write blocked. SCADA control blocked. Human decision required.</p></div></section>
+
+</main>
+</div>
+
+<script id="ANVI_PROFESSIONAL_COMMAND_CENTRE_V3_JS">
+(function(){
+const root=document.getElementById('anvi-professional-v3');if(!root)return;
+const title=document.getElementById('ap3-title');
+const names={command:'PLANT INTELLIGENCE COMMAND CENTRE',overview:'PLANT OVERVIEW',alarms:'LIVE ALARMS',equipment:'EQUIPMENT INTELLIGENCE',analysis:'PLANT ANALYSIS',changed:'WHAT CHANGED',events:'EVENT CORRELATION',shift:'SHIFT REPORT',management:'MANAGEMENT DECISION',ask:'ASK ANVI',reports:'PLANT INTELLIGENCE REPORTS',voice:'ANVI VOICE',settings:'SYSTEM SETTINGS'};
+root.querySelectorAll('[data-ap3]').forEach(b=>b.onclick=()=>{
+root.querySelectorAll('[data-ap3]').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+root.querySelectorAll('[data-ap3-page]').forEach(x=>x.classList.remove('active'));
+const p=root.querySelector('[data-ap3-page="'+b.dataset.ap3+'"]');if(p)p.classList.add('active');
+title.textContent=names[b.dataset.ap3]||'ANVIQO';
+});
+async function ask(q,target){
+if(!q)return;
+const el=target||document.getElementById('ap3-answer');if(el)el.textContent='ANVI is retrieving verified plant intelligence…';
+try{
+const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},credentials:'same-origin',body:JSON.stringify({question:q})});
+const t=await r.text();let d={};try{d=JSON.parse(t)}catch(e){d={answer:t}}
+const a=d.answer||d.response||d.message||d.raw||t;if(el)el.textContent=typeof a==='string'?a:JSON.stringify(a,null,2);
+}catch(e){if(el)el.textContent='ANVI connection error: '+e}
+}
+root.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>ask(b.dataset.q,b.closest('.ap3-page')?.querySelector('.ap3-answer')||document.getElementById('ap3-answer')));
+document.getElementById('ap3-send').onclick=()=>{const i=document.getElementById('ap3-question');ask(i.value);i.value=''};
+document.getElementById('ap3-question').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ap3-send').click()});
+document.getElementById('ap3-voice').onclick=()=>{if(typeof startVoice==='function')startVoice();else document.querySelector('[onclick="startVoice()"]')?.click()};
+async function status(){
+try{
+const r=await fetch('/api/status',{credentials:'same-origin'});const d=await r.json();const x=d.snapshot||d.data||d;
+const val=(keys,def='—')=>{for(const k of keys)if(x[k]!==undefined)return x[k];return def};
+document.getElementById('ap3-health').textContent=val(['plant_health','health_score','health'],'READY');
+document.getElementById('ap3-health-score').textContent='Health Score '+val(['health_score','plant_health_score'],'—')+'/100';
+document.getElementById('ap3-alarms').textContent=val(['active_alarms','alarms'],0);
+document.getElementById('ap3-events').textContent=val(['active_events','events'],0);
+document.getElementById('ap3-risk').textContent=val(['equipment_at_risk','equipment_risk','risks'],0);
+document.getElementById('ov3-health').textContent=val(['plant_health','health_score','health'],'—');
+document.getElementById('ov3-alarms').textContent=val(['active_alarms','alarms'],0);
+document.getElementById('ov3-events').textContent=val(['active_events','events'],0);
+document.getElementById('ap3-situation').textContent='ANVI evidence layer online';
+}catch(e){document.getElementById('ap3-api').textContent='API CHECK REQUIRED'}
+}
+status();setInterval(status,30000);
+})();
+</script>
+
 </body>
 </html>
 
