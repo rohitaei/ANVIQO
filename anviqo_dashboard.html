@@ -719,6 +719,269 @@ body{background:#050b12!important;color:#dcecf4!important;font-family:Inter,syst
 .anvi-pro-top h1{font-size:14px}.anvi-pro-kpis{grid-template-columns:1fr 1fr}
 }
 </style>
+
+<style id="ANVI_CHAT_MOBILE_PRO_FIX">
+
+.anvi-mobile-menu{
+display:none;
+position:fixed;
+top:12px;
+left:12px;
+z-index:9999;
+background:#08202c;
+border:1px solid #2b6375;
+color:#50e4ff;
+border-radius:9px;
+padding:10px 13px;
+font-weight:800;
+font-size:13px;
+box-shadow:0 5px 20px rgba(0,0,0,.35);
+}
+
+.anvi-mobile-overlay{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.65);
+z-index:9997;
+}
+
+.anvi-chat-professional{
+background:linear-gradient(145deg,#071923,#06131c);
+border:1px solid #1b4555;
+border-radius:14px;
+padding:18px;
+margin-top:14px;
+}
+
+.anvi-chat-head{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:10px;
+border-bottom:1px solid #173845;
+padding-bottom:13px;
+margin-bottom:13px;
+}
+
+.anvi-chat-head h2{
+margin:0;
+font-size:16px;
+color:#e9fbff;
+letter-spacing:.5px;
+}
+
+.anvi-chat-head p{
+margin:4px 0 0;
+font-size:9px;
+color:#7693a1;
+}
+
+.anvi-chat-status{
+font-size:8px;
+border:1px solid #1e6275;
+border-radius:15px;
+padding:6px 9px;
+color:#43defb;
+white-space:nowrap;
+}
+
+.anvi-chat-quick{
+display:flex;
+flex-wrap:wrap;
+gap:7px;
+margin-bottom:12px;
+}
+
+.anvi-chat-quick button{
+background:#081f2b;
+border:1px solid #1b4b5e;
+color:#9fd7e5;
+border-radius:18px;
+padding:7px 10px;
+font-size:8px;
+cursor:pointer;
+}
+
+.anvi-chat-quick button:hover{
+background:#0b3343;
+color:#fff;
+}
+
+.anvi-chat-messages{
+height:210px;
+overflow-y:auto;
+background:#040d14;
+border:1px solid #173542;
+border-radius:10px;
+padding:13px;
+color:#c7dce5;
+font-size:10px;
+line-height:1.65;
+white-space:pre-wrap;
+}
+
+.anvi-chat-input-row{
+display:flex;
+gap:8px;
+margin-top:10px;
+}
+
+.anvi-chat-input{
+flex:1;
+min-width:0;
+background:#06151e;
+border:1px solid #285365;
+border-radius:9px;
+padding:12px;
+color:#e8fbff;
+outline:none;
+font-size:11px;
+}
+
+.anvi-chat-input:focus{
+border-color:#35dff9;
+}
+
+.anvi-chat-ask{
+background:#29d8f5;
+border:0;
+border-radius:9px;
+padding:0 18px;
+color:#03202a;
+font-weight:900;
+cursor:pointer;
+}
+
+.anvi-chat-actions{
+display:flex;
+gap:8px;
+margin-top:9px;
+}
+
+.anvi-chat-action{
+background:#092330;
+border:1px solid #23566a;
+color:#9ed9e8;
+border-radius:8px;
+padding:9px 12px;
+font-size:9px;
+cursor:pointer;
+}
+
+.anvi-chat-action.voice{
+color:#51e4ff;
+border-color:#28798d;
+}
+
+.anvi-chat-evidence{
+margin-top:10px;
+padding:10px;
+border-left:3px solid #2bd8f4;
+background:#06151d;
+color:#7897a5;
+font-size:8px;
+line-height:1.55;
+}
+
+@media(max-width:700px){
+
+.anvi-mobile-menu{
+display:block;
+}
+
+.anvi-mobile-overlay{
+display:none;
+}
+
+.anvi-mobile-overlay.open{
+display:block;
+}
+
+.anvi-pro-side{
+transform:translateX(-105%);
+transition:transform .22s ease;
+width:255px!important;
+z-index:9998!important;
+}
+
+.anvi-pro-side.mobile-open{
+transform:translateX(0);
+}
+
+.anvi-pro-main{
+margin-left:0!important;
+width:100%!important;
+padding:58px 10px 15px!important;
+}
+
+.anvi-pro-top{
+padding-left:4px;
+}
+
+.anvi-pro-top h1{
+font-size:13px!important;
+line-height:1.3;
+}
+
+.anvi-pro-top p{
+font-size:8px!important;
+}
+
+.anvi-pro-live{
+font-size:7px!important;
+}
+
+.anvi-pro-kpis{
+grid-template-columns:1fr 1fr!important;
+gap:7px!important;
+}
+
+.anvi-pro-kpi{
+padding:10px!important;
+}
+
+.anvi-pro-kpi b{
+font-size:18px!important;
+}
+
+.anvi-pro-hero{
+grid-template-columns:1fr!important;
+}
+
+.anvi-pro-grid,
+.anvi-pro-grid2,
+.anvi-pro-command{
+grid-template-columns:1fr!important;
+}
+
+.anvi-chat-head{
+align-items:flex-start;
+flex-direction:column;
+}
+
+.anvi-chat-input-row{
+flex-direction:column;
+}
+
+.anvi-chat-ask{
+height:42px;
+}
+
+.anvi-chat-actions{
+flex-wrap:wrap;
+}
+
+.anvi-chat-action{
+flex:1;
+}
+
+.anvi-chat-messages{
+height:260px;
+}
+
+}
+</style>
 </head>
 
 <body>
@@ -2693,6 +2956,282 @@ if(e!==null)document.getElementById('proChains').textContent=e;
 }catch(x){document.getElementById('proApi').textContent='API CHECK REQUIRED'}
 }
 status();
+})();
+</script>
+
+<section id="anvi-professional-chat-page" class="anvi-chat-professional">
+
+<div class="anvi-chat-head">
+<div>
+<h2>✦ ANVI CHAT</h2>
+<p>Natural-language plant intelligence • Same ANVI orchestrator • Evidence first</p>
+</div>
+<div class="anvi-chat-status">● ANVI ONLINE</div>
+</div>
+
+<div class="anvi-chat-quick">
+
+<button data-anvi-q="Give me a current plant overview">PLANT OVERVIEW</button>
+<button data-anvi-q="Show current alarms and explain their significance">LIVE ALARMS</button>
+<button data-anvi-q="Show equipment at risk">EQUIPMENT RISK</button>
+<button data-anvi-q="What changed in the plant?">WHAT CHANGED</button>
+<button data-anvi-q="Show recent event correlation">EVENT CORRELATION</button>
+<button data-anvi-q="Show maintenance priorities">MAINTENANCE</button>
+<button data-anvi-q="Tell me the latest shift handover report">SHIFT REPORT</button>
+<button data-anvi-q="Explain current plant health">PLANT HEALTH</button>
+
+</div>
+
+<div id="anvi-professional-chat-messages" class="anvi-chat-messages">
+ANVI is ready.
+
+Ask naturally about your plant, instruments, PCI I/O, equipment,
+alarms, maintenance, events, shift intelligence, plant health or
+management context.
+
+ANVI will use the existing evidence and intelligence layers.
+</div>
+
+<div class="anvi-chat-input-row">
+
+<input
+id="anvi-professional-chat-input"
+class="anvi-chat-input"
+placeholder="Ask ANVI about your plant..."
+autocomplete="off"
+>
+
+<button id="anvi-professional-chat-ask" class="anvi-chat-ask">
+ASK ANVI
+</button>
+
+</div>
+
+<div class="anvi-chat-actions">
+
+<button id="anvi-professional-voice" class="anvi-chat-action voice">
+🎤 SPEAK TO ANVI
+</button>
+
+<button id="anvi-professional-clear" class="anvi-chat-action">
+CLEAR CHAT
+</button>
+
+</div>
+
+<div class="anvi-chat-evidence">
+<b>Evidence boundary:</b>
+ANVI uses the existing V5 intelligence, PCI evidence, plant memory,
+equipment intelligence, maintenance intelligence and event context.
+Read-only • No PLC Write • No SCADA Control • Human decision required.
+</div>
+
+</section>
+
+<script id="ANVI_CHAT_MOBILE_PRO_FIX_JS">
+(function(){
+
+function chatBox(){
+return document.getElementById('anvi-professional-chat-messages');
+}
+
+function chatInput(){
+return document.getElementById('anvi-professional-chat-input');
+}
+
+function addUser(text){
+var box=chatBox();
+box.textContent += "\n\nYOU\n" + text;
+box.scrollTop=box.scrollHeight;
+}
+
+function addAnvi(text){
+var box=chatBox();
+box.textContent += "\n\nANVI\n" + text;
+box.scrollTop=box.scrollHeight;
+}
+
+async function askProfessionalAnvi(){
+
+var input=chatInput();
+var q=input.value.trim();
+
+if(!q)return;
+
+addUser(q);
+input.value='';
+addAnvi('ANVI is retrieving verified plant evidence…');
+
+var box=chatBox();
+
+try{
+
+var r=await fetch('/api/ask',{
+method:'POST',
+headers:{
+'Content-Type':'application/json',
+'Accept':'application/json'
+},
+credentials:'same-origin',
+body:JSON.stringify({question:q})
+});
+
+var text=await r.text();
+
+var data={};
+
+try{
+data=JSON.parse(text);
+}catch(e){
+data={answer:text};
+}
+
+var answer=
+data.answer ||
+data.response ||
+data.message ||
+data.raw ||
+'No verified answer returned.';
+
+var current=box.textContent;
+var pos=current.lastIndexOf('ANVI\nANVI is retrieving verified plant evidence…');
+
+if(pos>=0){
+box.textContent=
+current.substring(0,pos)+
+'ANVI\n'+
+(String(answer));
+}else{
+addAnvi(String(answer));
+}
+
+box.scrollTop=box.scrollHeight;
+
+}catch(e){
+
+var current=box.textContent;
+var pos=current.lastIndexOf('ANVI\nANVI is retrieving verified plant evidence…');
+
+if(pos>=0){
+box.textContent=
+current.substring(0,pos)+
+'ANVI\nUnable to retrieve the ANVI response. Please check the authenticated API connection.';
+}
+
+}
+
+}
+
+window.anviProfessionalAsk=askProfessionalAnvi;
+
+var ask=document.getElementById('anvi-professional-chat-ask');
+
+if(ask){
+ask.onclick=askProfessionalAnvi;
+}
+
+var input=chatInput();
+
+if(input){
+input.addEventListener('keydown',function(e){
+if(e.key==='Enter'){
+e.preventDefault();
+askProfessionalAnvi();
+}
+});
+}
+
+document.querySelectorAll('[data-anvi-q]').forEach(function(btn){
+
+btn.addEventListener('click',function(){
+
+var input=chatInput();
+
+if(input){
+input.value=btn.getAttribute('data-anvi-q');
+input.focus();
+}
+
+});
+
+});
+
+var clear=document.getElementById('anvi-professional-clear');
+
+if(clear){
+clear.onclick=function(){
+chatBox().textContent=
+'ANVI is ready.\n\nAsk naturally about your plant, instruments, PCI I/O, equipment, alarms, maintenance, events, shift intelligence, plant health or management context.';
+};
+}
+
+var voice=document.getElementById('anvi-professional-voice');
+
+if(voice){
+
+voice.onclick=function(){
+
+if(typeof window.startVoice==='function'){
+window.startVoice();
+return;
+}
+
+var old=document.querySelector('[onclick*="startVoice"]');
+
+if(old){
+old.click();
+return;
+}
+
+chatBox().textContent +=
+'\n\nANVI\nVoice interface is available through the existing authenticated ANVI voice layer.';
+
+};
+
+}
+
+var side=document.querySelector('.anvi-pro-side');
+
+if(side){
+
+var menu=document.createElement('button');
+
+menu.className='anvi-mobile-menu';
+menu.id='anvi-mobile-menu-button';
+menu.innerHTML='☰ MENU';
+
+document.body.appendChild(menu);
+
+var overlay=document.createElement('div');
+
+overlay.className='anvi-mobile-overlay';
+overlay.id='anvi-mobile-overlay';
+
+document.body.appendChild(overlay);
+
+function toggle(){
+
+side.classList.toggle('mobile-open');
+overlay.classList.toggle('open');
+
+}
+
+menu.onclick=toggle;
+overlay.onclick=toggle;
+
+side.querySelectorAll('button').forEach(function(b){
+b.addEventListener('click',function(){
+
+if(window.innerWidth<=700){
+side.classList.remove('mobile-open');
+overlay.classList.remove('open');
+}
+
+});
+});
+
+}
+
 })();
 </script>
 </body>
