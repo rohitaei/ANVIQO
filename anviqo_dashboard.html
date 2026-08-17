@@ -549,111 +549,213 @@ body{min-height:100vh}
 </style>
 
 
-<style id="anviqo-final-reference-canvas">
-/* ANVIQO FINAL REFERENCE COMMAND CENTRE
-   Presentation only — API/V5/PCI/ANVI/VOICE untouched. */
 
+
+
+<style id="anviqo-reference-final-mobile">
+/* =========================================================
+   ANVIQO COMMAND CENTRE — FINAL REFERENCE PRESENTATION
+   Presentation layer ONLY.
+   API / V5 / PCI / ANVI / VOICE logic untouched.
+   ========================================================= */
+
+/* Desktop reference proportions */
 .v4-grid-main{
   display:grid !important;
   grid-template-columns:1.05fr 1.45fr 1fr !important;
-  gap:14px !important;
-  margin-top:14px !important;
+  gap:12px !important;
 }
 
 .v4-grid-bottom{
   display:grid !important;
-  grid-template-columns:1.15fr 1fr 1fr !important;
-  gap:14px !important;
-  margin-top:14px !important;
+  grid-template-columns:1.05fr 1fr 1fr !important;
+  gap:12px !important;
 }
 
 .v4-kpis{
   display:grid !important;
   grid-template-columns:repeat(5,minmax(0,1fr)) !important;
-  gap:10px !important;
-}
-
-.v4-ask{
-  width:100% !important;
+  gap:9px !important;
 }
 
 .v4-card{
   min-width:0 !important;
-  overflow:hidden !important;
 }
 
-.v4-risk-list{
-  max-height:235px !important;
-  overflow:hidden !important;
-}
+/* =========================================================
+   PHONE:
+   DO NOT SHRINK THE COMMAND CENTRE INTO MICRO TEXT.
+   Keep a readable desktop-style canvas and allow horizontal
+   movement through the canvas.
+   ========================================================= */
 
-.v4-correlation{
-  min-height:235px !important;
-}
-
-.v4-decision{
-  display:grid !important;
-  grid-template-columns:1.2fr 1fr 1fr .65fr !important;
-  gap:14px !important;
-}
-
-/* Keep the reference dashboard as a horizontal command-centre
-   canvas on phones instead of converting it into stacked cards. */
 @media(max-width:700px){
-  html,body{
-    overflow-x:hidden !important;
+
+  html{
+    overflow-x:auto !important;
+    width:100%;
+  }
+
+  body{
+    overflow-x:auto !important;
+    min-width:100%;
   }
 
   .main{
     margin-left:0 !important;
-    padding:58px 7px 18px !important;
-    width:100% !important;
+    padding:54px 12px 24px !important;
+
+    /* readable command-centre canvas */
+    width:980px !important;
+    min-width:980px !important;
+
+    max-width:none !important;
   }
 
+  /* Header stays readable */
+  .top{
+    width:956px !important;
+    min-width:956px !important;
+    margin-bottom:14px !important;
+  }
+
+  .top h1{
+    font-size:24px !important;
+    padding-left:0 !important;
+    white-space:nowrap !important;
+  }
+
+  .top p{
+    font-size:10px !important;
+    padding-left:0 !important;
+  }
+
+  .api{
+    font-size:10px !important;
+  }
+
+  /* KPI strip exactly like reference */
   .v4-kpis{
-    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
-    gap:5px !important;
+    width:956px !important;
+    min-width:956px !important;
+    grid-template-columns:repeat(5,1fr) !important;
+    gap:9px !important;
   }
 
+  /* Main intelligence row */
   .v4-grid-main{
+    width:956px !important;
+    min-width:956px !important;
     grid-template-columns:1.05fr 1.45fr 1fr !important;
-    gap:6px !important;
+    gap:12px !important;
   }
 
+  /* Bottom intelligence row */
   .v4-grid-bottom{
-    grid-template-columns:1.15fr 1fr 1fr !important;
-    gap:6px !important;
+    width:956px !important;
+    min-width:956px !important;
+    grid-template-columns:1.05fr 1fr 1fr !important;
+    gap:12px !important;
   }
 
-  .v4-decision{
-    grid-template-columns:1.2fr 1fr 1fr .65fr !important;
-    gap:6px !important;
-  }
-
+  /* Cards */
   .v4-card{
     min-width:0 !important;
   }
 
   .v4-card h3{
-    font-size:8px !important;
+    font-size:11px !important;
+    letter-spacing:.8px !important;
   }
 
   .v4-card p,
   .v4-card small{
-    font-size:7px !important;
+    font-size:9px !important;
   }
 
   .v4-risk-row{
-    font-size:7px !important;
+    font-size:9px !important;
   }
 
-  .v4-node{
-    transform:scale(.82) !important;
-    transform-origin:center !important;
+  /* Preserve reference graph size */
+  .v4-chart,
+  canvas{
+    max-width:none !important;
   }
 
+  /* Event correlation remains horizontal */
+  .v4-correlation{
+    min-height:235px !important;
+  }
+
+  /* Management decision remains a single reference-style panel */
+  .v4-decision{
+    display:grid !important;
+    grid-template-columns:1.15fr 1fr 1fr .65fr !important;
+    gap:14px !important;
+  }
+
+  /* ANVI Command + Voice remain side-by-side */
   .v4-ask{
+    width:956px !important;
+    min-width:956px !important;
+  }
+
+  /* Never hide ANVI on mobile */
+  .anvi{
+    display:block !important;
+  }
+
+  /* Keep controls readable */
+  .v4-chiprow{
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    gap:6px !important;
+  }
+
+  .v4-chiprow button{
+    font-size:8px !important;
+    white-space:nowrap !important;
+  }
+
+  .v4-askline input{
+    font-size:11px !important;
+  }
+
+  .v4-askline button{
+    font-size:10px !important;
+    padding:10px 18px !important;
+  }
+
+  /* Voice panel */
+  .voice,
+  .v4-voice{
     min-width:0 !important;
+  }
+
+  /* Keep sidebar hidden so the actual command-centre canvas
+     gets the full phone viewport. */
+  .side{
+    transform:translateX(-100%) !important;
+  }
+
+  .menu{
+    display:block !important;
+    position:fixed !important;
+    top:10px !important;
+    left:10px !important;
+    z-index:9999 !important;
+  }
+
+  /*
+   * Do not use the old responsive rules that converted the
+   * dashboard into 1-column cards.
+   */
+  .grid,
+  .row,
+  .decision,
+  .ask{
+    min-width:0;
   }
 }
 </style>
