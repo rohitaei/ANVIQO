@@ -1628,3 +1628,518 @@ else
 
 </body>
 </html>
+
+<style id="anviqo-full-live-command-centre-style">
+.anviqo-live-range{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  margin-top:7px;
+}
+.anviqo-live-range span{
+  padding:4px 6px;
+  border:1px solid #183b50;
+  border-radius:5px;
+  background:#061522;
+  color:#8198a9;
+  font-size:7px;
+}
+.anviqo-live-range b{color:#31d9f5}
+.anviqo-live-current{
+  color:#28df8b!important;
+}
+.anviqo-live-data{
+  animation:anviPulse 2s infinite;
+}
+@keyframes anviPulse{
+  0%,100%{opacity:1}
+  50%{opacity:.82}
+}
+.anviqo-live-row{
+  display:grid;
+  grid-template-columns:65px 75px 1fr 65px;
+  gap:6px;
+  padding:7px 0;
+  border-bottom:1px solid #142c3d;
+  font-size:8px;
+}
+.anviqo-live-row .critical{color:#ff5064;font-weight:800}
+.anviqo-live-row .warning{color:#ffb53d;font-weight:800}
+.anviqo-live-row .normal{color:#28df8b;font-weight:800}
+.anviqo-live-risk{
+  border:1px solid #512532;
+  background:#160d14;
+  border-radius:8px;
+  padding:10px;
+  margin-bottom:7px;
+}
+.anviqo-live-risk-head{
+  display:flex;
+  justify-content:space-between;
+  font-size:9px;
+  font-weight:800;
+}
+.anviqo-live-risk-meta{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:5px;
+  margin-top:7px;
+}
+.anviqo-live-risk-meta span{
+  font-size:7px;
+  color:#778d9e;
+}
+.anviqo-live-risk-meta b{
+  display:block;
+  color:#d8e7ef;
+  margin-top:3px;
+}
+.anviqo-live-chain{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  overflow:hidden;
+  padding:8px 0;
+}
+.anviqo-live-node{
+  min-width:62px;
+  padding:8px 5px;
+  border:1px solid #572733;
+  border-radius:7px;
+  background:#160d14;
+  text-align:center;
+  color:#ff8a96;
+  font-size:7px;
+}
+.anviqo-live-arrow{
+  color:#31d9f5;
+  font-size:12px;
+}
+.anviqo-live-change{
+  padding:7px 0;
+  border-bottom:1px solid #142c3d;
+  font-size:8px;
+}
+.anviqo-live-change b{color:#31d9f5}
+.anviqo-live-decision{
+  border:1px solid #6a2c38;
+  border-radius:8px;
+  background:#190d13;
+  padding:10px;
+}
+.anviqo-live-decision strong{
+  color:#ff7180;
+  font-size:9px;
+}
+.anviqo-live-decision p{
+  color:#a7b7c2;
+  font-size:8px;
+  line-height:1.5;
+}
+.anviqo-live-trend-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:5px;
+}
+.anviqo-live-trend-header b{
+  color:#31d9f5;
+  font-size:9px;
+}
+.anviqo-live-trend-header small{
+  color:#718899;
+  font-size:7px;
+}
+@media(max-width:700px){
+  .anviqo-live-row{
+    grid-template-columns:48px 62px 1fr 58px;
+    font-size:7px;
+  }
+  .anviqo-live-risk-meta{
+    grid-template-columns:repeat(2,1fr);
+  }
+  .anviqo-live-range span{
+    font-size:6px;
+  }
+}
+</style>
+
+<script id="ANVIQO-FULL-LIVE-COMMAND-CENTRE-V1">
+(function(){
+
+"use strict";
+
+const LIVE = {
+  PT303:{name:"PT-303",label:"PCI Pressure",unit:"bar",base:5.82,min:4.8,max:6.8},
+  TT201:{name:"TT-201",label:"Process Temperature",unit:"°C",base:814,min:760,max:860},
+  FT101:{name:"FT-101",label:"Fuel Flow",unit:"t/h",base:126.4,min:110,max:145},
+  DP401:{name:"DP-401",label:"Filter DP",unit:"kPa",base:18.6,min:10,max:28},
+  LT502:{name:"LT-502",label:"Level",unit:"%",base:62.3,min:45,max:78}
+};
+
+const EVENTS = [
+  "PT-303 pressure increased",
+  "TT-201 temperature deviation detected",
+  "DP-401 differential pressure rising",
+  "FT-101 flow variation detected"
+];
+
+function val(o,t,phase){
+  return o.base +
+    Math.sin(t*.00055+phase)*((o.max-o.min)*.055) +
+    Math.sin(t*.00019+phase*1.7)*((o.max-o.min)*.025);
+}
+
+function fmt(v,o){
+  return v.toFixed(o.unit==="°C"?1:2);
+}
+
+function allValues(){
+  const t=Date.now();
+  return {
+    PT303:val(LIVE.PT303,t,0),
+    TT201:val(LIVE.TT201,t,1),
+    FT101:val(LIVE.FT101,t,2),
+    DP401:val(LIVE.DP401,t,3),
+    LT502:val(LIVE.LT502,t,4)
+  };
+}
+
+function textNodes(){
+  return [...document.querySelectorAll("body *")].filter(x=>{
+    if(x.children.length) return false;
+    const t=(x.textContent||"").trim().toLowerCase();
+    return t.length>0;
+  });
+}
+
+function findElement(words){
+  const nodes=textNodes();
+  for(const word of words){
+    const w=word.toLowerCase();
+    const n=nodes.find(x=>(x.textContent||"").trim().toLowerCase()===w);
+    if(n) return n;
+  }
+  return null;
+}
+
+function cardFor(words){
+  const n=findElement(words);
+  if(!n) return null;
+  let p=n;
+  for(let i=0;i<5 && p;i++,p=p.parentElement){
+    if(p.classList && (
+      p.classList.contains("card") ||
+      p.classList.contains("box") ||
+      p.classList.contains("v4-card") ||
+      p.classList.contains("metric")
+    )) return p;
+  }
+  return n.parentElement;
+}
+
+function putAfterHeading(words,html){
+  const n=findElement(words);
+  if(!n) return;
+  let box=n;
+  for(let i=0;i<5 && box;i++,box=box.parentElement){
+    if(box.classList && (
+      box.classList.contains("box") ||
+      box.classList.contains("v4-card") ||
+      box.classList.contains("card")
+    )) break;
+  }
+  if(!box) return;
+
+  let target=box.querySelector(".anviqo-live-injected");
+  if(!target){
+    target=document.createElement("div");
+    target.className="anviqo-live-injected";
+    box.appendChild(target);
+  }
+  target.innerHTML=html;
+}
+
+function metric(words,value,sub){
+  const c=cardFor(words);
+  if(!c) return;
+
+  const vals=c.querySelectorAll(".val,[class*='value'],strong");
+  let target=vals[0];
+
+  if(!target){
+    target=document.createElement("div");
+    target.className="val";
+    c.appendChild(target);
+  }
+
+  target.textContent=value;
+  target.classList.add("anviqo-live-data","anviqo-live-current");
+
+  const ss=c.querySelector(".sub");
+  if(ss) ss.textContent=sub;
+}
+
+function updateMetrics(v){
+
+  const health=
+    Math.round(
+      94+
+      Math.sin(Date.now()/7000)*3+
+      Math.sin(Date.now()/17000)*1
+    );
+
+  const alarms=
+    3 + Math.floor((Date.now()/5000)%3);
+
+  const risk=
+    2 + Math.floor((Date.now()/9000)%2);
+
+  const chains=3;
+
+  metric(["plant health score","plant health","health score"],
+    "READY",
+    "Health Score: "+health+"/100");
+
+  metric(["total alarms","active alarms"],
+    alarms,
+    "Live simulated alarms");
+
+  metric(["active equipment at risk","equipment at risk"],
+    risk,
+    "High / warning risk");
+
+  metric(["event chains","event chain"],
+    chains,
+    "Correlated event chains");
+
+  metric(["system status","plant state"],
+    "ONLINE",
+    "Read-only • Simulation");
+
+  /* Some dashboards use exact labels with different casing. */
+  document.querySelectorAll(".val").forEach(el=>{
+    const t=(el.textContent||"").trim();
+    if(t==="--" || t==="0" && el.parentElement &&
+       /health|equipment|event/i.test(el.parentElement.textContent||"")){
+      el.classList.add("anviqo-live-data");
+    }
+  });
+}
+
+function updateLiveAlarms(v){
+
+  putAfterHeading(
+    ["live alarms","live alarm"],
+    `
+    <div class="anviqo-live-row">
+      <span class="critical">P1-CRIT</span>
+      <b>PT-303</b>
+      <span>PCI pressure deviation</span>
+      <b>${v.PT303.toFixed(2)} bar</b>
+    </div>
+    <div class="anviqo-live-row">
+      <span class="warning">P2-WARN</span>
+      <b>TT-201</b>
+      <span>Process temperature trending</span>
+      <b>${v.TT201.toFixed(1)} °C</b>
+    </div>
+    <div class="anviqo-live-row">
+      <span class="warning">P2-WARN</span>
+      <b>DP-401</b>
+      <span>Filter differential pressure</span>
+      <b>${v.DP401.toFixed(2)} kPa</b>
+    </div>
+    `
+  );
+}
+
+function updateRisk(v){
+
+  const score=Math.round(
+    62+
+    Math.abs(Math.sin(Date.now()/6000))*22
+  );
+
+  putAfterHeading(
+    ["top equipment risk","top equipment risks","equipment risk"],
+    `
+    <div class="anviqo-live-risk">
+      <div class="anviqo-live-risk-head">
+        <span>PT-303 • PCI Pressure</span>
+        <span style="color:#ff5064">${score}/100</span>
+      </div>
+      <div class="anviqo-live-risk-meta">
+        <span>Risk<b>HIGH</b></span>
+        <span>Impact<b>Process</b></span>
+        <span>Evidence<b>Live trend</b></span>
+        <span>Trend<b>RISING</b></span>
+      </div>
+    </div>
+
+    <div class="anviqo-live-risk">
+      <div class="anviqo-live-risk-head">
+        <span>DP-401 • Filter DP</span>
+        <span style="color:#ffb53d">54/100</span>
+      </div>
+      <div class="anviqo-live-risk-meta">
+        <span>Risk<b>WARNING</b></span>
+        <span>Impact<b>Flow</b></span>
+        <span>Evidence<b>Live trend</b></span>
+        <span>Trend<b>RISING</b></span>
+      </div>
+    </div>
+    `
+  );
+}
+
+function updateChanges(){
+
+  const phase=Math.floor(Date.now()/5000)%EVENTS.length;
+
+  putAfterHeading(
+    ["what changed","what changed?"],
+    `
+    <div class="anviqo-live-change">
+      <b>LIVE</b> ${EVENTS[phase]}
+    </div>
+    <div class="anviqo-live-change">
+      <b>LIVE</b> Equipment condition updated from simulated process stream.
+    </div>
+    <div class="anviqo-live-change">
+      <b>LIVE</b> Correlation engine detected a related event chain.
+    </div>
+    `
+  );
+}
+
+function updateCorrelation(v){
+
+  putAfterHeading(
+    ["event correlation","event correlations"],
+    `
+    <div class="anviqo-live-chain">
+      <div class="anviqo-live-node">PT-303<br>${v.PT303.toFixed(2)}</div>
+      <div class="anviqo-live-arrow">→</div>
+      <div class="anviqo-live-node">DP-401<br>${v.DP401.toFixed(1)}</div>
+      <div class="anviqo-live-arrow">→</div>
+      <div class="anviqo-live-node">FLOW<br>${v.FT101.toFixed(1)}</div>
+      <div class="anviqo-live-arrow">→</div>
+      <div class="anviqo-live-node">PROCESS<br>RISK</div>
+    </div>
+    <div style="font-size:7px;color:#8198a9">
+      Correlation strength: <b style="color:#ffb53d">MEDIUM-HIGH</b>
+      • Evidence-linked simulation
+    </div>
+    `
+  );
+}
+
+function updateDecision(v){
+
+  putAfterHeading(
+    ["management decision","management decisions"],
+    `
+    <div class="anviqo-live-decision">
+      <strong>RECOMMENDED PRIORITY</strong>
+      <p>
+        Review PT-303 pressure and DP-401 differential pressure.
+        The simulated trend is rising and may affect process stability.
+      </p>
+      <p>
+        Evidence: PT-303 ${v.PT303.toFixed(2)} bar •
+        DP-401 ${v.DP401.toFixed(2)} kPa
+      </p>
+      <p>
+        Confidence: <b style="color:#28df8b">87%</b> •
+        Human decision required
+      </p>
+    </div>
+    `
+  );
+}
+
+function updateAnalysis(v){
+
+  putAfterHeading(
+    ["plant analysis","analysis","trend analysis"],
+    `
+    <div class="anviqo-live-trend-header">
+      <b>LIVE PROCESS TREND</b>
+      <small>Updated every 2 seconds</small>
+    </div>
+
+    <div class="anviqo-live-range">
+      <span>PT-303 <b>${v.PT303.toFixed(2)} bar</b></span>
+      <span>Range <b>4.8–6.8 bar</b></span>
+    </div>
+
+    <div class="anviqo-live-range">
+      <span>TT-201 <b>${v.TT201.toFixed(1)} °C</b></span>
+      <span>Range <b>760–860 °C</b></span>
+    </div>
+
+    <div class="anviqo-live-range">
+      <span>FT-101 <b>${v.FT101.toFixed(1)} t/h</b></span>
+      <span>Range <b>110–145 t/h</b></span>
+    </div>
+
+    <div class="anviqo-live-range">
+      <span>DP-401 <b>${v.DP401.toFixed(2)} kPa</b></span>
+      <span>Range <b>10–28 kPa</b></span>
+    </div>
+
+    <div class="anviqo-live-range">
+      <span>LT-502 <b>${v.LT502.toFixed(1)} %</b></span>
+      <span>Range <b>45–78 %</b></span>
+    </div>
+    `
+  );
+}
+
+function start(){
+
+  function render(){
+
+    const v=allValues();
+
+    updateMetrics(v);
+    updateLiveAlarms(v);
+    updateRisk(v);
+    updateChanges();
+    updateCorrelation(v);
+    updateDecision(v);
+    updateAnalysis(v);
+
+    /* Update any existing simulator value fields when their IDs exist. */
+    const map={
+      "pt-303-value":fmt(v.PT303,LIVE.PT303),
+      "tt-201-value":fmt(v.TT201,LIVE.TT201),
+      "ft-101-value":fmt(v.FT101,LIVE.FT101),
+      "dp-401-value":fmt(v.DP401,LIVE.DP401),
+      "lt-502-value":fmt(v.LT502,LIVE.LT502)
+    };
+
+    Object.keys(map).forEach(id=>{
+      const e=document.getElementById(id);
+      if(e) e.textContent=map[id];
+    });
+  }
+
+  render();
+  setInterval(render,2000);
+
+  console.log(
+    "ANVIQO FULL LIVE COMMAND CENTRE ACTIVE — "+
+    "metrics + alarms + risks + trends + correlation + decisions"
+  );
+}
+
+if(document.readyState==="loading")
+  document.addEventListener("DOMContentLoaded",start);
+else
+  start();
+
+})();
+</script>
+
