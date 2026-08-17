@@ -803,6 +803,116 @@ body{min-height:100vh}
 }
 </style>
 
+
+<style id="anviqo-final-reference-canvas">
+/* ANVIQO FINAL REFERENCE COMMAND CENTRE
+   Presentation only — API/V5/PCI/ANVI/VOICE untouched. */
+
+.v4-grid-main{
+  display:grid !important;
+  grid-template-columns:1.05fr 1.45fr 1fr !important;
+  gap:14px !important;
+  margin-top:14px !important;
+}
+
+.v4-grid-bottom{
+  display:grid !important;
+  grid-template-columns:1.15fr 1fr 1fr !important;
+  gap:14px !important;
+  margin-top:14px !important;
+}
+
+.v4-kpis{
+  display:grid !important;
+  grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+  gap:10px !important;
+}
+
+.v4-ask{
+  width:100% !important;
+}
+
+.v4-card{
+  min-width:0 !important;
+  overflow:hidden !important;
+}
+
+.v4-risk-list{
+  max-height:235px !important;
+  overflow:hidden !important;
+}
+
+.v4-correlation{
+  min-height:235px !important;
+}
+
+.v4-decision{
+  display:grid !important;
+  grid-template-columns:1.2fr 1fr 1fr .65fr !important;
+  gap:14px !important;
+}
+
+/* Keep the reference dashboard as a horizontal command-centre
+   canvas on phones instead of converting it into stacked cards. */
+@media(max-width:700px){
+  html,body{
+    overflow-x:hidden !important;
+  }
+
+  .main{
+    margin-left:0 !important;
+    padding:58px 7px 18px !important;
+    width:100% !important;
+  }
+
+  .v4-kpis{
+    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+    gap:5px !important;
+  }
+
+  .v4-grid-main{
+    grid-template-columns:1.05fr 1.45fr 1fr !important;
+    gap:6px !important;
+  }
+
+  .v4-grid-bottom{
+    grid-template-columns:1.15fr 1fr 1fr !important;
+    gap:6px !important;
+  }
+
+  .v4-decision{
+    grid-template-columns:1.2fr 1fr 1fr .65fr !important;
+    gap:6px !important;
+  }
+
+  .v4-card{
+    min-width:0 !important;
+  }
+
+  .v4-card h3{
+    font-size:8px !important;
+  }
+
+  .v4-card p,
+  .v4-card small{
+    font-size:7px !important;
+  }
+
+  .v4-risk-row{
+    font-size:7px !important;
+  }
+
+  .v4-node{
+    transform:scale(.82) !important;
+    transform-origin:center !important;
+  }
+
+  .v4-ask{
+    min-width:0 !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
