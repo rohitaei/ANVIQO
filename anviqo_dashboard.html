@@ -2056,7 +2056,7 @@ else
       <div class="anvi-menu-group">
         <div class="anvi-menu-title">ANVI</div>
         <button data-page="chat">✦ Ask ANVI</button>
-        <button data-page="voice">🎙 Voice</button>
+        <button type="button" data-page="voice" onclick="if(typeof startVoice==='function'){startVoice()}else{alert('ANVI Voice is not available in this browser.')}">🎙 Voice Command</button>
       </div>
 
       <div class="anvi-menu-group">
