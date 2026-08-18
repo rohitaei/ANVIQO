@@ -2610,15 +2610,6 @@ else
     const f=formatAnswer(data);
     row.querySelector('.anvi-v1-answer').innerHTML=`<p>${esc(f.answer)}</p>${f.extra}<div class="anvi-v1-source">Evidence: ${esc(f.source)} • Read-only • Human decision required</div>`;
     box.scrollTop=box.scrollHeight;
-
-    /* ANVI voice output — uses the same Ask ANVI response */
-    if(typeof window.speakANVIResponse === 'function'){
-      window.speakANVIResponse(f.answer);
-    }
-
-    if(typeof window.setMicState === 'function'){
-      window.setMicState('idle');
-    }
   }
 
   document.getElementById('anvi-v1-send').onclick=()=>{const i=document.getElementById('anvi-v1-input');ask(i.value);i.value=''};
