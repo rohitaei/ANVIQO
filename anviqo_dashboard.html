@@ -861,6 +861,38 @@ color:#fff;
 
 </style>
 
+
+<style id="ANVI_MIC_BUTTON_STYLE_20260818">
+#anvi-v1-voice{
+  width:46px;
+  height:42px;
+  min-width:46px;
+  padding:0;
+  border-radius:12px;
+  font-size:21px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#anvi-v1-voice.anvi-listening{
+  background:rgba(255,60,60,.18);
+  border:1px solid rgba(255,80,80,.65);
+  animation:anviMicPulse 1s infinite;
+}
+
+#anvi-v1-voice.anvi-processing{
+  opacity:.65;
+}
+
+@keyframes anviMicPulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.08)}
+  100%{transform:scale(1)}
+}
+</style>
+
 </head>
 
 <body>
@@ -2426,10 +2458,7 @@ else
           
 <button type="button"
         id="anvi-v1-voice"
-        class="anvi-v1-voice-button"
-        onclick="if(typeof startVoice==='function'){startVoice()}else{alert('ANVI Voice engine is unavailable.')}">
-  🎙 Voice Command
-</button>
+        class="anvi-v1-voice-button">🎤</button>
 
 <button class="anvi-v1-chip" data-q="How many AI, DI, DO and AO are in PCI?">I/O counts</button>
         </div>
@@ -3853,6 +3882,277 @@ status();setInterval(status,30000);
   }, false);
 
   window.anviShowSimulationDemo = showDemo;
+
+})();
+</script>
+
+
+<script id="ANVI_ROBUST_MIC_VOICE_20260818">
+(function(){
+
+  let anviRecognition = null;
+  let anviListening = false;
+
+  function setMicState(state){
+
+    const mic = document.getElementById("anvi-v1-voice");
+    if(!mic) return;
+
+    mic.classList.remove(
+      "anvi-listening",
+      "anvi-processing"
+    );
+
+    if(state === "listening"){
+      mic.textContent = "🔴";
+      mic.classList.add("anvi-listening");
+      mic.title = "ANVI is listening";
+    }
+
+    else if(state === "processing"){
+      mic.textContent = "⏳";
+      mic.classList.add("anvi-processing");
+      mic.title = "ANVI is processing";
+    }
+
+    else{
+      mic.textContent = "🎤";
+      mic.title = "Speak to ANVI";
+    }
+  }
+
+  function status(message){
+
+    const el =
+      document.getElementById("voiceStatus") ||
+      document.querySelector(".anvi-v1-voice-status");
+
+    if(el){
+      el.textContent = message;
+    }
+  }
+
+  function startANVIMicrophone(){
+
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+
+    if(!SpeechRecognition){
+
+      setMicState("idle");
+
+      status(
+        "Voice recognition is not supported by this browser. Please use Chrome."
+      );
+
+      alert(
+        "ANVI Voice needs browser speech recognition. Please open ANVIQO in Google Chrome and allow microphone permission."
+      );
+
+      return;
+    }
+
+    if(anviListening){
+
+      try{
+        anviRecognition.stop();
+      }catch(e){}
+
+      return;
+    }
+
+    try{
+
+      anviRecognition = new SpeechRecognition();
+
+      anviRecognition.lang = "en-IN";
+      anviRecognition.continuous = false;
+      anviRecognition.interimResults = false;
+      anviRecognition.maxAlternatives = 1;
+
+      anviRecognition.onstart = function(){
+
+        anviListening = true;
+
+        setMicState("listening");
+
+        status("Listening… Speak to ANVI.");
+      };
+
+      anviRecognition.onresult = function(event){
+
+        const transcript =
+          event.results[0][0].transcript.trim();
+
+        anviListening = false;
+
+        const input =
+          document.getElementById("anvi-v1-input") ||
+          document.getElementById("question");
+
+        if(input){
+          input.value = transcript;
+          input.dispatchEvent(
+            new Event("input",{bubbles:true})
+          );
+        }
+
+        status(
+          "Heard: " + transcript
+        );
+
+        setMicState("processing");
+
+        /*
+         * Use the existing Ask ANVI send path.
+         * Do NOT create another reasoning engine.
+         */
+
+        const send =
+          document.getElementById("anvi-v1-send") ||
+          document.querySelector(
+            '#anvi-chat-command-centre-v1 button[type="submit"]'
+          );
+
+        if(send){
+
+          setTimeout(function(){
+            send.click();
+          },100);
+
+        }else if(typeof window.askANVI === "function"){
+
+          setTimeout(function(){
+            window.askANVI(transcript);
+          },100);
+
+        }else{
+
+          status(
+            "Transcript captured. Ask ANVI send function not found."
+          );
+
+          setMicState("idle");
+        }
+      };
+
+      anviRecognition.onerror = function(event){
+
+        anviListening = false;
+
+        setMicState("idle");
+
+        let message = "Voice error";
+
+        if(event.error === "not-allowed"){
+          message =
+            "Microphone permission denied. Allow microphone access for ANVIQO.";
+        }
+        else if(event.error === "no-speech"){
+          message =
+            "No speech detected. Tap 🎤 and speak again.";
+        }
+        else if(event.error === "audio-capture"){
+          message =
+            "Microphone unavailable. Check Android microphone permission.";
+        }
+        else if(event.error === "network"){
+          message =
+            "Browser speech service unavailable. Check internet connection.";
+        }
+        else if(event.error){
+          message =
+            "Voice error: " + event.error;
+        }
+
+        status(message);
+
+        console.warn(
+          "ANVI Voice Recognition Error:",
+          event.error
+        );
+      };
+
+      anviRecognition.onend = function(){
+
+        anviListening = false;
+
+        const mic =
+          document.getElementById("anvi-v1-voice");
+
+        if(
+          mic &&
+          mic.classList.contains("anvi-processing")
+        ){
+          return;
+        }
+
+        setMicState("idle");
+      };
+
+      status("Starting microphone…");
+
+      anviRecognition.start();
+
+    }catch(error){
+
+      anviListening = false;
+
+      setMicState("idle");
+
+      status(
+        "Unable to start microphone: " +
+        error.message
+      );
+
+      console.error(
+        "ANVI Voice start error:",
+        error
+      );
+    }
+  }
+
+  function connect(){
+
+    const mic =
+      document.getElementById("anvi-v1-voice");
+
+    if(!mic) return;
+
+    /*
+     * Replace any previous handler.
+     */
+
+    mic.onclick = function(event){
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      startANVIMicrophone();
+    };
+
+    mic.title = "Speak to ANVI";
+
+    console.log(
+      "ANVI microphone connected"
+    );
+  }
+
+  if(document.readyState === "loading"){
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      connect
+    );
+
+  }else{
+
+    connect();
+  }
+
+  window.startANVIMicrophone =
+    startANVIMicrophone;
 
 })();
 </script>
