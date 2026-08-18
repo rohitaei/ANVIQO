@@ -4166,6 +4166,444 @@ status();setInterval(status,30000);
 })();
 </script>
 
+
+<style id="ANVIQO_CUSTOMER_COMMAND_CENTRE_CSS">
+#anviqo-customer-command-centre{
+position:fixed;inset:0;z-index:100000;
+background:#061017;color:#e8f7fb;
+font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+display:grid;grid-template-columns:235px 1fr;overflow:hidden
+}
+#anviqo-customer-command-centre *{box-sizing:border-box}
+.acc-side{
+background:linear-gradient(180deg,#081b24,#050d13);
+border-right:1px solid #173743;
+padding:22px 13px;overflow:auto
+}
+.acc-brand{font-size:22px;font-weight:900;letter-spacing:2px;padding:4px 10px}
+.acc-tag{font-size:8px;letter-spacing:1.5px;color:#38d9f4;padding:0 10px 22px}
+.acc-label{font-size:8px;letter-spacing:1.5px;color:#567681;padding:14px 10px 7px}
+.acc-nav{display:flex;flex-direction:column;gap:3px}
+.acc-nav button{
+background:transparent;border:0;color:#8ca6b0;text-align:left;
+padding:11px 12px;border-radius:8px;font-size:10px;cursor:pointer
+}
+.acc-nav button:hover,.acc-nav button.active{
+background:#0b3040;color:#fff;border-left:2px solid #2bdaf5
+}
+.acc-safe{
+margin-top:18px;padding:12px;border:1px solid #173d4b;
+border-radius:10px;background:#07151c;
+font-size:8px;line-height:1.8;color:#718b96
+}
+.acc-safe b{color:#35dfc0}
+.acc-main{overflow:auto;min-width:0}
+.acc-top{
+height:70px;position:sticky;top:0;z-index:5;
+display:flex;align-items:center;justify-content:space-between;
+padding:0 26px;background:rgba(6,16,23,.96);
+border-bottom:1px solid #17343f;backdrop-filter:blur(12px)
+}
+.acc-title{font-size:15px;font-weight:850;letter-spacing:.7px}
+.acc-sub{font-size:9px;color:#698691;margin-top:4px}
+.acc-online{font-size:8px;color:#69d9e9;display:flex;gap:8px;align-items:center}
+.acc-dot{width:7px;height:7px;border-radius:50%;background:#29dfb2;box-shadow:0 0 12px #29dfb2}
+.acc-page{display:none;padding:26px;max-width:1700px;margin:auto}
+.acc-page.active{display:block}
+.acc-hero{
+display:grid;grid-template-columns:1.6fr .75fr;gap:14px;margin-bottom:14px
+}
+.acc-card{
+background:linear-gradient(135deg,#0a2530,#07151d);
+border:1px solid #194352;border-radius:15px;padding:22px
+}
+.acc-kicker{font-size:8px;color:#39d9f4;letter-spacing:1.8px;font-weight:800}
+.acc-hero h1{font-size:30px;line-height:1.12;margin:9px 0;color:#f1fcff}
+.acc-hero p{font-size:11px;color:#819ba5;line-height:1.75;max-width:760px}
+.acc-orb{
+width:90px;height:90px;border:1px solid #31d9f5;border-radius:50%;
+display:flex;align-items:center;justify-content:center;
+font-size:19px;font-weight:900;color:#46e1ff;
+box-shadow:0 0 40px #073a49;margin:auto
+}
+.acc-brain{text-align:center;display:flex;flex-direction:column;justify-content:center}
+.acc-grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.acc-metric{
+background:#091821;border:1px solid #173844;border-radius:11px;
+padding:15px;min-height:102px
+}
+.acc-metric label{font-size:8px;color:#607c87;letter-spacing:1px}
+.acc-metric strong{display:block;font-size:24px;margin:8px 0;color:#edfcff}
+.acc-metric small{font-size:8px;color:#66828d}
+.acc-green{color:#25ddb1!important}
+.acc-red{color:#ff6579!important}
+.acc-amber{color:#ffc45b!important}
+.acc-cyan{color:#38d9f4!important}
+.acc-grid3{display:grid;grid-template-columns:1.2fr 1fr .9fr;gap:12px}
+.acc-head{
+display:flex;justify-content:space-between;align-items:center;
+padding:14px;border-bottom:1px solid #173844;font-size:9px
+}
+.acc-head span{font-size:7px;color:#587883}
+.acc-body{padding:14px}
+.acc-row{
+display:grid;grid-template-columns:70px 100px 1fr;
+gap:8px;padding:10px 0;border-bottom:1px solid #102b35;
+font-size:9px;color:#91aab3
+}
+.acc-row b{color:#dff8fc}
+.acc-btn{
+width:100%;margin-top:7px;padding:11px;border-radius:8px;
+border:1px solid #205669;background:#0a2733;color:#a5deeb;
+text-align:left;cursor:pointer;font-size:9px
+}
+.acc-btn:hover{background:#0e3949;color:white}
+.acc-query{
+background:#07151d;border:1px solid #1b5365;border-radius:12px;padding:15px
+}
+.acc-query input{
+width:calc(100% - 112px);padding:12px;border-radius:8px;
+border:1px solid #244d5c;background:#061119;color:white
+}
+.acc-query button{
+width:102px;margin-left:6px;padding:12px;border:0;border-radius:8px;
+background:#2bd9f4;color:#03202a;font-weight:900;cursor:pointer
+}
+.acc-answer{
+margin-top:11px;min-height:100px;padding:13px;
+background:#06131b;border:1px solid #173844;border-radius:8px;
+font-size:10px;line-height:1.75;color:#bdd2da;white-space:pre-wrap
+}
+.acc-value{
+display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:14px
+}
+.acc-value div{
+padding:12px;border:1px solid #183c49;border-radius:9px;background:#081923
+}
+.acc-value b{display:block;font-size:9px;margin-bottom:5px}
+.acc-value span{font-size:8px;color:#708a95;line-height:1.5}
+.acc-page h2{font-size:26px;margin:8px 0}
+@media(max-width:950px){
+#anviqo-customer-command-centre{grid-template-columns:1fr}
+.acc-side{display:none}
+.acc-grid5{grid-template-columns:repeat(2,1fr)}
+.acc-grid3,.acc-hero{grid-template-columns:1fr}
+.acc-value{grid-template-columns:repeat(2,1fr)}
+.acc-page{padding:14px}
+.acc-top{padding:0 14px}
+}
+</style>
+
+<div id="anviqo-customer-command-centre">
+
+<aside class="acc-side">
+<div class="acc-brand">ANVIQO</div>
+<div class="acc-tag">THINK • PREDICT • PROTECT</div>
+
+<div class="acc-label">COMMAND CENTRE</div>
+<div class="acc-nav">
+<button class="active" data-acc="home">◆ Executive View</button>
+<button data-acc="plant">◈ Plant Overview</button>
+<button data-acc="alarms">◉ Alarm Intelligence</button>
+<button data-acc="equipment">◇ Equipment Risk</button>
+</div>
+
+<div class="acc-label">INTELLIGENCE</div>
+<div class="acc-nav">
+<button data-acc="changed">◌ What Changed</button>
+<button data-acc="events">⛓ Event Correlation</button>
+<button data-acc="maintenance">⚙ Maintenance</button>
+<button data-acc="shift">⇄ Shift Intelligence</button>
+</div>
+
+<div class="acc-label">DECISION SUPPORT</div>
+<div class="acc-nav">
+<button data-acc="management">▣ Management Decision</button>
+<button data-acc="ask">✦ Ask ANVI</button>
+<button data-acc="voice">🎤 ANVI Voice</button>
+</div>
+
+<div class="acc-safe">
+<b>● ANVI ONLINE</b><br>
+Evidence-backed intelligence<br>
+READ-ONLY OPERATION<br>
+PLC WRITE BLOCKED<br>
+SCADA CONTROL BLOCKED<br>
+HUMAN DECISION REQUIRED
+</div>
+</aside>
+
+<main class="acc-main">
+
+<header class="acc-top">
+<div>
+<div class="acc-title">PLANT INTELLIGENCE COMMAND CENTRE</div>
+<div class="acc-sub">From plant data to plant understanding • decision support for industrial operations</div>
+</div>
+<div class="acc-online"><i class="acc-dot"></i><span id="acc-online">ANVI ONLINE</span></div>
+</header>
+
+<section class="acc-page active" data-acc-page="home">
+
+<div class="acc-hero">
+<div class="acc-card">
+<div class="acc-kicker">ANVIQO INDUSTRIAL INTELLIGENCE</div>
+<h1>See what matters.<br>Understand why. Decide with confidence.</h1>
+<p>
+ANVIQO brings plant health, alarms, equipment condition,
+events, maintenance knowledge and operational context together
+so your teams spend less time searching and more time understanding.
+</p>
+
+<div class="acc-value">
+<div><b>SEE</b><span>One operational picture of the plant.</span></div>
+<div><b>UNDERSTAND</b><span>Connect events, equipment and evidence.</span></div>
+<div><b>PREDICT</b><span>Surface risks and priorities earlier.</span></div>
+<div><b>DECIDE</b><span>Support faster, better human decisions.</span></div>
+</div>
+</div>
+
+<div class="acc-card acc-brain">
+<div class="acc-orb">ANVI</div>
+<b style="margin-top:10px">PLANT INTELLIGENCE</b>
+<span style="font-size:8px;color:#668591;margin-top:5px">
+Understand • Correlate • Explain
+</span>
+<button class="acc-btn" data-q="Give me the current plant situation, most important risks, what changed and what management should know.">
+SHOW ME WHAT MATTERS →
+</button>
+</div>
+</div>
+
+<div class="acc-grid5">
+<div class="acc-metric"><label>PLANT HEALTH</label><strong id="acc-health" class="acc-green">—</strong><small>Current plant condition</small></div>
+<div class="acc-metric"><label>ACTIVE ALARMS</label><strong id="acc-alarms" class="acc-red">—</strong><small>Priority conditions</small></div>
+<div class="acc-metric"><label>EQUIPMENT RISK</label><strong id="acc-risk" class="acc-amber">—</strong><small>Attention required</small></div>
+<div class="acc-metric"><label>EVENTS</label><strong id="acc-events" class="acc-cyan">—</strong><small>Correlated plant events</small></div>
+<div class="acc-metric"><label>PCI REFERENCE</label><strong class="acc-cyan">1,064</strong><small>Verified I/O records</small></div>
+</div>
+
+<div class="acc-grid3">
+
+<div class="acc-card">
+<div class="acc-head"><b>WHAT SHOULD I KNOW NOW?</b><span>EXECUTIVE VIEW</span></div>
+<div class="acc-body">
+<div class="acc-row"><span>HEALTH</span><b>PLANT</b><span>Current plant condition</span></div>
+<div class="acc-row"><span>ALARMS</span><b>PRIORITY</b><span>Conditions requiring attention</span></div>
+<div class="acc-row"><span>RISK</span><b>EQUIPMENT</b><span>Equipment intelligence</span></div>
+<div class="acc-row"><span>CHANGE</span><b>EVENTS</b><span>Meaningful plant changes</span></div>
+<button class="acc-btn" data-q="Give me an executive summary of the current plant condition, top risks and priorities.">GENERATE EXECUTIVE SUMMARY →</button>
+</div>
+</div>
+
+<div class="acc-card">
+<div class="acc-head"><b>QUICK INTELLIGENCE</b><span>ASK ANVI</span></div>
+<div class="acc-body">
+<button class="acc-btn" data-q="What is the current plant health?">Plant Health →</button>
+<button class="acc-btn" data-q="Show me active alarms and their priority.">Active Alarms →</button>
+<button class="acc-btn" data-q="Which equipment is at risk and why?">Equipment Risk →</button>
+<button class="acc-btn" data-q="What changed in the plant?">What Changed →</button>
+<button class="acc-btn" data-q="What should management prioritize based on current plant evidence?">Management Priority →</button>
+</div>
+</div>
+
+<div class="acc-card">
+<div class="acc-head"><b>CUSTOMER VALUE</b><span>BUSINESS IMPACT</span></div>
+<div class="acc-body">
+<div class="acc-row"><span>TIME</span><b>FASTER</b><span>Find relevant evidence faster.</span></div>
+<div class="acc-row"><span>RISK</span><b>EARLIER</b><span>Expose emerging concerns.</span></div>
+<div class="acc-row"><span>KNOWLEDGE</span><b>RETAINED</b><span>Preserve verified plant experience.</span></div>
+<div class="acc-row"><span>DECISIONS</span><b>BETTER</b><span>Give people context before action.</span></div>
+</div>
+</div>
+
+</div>
+
+<div class="acc-card" style="margin-top:13px">
+<div class="acc-head"><b>ASK ANVI</b><span>NATURAL-LANGUAGE PLANT INTELLIGENCE</span></div>
+<div class="acc-body">
+<div class="acc-query">
+<input id="acc-question" placeholder="Ask ANVI: What is happening in the plant right now?">
+<button id="acc-send">ASK ANVI</button>
+<div class="acc-answer" id="acc-answer">
+ANVI is ready. Ask about plant health, alarms, equipment,
+events, maintenance, shift intelligence, PCI or management priorities.
+</div>
+</div>
+</div>
+</div>
+
+</section>
+
+<section class="acc-page" data-acc-page="plant">
+<div class="acc-card">
+<div class="acc-kicker">PLANT OVERVIEW</div>
+<h2>Plant Health & Operational State</h2>
+<p>One view of current plant condition, operational evidence and emerging priorities.</p>
+<button class="acc-btn" data-q="Give me the current plant health and explain the main factors affecting it.">ANALYSE PLANT HEALTH →</button>
+<div class="acc-answer">Ask ANVI for the latest verified plant situation.</div>
+</div>
+</section>
+
+<section class="acc-page" data-acc-page="alarms">
+<div class="acc-card">
+<div class="acc-kicker">ALARM INTELLIGENCE</div>
+<h2>Which alarms actually matter?</h2>
+<p>Move beyond alarm lists toward priority, context and evidence.</p>
+<button class="acc-btn" data-q="Show me the current active alarms with priority, evidence and explanation.">ANALYSE ACTIVE ALARMS →</button>
+<div class="acc-answer">ANVI will return available verified evidence.</div>
+</div>
+</section>
+
+<section class="acc-page" data-acc-page="equipment">
+<div class="acc-card">
+<div class="acc-kicker">EQUIPMENT INTELLIGENCE</div>
+<h2>Know equipment risk before it becomes a bigger problem.</h2>
+<p>Equipment identity, relationships, health and evidence through the existing V5 intelligence.</p>
+<button class="acc-btn" data-q="Which equipment is currently at risk and why?">IDENTIFY EQUIPMENT RISK →</button>
+<div class="acc-answer">Evidence-backed equipment intelligence will appear here.</div>
+</div>
+</section>
+
+<section class="acc-page" data-acc-page="changed">
+<div class="acc-card">
+<div class="acc-kicker">WHAT CHANGED</div>
+<h2>What changed in the plant?</h2>
+<p>Find meaningful changes and understand their operational context.</p>
+<button class="acc-btn" data-q="What changed in the plant recently? Explain the important changes.">SHOW WHAT CHANGED →</button>
+<div class="acc-answer">ANVI reports only available verified evidence.</div>
+</div>
+</section>
+
+<section class="acc-page" data-acc-page="events">
+<div class="acc-card">
+<div class="acc-kicker">EVENT CORRELATION</div>
+<h2>Understand the chain, not just the event.</h2>
+<p>Connect related events and plant conditions through existing event and Plant Brain intelligence.</p>
+<button class="acc-btn" data-q="Show the latest correlated plant events and explain the relationship.">ANALYSE EVENT CHAIN →</button>
+<div class="acc-answer">ANVI will explain relationships where evidence exists.</div>
+</div>
+</section>
+
+<section class="acc-page" data-acc-page="maintenance">
+<div class="acc-card">
+<div class="acc-kicker">MAINTENANCE INTELLIGENCE</div>
+<h2>Turn maintenance information into priorities.</h2>
+<p>Use existing maintenance intelligence and plant context to support human planning.</p>
+<button class="acc-btn" data-q="Show current maintenance priorities and explain why they matter.">SHOW MAINTENANCE PRIORITIES →</button>
+<div class="acc-answer">ANVI will retrieve available maintenance evidence.</div>
+</div>
+</section>
+
+<section class="acc-page" data-acc-page="shift">
+<div class="acc-card">
+<div class="acc-kicker">SHIFT INTELLIGENCE</div>
+<h2>Start every shift with the plant story.</h2>
+<p>Existing V5.2 Shift Intelligence remains the source of truth for verified handover context.</p>
+<button class="acc-btn" data-q="Show me the latest shift handover report.">LATEST SHIFT REPORT →</button>
+<div class="acc-answer">ANVI will retrieve available verified shift evidence.</div>
+</div>
+</section>
+
+<section class="acc-page" data-acc-page="management">
+<div class="acc-card">
+<div class="acc-kicker">MANAGEMENT DECISION SUPPORT</div>
+<h2>Know where management attention is needed.</h2>
+<p>Evidence-backed priorities, urgency and operational context. ANVI supports decisions; it does not authorize or execute plant actions.</p>
+<button class="acc-btn" data-q="What should management prioritize based on current plant evidence?">GENERATE DECISION SUPPORT →</button>
+<div class="acc-answer">Decision support appears when sufficient evidence exists.</div>
+</div>
+</section>
+
+<section class="acc-page" data-acc-page="ask">
+<div class="acc-card">
+<div class="acc-kicker">CONVERSATIONAL PLANT INTELLIGENCE</div>
+<h2>Ask ANVI anything about the plant.</h2>
+<p>The same ANVI orchestrator, PCI evidence, V5 intelligence and plant context power every answer.</p>
+<div class="acc-query">
+<input id="acc-question2" placeholder="Ask ANVI anything...">
+<button id="acc-send2">ASK ANVI</button>
+<div class="acc-answer" id="acc-answer2">ANVI is ready.</div>
+</div>
+</div>
+</section>
+
+<section class="acc-page" data-acc-page="voice">
+<div class="acc-card">
+<div class="acc-kicker">ANVI VOICE</div>
+<h2>Speak naturally to your plant intelligence.</h2>
+<p>Voice uses the same conversational intelligence and safety boundary as text.</p>
+<button class="acc-btn" id="acc-voice">🎤 SPEAK TO ANVI →</button>
+</div>
+</section>
+
+</main>
+</div>
+
+<script id="ANVIQO_CUSTOMER_COMMAND_CENTRE_JS">
+(function(){
+const root=document.getElementById('anviqo-customer-command-centre');
+if(!root)return;
+
+function show(name){
+root.querySelectorAll('[data-acc-page]').forEach(x=>x.classList.toggle('active',x.dataset.accPage===name));
+root.querySelectorAll('[data-acc]').forEach(x=>x.classList.toggle('active',x.dataset.acc===name));
+}
+
+root.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>show(b.dataset.acc));
+
+async function ask(question,answer){
+answer.textContent='ANVI is analysing verified plant evidence…';
+try{
+const r=await fetch('/api/ask',{
+method:'POST',
+credentials:'same-origin',
+headers:{'Content-Type':'application/json','Accept':'application/json'},
+body:JSON.stringify({question})
+});
+const d=await r.json();
+answer.textContent=d.answer||d.response||d.message||'ANVI returned no verified result.';
+}catch(e){
+answer.textContent='ANVI could not reach the plant intelligence service.';
+}
+}
+
+root.querySelectorAll('[data-q]').forEach(b=>{
+b.onclick=()=>ask(b.dataset.q,b.closest('.acc-page')?.querySelector('.acc-answer')||document.getElementById('acc-answer'));
+});
+
+function wireInput(inputId,sendId,answerId){
+const i=document.getElementById(inputId),s=document.getElementById(sendId),a=document.getElementById(answerId);
+if(!i||!s||!a)return;
+s.onclick=()=>{if(i.value.trim())ask(i.value.trim(),a)};
+i.onkeydown=e=>{if(e.key==='Enter')s.click()};
+}
+wireInput('acc-question','acc-send','acc-answer');
+wireInput('acc-question2','acc-send2','acc-answer2');
+
+document.getElementById('acc-voice')?.addEventListener('click',()=>{
+if(typeof startVoice==='function')startVoice();
+});
+
+fetch('/api/status',{credentials:'same-origin'})
+.then(r=>r.json())
+.then(d=>{
+const x=d.snapshot||d.data||d||{};
+const h=x.plant_health??x.health_score??x.health;
+const a=x.active_alarms??x.alarms;
+const risk=x.equipment_risk??x.risk_score;
+const ev=x.active_events??x.events;
+if(h!=null)document.getElementById('acc-health').textContent=h;
+if(a!=null)document.getElementById('acc-alarms').textContent=a;
+if(risk!=null)document.getElementById('acc-risk').textContent=risk;
+if(ev!=null)document.getElementById('acc-events').textContent=ev;
+document.getElementById('acc-online').textContent='ANVI ONLINE';
+})
+.catch(()=>document.getElementById('acc-online').textContent='ANVI READY');
+
+})();
+</script>
+
 </body>
 </html>
 
