@@ -1983,18 +1983,88 @@ else
 }
 </style>
 
+<style id="ANVI_MENU_RESTRUCTURE_20260818">
+.anvi-menu-group{
+  margin:0 0 14px;
+  padding:0 0 10px;
+  border-bottom:1px solid #123344;
+}
+.anvi-menu-group:last-child{
+  border-bottom:0;
+}
+.anvi-menu-title{
+  padding:7px 12px 5px;
+  color:#527386;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:1.5px;
+}
+.anvi-menu-group button{
+  display:block;
+  width:100%;
+}
+@media(max-width:850px){
+  .anvi-menu-group{
+    margin-bottom:8px;
+    padding-bottom:6px;
+  }
+  .anvi-menu-title{
+    padding-top:6px;
+  }
+}
+</style>
+
 <div id="anvi-chat-command-centre-v1">
   <aside class="anvi-v1-sidebar">
     <div class="anvi-v1-brand"><span>◉</span> ANVIQO</div>
     <div class="anvi-v1-tag">Think • Predict • Protect</div>
     <nav class="anvi-v1-nav">
-      <button data-page="overview" class="active">◉ Live Overview</button>
-      <button data-page="alarms">♢ Live Alarms</button>
-      <button data-page="events">◌ Events Timeline</button>
-      <button data-page="chat">▣ ANVI Chat</button>
-      <button data-page="instruments">⌁ Instruments</button>
-      <button data-page="equipment">◇ Equipment</button>
-      <button data-page="shift">⇄ Shift Report</button>
+
+      <div class="anvi-menu-group">
+        <div class="anvi-menu-title">COMMAND CENTRE</div>
+        <button data-page="overview" class="active">◉ Live Overview</button>
+        <button data-page="alarms">♢ Live Alarms</button>
+        <button data-page="events">◌ Events Timeline</button>
+        <button data-page="changed">◌ What Changed</button>
+        <button data-page="events">⛓ Event Correlation</button>
+      </div>
+
+      <div class="anvi-menu-group">
+        <div class="anvi-menu-title">PLANT INTELLIGENCE</div>
+        <button data-page="analysis">🧠 Plant Analysis</button>
+        <button data-page="predictive">◈ Predictive Intelligence</button>
+        <button data-page="critical">🔴 Critical Equipment</button>
+        <button data-page="warning">🟠 Warning Equipment</button>
+        <button data-page="maintenance">⚙ Maintenance Intelligence</button>
+        <button data-page="equipment">◇ Equipment Intelligence</button>
+      </div>
+
+      <div class="anvi-menu-group">
+        <div class="anvi-menu-title">INSTRUMENTATION</div>
+        <button data-page="instruments">⌁ Instruments / PCI</button>
+        <button data-page="plcio">🔌 PLC &amp; I/O Intelligence</button>
+        <button data-page="interlocks">🔗 Interlocks &amp; Process Context</button>
+      </div>
+
+      <div class="anvi-menu-group">
+        <div class="anvi-menu-title">OPERATIONS</div>
+        <button data-page="shift">⇄ Shift Report</button>
+        <button data-page="management">▣ Management Decision</button>
+        <button data-page="reports">▤ Reports</button>
+      </div>
+
+      <div class="anvi-menu-group">
+        <div class="anvi-menu-title">ANVI</div>
+        <button data-page="chat">✦ Ask ANVI</button>
+        <button data-page="voice">🎙 Voice</button>
+      </div>
+
+      <div class="anvi-menu-group">
+        <div class="anvi-menu-title">SYSTEM</div>
+        <button data-page="settings">⚙ System Status</button>
+        <button data-page="settings">🛡 Safety Boundary</button>
+      </div>
+
     </nav>
     <div class="anvi-v1-safety">
       <b>● ANVI ONLINE</b><br>
