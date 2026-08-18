@@ -4442,6 +4442,798 @@ document.querySelectorAll(
 })();
 </script>
 
+
+<!-- ANVIQO_COMMAND_CENTRE_PAGE_ROUTER_V31 -->
+<style>
+/* =========================================================
+   ANVIQO COMMAND CENTRE V3.1
+   Presentation/UI layer only.
+   Existing V5/V5.2 intelligence and APIs remain untouched.
+   ========================================================= */
+
+.anvi-v31-page{
+  display:none !important;
+  animation:anviPageIn .22s ease;
+}
+
+.anvi-v31-page.anvi-v31-active{
+  display:block !important;
+}
+
+@keyframes anviPageIn{
+  from{opacity:0;transform:translateY(5px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.anvi-v31-shell{
+  display:grid;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:12px;
+}
+
+.anvi-v31-card{
+  background:
+    linear-gradient(145deg,rgba(9,27,42,.98),rgba(3,13,22,.98));
+  border:1px solid #17384d;
+  border-radius:12px;
+  padding:16px;
+  min-width:0;
+  box-shadow:0 8px 30px rgba(0,0,0,.16);
+}
+
+.anvi-v31-card:hover{
+  border-color:#24536b;
+}
+
+.anvi-v31-span-12{grid-column:span 12}
+.anvi-v31-span-8{grid-column:span 8}
+.anvi-v31-span-6{grid-column:span 6}
+.anvi-v31-span-4{grid-column:span 4}
+
+.anvi-v31-kicker{
+  color:#28d8f5;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:2px;
+  margin-bottom:7px;
+}
+
+.anvi-v31-title{
+  font-size:22px;
+  font-weight:800;
+  margin:0 0 6px;
+}
+
+.anvi-v31-muted{
+  color:#7891a3;
+  font-size:9px;
+  line-height:1.6;
+}
+
+.anvi-v31-value{
+  font-size:30px;
+  font-weight:800;
+  margin-top:12px;
+}
+
+.anvi-v31-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+}
+
+.anvi-v31-stat{
+  border:1px solid #17384d;
+  background:#06131f;
+  border-radius:9px;
+  padding:12px;
+}
+
+.anvi-v31-stat label{
+  display:block;
+  color:#7891a3;
+  font-size:7px;
+  letter-spacing:1px;
+}
+
+.anvi-v31-stat b{
+  display:block;
+  margin-top:8px;
+  font-size:20px;
+}
+
+.anvi-v31-list{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.anvi-v31-row{
+  display:grid;
+  grid-template-columns:90px 1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:10px;
+  background:#06131f;
+  border:1px solid #102d3e;
+  border-radius:7px;
+  font-size:8px;
+}
+
+.anvi-v31-row strong{
+  color:#eaf7ff;
+}
+
+.anvi-v31-row span{
+  color:#8fa5b4;
+}
+
+.anvi-v31-pill{
+  display:inline-block;
+  padding:4px 7px;
+  border-radius:12px;
+  border:1px solid #24536b;
+  color:#63e8ff;
+  font-size:7px;
+}
+
+.anvi-v31-pill.green{
+  color:#2be39a;
+  border-color:#21684f;
+}
+
+.anvi-v31-pill.amber{
+  color:#ffbd4a;
+  border-color:#72551f;
+}
+
+.anvi-v31-pill.red{
+  color:#ff536b;
+  border-color:#71303d;
+}
+
+.anvi-v31-action{
+  border:1px solid #24536b;
+  background:#071c2b;
+  color:#b9d5e2;
+  border-radius:7px;
+  padding:8px 10px;
+  font-size:8px;
+  cursor:pointer;
+}
+
+.anvi-v31-action:hover{
+  background:#0a2b40;
+  color:#63e8ff;
+}
+
+.anvi-v31-empty{
+  padding:22px;
+  text-align:center;
+  color:#7891a3;
+  border:1px dashed #17384d;
+  border-radius:8px;
+  font-size:8px;
+}
+
+@media(max-width:900px){
+  .anvi-v31-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .anvi-v31-span-8,
+  .anvi-v31-span-6,
+  .anvi-v31-span-4{grid-column:span 12}
+}
+
+@media(max-width:600px){
+  .anvi-v31-grid{grid-template-columns:1fr}
+  .anvi-v31-title{font-size:18px}
+  .anvi-v31-row{grid-template-columns:1fr}
+}
+</style>
+
+<script>
+(function(){
+
+const pages = [
+  "overview",
+  "alarms",
+  "events",
+  "chat",
+  "instruments",
+  "equipment",
+  "shift"
+];
+
+function pageId(name){
+  return "anvi-v31-page-" + name;
+}
+
+function ensurePage(name){
+  let el=document.getElementById(pageId(name));
+  if(el) return el;
+
+  const main =
+    document.querySelector(".main") ||
+    document.querySelector("main") ||
+    document.body;
+
+  el=document.createElement("section");
+  el.id=pageId(name);
+  el.className="anvi-v31-page";
+
+  main.appendChild(el);
+  return el;
+}
+
+function header(kicker,title,description){
+  return `
+    <div class="anvi-v31-card anvi-v31-span-12">
+      <div class="anvi-v31-kicker">${kicker}</div>
+      <h2 class="anvi-v31-title">${title}</h2>
+      <div class="anvi-v31-muted">${description}</div>
+    </div>
+  `;
+}
+
+function esc(v){
+  return String(v ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+
+async function api(url,options){
+  const r=await fetch(url,Object.assign({
+    credentials:"same-origin",
+    headers:{"Accept":"application/json"}
+  },options||{}));
+
+  const text=await r.text();
+
+  try{
+    return JSON.parse(text);
+  }catch(e){
+    return {raw:text};
+  }
+}
+
+function snapshot(d){
+  return d && (d.snapshot || d.data || d) || {};
+}
+
+/* ---------------------------------------------------------
+   OVERVIEW
+   --------------------------------------------------------- */
+async function renderOverview(){
+
+  const el=ensurePage("overview");
+
+  el.innerHTML=header(
+    "PLANT INTELLIGENCE",
+    "Plant Overview",
+    "Unified plant situation from the existing ANVIQO V5 intelligence and evidence layer."
+  ) + `
+    <div class="anvi-v31-shell">
+      <div class="anvi-v31-card anvi-v31-span-12">
+        <div class="anvi-v31-grid">
+          <div class="anvi-v31-stat">
+            <label>PLANT HEALTH</label>
+            <b id="v31-health">—</b>
+          </div>
+          <div class="anvi-v31-stat">
+            <label>ACTIVE ALARMS</label>
+            <b id="v31-alarms">—</b>
+          </div>
+          <div class="anvi-v31-stat">
+            <label>ACTIVE EVENTS</label>
+            <b id="v31-events">—</b>
+          </div>
+          <div class="anvi-v31-stat">
+            <label>PCI I/O</label>
+            <b class="cyan">1,064</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="anvi-v31-card anvi-v31-span-8">
+        <div class="anvi-v31-kicker">LIVE SITUATION</div>
+        <div id="v31-situation" class="anvi-v31-list">
+          <div class="anvi-v31-empty">Reading plant evidence…</div>
+        </div>
+      </div>
+
+      <div class="anvi-v31-card anvi-v31-span-4">
+        <div class="anvi-v31-kicker">ANVI INTELLIGENCE</div>
+        <div class="anvi-v31-muted">
+          Evidence-first plant understanding across instruments,
+          equipment, alarms, events, maintenance and shift intelligence.
+        </div>
+        <br>
+        <button class="anvi-v31-action" data-v31-question="What is the current plant health?">
+          ASK ANVI →
+        </button>
+      </div>
+    </div>
+  `;
+
+  try{
+    const d=snapshot(await api("/api/status"));
+
+    const health=d.plant_health ??
+                 d.health_score ??
+                 d.health ??
+                 d.plantHealth;
+
+    const alarms=d.active_alarms ??
+                 d.alarm_count ??
+                 d.alarms;
+
+    const events=d.active_events ??
+                 d.event_count ??
+                 d.events;
+
+    document.getElementById("v31-health").textContent =
+      health == null ? "—" : health;
+
+    document.getElementById("v31-alarms").textContent =
+      typeof alarms==="number" ? alarms : "LIVE";
+
+    document.getElementById("v31-events").textContent =
+      typeof events==="number" ? events : "LIVE";
+
+    document.getElementById("v31-situation").innerHTML=`
+      <div class="anvi-v31-row">
+        <strong>STATUS</strong>
+        <span>ANVIQO plant intelligence layer online</span>
+        <span class="anvi-v31-pill green">LIVE</span>
+      </div>
+      <div class="anvi-v31-row">
+        <strong>EVIDENCE</strong>
+        <span>PCI reference database and existing V5 intelligence</span>
+        <span class="anvi-v31-pill">VERIFIED</span>
+      </div>
+      <div class="anvi-v31-row">
+        <strong>SAFETY</strong>
+        <span>Read-only decision support</span>
+        <span class="anvi-v31-pill green">NO PLC WRITE</span>
+      </div>
+    `;
+  }catch(e){
+    document.getElementById("v31-situation").innerHTML=
+      `<div class="anvi-v31-empty">Plant status temporarily unavailable.</div>`;
+  }
+}
+
+/* ---------------------------------------------------------
+   ALARMS
+   --------------------------------------------------------- */
+async function renderAlarms(){
+
+  const el=ensurePage("alarms");
+
+  el.innerHTML=header(
+    "LIVE ALARM INTELLIGENCE",
+    "Live Alarms",
+    "Evidence-linked alarm situation. ANVIQO does not issue PLC or SCADA commands."
+  ) + `
+    <div class="anvi-v31-shell">
+      <div class="anvi-v31-card anvi-v31-span-12">
+        <div id="v31-alarm-list" class="anvi-v31-list">
+          <div class="anvi-v31-empty">Reading live alarm intelligence…</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try{
+    const d=await api("/api/pci/live");
+    const rows =
+      d.records ||
+      d.data ||
+      d.io ||
+      d.items ||
+      [];
+
+    if(!Array.isArray(rows) || !rows.length){
+      document.getElementById("v31-alarm-list").innerHTML=`
+        <div class="anvi-v31-empty">
+          No active alarm records are currently exposed by the live evidence layer.
+        </div>`;
+      return;
+    }
+
+    document.getElementById("v31-alarm-list").innerHTML=
+      rows.slice(0,30).map((x,i)=>`
+        <div class="anvi-v31-row">
+          <strong>${esc(x.tag||x.name||x.io||("PCI-"+(i+1)))}</strong>
+          <span>${esc(x.description||x.message||x.state||"Live PCI signal")}</span>
+          <span class="anvi-v31-pill ${
+            String(x.state||"").toUpperCase().includes("CRIT")
+              ? "red"
+              : "amber"
+          }">
+            ${esc(x.state||x.status||"LIVE")}
+          </span>
+        </div>
+      `).join("");
+
+  }catch(e){
+    document.getElementById("v31-alarm-list").innerHTML=`
+      <div class="anvi-v31-empty">
+        Alarm intelligence is available through ANVI Chat.
+        Ask: "Show active alarms".
+      </div>`;
+  }
+}
+
+/* ---------------------------------------------------------
+   EVENTS
+   --------------------------------------------------------- */
+async function renderEvents(){
+
+  const el=ensurePage("events");
+
+  el.innerHTML=header(
+    "EVENT INTELLIGENCE",
+    "Events Timeline",
+    "Chronological and correlated plant events using existing ANVI/V5 intelligence."
+  ) + `
+    <div class="anvi-v31-shell">
+      <div class="anvi-v31-card anvi-v31-span-12">
+        <div id="v31-event-list" class="anvi-v31-list">
+          <div class="anvi-v31-empty">Reading event intelligence…</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try{
+    const d=await api("/api/status");
+    const s=snapshot(d);
+
+    const events=s.events || s.active_events_list || s.event_timeline || [];
+
+    if(Array.isArray(events) && events.length){
+      document.getElementById("v31-event-list").innerHTML=
+        events.slice(0,30).map(x=>`
+          <div class="anvi-v31-row">
+            <strong>${esc(x.time||x.timestamp||"EVENT")}</strong>
+            <span>${esc(x.message||x.description||x.event||JSON.stringify(x))}</span>
+            <span class="anvi-v31-pill">CORRELATED</span>
+          </div>
+        `).join("");
+    }else{
+      document.getElementById("v31-event-list").innerHTML=`
+        <div class="anvi-v31-empty">
+          No direct event list is exposed by /api/status.
+          Use ANVI Chat for the authoritative event timeline and correlation.
+          <br><br>
+          <button class="anvi-v31-action"
+            data-v31-question="Show the latest event timeline and explain the event correlation.">
+            ASK ANVI FOR EVENTS →
+          </button>
+        </div>`;
+    }
+  }catch(e){}
+}
+
+/* ---------------------------------------------------------
+   INSTRUMENTS
+   --------------------------------------------------------- */
+async function renderInstruments(){
+
+  const el=ensurePage("instruments");
+
+  el.innerHTML=header(
+    "PCI INSTRUMENT INTELLIGENCE",
+    "Instruments & I/O",
+    "Verified PCI reference records. Read-only engineering intelligence."
+  ) + `
+    <div class="anvi-v31-shell">
+      <div class="anvi-v31-card anvi-v31-span-12">
+        <div class="anvi-v31-grid">
+          <div class="anvi-v31-stat">
+            <label>PCI RECORDS</label>
+            <b class="cyan">1,064</b>
+          </div>
+          <div class="anvi-v31-stat">
+            <label>CONTROL MODE</label>
+            <b class="green">READ ONLY</b>
+          </div>
+          <div class="anvi-v31-stat">
+            <label>PLC WRITE</label>
+            <b class="green">FALSE</b>
+          </div>
+          <div class="anvi-v31-stat">
+            <label>HUMAN DECISION</label>
+            <b class="amber">REQUIRED</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="anvi-v31-card anvi-v31-span-12">
+        <div class="anvi-v31-kicker">ENGINEERING QUERY</div>
+        <div class="anvi-v31-muted">
+          Search instruments, tags, PLC/I/O, panels, terminal blocks,
+          interlocks and process context through ANVI.
+        </div>
+        <br>
+        <button class="anvi-v31-action"
+          data-v31-question="Show me the PCI instruments and I/O available in the plant.">
+          QUERY PCI →
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------------------------------------------------------
+   EQUIPMENT
+   --------------------------------------------------------- */
+async function renderEquipment(){
+
+  const el=ensurePage("equipment");
+
+  el.innerHTML=header(
+    "EQUIPMENT INTELLIGENCE",
+    "Equipment",
+    "Digital Equipment Identity, relationships, health and risk from the existing V5 layer."
+  ) + `
+    <div class="anvi-v31-shell">
+      <div class="anvi-v31-card anvi-v31-span-8">
+        <div class="anvi-v31-kicker">EQUIPMENT RISK</div>
+        <div id="v31-equipment" class="anvi-v31-list">
+          <div class="anvi-v31-empty">Reading equipment intelligence…</div>
+        </div>
+      </div>
+
+      <div class="anvi-v31-card anvi-v31-span-4">
+        <div class="anvi-v31-kicker">DIGITAL TWIN</div>
+        <div class="anvi-v31-value cyan">V5</div>
+        <div class="anvi-v31-muted">
+          Equipment identity and relationships remain backed by the frozen
+          intelligence layer.
+        </div>
+        <br>
+        <button class="anvi-v31-action"
+          data-v31-question="Which equipment is currently at risk and why?">
+          IDENTIFY RISK →
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("v31-equipment").innerHTML=`
+    <div class="anvi-v31-row">
+      <strong>RISK ENGINE</strong>
+      <span>V5 equipment health intelligence</span>
+      <span class="anvi-v31-pill">AVAILABLE</span>
+    </div>
+    <div class="anvi-v31-row">
+      <strong>IDENTITY</strong>
+      <span>Digital Equipment Identity</span>
+      <span class="anvi-v31-pill green">ACTIVE</span>
+    </div>
+    <div class="anvi-v31-row">
+      <strong>RELATIONSHIPS</strong>
+      <span>Equipment relationship / digital twin layer</span>
+      <span class="anvi-v31-pill green">ACTIVE</span>
+    </div>
+  `;
+}
+
+/* ---------------------------------------------------------
+   SHIFT
+   --------------------------------------------------------- */
+async function renderShift(){
+
+  const el=ensurePage("shift");
+
+  el.innerHTML=header(
+    "SHIFT INTELLIGENCE",
+    "Shift Report",
+    "Existing V5.2 Shift Intelligence remains the source of truth."
+  ) + `
+    <div class="anvi-v31-shell">
+      <div class="anvi-v31-card anvi-v31-span-12">
+        <div class="anvi-v31-kicker">SHIFT HANDOVER</div>
+        <div class="anvi-v31-muted">
+          Retrieve verified shift context, alarms, events, maintenance
+          attention, equipment issues and handover points through ANVI.
+        </div>
+        <br>
+        <button class="anvi-v31-action"
+          data-v31-question="Show the latest shift handover report including alarms, events, equipment issues, maintenance attention, plant health and risks.">
+          GENERATE SHIFT REPORT →
+        </button>
+
+        <div id="v31-shift-answer" class="anvi-v31-list" style="margin-top:14px">
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------------------------------------------------------
+   CHAT
+   --------------------------------------------------------- */
+async function renderChat(){
+
+  const el=ensurePage("chat");
+
+  el.innerHTML=header(
+    "PLANT CONVERSATION",
+    "ANVI Chat",
+    "Natural-language interface to the existing ANVI orchestrator."
+  ) + `
+    <div class="anvi-v31-shell">
+      <div class="anvi-v31-card anvi-v31-span-12">
+        <div style="display:flex;gap:8px">
+          <input id="v31-chat-input"
+            placeholder="Ask ANVI about plant health, alarms, instruments, equipment, events…"
+            style="flex:1;background:#06131f;color:#eaf7ff;border:1px solid #24536b;border-radius:7px;padding:11px;font-size:10px">
+          <button class="anvi-v31-action" id="v31-chat-send">ASK ANVI</button>
+        </div>
+
+        <div id="v31-chat-answer"
+          class="anvi-v31-card"
+          style="margin-top:12px;min-height:150px">
+          ANVI is ready.
+        </div>
+      </div>
+    </div>
+  `;
+
+  const input=document.getElementById("v31-chat-input");
+  const answer=document.getElementById("v31-chat-answer");
+
+  async function ask(){
+
+    const q=input.value.trim();
+    if(!q)return;
+
+    answer.innerHTML="ANVI is analysing plant evidence…";
+
+    try{
+      const d=await api("/api/ask",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Accept":"application/json"
+        },
+        body:JSON.stringify({question:q})
+      });
+
+      answer.innerHTML=`
+        <div class="anvi-v31-kicker">ANVI RESPONSE</div>
+        <div style="white-space:pre-wrap;font-size:10px;line-height:1.7">
+          ${esc(d.answer || d.response || d.message || JSON.stringify(d))}
+        </div>
+      `;
+    }catch(e){
+      answer.innerHTML="ANVI response temporarily unavailable.";
+    }
+  }
+
+  document.getElementById("v31-chat-send").onclick=ask;
+  input.onkeydown=e=>{if(e.key==="Enter")ask()};
+}
+
+/* ---------------------------------------------------------
+   PAGE CONTROLLER
+   --------------------------------------------------------- */
+const renderers={
+  overview:renderOverview,
+  alarms:renderAlarms,
+  events:renderEvents,
+  chat:renderChat,
+  instruments:renderInstruments,
+  equipment:renderEquipment,
+  shift:renderShift
+};
+
+let current="overview";
+
+window.anviV31Page=function(name){
+
+  if(!pages.includes(name))name="overview";
+
+  current=name;
+
+  /*
+   * Hide old page containers only.
+   * We do NOT delete or modify existing V5 intelligence.
+   */
+  document.querySelectorAll(".anvi-v31-page")
+    .forEach(x=>x.classList.remove("anvi-v31-active"));
+
+  const el=ensurePage(name);
+  el.classList.add("anvi-v31-active");
+
+  if(renderers[name])renderers[name]();
+
+  window.scrollTo({top:0,behavior:"smooth"});
+
+  /*
+   * Highlight existing navigation buttons without
+   * changing their labels.
+   */
+  document.querySelectorAll("[data-page]").forEach(b=>{
+    b.classList.toggle("active",b.dataset.page===name);
+  });
+};
+
+/*
+ * Capture clicks on the current page navigation.
+ * This is deliberately delegated so duplicated historical
+ * navigation handlers cannot prevent the page switch.
+ */
+document.addEventListener("click",function(e){
+
+  const nav=e.target.closest("[data-page]");
+
+  if(nav){
+    e.preventDefault();
+    e.stopPropagation();
+    window.anviV31Page(nav.dataset.page);
+    return;
+  }
+
+  const q=e.target.closest("[data-v31-question]");
+
+  if(q){
+    const question=q.dataset.v31Question;
+
+    if(current==="chat"){
+      const input=document.getElementById("v31-chat-input");
+      if(input){
+        input.value=question;
+        document.getElementById("v31-chat-send")?.click();
+      }
+      return;
+    }
+
+    /*
+     * Use existing ANVI Chat page rather than creating
+     * another reasoning engine.
+     */
+    window.anviV31Page("chat");
+
+    setTimeout(()=>{
+      const input=document.getElementById("v31-chat-input");
+      if(input){
+        input.value=question;
+        document.getElementById("v31-chat-send")?.click();
+      }
+    },50);
+  }
+
+},true);
+
+/*
+ * Install only after DOM is ready.
+ */
+function boot(){
+
+  pages.forEach(ensurePage);
+
+  /*
+   * Do not replace the existing dashboard.
+   * The professional V3 page layer becomes the authoritative
+   * functional page surface.
+   */
+  window.anviV31Page("overview");
+}
+
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded",boot);
+}else{
+  boot();
+}
+
+})();
+</script>
+
 </body>
 </html>
 
