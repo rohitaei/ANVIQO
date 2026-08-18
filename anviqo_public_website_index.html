@@ -2,295 +2,877 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ANVIQO | Think • Predict • Protect</title>
-<meta name="description" content="ANVIQO industrial intelligence platform for equipment, plant health, evidence and management decision support.">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>ANVIQO | Industrial Intelligence</title>
+
+<meta name="description"
+content="ANVIQO is an industrial intelligence layer that helps plants understand equipment, events, plant health, engineering evidence and operational decisions.">
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#06111d;color:#eaf2f8;font-family:Arial,Helvetica,sans-serif}
-a{text-decoration:none}
-.header{height:72px;display:flex;align-items:center;padding:0 7%;border-bottom:1px solid #1d354b;background:#091726;position:sticky;top:0;z-index:5}
-.logo{font-size:27px;font-weight:900;letter-spacing:2px;color:#38d6e8}
-.nav{margin-left:auto;display:flex;gap:26px;align-items:center}
-.nav a{color:#9fb2c4;font-size:13px}
-.login{padding:11px 19px;border-radius:7px;background:#38d6e8;color:#06111d!important;font-weight:900}
-.hero{min-height:76vh;display:flex;align-items:center;padding:70px 7%;background:radial-gradient(circle at 70% 20%,#12304a 0,#06111d 48%)}
-.hero-inner{max-width:900px}
-.eyebrow{color:#38d6e8;font-size:12px;font-weight:800;letter-spacing:2px}
-h1{font-size:clamp(42px,7vw,76px);line-height:1.02;margin:18px 0}
-h1 span{color:#38d6e8}
-.hero p{max-width:700px;color:#9fb2c4;font-size:18px;line-height:1.7}
-.actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
-.primary,.secondary{padding:14px 22px;border-radius:8px;font-weight:900;font-size:14px}
-.primary{background:#38d6e8;color:#06111d}
-.secondary{border:1px solid #294761;color:#dce8f2}
-.section{padding:65px 7%;border-top:1px solid #142a3e}
-.section h2{font-size:30px;margin:0 0 10px}
-.section-intro{color:#8197aa;max-width:720px;line-height:1.6}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}
-.card{background:#0d1d30;border:1px solid #203b53;border-radius:10px;padding:24px}
-.card b{color:#38d6e8}
-.card p{color:#8fa5b8;line-height:1.6;font-size:13px}
-.safety{background:#0a2119;border:1px solid #1d5a42;color:#39d17e;padding:20px;border-radius:10px;margin-top:28px;font-size:12px;line-height:2}
-.footer{padding:30px 7%;color:#647c90;border-top:1px solid #142a3e;font-size:11px}
-@media(max-width:800px){.nav a:not(.login){display:none}.cards{grid-template-columns:1fr}.hero{min-height:auto;padding-top:60px;padding-bottom:60px}}
+*{
+  box-sizing:border-box;
+}
+
+html{
+  scroll-behavior:smooth;
+}
+
+body{
+  margin:0;
+  background:#050b13;
+  color:#edf5fb;
+  font-family:Inter,Arial,Helvetica,sans-serif;
+}
+
+a{
+  text-decoration:none;
+}
+
+.header{
+  position:sticky;
+  top:0;
+  z-index:100;
+  height:76px;
+  display:flex;
+  align-items:center;
+  padding:0 6%;
+  background:rgba(5,11,19,.94);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid #1a2b3c;
+}
+
+.logo{
+  font-size:26px;
+  font-weight:900;
+  letter-spacing:3px;
+  color:#36d7e8;
+}
+
+.logo-sub{
+  margin-left:14px;
+  padding-left:14px;
+  border-left:1px solid #294153;
+  color:#7e94a7;
+  font-size:11px;
+  letter-spacing:1.5px;
+}
+
+.nav{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:28px;
+}
+
+.nav a{
+  color:#9aafc0;
+  font-size:13px;
+  font-weight:600;
+}
+
+.nav a:hover{
+  color:#fff;
+}
+
+.login{
+  padding:11px 20px;
+  border-radius:7px;
+  background:#36d7e8;
+  color:#041018!important;
+  font-weight:900!important;
+}
+
+.hero{
+  min-height:calc(100vh - 76px);
+  display:flex;
+  align-items:center;
+  padding:90px 6%;
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 78% 25%,rgba(28,100,130,.28),transparent 30%),
+    radial-gradient(circle at 20% 75%,rgba(20,69,102,.18),transparent 30%),
+    #050b13;
+}
+
+.hero-grid{
+  position:absolute;
+  inset:0;
+  opacity:.18;
+  background-image:
+    linear-gradient(#25435a 1px,transparent 1px),
+    linear-gradient(90deg,#25435a 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:linear-gradient(to bottom,black,transparent);
+}
+
+.hero-inner{
+  position:relative;
+  z-index:2;
+  max-width:920px;
+}
+
+.eyebrow{
+  color:#36d7e8;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+
+h1{
+  font-size:clamp(48px,8vw,88px);
+  line-height:.98;
+  margin:22px 0;
+  letter-spacing:-3px;
+}
+
+h1 span{
+  color:#36d7e8;
+}
+
+.hero-text{
+  max-width:760px;
+  color:#9db0c0;
+  font-size:19px;
+  line-height:1.75;
+}
+
+.actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  margin-top:34px;
+}
+
+.primary,
+.secondary{
+  padding:15px 23px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.4px;
+}
+
+.primary{
+  background:#36d7e8;
+  color:#041018;
+}
+
+.secondary{
+  border:1px solid #29475d;
+  color:#dce8f1;
+  background:#09131f;
+}
+
+.trust{
+  display:flex;
+  flex-wrap:wrap;
+  gap:25px;
+  margin-top:45px;
+  color:#6f8799;
+  font-size:11px;
+  letter-spacing:1px;
+}
+
+.trust strong{
+  color:#b7c9d6;
+}
+
+.section{
+  padding:90px 6%;
+  border-top:1px solid #142536;
+}
+
+.section-inner{
+  max-width:1200px;
+  margin:auto;
+}
+
+.section-kicker{
+  color:#36d7e8;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:2.5px;
+}
+
+.section h2{
+  font-size:clamp(30px,5vw,48px);
+  margin:13px 0;
+  letter-spacing:-1px;
+}
+
+.section-intro{
+  max-width:760px;
+  color:#8197aa;
+  line-height:1.75;
+  font-size:16px;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:18px;
+  margin-top:42px;
+}
+
+.card{
+  min-height:205px;
+  padding:27px;
+  border-radius:12px;
+  background:linear-gradient(145deg,#0b1725,#08111d);
+  border:1px solid #1c3448;
+}
+
+.card-number{
+  color:#36d7e8;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+
+.card h3{
+  margin:18px 0 10px;
+  font-size:19px;
+}
+
+.card p{
+  margin:0;
+  color:#8298aa;
+  line-height:1.7;
+  font-size:13px;
+}
+
+.understanding{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:25px;
+  margin-top:45px;
+}
+
+.panel{
+  padding:30px;
+  background:#09131f;
+  border:1px solid #1b3448;
+  border-radius:12px;
+}
+
+.panel h3{
+  margin-top:0;
+  font-size:20px;
+}
+
+.panel p{
+  color:#879bac;
+  line-height:1.7;
+}
+
+.list{
+  padding:0;
+  margin:22px 0 0;
+  list-style:none;
+}
+
+.list li{
+  padding:12px 0;
+  border-bottom:1px solid #172b3d;
+  color:#b7c7d3;
+  font-size:13px;
+}
+
+.list li::before{
+  content:"◆";
+  color:#36d7e8;
+  margin-right:10px;
+  font-size:8px;
+}
+
+.anvi{
+  background:
+    radial-gradient(circle at 80% 20%,rgba(31,119,145,.25),transparent 35%),
+    #07121e;
+}
+
+.anvi-box{
+  max-width:1000px;
+  margin:42px auto 0;
+  padding:40px;
+  border-radius:15px;
+  border:1px solid #28516a;
+  background:#091827;
+}
+
+.anvi-label{
+  color:#36d7e8;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+
+.anvi-box h3{
+  font-size:30px;
+  margin:15px 0;
+}
+
+.anvi-box p{
+  color:#91a7b8;
+  font-size:16px;
+  line-height:1.8;
+}
+
+.safety-box{
+  margin-top:38px;
+  padding:25px;
+  border-radius:12px;
+  background:#071b15;
+  border:1px solid #1e5b46;
+}
+
+.safety-title{
+  color:#42d68a;
+  font-weight:900;
+  font-size:12px;
+  letter-spacing:1.5px;
+}
+
+.safety-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-top:20px;
+}
+
+.safety-item{
+  padding:14px;
+  border-radius:8px;
+  background:#0a241b;
+  color:#9ed7bb;
+  font-size:11px;
+  line-height:1.5;
+}
+
+.cta{
+  text-align:center;
+  padding:100px 6%;
+  background:
+    radial-gradient(circle at center,rgba(25,106,132,.22),transparent 50%),
+    #050b13;
+}
+
+.cta h2{
+  font-size:clamp(34px,5vw,56px);
+  margin:0 0 15px;
+}
+
+.cta p{
+  max-width:650px;
+  margin:0 auto;
+  color:#8298aa;
+  line-height:1.7;
+}
+
+.cta .actions{
+  justify-content:center;
+}
+
+.footer{
+  padding:35px 6%;
+  border-top:1px solid #142536;
+  color:#62788a;
+  font-size:11px;
+}
+
+.footer-inner{
+  max-width:1200px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+}
+
+@media(max-width:850px){
+
+  .logo-sub{
+    display:none;
+  }
+
+  .nav a:not(.login){
+    display:none;
+  }
+
+  .hero{
+    min-height:auto;
+    padding:80px 6%;
+  }
+
+  h1{
+    letter-spacing:-2px;
+  }
+
+  .cards{
+    grid-template-columns:1fr;
+  }
+
+  .understanding{
+    grid-template-columns:1fr;
+  }
+
+  .safety-grid{
+    grid-template-columns:1fr 1fr;
+  }
+
+}
+
+@media(max-width:520px){
+
+  .header{
+    padding:0 5%;
+  }
+
+  .hero,
+  .section,
+  .cta{
+    padding-left:5%;
+    padding-right:5%;
+  }
+
+  .safety-grid{
+    grid-template-columns:1fr;
+  }
+
+  .trust{
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .anvi-box{
+    padding:25px;
+  }
+
+}
 </style>
 </head>
+
 <body>
-<div style="text-align:center;padding:18px 20px;background:#07111f;color:#eaf2f8;border-bottom:1px solid #20354d">
-<div style="font-size:28px;font-weight:800;letter-spacing:2px">ANVIQO</div>
-<div style="font-size:14px;letter-spacing:4px;margin-top:5px">NEXT EVOLUTION</div>
-<div style="font-size:16px;margin-top:10px">The Next Evolution of Industrial Intelligence</div>
-<div style="font-size:13px;margin-top:6px;opacity:.8">Think. Predict. Protect.</div>
-</div>
 
 <header class="header">
+
   <div class="logo">ANVIQO</div>
+
+  <div class="logo-sub">
+    INDUSTRIAL INTELLIGENCE
+  </div>
+
   <nav class="nav">
-    <a href="#intelligence">Intelligence</a>
+
+    <a href="#capabilities">Capabilities</a>
+    <a href="#anvi">ANVI</a>
     <a href="#safety">Safety</a>
-    <a class="login" href="https://anviqo.onrender.com/login">LOGIN</a>
+
+    <a
+      class="login"
+      href="https://anviqo.onrender.com/login">
+      LOGIN
+    </a>
+
   </nav>
+
 </header>
 
+
 <main>
+
 <section class="hero">
+
+  <div class="hero-grid"></div>
+
   <div class="hero-inner">
-    <div class="eyebrow">INDUSTRIAL INTELLIGENCE • V5 FROZEN CORE</div>
-    <h1>THINK.<br><span>PREDICT.</span><br>PROTECT.</h1>
-    <p>Evidence-backed plant intelligence for equipment health, operational change, event relationships and management decision support.</p>
-    <div class="actions">
-      <a class="primary" href="https://anviqo.onrender.com/login">OPEN COMMAND CENTER</a>
-      <a class="secondary" href="#intelligence">EXPLORE ANVIQO</a>
+
+    <div class="eyebrow">
+      THE INTELLIGENCE LAYER FOR THE INDUSTRIAL PLANT
     </div>
+
+    <h1>
+      From Plant Data<br>
+      to Plant <span>Understanding.</span>
+    </h1>
+
+    <p class="hero-text">
+      ANVIQO helps industrial teams understand what is happening
+      across equipment, instruments, alarms, events, maintenance
+      and plant condition — bringing plant evidence together into
+      one intelligence layer for better human decisions.
+    </p>
+
+    <div class="actions">
+
+      <a
+        class="primary"
+        href="https://anviqo.onrender.com/login">
+        ENTER COMMAND CENTRE
+      </a>
+
+      <a
+        class="secondary"
+        href="#capabilities">
+        EXPLORE ANVIQO
+      </a>
+
+    </div>
+
+    <div class="trust">
+
+      <div>
+        <strong>THINK</strong> • Understand
+      </div>
+
+      <div>
+        <strong>PREDICT</strong> • Anticipate
+      </div>
+
+      <div>
+        <strong>PROTECT</strong> • Support safer decisions
+      </div>
+
+    </div>
+
   </div>
+
 </section>
 
-<section class="section" id="intelligence">
-  <h2>Plant Intelligence Command Center</h2>
-  <p class="section-intro">ANVIQO brings plant evidence into one decision-support layer without replacing human authorization.</p>
+
+<section class="section" id="capabilities">
+
+<div class="section-inner">
+
+  <div class="section-kicker">
+    WHAT ANVIQO UNDERSTANDS
+  </div>
+
+  <h2>
+    Intelligence built around the plant.
+  </h2>
+
+  <p class="section-intro">
+    ANVIQO is designed to connect plant information with
+    engineering context, equipment relationships, events and
+    operational experience — so people can understand the plant
+    instead of simply looking at more screens.
+  </p>
+
+
   <div class="cards">
-    <div class="card"><b>Equipment Intelligence</b><p>Digital equipment identity, health, risk and maintenance evidence.</p></div>
-    <div class="card"><b>Plant Intelligence</b><p>Plant condition, What Changed and event/relationship correlation.</p></div>
-    <div class="card"><b>Management Intelligence</b><p>Prioritized decisions with evidence, confidence and human review.</p></div>
+
+    <div class="card">
+
+      <div class="card-number">01</div>
+
+      <h3>Equipment Intelligence</h3>
+
+      <p>
+        Understand equipment identity, condition, health,
+        relationships, risk and maintenance evidence.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-number">02</div>
+
+      <h3>Plant Health</h3>
+
+      <p>
+        Bring plant condition and important operating signals
+        into a unified intelligence view.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-number">03</div>
+
+      <h3>Events & What Changed</h3>
+
+      <p>
+        Correlate important events and changes so teams can
+        understand what deserves attention.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-number">04</div>
+
+      <h3>Maintenance Intelligence</h3>
+
+      <p>
+        Connect maintenance information with equipment,
+        events and plant evidence.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-number">05</div>
+
+      <h3>Engineering Knowledge</h3>
+
+      <p>
+        Help engineers and technicians access instrument,
+        process and plant knowledge through natural language.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-number">06</div>
+
+      <h3>Management Intelligence</h3>
+
+      <p>
+        Turn plant evidence into prioritized information that
+        supports human operational and management decisions.
+      </p>
+
+    </div>
+
   </div>
-</section>
 
-<section class="section" id="safety">
-  <h2>Safety by Design</h2>
-  <div class="safety">
-    READ-ONLY INTELLIGENCE &nbsp; • &nbsp;
-    PLC WRITE BLOCKED &nbsp; • &nbsp;
-    SCADA CONTROL BLOCKED &nbsp; • &nbsp;
-    HUMAN DECISION REQUIRED &nbsp; • &nbsp;
-    AUTOMATIC AUTHORIZATION DISABLED
-  </div>
-</section>
-</main>
-
-<footer class="footer">
-  ANVIQO • THINK • PREDICT • PROTECT • V5 FROZEN CORE • READ-ONLY • HUMAN DECISION REQUIRED
-</footer>
-
-<section style="max-width:1100px;margin:35px auto;padding:30px;border-radius:18px;background:#0b1728;border:1px solid #20354d">
-<h2>Meet ANVI</h2>
-<p style="font-size:18px">Your friendly, knowledgeable industrial intelligence assistant.</p>
-<p>ANVI helps people understand instruments, equipment, plant condition, events, maintenance evidence and operational questions — turning existing plant information into actionable intelligence.</p>
-<p><strong>Evidence-backed. Human governed. Read-only by design.</strong></p>
-</section>
-</body>
-</html>
-
-<!-- =========================================================
-     ANVIQO VOICE COMMAND INTERFACE
-     Uses the SAME /api/ask ANVI intelligence + command layer.
-     DEMO MODE: no real PLC/SCADA execution.
-     ========================================================= -->
-<style>
-#anviqoVoiceDock{
- position:fixed;
- right:20px;
- bottom:20px;
- z-index:2147483647;
- font-family:Arial,sans-serif;
-}
-#anviqoVoiceButton{
- border:0;
- border-radius:50px;
- padding:15px 22px;
- font-size:16px;
- font-weight:700;
- cursor:pointer;
- background:#111827;
- color:white;
- box-shadow:0 8px 30px rgba(0,0,0,.3);
-}
-#anviqoVoiceButton.listening{
- background:#b91c1c;
-}
-#anviqoVoiceStatus{
- margin-top:8px;
- padding:8px 12px;
- border-radius:10px;
- background:rgba(17,24,39,.94);
- color:white;
- font-size:12px;
- max-width:300px;
- display:none;
-}
-</style>
-
-<div id="anviqoVoiceDock">
- <button id="anviqoVoiceButton" type="button">🎤 Speak to ANVI</button>
- <div id="anviqoVoiceStatus">Ready</div>
 </div>
 
-<script>
-(function(){
+</section>
 
- const btn=document.getElementById("anviqoVoiceButton");
- const status=document.getElementById("anviqoVoiceStatus");
 
- const SpeechRecognition =
-   window.SpeechRecognition ||
-   window.webkitSpeechRecognition;
+<section class="section">
 
- function showStatus(msg){
-   status.style.display="block";
-   status.textContent=msg;
- }
+<div class="section-inner">
 
- function speak(text){
-   if(!("speechSynthesis" in window)) return;
-   window.speechSynthesis.cancel();
+  <div class="section-kicker">
+    ONE INTELLIGENCE LAYER
+  </div>
 
-   const u=new SpeechSynthesisUtterance(text);
-   u.lang="en-IN";
-   u.rate=.95;
+  <h2>
+    Understand relationships, not isolated signals.
+  </h2>
 
-   window.speechSynthesis.speak(u);
- }
+  <p class="section-intro">
+    Industrial plants generate enormous amounts of information.
+    ANVIQO is designed to put that information into context.
+  </p>
 
- async function askANVI(question){
 
-   showStatus("ANVI is thinking...");
+  <div class="understanding">
 
-   try{
+    <div class="panel">
 
-     const r=await fetch("/api/ask",{
-       method:"POST",
-       headers:{
-         "Content-Type":"application/json"
-       },
-       body:JSON.stringify({
-         question:question
-       })
-     });
+      <h3>Plant Context</h3>
 
-     const data=await r.json();
+      <p>
+        ANVIQO can work across the relationships between
+        plant areas, equipment, instruments, alarms, events,
+        maintenance evidence and engineering knowledge.
+      </p>
 
-     const answer =
-       data.answer ||
-       data.message ||
-       "ANVI returned no answer.";
+      <ul class="list">
 
-     showStatus("ANVI: "+answer);
-     speak(answer);
+        <li>Plant and area context</li>
+        <li>Equipment identity and relationships</li>
+        <li>Instrument and I/O evidence</li>
+        <li>Alarm and event context</li>
 
-     console.log("ANVI VOICE QUESTION:",question);
-     console.log("ANVI VOICE ANSWER:",answer);
+      </ul>
 
-   }catch(e){
+    </div>
 
-     showStatus("ANVI voice error: "+e.message);
 
-   }
- }
+    <div class="panel">
 
- if(!SpeechRecognition){
+      <h3>Decision Context</h3>
 
-   btn.textContent="🎤 Voice unavailable";
-   btn.disabled=true;
+      <p>
+        The objective is not simply to produce another alarm
+        or another answer. ANVIQO provides evidence and context
+        so people can make better-informed decisions.
+      </p>
 
-   showStatus(
-     "Speech recognition is not available in this browser. Use Chrome and allow microphone permission."
-   );
+      <ul class="list">
 
-   return;
- }
+        <li>Evidence-backed intelligence</li>
+        <li>Risk and condition awareness</li>
+        <li>Explainable reasoning</li>
+        <li>Human review and authorization</li>
 
- const recognition=new SpeechRecognition();
+      </ul>
 
- recognition.lang="en-IN";
- recognition.continuous=false;
- recognition.interimResults=false;
- recognition.maxAlternatives=1;
+    </div>
 
- recognition.onstart=function(){
+  </div>
 
-   btn.classList.add("listening");
-   btn.textContent="🔴 Listening...";
-   showStatus("Listening... speak to ANVI.");
+</div>
 
- };
+</section>
 
- recognition.onresult=function(event){
 
-   const text=
-     event.results[0][0].transcript.trim();
+<section class="section anvi" id="anvi">
 
-   showStatus("You: "+text);
+<div class="section-inner">
 
-   if(text){
-     askANVI(text);
-   }
+  <div class="section-kicker">
+    MEET ANVI
+  </div>
 
- };
+  <h2>
+    Talk to the plant.
+  </h2>
 
- recognition.onerror=function(event){
+  <p class="section-intro">
+    ANVI is the conversational intelligence interface inside
+    ANVIQO. Instead of forcing engineers and technicians to
+    search through disconnected information, ANVI lets them ask
+    natural-language questions about the plant.
+  </p>
 
-   btn.classList.remove("listening");
-   btn.textContent="🎤 Speak to ANVI";
 
-   showStatus(
-     "Microphone error: "+event.error
-   );
+  <div class="anvi-box">
 
- };
+    <div class="anvi-label">
+      ANVI • PLANT INTELLIGENCE ASSISTANT
+    </div>
 
- recognition.onend=function(){
+    <h3>
+      Ask. Understand. Investigate.
+    </h3>
 
-   btn.classList.remove("listening");
-   btn.textContent="🎤 Speak to ANVI";
+    <p>
+      Ask about instruments, equipment, plant condition,
+      events, maintenance evidence, engineering information
+      and operational situations. ANVI uses the same ANVIQO
+      intelligence architecture rather than operating as a
+      separate generic chatbot.
+    </p>
 
- };
+    <p>
+      Voice interaction is available inside the authenticated
+      Command Centre, using the same intelligence and safety
+      boundary as the text interface.
+    </p>
 
- btn.addEventListener("click",function(){
+  </div>
 
-   try{
+</div>
 
-     if(btn.classList.contains("listening")){
-       recognition.stop();
-       return;
-     }
+</section>
 
-     recognition.start();
 
-   }catch(e){
+<section class="section" id="safety">
 
-     showStatus(
-       "Unable to start microphone: "+e.message
-     );
+<div class="section-inner">
 
-   }
+  <div class="section-kicker">
+    SAFETY BY DESIGN
+  </div>
 
- });
+  <h2>
+    Intelligence without automatic control.
+  </h2>
 
- window.ANVIQOVoice={
-   ask:askANVI,
-   speak:speak
- };
+  <p class="section-intro">
+    ANVIQO is designed as a read-only intelligence and decision
+    support layer. Human operators and engineers remain responsible
+    for operational authorization and control decisions.
+  </p>
 
-})();
-</script>
-<!-- END ANVIQO VOICE COMMAND INTERFACE -->
+
+  <div class="safety-box">
+
+    <div class="safety-title">
+      ANVIQO SAFETY BOUNDARY
+    </div>
+
+    <div class="safety-grid">
+
+      <div class="safety-item">
+        READ-ONLY<br>
+        INTELLIGENCE
+      </div>
+
+      <div class="safety-item">
+        PLC WRITE<br>
+        BLOCKED
+      </div>
+
+      <div class="safety-item">
+        SCADA CONTROL<br>
+        BLOCKED
+      </div>
+
+      <div class="safety-item">
+        HUMAN DECISION<br>
+        REQUIRED
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+</section>
+
+
+<section class="cta">
+
+  <h2>
+    Enter the ANVIQO Command Centre.
+  </h2>
+
+  <p>
+    The public site explains the product.
+    The Command Centre is where the intelligence becomes
+    operationally useful.
+  </p>
+
+  <div class="actions">
+
+    <a
+      class="primary"
+      href="https://anviqo.onrender.com/login">
+      LOGIN TO ANVIQO
+    </a>
+
+  </div>
+
+</section>
+
+</main>
+
+
+<footer class="footer">
+
+<div class="footer-inner">
+
+  <div>
+    ANVIQO • THINK • PREDICT • PROTECT
+  </div>
+
+  <div>
+    Industrial Intelligence • Human Governed • Read Only
+  </div>
+
+</div>
+
+</footer>
+
+</body>
+</html>
