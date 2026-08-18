@@ -4167,6 +4167,54 @@ status();setInterval(status,30000);
 </script>
 
 
+
+<style id="ANVIQO_CUSTOMER_COMMAND_CENTRE_AUTHORITATIVE">
+
+/*
+ ANVIQO CUSTOMER PRESENTATION AUTHORITY
+
+ The customer command centre is the only visible presentation layer.
+ Existing HTML/JS/API/V5/PCI/voice components remain in the document
+ and continue to provide the intelligence services underneath.
+
+ This is a PRESENTATION change only.
+*/
+
+body > #anviqo-customer-command-centre{
+    display:grid !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    position:fixed !important;
+    inset:0 !important;
+    z-index:2147483647 !important;
+}
+
+/* Prevent older dashboard shells from visually competing with
+   the customer command centre. */
+body > *:not(#anviqo-customer-command-centre):not(script):not(style){
+    visibility:hidden !important;
+}
+
+/* Preserve scripts and styles so existing ANVIQO functionality,
+   voice integration and API-connected components continue running. */
+body > script,
+body > style{
+    visibility:hidden;
+}
+
+/* The customer UI itself must remain completely visible. */
+#anviqo-customer-command-centre,
+#anviqo-customer-command-centre *{
+    visibility:visible !important;
+}
+
+/* Keep customer UI above every legacy dashboard overlay. */
+#anviqo-customer-command-centre{
+    isolation:isolate !important;
+}
+
+</style>
+
 <style id="ANVIQO_CUSTOMER_COMMAND_CENTRE_CSS">
 #anviqo-customer-command-centre{
 position:fixed;inset:0;z-index:100000;
