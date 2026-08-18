@@ -2423,7 +2423,15 @@ else
           <button class="anvi-v1-chip" data-q="Show me all DI for MCV-302">All DI</button>
           <button class="anvi-v1-chip" data-q="Show me all DO for MCV-302">All DO</button>
           <button class="anvi-v1-chip" data-q="Show me critical PCI instruments">Critical PCI</button>
-          <button class="anvi-v1-chip" data-q="How many AI, DI, DO and AO are in PCI?">I/O counts</button>
+          
+<button type="button"
+        id="anvi-v1-voice"
+        class="anvi-v1-voice-button"
+        onclick="if(typeof startVoice==='function'){startVoice()}else{alert('ANVI Voice engine is unavailable.')}">
+  🎙 Voice Command
+</button>
+
+<button class="anvi-v1-chip" data-q="How many AI, DI, DO and AO are in PCI?">I/O counts</button>
         </div>
         <div class="anvi-v1-input"><input id="anvi-v1-input" placeholder="Ask ANVI anything…"><button id="anvi-v1-send">SEND</button></div>
       </div>
@@ -2579,7 +2587,7 @@ else
   document.getElementById('anvi-v1-input').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('anvi-v1-send').click()});
   document.querySelectorAll('.anvi-v1-chip').forEach(b=>b.onclick=()=>ask(b.dataset.q));
   document.getElementById('anvi-v1-clear').onclick=()=>document.getElementById('anvi-v1-messages').innerHTML='';
-  document.getElementById('anvi-v1-voice').onclick=()=>document.getElementById('anvi-v1-input').focus();
+  
 
   async function overview(){
     const d=await api('/api/status');
@@ -3704,6 +3712,147 @@ status();setInterval(status,30000);
     touchStartX=null;
 
   },{passive:true});
+
+})();
+</script>
+
+
+<script id="ANVI_ALL_MENU_DEMO_WORKSPACES_20260818">
+(function(){
+
+  const demos = {
+
+    changed: {
+      title: "What Changed?",
+      text: "SIMULATION MODE — ANVI is comparing recent plant conditions, alarms, equipment states and events to identify meaningful changes.",
+      metrics: ["Recent changes: 4", "Equipment changes: 2", "Process changes: 1", "Alarm changes: 1"]
+    },
+
+    correlation: {
+      title: "Event Correlation",
+      text: "SIMULATION MODE — ANVI has correlated process, instrumentation and alarm events into a single plant event chain.",
+      metrics: ["Correlated events: 6", "Active chains: 2", "High relevance: 3", "Evidence linked: YES"]
+    },
+
+    analysis: {
+      title: "Plant Analysis",
+      text: "SIMULATION MODE — Current plant intelligence combines Plant Health, equipment condition, alarms, events and verified plant evidence.",
+      metrics: ["Plant Health: 86%", "Equipment monitored: 24", "Active alarms: 3", "Evidence coverage: 94%"]
+    },
+
+    predictive: {
+      title: "Predictive Intelligence",
+      text: "SIMULATION MODE — ANVI is monitoring developing equipment risk before failure. No automatic control action is performed.",
+      metrics: ["Developing risks: 3", "High risk: 1", "Medium risk: 2", "PLC write: DISABLED"]
+    },
+
+    critical: {
+      title: "Critical Equipment",
+      text: "SIMULATION MODE — Critical equipment requiring attention is displayed with supporting evidence and risk context.",
+      metrics: ["Critical equipment: 2", "Immediate attention: 1", "Evidence available: YES", "Human decision: REQUIRED"]
+    },
+
+    warning: {
+      title: "Warning Equipment",
+      text: "SIMULATION MODE — Equipment showing abnormal or developing conditions is listed for engineering review.",
+      metrics: ["Warning equipment: 4", "Trend warnings: 2", "Instrumentation warnings: 1", "Process warnings: 1"]
+    },
+
+    maintenance: {
+      title: "Maintenance Intelligence",
+      text: "SIMULATION MODE — ANVI prioritizes maintenance using existing V5 maintenance intelligence and available evidence.",
+      metrics: ["Maintenance priorities: 5", "High priority: 2", "Experience matches: 3", "Plant Memory: ENABLED"]
+    },
+
+    plcio: {
+      title: "PLC & I/O Intelligence",
+      text: "SIMULATION MODE — PCI registry and I/O intelligence are available in read-only mode.",
+      metrics: ["PCI I/O records: 1064", "PLC write: DISABLED", "SCADA control: DISABLED", "Mode: READ ONLY"]
+    },
+
+    interlocks: {
+      title: "Interlocks & Process Context",
+      text: "SIMULATION MODE — Relevant interlocks, process relationships and instrumentation context are available for analysis.",
+      metrics: ["Interlocks reviewed: 12", "Process links: 8", "Safety boundary: ACTIVE", "Control action: NONE"]
+    },
+
+    management: {
+      title: "Management Decision",
+      text: "SIMULATION MODE — ANVI summarizes the most important plant conditions requiring management attention.",
+      metrics: ["Priority decisions: 3", "Production impact: LOW", "Maintenance impact: MEDIUM", "Safety review: REQUIRED"]
+    },
+
+    reports: {
+      title: "Plant Intelligence Reports",
+      text: "SIMULATION MODE — Available reports include plant health, maintenance, events, shift intelligence and Plant Memory records.",
+      metrics: ["Reports available: 8", "Maintenance reports: 3", "Event reports: 2", "Shift reports: 3"]
+    },
+
+    shift: {
+      title: "Shift Intelligence",
+      text: "SIMULATION MODE — ANVI summarizes important events, equipment conditions, maintenance actions and handover information.",
+      metrics: ["Shift events: 7", "Open issues: 3", "Maintenance actions: 2", "Handover risk: LOW"]
+    }
+
+  };
+
+  function showDemo(page){
+
+    const d = demos[page];
+    if(!d) return;
+
+    let workspace = document.querySelector(".anvi-simulation-workspace");
+
+    if(!workspace){
+      workspace = document.createElement("div");
+      workspace.className = "anvi-simulation-workspace";
+
+      workspace.style.cssText =
+        "position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);" +
+        "width:min(92vw,720px);max-height:82vh;overflow:auto;" +
+        "z-index:99999;padding:24px;border-radius:22px;" +
+        "background:rgba(10,18,30,.97);color:#fff;" +
+        "border:1px solid rgba(100,180,255,.35);" +
+        "box-shadow:0 25px 80px rgba(0,0,0,.55);font-family:Arial,sans-serif;";
+
+      document.body.appendChild(workspace);
+    }
+
+    workspace.innerHTML =
+      '<div style="font-size:12px;letter-spacing:2px;opacity:.7;">ANVIQO SIMULATION MODE</div>' +
+      '<h2 style="margin:8px 0 10px;">' + d.title + '</h2>' +
+      '<p style="line-height:1.6;opacity:.88;">' + d.text + '</p>' +
+      '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px;">' +
+      d.metrics.map(function(x){
+        return '<div style="padding:14px;border-radius:14px;background:rgba(255,255,255,.07);">' + x + '</div>';
+      }).join('') +
+      '</div>' +
+      '<div style="margin-top:20px;padding:12px;border-radius:12px;background:rgba(0,180,120,.10);">' +
+      '✓ Demo data only • Read-only • Human decision required' +
+      '</div>' +
+      '<button onclick="this.parentElement.remove()" style="margin-top:18px;padding:11px 18px;border:0;border-radius:10px;cursor:pointer;">Close</button>';
+
+  }
+
+  document.addEventListener("click", function(e){
+
+    const button = e.target.closest(
+      '#anvi-chat-command-centre-v1 .anvi-v1-nav button'
+    );
+
+    if(!button) return;
+
+    const page = button.dataset.page;
+
+    if(demos[page]){
+      setTimeout(function(){
+        showDemo(page);
+      },80);
+    }
+
+  }, false);
+
+  window.anviShowSimulationDemo = showDemo;
 
 })();
 </script>
