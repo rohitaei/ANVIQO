@@ -5751,3 +5751,256 @@ else
 })();
 </script>
 
+
+<style id="anvi-intelligence-upgrade">
+.anvi-intel-wrap{
+  margin:12px 0;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.anvi-intel-card{
+  background:linear-gradient(145deg,#081b2a,#05111b);
+  border:1px solid #17384d;
+  border-radius:11px;
+  padding:14px;
+  min-height:150px;
+}
+.anvi-intel-card h3{
+  margin:0 0 8px;
+  font-size:10px;
+  color:#28d8f5;
+  letter-spacing:.8px;
+}
+.anvi-intel-card .sub{
+  color:#7891a3;
+  font-size:7px;
+  margin-bottom:10px;
+}
+.anvi-intel-list{
+  max-height:190px;
+  overflow:auto;
+}
+.anvi-intel-row{
+  padding:8px 0;
+  border-bottom:1px solid #102838;
+  font-size:8px;
+}
+.anvi-intel-row b{color:#eaf7ff}
+.anvi-intel-row span{color:#9bb0be}
+.anvi-risk-critical{color:#ff536b!important}
+.anvi-risk-warning{color:#ffbd4a!important}
+.anvi-risk-normal{color:#2be39a!important}
+.anvi-intel-wide{
+  grid-column:span 2;
+}
+@media(max-width:900px){
+  .anvi-intel-wrap{grid-template-columns:1fr 1fr}
+  .anvi-intel-wide{grid-column:span 2}
+}
+@media(max-width:600px){
+  .anvi-intel-wrap{grid-template-columns:1fr}
+  .anvi-intel-wide{grid-column:span 1}
+}
+</style>
+
+<script id="anvi-intelligence-upgrade-js">
+(function(){
+
+function escAI(v){
+  return String(v==null?'':v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+async function aiFetch(url,opts){
+  try{
+    const r=await fetch(url,Object.assign({
+      credentials:'same-origin',
+      headers:{'Accept':'application/json'}
+    },opts||{}));
+    return await r.json();
+  }catch(e){
+    return {};
+  }
+}
+
+function findDashboardAnchor(){
+  return document.querySelector('.anvi-v1-card') ||
+         document.querySelector('.ap3-card') ||
+         document.querySelector('.metrics') ||
+         document.querySelector('.hero');
+}
+
+function makeIntelligence(){
+  if(document.getElementById('anvi-intelligence-layer')) return;
+
+  const anchor=findDashboardAnchor();
+  if(!anchor) return;
+
+  const wrap=document.createElement('section');
+  wrap.id='anvi-intelligence-layer';
+  wrap.className='anvi-intel-wrap';
+
+  wrap.innerHTML=`
+    <div class="anvi-intel-card">
+      <h3>⚠ PREDICTIVE RISK</h3>
+      <div class="sub">Potential problems before failure</div>
+      <div id="ai-predictive" class="anvi-intel-list">
+        <div class="anvi-intel-row"><span>Analysing existing evidence…</span></div>
+      </div>
+    </div>
+
+    <div class="anvi-intel-card">
+      <h3>🔴 LIVE CRITICAL EQUIPMENT</h3>
+      <div class="sub">Equipment requiring attention</div>
+      <div id="ai-critical" class="anvi-intel-list">
+        <div class="anvi-intel-row"><span>Loading…</span></div>
+      </div>
+    </div>
+
+    <div class="anvi-intel-card">
+      <h3>🟠 TOP WARNING EQUIPMENT</h3>
+      <div class="sub">Highest current warning conditions</div>
+      <div id="ai-warning" class="anvi-intel-list">
+        <div class="anvi-intel-row"><span>Loading…</span></div>
+      </div>
+    </div>
+
+    <div class="anvi-intel-card">
+      <h3>⚙ MAINTENANCE REPORTS</h3>
+      <div class="sub">Existing maintenance intelligence</div>
+      <div id="ai-maintenance" class="anvi-intel-list">
+        <div class="anvi-intel-row"><span>Loading…</span></div>
+      </div>
+    </div>
+
+    <div class="anvi-intel-card anvi-intel-wide">
+      <h3>✦ ANVI EVIDENCE LOOKUP</h3>
+      <div class="sub">Ask about equipment, instruments, I/O, alarms and relationships</div>
+      <div class="anvi-intel-row">
+        <b>Try:</b>
+        <span> NCV</span> ·
+        <span> NCV DI DO</span> ·
+        <span> Show equipment at risk</span> ·
+        <span> Show maintenance priorities</span>
+      </div>
+    </div>
+  `;
+
+  anchor.parentNode.insertBefore(wrap,anchor);
+}
+
+function normaliseArray(v){
+  if(Array.isArray(v)) return v;
+  if(v && Array.isArray(v.items)) return v.items;
+  if(v && Array.isArray(v.records)) return v.records;
+  if(v && Array.isArray(v.data)) return v.data;
+  return [];
+}
+
+function renderList(id,items,type){
+  const el=document.getElementById(id);
+  if(!el) return;
+
+  if(!items.length){
+    el.innerHTML='<div class="anvi-intel-row"><span>No current evidence available.</span></div>';
+    return;
+  }
+
+  el.innerHTML=items.slice(0,6).map(x=>{
+    const tag=x.tag||x.equipment||x.name||x.id||'Equipment';
+    const state=x.status||x.state||x.condition||x.risk||'—';
+    const reason=x.reason||x.explanation||x.issue||x.message||x.description||'Evidence available';
+
+    let cls='';
+    const s=String(state).toUpperCase();
+    if(s.includes('CRITICAL')) cls='anvi-risk-critical';
+    else if(s.includes('WARNING')||s.includes('HIGH')) cls='anvi-risk-warning';
+    else cls='anvi-risk-normal';
+
+    return `<div class="anvi-intel-row">
+      <b>${escAI(tag)}</b>
+      <br><span class="${cls}">${escAI(state)}</span>
+      <br><span>${escAI(reason)}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadIntelligence(){
+  makeIntelligence();
+
+  const status=await aiFetch('/api/status');
+
+  const snapshot=status.snapshot||status.data||status||{};
+
+  const equipment=
+    normaliseArray(snapshot.equipment) ||
+    normaliseArray(snapshot.equipment_risk);
+
+  const critical=equipment.filter(x=>{
+    const s=String(x.status||x.state||x.condition||x.risk||'').toUpperCase();
+    return s.includes('CRITICAL');
+  });
+
+  const warning=equipment.filter(x=>{
+    const s=String(x.status||x.state||x.condition||x.risk||'').toUpperCase();
+    return s.includes('WARNING')||s.includes('HIGH');
+  });
+
+  renderList('ai-critical',critical,'critical');
+  renderList('ai-warning',warning,'warning');
+
+  /*
+   * Predictive section deliberately uses existing evidence/intelligence.
+   * It does NOT create a separate prediction engine or claim certainty.
+   */
+  const predictive=equipment.filter(x=>{
+    const s=JSON.stringify(x).toUpperCase();
+    return s.includes('RISK') ||
+           s.includes('WARNING') ||
+           s.includes('DEGRAD') ||
+           s.includes('ANOMAL');
+  });
+
+  renderList('ai-predictive',predictive,'predictive');
+
+  const maintenance=await aiFetch('/api/maintenance');
+  renderList('ai-maintenance',
+    normaliseArray(maintenance).slice(0,6),
+    'maintenance'
+  );
+}
+
+/*
+ * NCV evidence behaviour.
+ * Uses the existing ANVI orchestrator rather than creating another
+ * reasoning engine. A search for NCV therefore goes through /api/ask.
+ */
+window.anviNCVEvidence=function(){
+  const input=
+    document.querySelector('#anvi-v1-input') ||
+    document.querySelector('#proQuestion') ||
+    document.querySelector('#ap3-question');
+
+  if(input){
+    input.value='NCV — show all linked DI and DO, PLC/I/O, terminals, interlocks, equipment relationships, current status, alarms and evidence.';
+    input.focus();
+
+    const send=
+      document.querySelector('#anvi-v1-send') ||
+      document.querySelector('#ap3-send');
+
+    if(send) send.click();
+    else if(typeof window.anviProChatAsk==='function') window.anviProChatAsk();
+  }
+};
+
+document.addEventListener('DOMContentLoaded',function(){
+  setTimeout(loadIntelligence,500);
+});
+
+})();
+</script>
