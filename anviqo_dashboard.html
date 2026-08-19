@@ -216,7 +216,8 @@ input,select{
   <button data-page="prediction">◈ Predictive Intelligence</button>
   <button data-page="critical">🔴 Critical Equipment</button>
   <button data-page="equipment">◇ Equipment Status</button>
-  <button data-page="maintenance">⚙ Maintenance Intelligence</button>
+  <button data-page="spares">🔧 Maintenance & Spares</button>
+<button data-page="maintenance">⚙ Maintenance Intelligence</button>
 
   <div class="nav-title">INSTRUMENTATION</div>
   <button data-page="pci">⌁ Instruments / PCI</button>
@@ -388,6 +389,122 @@ input,select{
 </div>
 
 <!-- ASK ANVI -->
+
+<!-- MAINTENANCE & SPARES INTELLIGENCE -->
+<div class="page" id="page-spares">
+ <div class="hero">
+  <div class="card">
+   <div class="kicker">MAINTENANCE INTELLIGENCE</div>
+   <h1>Maintenance & Spares Intelligence</h1>
+   <p>
+    Connect equipment, maintenance requirements and spare availability
+    into one evidence-backed view.
+   </p>
+  </div>
+  <div class="card brain">
+   <div class="orb">🔧</div>
+   <b>SPARES</b>
+   <small class="muted">READ-ONLY</small>
+  </div>
+ </div>
+
+ <div class="grid4">
+  <div class="card metric">
+   <label>CRITICAL SPARES</label>
+   <strong id="sparesCritical">—</strong>
+   <small>Priority items</small>
+  </div>
+  <div class="card metric">
+   <label>LOW STOCK</label>
+   <strong id="sparesLow">—</strong>
+   <small>Attention required</small>
+  </div>
+  <div class="card metric">
+   <label>MAINTENANCE ITEMS</label>
+   <strong id="sparesMaintenance">—</strong>
+   <small>Available intelligence</small>
+  </div>
+  <div class="card metric">
+   <label>STATUS</label>
+   <strong>ONLINE</strong>
+   <small>ANVI intelligence layer</small>
+  </div>
+ </div>
+
+ <div class="grid2">
+  <div class="card">
+   <div class="card-head">
+    <b>SPARE SEARCH</b>
+    <span>ANVI INTELLIGENCE</span>
+   </div>
+   <div class="card-body">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+     <input
+       id="spareSearch"
+       class="search"
+       placeholder="Search spare, equipment, tag or description..."
+       style="flex:1"
+     >
+     <button class="btn primary" onclick="searchSpares()">Search</button>
+    </div>
+    <div id="spareResults" class="empty">
+      Search the maintenance and spare intelligence layer.
+    </div>
+   </div>
+  </div>
+
+  <div class="card">
+   <div class="card-head">
+    <b>EQUIPMENT → SPARES</b>
+    <span>RELATIONSHIP INTELLIGENCE</span>
+   </div>
+   <div class="card-body">
+    <p class="muted">
+      Ask ANVI which spares are associated with an instrument,
+      equipment item or maintenance requirement.
+    </p>
+    <button class="btn primary"
+      onclick="askQuick('Which critical equipment requires spare parts and what should be checked first?')">
+      Ask ANVI
+    </button>
+   </div>
+  </div>
+ </div>
+
+ <div class="card">
+  <div class="card-head">
+   <b>MAINTENANCE & SPARES SITUATION</b>
+   <span>DECISION SUPPORT</span>
+  </div>
+  <div class="card-body">
+   <div id="sparesSituation" class="empty">
+    Loading maintenance intelligence...
+   </div>
+  </div>
+ </div>
+
+ <div class="card">
+  <div class="card-head">
+   <b>QUICK INTELLIGENCE</b>
+   <span>ASK ANVI</span>
+  </div>
+  <div class="card-body">
+   <button class="btn" onclick="askQuick('Show low-stock critical spares')">
+    Low-stock critical spares
+   </button>
+   <button class="btn" onclick="askQuick('What spares are required for critical equipment?')">
+    Critical equipment spares
+   </button>
+   <button class="btn" onclick="askQuick('Which maintenance activities require spare parts?')">
+    Maintenance spare requirements
+   </button>
+   <button class="btn" onclick="askQuick('Show the most important maintenance and spare risks')">
+    Spare risk
+   </button>
+  </div>
+ </div>
+</div>
+
 <div class="page" id="page-ask">
  <div class="card chat">
   <div class="chat-head"><div><h2>✦ Ask ANVI</h2><small class="muted">Plant intelligence • evidence first • human governed</small></div><button class="btn" onclick="clearChat()">Clear</button></div>
@@ -445,6 +562,7 @@ const titles={
  prediction:['Predictive Intelligence','Risk and prediction'],
  critical:['Critical Equipment','Priority equipment intelligence'],
  equipment:['Equipment Status','Equipment health and context'],
+ spares:['Maintenance & Spares Intelligence','Equipment, maintenance and spare intelligence'],
  maintenance:['Maintenance Intelligence','Maintenance decision support'],
  pci:['Instruments / PCI','PCI instrumentation intelligence'],
  plc:['PLC & I/O Intelligence','Read-only simulated I/O'],
@@ -644,9 +762,80 @@ function toggleVoice(){
  recognition.start();
 }
 
+if(name==='spares') loadSpares();
+
 document.getElementById('shiftDate').value=new Date().toISOString().slice(0,10);
 refresh();
 setInterval(refresh,15000);
+
+async function loadSpares(){
+  const box=document.getElementById('sparesSituation');
+  if(!box) return;
+
+  try{
+    const r=await fetch('/api/maintenance');
+    const d=await r.json();
+
+    const text =
+      d.answer ||
+      d.response ||
+      d.message ||
+      'Maintenance intelligence is available through ANVI.';
+
+    box.innerHTML='<div style="white-space:pre-wrap;line-height:1.8">'+
+      escapeHtml(text)+'</div>';
+
+    const raw=JSON.stringify(d).toLowerCase();
+
+    const critical=(raw.match(/critical/g)||[]).length;
+    const low=(raw.match(/low stock|low-stock/g)||[]).length;
+
+    const c=document.getElementById('sparesCritical');
+    const l=document.getElementById('sparesLow');
+    const m=document.getElementById('sparesMaintenance');
+
+    if(c)c.textContent=critical||'0';
+    if(l)l.textContent=low||'0';
+    if(m)m.textContent='READY';
+
+  }catch(e){
+    box.innerHTML='<div class="empty">Maintenance intelligence unavailable. Use Ask ANVI for evidence-backed maintenance queries.</div>';
+  }
+}
+
+async function searchSpares(){
+  const q=(document.getElementById('spareSearch')||{}).value||'';
+  const box=document.getElementById('spareResults');
+
+  if(!q.trim()){
+    box.innerHTML='<div class="empty">Enter a spare, equipment tag or maintenance query.</div>';
+    return;
+  }
+
+  box.innerHTML='<div class="empty">ANVI is searching maintenance and spare intelligence...</div>';
+
+  try{
+    const r=await fetch('/api/ask',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        question:
+          'Search maintenance and spare intelligence for: '+q+
+          '. Return only evidence-backed information. Include equipment/tag, spare information, availability if known, maintenance relevance and source/context. Do not invent inventory data.'
+      })
+    });
+
+    const d=await r.json();
+
+    box.innerHTML='<div style="white-space:pre-wrap;line-height:1.8">'+
+      escapeHtml(d.answer||d.response||JSON.stringify(d,null,2))+
+      '</div>';
+
+  }catch(e){
+    box.innerHTML='<div class="empty">Unable to query ANVI.</div>';
+  }
+}
+
 </script>
 </body>
 </html>
