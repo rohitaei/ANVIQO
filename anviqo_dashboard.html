@@ -700,7 +700,9 @@ async function sendAsk(){
  try{
   const d=await askAPI(q);
   last.textContent=d.answer||d.response||d.message||JSON.stringify(d,null,2);
- }catch(e){last.textContent='Unable to connect to ANVI.'}
+ }catch(e){
+  last.textContent='ANVI CONNECTION ERROR: '+(e&&e.message?e.message:String(e));
+}
 }
 
 function askQuick(q){
