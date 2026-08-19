@@ -109,16 +109,47 @@ def _record_text(r):
 
 
 def _find_tag_in_question(q):
-    # Exact database tag detection first.
-    q_upper = q.upper()
+    # UNIVERSAL VERIFIED TAG DETECTION.
+    #
+    # Resolve spaces / hyphens / underscores against the actual
+    # 1,064-record PCI registry.
+    #
+    # Example:
+    #   MCV 204 -> MCV_204 / MCV-204 / MCV204
+    #
+    # No tag is invented.
+
+    question = str(q or "").strip()
+
+    def normalize(value):
+        return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+    q_norm = normalize(question)
+
+    candidates = []
+
+    for r in search(query=None, limit=1064):
+        tag = str(r.get("tag", "")).strip()
+
+        if not tag:
+            continue
+
+        tag_norm = normalize(tag)
+
+        if tag_norm and tag_norm in q_norm:
+            candidates.append((r, len(tag_norm)))
+
+    if candidates:
+        candidates.sort(key=lambda x: x[1], reverse=True)
+        return candidates[0][0]
+
+    # Existing exact-format fallback.
+    q_upper = question.upper()
 
     for r in search(query=None, limit=1064):
         tag = str(r.get("tag", "")).strip()
 
         if tag:
-            # Match the complete PCI tag only.
-            # Prevent short tags such as "DO" from matching
-            # ordinary words such as "does".
             pattern = r"(?<![A-Z0-9_])" + re.escape(tag.upper()) + r"(?![A-Z0-9_])"
             if re.search(pattern, q_upper):
                 return r

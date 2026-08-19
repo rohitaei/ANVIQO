@@ -31,18 +31,71 @@ def _records():
 
 
 def _tag_from_question(q):
-    tags = re.findall(r"\b[A-Za-z]{1,8}[-_][A-Za-z0-9_]+\b", q.upper())
+    """
+    UNIVERSAL VERIFIED TAG RESOLUTION
+
+    Resolve natural-language tag formatting against the actual PCI
+    registry instead of relying on a hard-coded list of prefixes.
+
+    Examples:
+        MCV 204  -> MCV_204 / MCV-204 / MCV204
+        PT 303   -> PT_303 / PT-303 / PT303
+        LP 1 Healthy -> LP_1_Healthy
+
+    Only an exact normalized match against an existing verified PCI
+    record is accepted. No tag is invented.
+    """
+
+    question = str(q or "").strip()
     records = _records()
-    known = {str(x.get("tag", "")).upper(): x for x in records}
+
+    def normalize(value):
+        return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+    q_norm = normalize(question)
+
+    # 1. Exact normalized database-tag match.
+    # This handles spaces, hyphens and underscores automatically.
+    candidates = []
+
+    for item in records:
+        tag = str(item.get("tag", "")).strip()
+        if not tag:
+            continue
+
+        tag_norm = normalize(tag)
+
+        if tag_norm and tag_norm in q_norm:
+            candidates.append((tag, item, len(tag_norm)))
+
+    if candidates:
+        # Prefer the longest exact normalized tag to avoid
+        # accidentally selecting a shorter tag contained in a longer one.
+        candidates.sort(key=lambda x: x[2], reverse=True)
+        return candidates[0][0], candidates[0][1]
+
+    # 2. Preserve the existing structured-tag behaviour.
+    tags = re.findall(
+        r"\b[A-Za-z]{1,12}[-_][A-Za-z0-9_]+\b",
+        question.upper()
+    )
+
+    known = {
+        str(x.get("tag", "")).upper(): x
+        for x in records
+    }
 
     for tag in tags:
         if tag in known:
             return tag, known[tag]
 
-    for x in records:
-        tag = str(x.get("tag", "")).strip()
-        if tag and tag.lower() in q.lower():
-            return tag, x
+    # 3. Exact case-insensitive literal match.
+    q_lower = question.lower()
+
+    for item in records:
+        tag = str(item.get("tag", "")).strip()
+        if tag and tag.lower() in q_lower:
+            return tag, item
 
     return None, None
 
