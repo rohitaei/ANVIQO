@@ -1,0 +1,2523 @@
+
+====================================================================================================
+ENGINEERING INDEX STRUCTURE
+====================================================================================================
+
+PATH: root.instruments.PT_303.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_303.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.LT_302.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_201.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_201.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_201.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_201.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_202.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_202.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_203.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_203.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.XT_203.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_202.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_202.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_202.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_202.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_203.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_203.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_205.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_205.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_401.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_401.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_401.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_401.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_402.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_402.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_407.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_407.spares
+COUNT: 2
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_319_B.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_319_B.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_304.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_204.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_204.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_204.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_204.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_303.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_201.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_201.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_203.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_203.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_205.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_205.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_401.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_401.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_402.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_402.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_305.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_305.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_301.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_301.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.WT_303.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_306.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_306.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.WT_501.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_501.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_501.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_501.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_501.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_502.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_502.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_503.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_503.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_503.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_503.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.WT_502.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_505.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_505.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_504.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_504.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_505.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_505.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_507.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_507.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_506.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_506.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_519.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_519.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_321.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_321.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_332.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_332.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_330.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_330.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_336.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_336.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_337.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_337.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_338.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_338.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_502.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_502.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_510.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_510.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_304.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_304.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_502.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_502.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_504.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_504.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_506.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_506.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_508.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_508.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_320.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_320.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_331.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_331.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_333.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_333.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_334.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_334.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_335.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_335.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_501.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_501.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_503.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_503.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.WT_301.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_601.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_601.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_601.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_601.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.WT_503.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_509.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_509.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_507.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_507.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_508.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_508.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_511.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_511.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_509.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_509.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.WT_504.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_513.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_513.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_510.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_510.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_515.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_515.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.FT_512.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.FT_512.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_517.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_517.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_520.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_520.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_601.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_602.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_506.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_506.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_508.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_508.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_509.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_509.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_510.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_510.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_512.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_512.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_514.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_514.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.PT_516.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.PT_516.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.WT_302.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.WT_302.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_505.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_505.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.TE_507.range
+COUNT: 1
+FIELDS:
+   description
+   range
+   source_file
+   source_sheet
+   unit
+
+PATH: root.instruments.TE_507.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.instruments.MCV_203.spares
+COUNT: 1
+FIELDS:
+   description
+   part_number
+   quantity
+   raw
+   source_file
+   source_sheet
+
+PATH: root.sources
+COUNT: 7
+FIELDS:
+   file
+   name
+   sha256
+   size
+
+====================================================================================================
+EXACT/NORMALIZED TAG: PT303
+====================================================================================================
+MATCHES: 4
+
+PATH : root.instruments.PT_303
+FIELD: tag
+VALUE: PT_303
+RECORD:
+{"tag": "PT_303", "normalized_tag": "PT_303", "description": "PT303 Mill outlet Gas Pr", "area": "VRM / MILL", "io_type": "AI (4-20mA)", "plc_address": "PIW 260", "fox_plc_tag": "PT303", "panel": "C2", "tb_name": "XC303", "tb_no": "14+,11-", "field_elec": "FIELD", "criticality": "HIGH", "process_role": "Mill outlet gas pressure", "sources": ["pci_instrument_database", "instrument_range", "critical_spares", "plc_total_io"], "range": [{"range": "(-)0.15-0", "unit": "", "description": "", "source_file": "PCI_INSTRUMENT_RANGE.xlsx", "source_sheet": "Sheet1"}], "spares": [{"description": "PCI_PT 3051L5A-0.15-0Kg/cm²", "part_number": "", "quantity": "2", "raw": {"sl_no": "8", "short_description": "PCI_PT 3051L5A-0.15-0Kg/cm²", "qty_instld": "2", "qty_req": "1", "tag_no": "PT-303", "description": "3051L5AG0QA-11BA01K5L5M3J1 Range: -0.15 to 0Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof typematched with one nos. of ø50 flange-", "instalation_site": "Mill outlet Gas Pr", "qty_avbl": "0", "jul": "0", "aug": "", "sep": "", "oct": "", "nov": "", "dec": "", "spare_to_be_indent": "1", "column_17": "", "_source_file": "critical spares in pci.xlsx", "_source_sheet": "PT", "_source_type": "critical_spare"}, "source_file": "critical spares in pci.xlsx", "source_sheet": "PT"}], "cables": [], "relationships": []}
+
+PATH : root.instruments.PT_303
+FIELD: normalized_tag
+VALUE: PT_303
+RECORD:
+{"tag": "PT_303", "normalized_tag": "PT_303", "description": "PT303 Mill outlet Gas Pr", "area": "VRM / MILL", "io_type": "AI (4-20mA)", "plc_address": "PIW 260", "fox_plc_tag": "PT303", "panel": "C2", "tb_name": "XC303", "tb_no": "14+,11-", "field_elec": "FIELD", "criticality": "HIGH", "process_role": "Mill outlet gas pressure", "sources": ["pci_instrument_database", "instrument_range", "critical_spares", "plc_total_io"], "range": [{"range": "(-)0.15-0", "unit": "", "description": "", "source_file": "PCI_INSTRUMENT_RANGE.xlsx", "source_sheet": "Sheet1"}], "spares": [{"description": "PCI_PT 3051L5A-0.15-0Kg/cm²", "part_number": "", "quantity": "2", "raw": {"sl_no": "8", "short_description": "PCI_PT 3051L5A-0.15-0Kg/cm²", "qty_instld": "2", "qty_req": "1", "tag_no": "PT-303", "description": "3051L5AG0QA-11BA01K5L5M3J1 Range: -0.15 to 0Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof typematched with one nos. of ø50 flange-", "instalation_site": "Mill outlet Gas Pr", "qty_avbl": "0", "jul": "0", "aug": "", "sep": "", "oct": "", "nov": "", "dec": "", "spare_to_be_indent": "1", "column_17": "", "_source_file": "critical spares in pci.xlsx", "_source_sheet": "PT", "_source_type": "critical_spare"}, "source_file": "critical spares in pci.xlsx", "source_sheet": "PT"}], "cables": [], "relationships": []}
+
+PATH : root.instruments.PT_303
+FIELD: fox_plc_tag
+VALUE: PT303
+RECORD:
+{"tag": "PT_303", "normalized_tag": "PT_303", "description": "PT303 Mill outlet Gas Pr", "area": "VRM / MILL", "io_type": "AI (4-20mA)", "plc_address": "PIW 260", "fox_plc_tag": "PT303", "panel": "C2", "tb_name": "XC303", "tb_no": "14+,11-", "field_elec": "FIELD", "criticality": "HIGH", "process_role": "Mill outlet gas pressure", "sources": ["pci_instrument_database", "instrument_range", "critical_spares", "plc_total_io"], "range": [{"range": "(-)0.15-0", "unit": "", "description": "", "source_file": "PCI_INSTRUMENT_RANGE.xlsx", "source_sheet": "Sheet1"}], "spares": [{"description": "PCI_PT 3051L5A-0.15-0Kg/cm²", "part_number": "", "quantity": "2", "raw": {"sl_no": "8", "short_description": "PCI_PT 3051L5A-0.15-0Kg/cm²", "qty_instld": "2", "qty_req": "1", "tag_no": "PT-303", "description": "3051L5AG0QA-11BA01K5L5M3J1 Range: -0.15 to 0Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof typematched with one nos. of ø50 flange-", "instalation_site": "Mill outlet Gas Pr", "qty_avbl": "0", "jul": "0", "aug": "", "sep": "", "oct": "", "nov": "", "dec": "", "spare_to_be_indent": "1", "column_17": "", "_source_file": "critical spares in pci.xlsx", "_source_sheet": "PT", "_source_type": "critical_spare"}, "source_file": "critical spares in pci.xlsx", "source_sheet": "PT"}], "cables": [], "relationships": []}
+
+PATH : root.instruments.PT_303.spares[0].raw
+FIELD: tag_no
+VALUE: PT-303
+RECORD:
+{"sl_no": "8", "short_description": "PCI_PT 3051L5A-0.15-0Kg/cm²", "qty_instld": "2", "qty_req": "1", "tag_no": "PT-303", "description": "3051L5AG0QA-11BA01K5L5M3J1 Range: -0.15 to 0Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof typematched with one nos. of ø50 flange-", "instalation_site": "Mill outlet Gas Pr", "qty_avbl": "0", "jul": "0", "aug": "", "sep": "", "oct": "", "nov": "", "dec": "", "spare_to_be_indent": "1", "column_17": "", "_source_file": "critical spares in pci.xlsx", "_source_sheet": "PT", "_source_type": "critical_spare"}
+
+====================================================================================================
+EXACT/NORMALIZED TAG: MCV201
+====================================================================================================
+MATCHES: 13
+
+PATH : root.instruments.MCV_201_HEALTHY
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_Healthy", "normalized_tag": "MCV_201_HEALTHY", "description": "BFG Control Valve MCV201 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 11.0", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD102", "tb_no": "61,71", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_CONTROL_ON
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_control_On", "normalized_tag": "MCV_201_CONTROL_ON", "description": "BFG Control Valve MCV201 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 11.1", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD102", "tb_no": "62,72", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_EPB
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_EPB", "normalized_tag": "MCV_201_EPB", "description": "BFG Control Valve MCV201 EPB Pressed", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 11.2", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD102", "tb_no": "63,73", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_REMOTE_FB
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_Remote_FB", "normalized_tag": "MCV_201_REMOTE_FB", "description": "BFG Control Valve MCV201 L/R Selected from field", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 11.3", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD102", "tb_no": "64,74", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_FWD
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_Fwd", "normalized_tag": "MCV_201_FWD", "description": "BFG Control Valve MCV201 Forward contractor on feed back", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 11.4", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD102", "tb_no": "65,75", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_REV
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_Rev", "normalized_tag": "MCV_201_REV", "description": "BFG Control Valve MCV201 Reverse contractor on feed back", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 11.5", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD102", "tb_no": "66,76", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_TRIP_FB
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_Trip_fb", "normalized_tag": "MCV_201_TRIP_FB", "description": "BFG Control Valve MCV201 Motor Tripped", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 11.6", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD102", "tb_no": "67,77", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_TRQ
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_Trq", "normalized_tag": "MCV_201_TRQ", "description": "BFG Control Valve MCV201 Torque Switch operated", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 11.7", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD102", "tb_no": "68,78", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_OP_FB
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_op_FB", "normalized_tag": "MCV_201_OP_FB", "description": "BFG Control Valve MCV201 Actuator full open feedback", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 12.0", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD103", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_CLS_FB
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_cls_FB", "normalized_tag": "MCV_201_CLS_FB", "description": "BFG Control Valve MCV201 Actuator full close feedback", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 12.1", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD103", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_FWD_CMD
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_FWD_Cmd", "normalized_tag": "MCV_201_FWD_CMD", "description": "MCV201 BFG Control Valve MCV201 Forward Command", "area": "PNEUMATIC / VALVES", "io_type": "DO", "plc_address": "Q 6.0", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD206", "tb_no": "41,51", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_REV_CMD
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_REV_Cmd", "normalized_tag": "MCV_201_REV_CMD", "description": "BFG Control Valve MCV201 Reverse Command", "area": "PNEUMATIC / VALVES", "io_type": "DO", "plc_address": "Q 6.1", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD206", "tb_no": "42,52", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_201_LOCAL_PER
+FIELD: fox_plc_tag
+VALUE: MCV201
+RECORD:
+{"tag": "MCV_201_Local_per", "normalized_tag": "MCV_201_LOCAL_PER", "description": "BFG Control Valve MCV201 Local permissive", "area": "PNEUMATIC / VALVES", "io_type": "DO", "plc_address": "Q 6.2", "fox_plc_tag": "MCV201", "panel": "C2", "tb_name": "XD206", "tb_no": "43,53", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+====================================================================================================
+EXACT/NORMALIZED TAG: AT201
+====================================================================================================
+MATCHES: 3
+
+PATH : root.instruments.AT_201
+FIELD: tag
+VALUE: AT_201
+RECORD:
+{"tag": "AT_201", "normalized_tag": "AT_201", "description": "AT201 Mill inlet O2 %", "area": "VRM / MILL", "io_type": "AI (4-20mA)", "plc_address": "PIW 256", "fox_plc_tag": "AT201", "panel": "C2", "tb_name": "XC303", "tb_no": "1+,2-", "field_elec": "ANALYSER", "criticality": "HIGH", "process_role": "Mill inlet O2", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.AT_201
+FIELD: normalized_tag
+VALUE: AT_201
+RECORD:
+{"tag": "AT_201", "normalized_tag": "AT_201", "description": "AT201 Mill inlet O2 %", "area": "VRM / MILL", "io_type": "AI (4-20mA)", "plc_address": "PIW 256", "fox_plc_tag": "AT201", "panel": "C2", "tb_name": "XC303", "tb_no": "1+,2-", "field_elec": "ANALYSER", "criticality": "HIGH", "process_role": "Mill inlet O2", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.AT_201
+FIELD: fox_plc_tag
+VALUE: AT201
+RECORD:
+{"tag": "AT_201", "normalized_tag": "AT_201", "description": "AT201 Mill inlet O2 %", "area": "VRM / MILL", "io_type": "AI (4-20mA)", "plc_address": "PIW 256", "fox_plc_tag": "AT201", "panel": "C2", "tb_name": "XC303", "tb_no": "1+,2-", "field_elec": "ANALYSER", "criticality": "HIGH", "process_role": "Mill inlet O2", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+====================================================================================================
+EXACT/NORMALIZED TAG: LP_1_Healthy
+====================================================================================================
+MATCHES: 2
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: tag
+VALUE: LP_1_Healthy
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: normalized_tag
+VALUE: LP_1_HEALTHY
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+====================================================================================================
+PARTIAL DISCOVERY: PT
+====================================================================================================
+MATCHES: 3368
+
+PATH : root.rules
+FIELD: invent_data
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_v5_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_pci_registry_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.summary
+FIELD: cable_links
+VALUE: 0
+RECORD:
+{"instrument_count": 897, "range_links": 86, "spare_links": 84, "cable_links": 0, "plc_links": 5113, "areas": 7, "panels": 3, "terminal_blocks": 66, "io_types": 5}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+====================================================================================================
+PARTIAL DISCOVERY: MCV
+====================================================================================================
+MATCHES: 3485
+
+PATH : root.rules
+FIELD: invent_data
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_v5_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_pci_registry_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.summary
+FIELD: cable_links
+VALUE: 0
+RECORD:
+{"instrument_count": 897, "range_links": 86, "spare_links": 84, "cable_links": 0, "plc_links": 5113, "areas": 7, "panels": 3, "terminal_blocks": 66, "io_types": 5}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: tag
+VALUE: MCV_204_Healthy
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: normalized_tag
+VALUE: MCV_204_HEALTHY
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: description
+VALUE: Hot Blast MCV-204 Feeder healthy
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: fox_plc_tag
+VALUE: MCV204
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+====================================================================================================
+PARTIAL DISCOVERY: range
+====================================================================================================
+MATCHES: 3184
+
+PATH : root.rules
+FIELD: invent_data
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_v5_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_pci_registry_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.summary
+FIELD: cable_links
+VALUE: 0
+RECORD:
+{"instrument_count": 897, "range_links": 86, "spare_links": 84, "cable_links": 0, "plc_links": 5113, "areas": 7, "panels": 3, "terminal_blocks": 66, "io_types": 5}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+====================================================================================================
+PARTIAL DISCOVERY: spare
+====================================================================================================
+MATCHES: 3342
+
+PATH : root.rules
+FIELD: invent_data
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_v5_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_pci_registry_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.summary
+FIELD: cable_links
+VALUE: 0
+RECORD:
+{"instrument_count": 897, "range_links": 86, "spare_links": 84, "cable_links": 0, "plc_links": 5113, "areas": 7, "panels": 3, "terminal_blocks": 66, "io_types": 5}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+====================================================================================================
+PARTIAL DISCOVERY: PLC
+====================================================================================================
+MATCHES: 3072
+
+PATH : root.rules
+FIELD: invent_data
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_v5_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_pci_registry_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.summary
+FIELD: cable_links
+VALUE: 0
+RECORD:
+{"instrument_count": 897, "range_links": 86, "spare_links": 84, "cable_links": 0, "plc_links": 5113, "areas": 7, "panels": 3, "terminal_blocks": 66, "io_types": 5}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+====================================================================================================
+PARTIAL DISCOVERY: cable
+====================================================================================================
+MATCHES: 3062
+
+PATH : root.rules
+FIELD: invent_data
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_v5_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.rules
+FIELD: existing_pci_registry_replaced
+VALUE: False
+RECORD:
+{"read_only": true, "invent_data": false, "existing_v5_replaced": false, "existing_pci_registry_replaced": false, "source_values_preserved": true}
+
+PATH : root.summary
+FIELD: cable_links
+VALUE: 0
+RECORD:
+{"instrument_count": 897, "range_links": 86, "spare_links": 84, "cable_links": 0, "plc_links": 5113, "areas": 7, "panels": 3, "terminal_blocks": 66, "io_types": 5}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Healthy", "normalized_tag": "LP_1_HEALTHY", "description": "Lubrication pump-1 Feeder healthy", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.0", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "1,11", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_CNTRL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_CNTRL_ON", "normalized_tag": "LP_1_CNTRL_ON", "description": "Lubrication pump-1 Control on", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.1", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "2,12", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_EPB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_EPB", "normalized_tag": "LP_1_EPB", "description": "Lubrication pump-1 EPB Pressed", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.2", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "3,13", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_REMOTE_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Remote_FB", "normalized_tag": "LP_1_REMOTE_FB", "description": "Lubrication pump-1L/R Selected from field", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.3", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "4,14", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_RUN_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Run_fb", "normalized_tag": "LP_1_RUN_FB", "description": "Lubrication pump-1 Run feed back", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.4", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "5,15", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.LP_1_TRIP_FB
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "LP_1_Trip_fb", "normalized_tag": "LP_1_TRIP_FB", "description": "Lubrication pump-1 Tripped", "area": "VRM / MILL", "io_type": "DI", "plc_address": "I 0.5", "fox_plc_tag": "C0310", "panel": "C2", "tb_name": "XC101", "tb_no": "6,16", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_HEALTHY
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_Healthy", "normalized_tag": "MCV_204_HEALTHY", "description": "Hot Blast MCV-204 Feeder healthy", "area": "WEIGH FEEDING", "io_type": "DI", "plc_address": "I 0.6", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "7,17", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: criticality
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+PATH : root.instruments.MCV_204_CONTROL_ON
+FIELD: process_role
+VALUE: 
+RECORD:
+{"tag": "MCV_204_control_On", "normalized_tag": "MCV_204_CONTROL_ON", "description": "MCV204 Hot Blast MCV-204 Control on", "area": "PNEUMATIC / VALVES", "io_type": "DI", "plc_address": "I 0.7", "fox_plc_tag": "MCV204", "panel": "C2", "tb_name": "XC101", "tb_no": "8,18", "field_elec": "ELEC", "criticality": "", "process_role": "", "sources": ["pci_instrument_database", "plc_total_io"], "range": [], "spares": [], "cables": [], "relationships": []}
+
+====================================================================================================
+UNIVERSAL RESOLVER DIAGNOSTIC COMPLETE
+NO EXISTING ANVIQO INTELLIGENCE MODIFIED
+====================================================================================================

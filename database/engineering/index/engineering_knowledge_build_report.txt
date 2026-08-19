@@ -1,0 +1,83 @@
+==========================================================================================
+ANVIQO ENGINEERING KNOWLEDGE INDEX
+==========================================================================================
+
+GENERATED: 2026-08-14T13:21:25.302782
+
+MASTER INSTRUMENTS : 897
+RANGE LINKS        : 86
+SPARE LINKS        : 84
+CABLE LINKS        : 0
+PLC LINKS          : 5113
+AREAS              : 7
+PANELS             : 3
+TERMINAL BLOCKS    : 66
+I/O TYPES          : 5
+
+TOP TAG PREFIXES
+------------------------------------------------------------------------------------------
+FSV                       138
+MCV                       101
+BF                        69
+TE                        68
+PT                        44
+AC                        27
+FT                        26
+WF                        17
+CWP                       17
+LP                        16
+BHV                       16
+RALV                      16
+VS                        16
+PCV                       16
+SAC                       15
+VRM                       14
+LUB                       13
+UPS                       13
+SEP                       11
+AT                        10
+C                         9
+CB                        9
+AO                        9
+CC                        8
+HT                        8
+CBC                       8
+IR                        8
+ST                        8
+ZT                        8
+SAF                       7
+HYD                       7
+ID                        7
+WT                        7
+CF                        6
+HP                        6
+CA                        6
+SA                        6
+MAGNET                    5
+LT                        5
+FCV                       5
+IGNITOR                   4
+ANALYSER                  4
+AIR                       4
+LS                        4
+ACM                       4
+ROLLER                    3
+MSV                       3
+PSV                       3
+CAFAN                     3
+WFM                       3
+
+SOURCE FILES
+------------------------------------------------------------------------------------------
+pci_instrument_database.json | 438641 bytes | SHA256 6f64d599d0a42dfe...
+pci_instrument_database.csv | 140683 bytes | SHA256 afe022a6bc01f604...
+PCI PLC TOTAL IO.xlsx | 977892 bytes | SHA256 8dbbdf305f81d323...
+PCI_INSTRUMENT_RANGE.xlsx | 12809 bytes | SHA256 7d8f778e0333623e...
+critical spares in pci.xlsx | 69815 bytes | SHA256 d607677dd117f9d4...
+MBF2  PCI  cable schedule .xlsx | 27881 bytes | SHA256 81ac10ffcde7e4ac...
+MBF2  PCI  cable schedule  (1).xlsx | 26765 bytes | SHA256 51ff6f7a4a7af6b8...
+
+==========================================================================================
+ENGINEERING KNOWLEDGE INDEX BUILD COMPLETE
+EXISTING PCI/V5 INTELLIGENCE PRESERVED
+==========================================================================================

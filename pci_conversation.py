@@ -1,3 +1,4 @@
+from pci_universal_resolver import resolve as _universal_pci_resolve
 import re
 """
 ANVIQO PCI CONVERSATION LAYER
@@ -109,100 +110,15 @@ def _record_text(r):
 
 
 def _find_tag_in_question(q):
-    # UNIVERSAL VERIFIED TAG DETECTION.
-    #
-    # Resolve spaces / hyphens / underscores against the actual
-    # 1,064-record PCI registry.
-    #
-    # Example:
-    #   MCV 204 -> MCV_204 / MCV-204 / MCV204
-    #
-    # No tag is invented.
+    """
+    UNIVERSAL VERIFIED PCI TAG/FAMILY RESOLUTION.
+    """
+    rows, mode = _universal_pci_resolve(q)
 
-    question = str(q or "").strip()
+    if not rows:
+        return None
 
-    def normalize(value):
-        return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
-
-    q_norm = normalize(question)
-
-    candidates = []
-
-    for r in search(query=None, limit=1064):
-        tag = str(r.get("tag", "")).strip()
-
-        if not tag:
-            continue
-
-        tag_norm = normalize(tag)
-
-        if tag_norm and tag_norm in q_norm:
-            candidates.append((r, len(tag_norm)))
-
-    if candidates:
-        candidates.sort(key=lambda x: x[1], reverse=True)
-        return candidates[0][0]
-
-    # Existing exact-format fallback.
-    q_upper = question.upper()
-
-    for r in search(query=None, limit=1064):
-        tag = str(r.get("tag", "")).strip()
-
-        if tag:
-            pattern = r"(?<![A-Z0-9_])" + re.escape(tag.upper()) + r"(?![A-Z0-9_])"
-            if re.search(pattern, q_upper):
-                return r
-
-    # Follow-up: "it", "this instrument", "that instrument", etc.
-    # Follow-up references must be matched as words/phrases.
-    # IMPORTANT: do not use substring matching for "it".
-    # Otherwise words such as "critical", "instruments" and
-    # "transmitters" incorrectly trigger the previous record.
-    followup_phrases = [
-        "this instrument",
-        "that instrument",
-        "this tag",
-        "that tag",
-        "this io",
-        "that io",
-        "what is it",
-        "what does it",
-        "what does it measure",
-        "what is it measuring",
-        "tell me about it",
-        "its area",
-        "its location",
-        "where is it",
-        "where is it located",
-        "its plc address",
-        "its panel",
-        "its terminal",
-        "its tb",
-        "its status",
-        "its state",
-        "its value",
-        "what value",
-        "what reading",
-        "what is the reading",
-        "is it healthy",
-        "is it critical",
-        "why is it critical",
-        "why is it healthy",
-        "what event",
-        "what event is active",
-        "is there an event",
-        "what does this mean",
-    ]
-
-    if any(phrase in q.lower() for phrase in followup_phrases):
-        return _CONTEXT.get("last_record")
-
-    if re.search(r"\bit\b", q.lower()):
-        return _CONTEXT.get("last_record")
-
-    return None
-
+    return rows[0]
 
 def _semantic_pci_query(question):
     """

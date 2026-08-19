@@ -1,0 +1,1162 @@
+====================================================================================================
+ANVIQO ENGINEERING KNOWLEDGE
+SOURCE FORENSIC AUDIT
+====================================================================================================
+PROJECT: /storage/emulated/0/Download/ANVIQO_PRODUCT_V1.0_PUBLIC
+DOWNLOAD: /storage/emulated/0/Download
+
+====================================================================================================
+PDF TOOL AVAILABILITY
+====================================================================================================
+pdftotext => NOT FOUND
+pdfinfo => NOT FOUND
+mutool => NOT FOUND
+qpdf => NOT FOUND
+libreoffice => NOT FOUND
+soffice => NOT FOUND
+
+===== ENGINEERING XLSX SOURCES =====
+
+====================================================================================================
+XLSX: /storage/emulated/0/Download/PCI PLC TOTAL IO.xlsx
+SIZE: 977892 bytes
+====================================================================================================
+SHEETS: 32
+
+--- SHEET 1 : Sheet1 ---
+TARGET: xl/worksheets/sheet1.xml
+PREVIEW ROWS: 15
+ | Valve JV TB common Common 1 & 3 shorted | Common | 1 | 3C/1 SQMM | DI-29 |  | DI-JB3 | 19 | 1 | 19 C x 1 Sq.mm . | DI-JB3-C2 | C4 | 1 | XH103 | 76 | 24vdc
+1 | FSV-523 injection vessel-C gas suplimenter inlet shut off valve | FSV_523_op | 2 |  |  |  | DI-JB3 | 20 | 2 |  |  | C4 | 2 | XH103 | 66 | I 83.5
+2 | FSV-523 injection vessel-C gas suplimenter inlet shut off valve | FSV_523_cls | 4 |  |  |  | DI-JB3 | 21 | 3 |  |  | C4 | 3 | XH103 | 67 | I 83.6
+ | Valve JV TB common Common 1 & 3 shorted | Common | 1 | 3C/1 SQMM | DI-30 |  | DI-JB3 | 22 | 4 |  |  | C4 | 4 | XH103 | 78 | 24vdc
+3 | FSV-524 injection vessel-C gas suplimenter outlet shut off valve | FSV_524_op | 2 |  |  |  | DI-JB3 | 23 | 5 |  |  | C4 | 5 | XH103 | 68 | I 83.7
+4 | FSV-524 injection vessel-C gas suplimenter outlet shut off valve | FSV_524_cls | 4 |  |  |  | DI-JB3 | 24 | 6 |  |  | C4 | 6 | XH104 | 1 | I 84.0
+ | Valve JV TB common Common 1 & 3 shorted | Common | 1 | 3C/1 SQMM | DI-31 |  | DI-JB3 | 25 | 7 |  |  | C4 | 7 | XH104 | 12 | 24vdc
+5 | FSV-525 injection vessel-C conveying media flow control shut off valve | FSV_525_op | 2 |  |  |  | DI-JB3 | 26 | 8 |  |  | C4 | 8 | XH104 | 2 | I 84.1
+6 | FSV-525 injection vessel-C conveying media flow control shut off valve | FSV_525_cls | 4 |  |  |  | DI-JB3 | 27 | 9 |  |  | C4 | 9 | XH104 | 3 | I 84.2
+ | Valve JV TB common Common 1 & 3 shorted | Common | 1 | 3C/1 SQMM | DI-32 |  | DI-JB3 | 28 | 10 |  |  | C4 | 10 | XH104 | 14 | 24vdc
+7 | FSV-526 injection vessel-C three way conveying media shut off valve | FSV_526_op | 2 |  |  |  | DI-JB3 | 29 | 11 |  |  | C4 | 11 | XH104 | 4 | I 84.3
+8 | FSV-526 injection vessel-C three way conveying media shut off valve | FSV_526_cls | 4 |  |  |  | DI-JB3 | 30 | 12 |  |  | C4 | 12 | XH104 | 5 | I 84.4
+ | Valve JV TB common Common 1 & 3 shorted | Common | 1 | 3C/1 SQMM | DI-33 |  | DI-JB3 | 31 | 13 |  |  | C4 | 13 | XH104 | 16 | 24vdc
+9 | FSV-538 injection vessel-C inlet valve | FSV_538_op | 2 |  |  |  | DI-JB3 | 32 | 14 |  |  | C4 | 14 | XH104 | 6 | I 84.5
+10 | FSV-538 injection vessel-C inlet valve | FSV_538_cls | 4 |  |  |  | DI-JB3 | 33 | 15 |  |  | C4 | 15 | XH104 | 7 | I 84.6
+
+--- SHEET 2 : MBF-1 3WAY VALVE ---
+TARGET: xl/worksheets/sheet2.xml
+PREVIEW ROWS: 15
+MBF-1 3WAY COAL DISTRIBUTION VALVE |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+DO |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | TAG | VALVE TB | CABLE | CAB TAG | LENGTH | JB NAME | JB TB NO | CORE NO | CABLE | CAB TAG | PLC | CORE NO | PLC TB | TB NO | ADDRESS |  |  |  |  |  | 
+1 | FSV-1001 3 way tuyere-1 coal distribution valve | FSV_1001_op_Cmd | 1+ | 3Cx1 | FSV-1001 | 15MTR | LOOP NEUTRAL TB NO -2,4,6,8,10,12,14,16,18,20,22,24 DISTRIBUTION JB | 1 | 1 | 24 Core x 1 Sq.mm 100MTR | DO-C1 | MBF-1PCI RIO | 1 | XJJ203 | 21 | Q 201.0 |  |  |  |  |  | 
+ |  |  | 2- |  |  |  |  | 2 | 2NEUTRAL |  |  |  | 2NEUTRAL | XJJ203 | 31 |  |  |  |  |  |  | 
+2 | FSV-1002 3 way tuyere-2 coal distribution valve | FSV_1002_op_Cmd | 1+ | 3Cx1 | FSV-1002 | 15MTR |  | 3 | 3 |  |  |  | 3 | XJJ203 | 22 | Q 201.1 |  |  |  |  |  | 
+ |  |  | 2- |  |  |  |  | 4 | N |  |  |  | N | XJJ203 | 32 |  |  |  |  |  |  | 
+3 | FSV-1003 3 way tuyere-3 coal distribution valve | FSV_1003_op_Cmd | 1+ | 3Cx1 | FSV-1003 | 15MTR |  | 5 | 4 |  |  |  | 4 | XJJ203 | 23 | Q 201.2 |  | JJ102 | 1,11 | I 224.0 | 1,11 | Q 200.0
+ |  |  | 2- |  |  |  |  | 6 | N |  |  |  | N | XJJ203 | 33 |  |  |  | 2,12 | I 224.1 | 2,12 | Q 200.1
+4 | FSV-1004 3 way tuyere-4 coal distribution valve | FSV_1004_op_Cmd | 1+ | 3Cx1 | FSV-1004 | 15MTR |  | 7 | 5 |  |  |  | 5 | XJJ203 | 24 | Q 201.3 |  |  | 3,13 | I 224.2 | 3,13 | Q 200.2
+ |  |  | 2- |  |  |  |  | 8 | N |  |  |  | N | XJJ203 | 34 |  |  |  | 4,14 | I 224.3 | 4,14 | Q 200.3
+5 | FSV-1005 3 way tuyere-5 coal distribution valve | FSV_1005_op_Cmd | 1+ | 3Cx1 | FSV-1005 | 15MTR |  | 9 | 6 |  |  |  | 6 | XJJ203 | 25 | Q 201.4 |  |  | 5,15 | I 224.4 | 5,15 | Q 200.4
+ |  |  | 2- |  |  |  |  | 10 | 7NEUTRAL |  |  |  | 7NEUTRAL | XJJ203 | 35 |  |  |  | 6,16 | I 224.5 | 6,16 | Q 200.5
+6 | FSV-1006 3 way tuyere-6 coal distribution valve | FSV_1006_op_Cmd | 1+ | 3Cx1 | FSV-1006 | 15MTR |  | 11 | 7 |  |  |  | 7 | XJJ203 | 26 | Q 201.5 |  |  | 7,17 | I 224.6 | 7,17 | Q 200.6
+ |  |  | 2- |  |  |  |  | 12 | N |  |  |  | N | XJJ203 | 36 |  |  |  | 8,18 | I 224.7 | 8,18 | Q 200.7
+
+--- SHEET 3 : MBF-2 3WAY VALVE ---
+TARGET: xl/worksheets/sheet3.xml
+PREVIEW ROWS: 15
+MBF-1 3WAY COAL DISTRIBUTION VALVE |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+DO |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | TAG | VALVE TB | CABLE | CAB TAG | LENGTH | JB NAME | JB TB NO | CORE NO | CABLE | CAB TAG | PLC | CORE NO | PLC TB | TB NO | ADDRESS |  |  | 
+1 | FSV-1001 3 way tuyere-1 coal distribution valve | FSV_1001_op_Cmd | 1+ | 3Cx1 | FSV-1001 | 15MTR | LOOP NEUTRAL TB NO -2,4,6,8,10,12,14,16,18,20,22,24 DISTRIBUTION JB | 1 | 1 | 19 Core x 1 Sq.mm 200MTR | DO-C1 | MBF-1PCI RIO | 1 | XJJ203 | 1 | Q 200.0 |  |  | 
+ |  |  | 2- |  |  |  |  | 2 | 2NEUTRAL |  |  |  | 2NEUTRAL | XJJ203 | 11 |  |  |  | 
+2 | FSV-1002 3 way tuyere-2 coal distribution valve | FSV_1002_op_Cmd | 1+ | 3Cx1 | FSV-1002 | 15MTR |  | 3 | 3 |  |  |  | 3 | XJJ203 | 2 | Q 200.1 |  |  | 
+ |  |  | 2- |  |  |  |  | 4 | N |  |  |  | N | XJJ203 | 12 |  |  |  | 
+3 | FSV-1003 3 way tuyere-3 coal distribution valve | FSV_1003_op_Cmd | 1+ | 3Cx1 | FSV-1003 | 15MTR |  | 5 | 4 |  |  |  | 4 | XJJ203 | 3 | Q 200.2 |  |  | 
+ |  |  | 2- |  |  |  |  | 6 | N |  |  |  | N | XJJ203 | 13 |  |  |  | 
+4 | FSV-1004 3 way tuyere-4 coal distribution valve | FSV_1004_op_Cmd | 1+ | 3Cx1 | FSV-1004 | 15MTR |  | 7 | 5 |  |  |  | 5 | XJJ203 | 4 | Q 200.3 |  |  | 
+ |  |  | 2- |  |  |  |  | 8 | N |  |  |  | N | XJJ203 | 14 |  |  |  | 
+5 | FSV-1005 3 way tuyere-5 coal distribution valve | FSV_1005_op_Cmd | 1+ | 3Cx1 | FSV-1005 | 15MTR |  | 9 | 6 |  |  |  | 6 | XJJ203 | 5 | Q 200.4 |  |  | 
+ |  |  | 2- |  |  |  |  | 10 | 7NEUTRAL |  |  |  | 7NEUTRAL | XJJ203 | 15 |  |  |  | 
+6 | FSV-1006 3 way tuyere-6 coal distribution valve | FSV_1006_op_Cmd | 1+ | 3Cx1 | FSV-1006 | 15MTR |  | 11 | 7 |  |  |  | 7 | XJJ203 | 6 | Q 200.5 |  |  | 
+ |  |  | 2- |  |  |  |  | 12 | N |  |  |  | N | XJJ203 | 16 |  |  |  | 
+
+--- SHEET 4 : PCI PLC TOTAL IO_2018_10_9 ---
+TARGET: xl/worksheets/sheet4.xml
+PREVIEW ROWS: 15
+SL NO | PLC TAG | FOX PLC TAG | DESCRIPTION | TB NAME | TB NO | S7 PLC ADRESS | PANEL | IO TYPE | RELAY CONTACT | FIELD/ELEC |  |  |  |  | 
+1 | LP_1_Healthy | C0310 | Lubrication pump-1 Feeder healthy | XC101 | 1,11 | I 0.0 | C2 | DI |  | ELEC | Note:24 V DC,70 mA power supply for SWR Flow Jam Switch |  |  |  | 
+2 | LP_1_CNTRL_ON | C0310 | Lubrication pump-1 Control on | XC101 | 2,12 | I 0.1 | C2 | DI |  | ELEC | Note: All DI,DQ,AI TB must be fuse TB |  |  |  | 
+3 | LP_1_EPB | C0310 | Lubrication pump-1 EPB Pressed | XC101 | 3,13 | I 0.2 | C2 | DI |  | ELEC |  |  |  |  | 
+4 | LP_1_Remote_FB | C0310 | Lubrication pump-1L/R Selected from field | XC101 | 4,14 | I 0.3 | C2 | DI |  | ELEC |  |  |  |  | 
+5 | LP_1_Run_fb | C0310 | Lubrication pump-1 Run feed back | XC101 | 5,15 | I 0.4 | C2 | DI |  | ELEC |  | UPS Power Distribution |  | Non UPS Power Distribution | 
+6 | LP_1_Trip_fb | C0310 | Lubrication pump-1 Tripped | XC101 | 6,16 | I 0.5 | C2 | DI |  | ELEC |  |  |  |  | 
+7 | MCV_204_Healthy | MCV204 | Hot Blast MCV-204 Feeder healthy | XC101 | 7,17 | I 0.6 | C2 | DI |  | ELEC |  |  |  |  | 
+8 | MCV_204_control_On | MCV204 | MCV204 Hot Blast MCV-204 Control on | XC101 | 8,18 | I 0.7 | C2 | DI |  | ELEC |  | Stove PLC UPS DB |  | Furnace auxiliary MCC | 
+9 | MCV_204_EPB | MCV204 | Hot Blast MCV-204 EPB Pressed | XC101 | 21,31 | I 1.0 | C2 | DI |  | ELEC |  |  |  |  | 
+10 | MCV_204_Remote_FB | MCV204 | Hot Blast MCV-204 L/R Selected from field | XC101 | 22,32 | I 1.1 | C2 | DI |  | ELEC |  |  |  |  | 
+11 | MCV_204_Fwd | MCV204 | Hot Blast MCV-204 Forward contractor on feed back | XC101 | 23,33 | I 1.2 | C2 | DI |  | ELEC |  |  |  |  | 
+12 | MCV_204_Rev | MCV204 | MCV204 Hot Blast MCV-204 Reverse contractor on feed back | XC101 | 24,34 | I 1.3 | C2 | DI |  | ELEC |  |  |  |  | 
+13 | MCV_204_Trip_fb | MCV204 | MCV204 Hot Blast MCV-204 Motor Tripped | XC101 | 25,35 | I 1.4 | C2 | DI |  | ELEC |  | MBF1 PCI RIO TB No:X1/1,2 |  | BLT Power Distribution Panel Isolator QF9 | 
+14 | MCV_204_Trq | MCV204 | MCV204 Hot Blast MCV-204 Torque Switch operated | XC101 | 26,36 | I 1.5 | C2 | DI |  | ELEC |  |  |  |  | 
+
+--- SHEET 5 : PCI PLC TOTAL DI_20181206 ---
+TARGET: xl/worksheets/sheet5.xml
+PREVIEW ROWS: 15
+SL NO | PLC TAG | FOX PLC TAG | DESCRIPTION | TB NAME | TB NO | S7 PLC ADRESS | PANEL | IO TYPE | RELAY CONTACT | FIELD/ELEC
+1 | LP_1_Healthy | C0310 | Lubrication pump-1 Feeder healthy | XC101 | 1,11 | I 0.0 | C2 | DI |  | ELEC
+2 | LP_1_CNTRL_ON | C0310 | Lubrication pump-1 Control on | XC101 | 2,12 | I 0.1 | C2 | DI |  | ELEC
+3 | LP_1_EPB | C0310 | Lubrication pump-1 EPB Pressed | XC101 | 3,13 | I 0.2 | C2 | DI |  | ELEC
+4 | LP_1_Remote_FB | C0310 | Lubrication pump-1L/R Selected from field | XC101 | 4,14 | I 0.3 | C2 | DI |  | ELEC
+5 | LP_1_Run_fb | C0310 | Lubrication pump-1 Run feed back | XC101 | 5,15 | I 0.4 | C2 | DI |  | ELEC
+6 | LP_1_Trip_fb | C0310 | Lubrication pump-1 Tripped | XC101 | 6,16 | I 0.5 | C2 | DI |  | ELEC
+7 | MCV_206_Healthy | MCV204 | HGG inlet Self-circulating valve MCV-206 Feeder healthy 6F4 | XC101 | 7,17 | I 0.6 | C2 | DI |  | ELEC RDOL
+8 | MCV_204_control_On | MCV204 | MCV204 Hot Blast MCV-204 Control on | XC101 | 8,18 | I 0.7 | C2 | DI |  | ELEC
+9 | MCV_204_EPB | MCV204 | Hot Blast MCV-204 EPB Pressed | XC101 | 21,31 | I 1.0 | C2 | DI |  | ELEC
+10 | MCV_204_Remote_FB | MCV204 | Hot Blast MCV-204 L/R Selected from field | XC101 | 22,32 | I 1.1 | C2 | DI |  | ELEC
+11 | MCV_204_Fwd | MCV204 | Hot Blast MCV-204 Forward contractor on feed back | XC101 | 23,33 | I 1.2 | C2 | DI |  | ELEC
+12 | MCV_204_Rev | MCV204 | MCV204 Hot Blast MCV-204 Reverse contractor on feed back | XC101 | 24,34 | I 1.3 | C2 | DI |  | ELEC
+13 | MCV_204_Trip_fb | MCV204 | MCV204 Hot Blast MCV-204 Motor Tripped | XC101 | 25,35 | I 1.4 | C2 | DI |  | ELEC
+14 | MCV_204_Trq | MCV204 | MCV204 Hot Blast MCV-204 Torque Switch operated | XC101 | 26,36 | I 1.5 | C2 | DI |  | ELEC
+
+--- SHEET 6 : PCI PLC TOTAL DO_2018_12_06 ---
+TARGET: xl/worksheets/sheet6.xml
+PREVIEW ROWS: 15
+SL NO | PLC TAG | FOX PLC TAG | DESCRIPTION | TB NAME | TB NO | S7 PLC ADRESS | PANEL | IO TYPE | RELAY CONTACT | FIELD/ELEC
+1 | LP1_strt_Cmd | C0310 | Lubrication pump-1 Start/Stop Command | XC202 | 1,11 | Q 0.0 | C2 | DO | PF CONTACT | ELEC
+2 | LP1_201_Local_per | C0310 | Lubrication pump-1 Local permissive | XC202 | 2,12 | Q 0.1 | C2 | DO | PF CONTACT | ELEC
+3 | MCV_204_FWD_Cmd | MCV204 | Hot Blast MCV-204 Forward Command | XC202 | 3,13 | Q 0.2 | C2 | DO | PF CONTACT | ELEC
+4 | MCV_204_REV_Cmd | MCV204 | Hot Blast MCV-204 Reverse Command | XC202 | 4,14 | Q 0.3 | C2 | DO | PF CONTACT | ELEC
+5 | MCV_204_Local_per | MCV204 | Hot Blast MCV-204 Local permissive | XC202 | 5,15 | Q 0.4 | C2 | DO | PF CONTACT | ELEC
+6 | Spare DO |  | Spare DO | XC202 | 6,16 | Q 0.5 | C2 | DO | PF CONTACT | NA
+7 | Spare DO |  | Spare DO | XC202 | 7,17 | Q 0.6 | C2 | DO | PF CONTACT | NA
+8 | Spare DO |  | Spare DO | XC202 | 8,18 | Q 0.7 | C2 | DO | PF CONTACT | NA
+9 | FSV_401_op_Cmd | FSV-401 | FSV-401 Mill emergency nitrogen shut off valve | XC202 | 21,31 | Q 1.0 | C2 | DO | 24 V DC WET CONTACT | FIELD
+10 | FSV_201_op_Cmd | FSV-201 | FSV-201 BFG Shut off valve | XC202 | 22,32 | Q 1.1 | C2 | DO | 24 V DC WET CONTACT | FIELD
+11 | MSV_301_op_Cmd | MSV-201 | MSV-201 LPG Shut off valve | XC202 | 23,33 | Q 1.2 | C2 | DO | 24 V DC WET CONTACT | FIELD
+12 | FSV_405_op_Cmd | FSV-XXX | FSV-XXX Mill inlet hot gas duct emergency Nitrogen valve | XC202 | 24,34 | Q 1.3 | C2 | DO | 24 V DC WET CONTACT | FIELD
+13 | FSV_404_op_Cmd | FSV-XXX | FSV-XXX HGG inlet emergency Nitrogen valve | XC202 | 25,35 | Q 1.4 | C2 | DO | 24 V DC WET CONTACT | FIELD
+14 | FSV_404_op_Cmd | FSV-XXX | FSV-XXX HGG inlet emergency Nitrogen valve | XC202 | 26,36 | Q 1.5 | C2 | DO | 24 V DC WET CONTACT | FIELD
+
+--- SHEET 7 : PCI PLC TOTAL A0_20181206 ---
+TARGET: xl/worksheets/sheet7.xml
+PREVIEW ROWS: 15
+SL NO | PLC TAG | FOX PLC TAG | DESCRIPTION | TB NAME | TB NO | S7 PLC ADRESS | PANEL | IO TYPE | RELAY CONTACT | FIELD/ELEC
+1 | WF_VVFD_Ref | C0303 | Weigh feeder feed rate set point | XC410 | 1,2 | PQW256 | C2 | AO | 4-20 ma o/p | WEIGH PANEL
+2 | SEP_VVFD_Ref | C0306 | C0306 Seperator (classifier) VVFD Reference | XC410 | 4,5 | PQW258 | C2 | AO | 4-20 ma o/p | VFD
+3 | Spare AO |  | Spare AO | XC410 | 7,8 | PQW260 | C2 | AO | 4-20 ma o/p | NA
+4 | Spare AO |  | Spare AO | XC410 | 10,11 | PQW262 | C2 | AO | 4-20 ma o/p | NA
+5 | Spare AO |  | Spare AO | XC410 | 13,14 | PQW264 | C2 | AO | 4-20 ma o/p | NA
+6 | Spare AO |  | Spare AO | XC410 | 16,17 | PQW266 | C2 | AO | 4-20 ma o/p | NA
+7 | Spare AO |  | Spare AO | XC410 | 19,20 | PQW268 | C2 | AO | 4-20 ma o/p | NA
+8 | Spare AO |  | Spare AO | XC410 | 22,23 | PQW270 | C2 | AO | 4-20 ma o/p | NA
+9 | PT_501_RAO | PT501-RAO | PT501-RAO Re-Transmitted AO of Pressure of injection vessel-A to Weighing panel | XF410 | 1,2 | PQW336 | C3 | AO | 4-20 ma o/p | WEIGH PANEL
+10 | PCV_501 | PCV-501 | PCV-501 injection vessel-A bleed pressure control valve | XF410 | 4,5 | PQW338 | C3 | AO | 4-20 ma o/p | FIELD
+11 | PCV_502 | PCV-502 | PCV-502 injection vessel-A pressure control valve | XF410 | 7,8 | PQW340 | C3 | AO | 4-20 ma o/p | FIELD
+12 | PCV_503 | PCV-503 | PCV-503 injection vessel-A fine (bypass) pressure control valve | XF410 | 10,11 | PQW342 | C3 | AO | 4-20 ma o/p | FIELD
+13 | PCV_504 | PCV-504 | PCV-504 injection vessel-A fluidising pressure control valve | XF410 | 13,14 | PQW344 | C3 | AO | 4-20 ma o/p | FIELD
+14 | FCV_501 | FCV-501 | FCV-501 injection vessel-A conveying media flow control valve | XF410 | 16,17 | PQW346 | C3 | AO | 4-20 ma o/p | FIELD
+
+--- SHEET 8 : PCI PLC TOTAL AI_20181206 ---
+TARGET: xl/worksheets/sheet8.xml
+PREVIEW ROWS: 15
+SL NO | PLC TAG | FOX PLC TAG | DESCRIPTION | TB NAME | TB NO | S7 PLC ADRESS | PANEL | IO TYPE | TYPE | FIELD/ELEC
+1 | AT_201 | AT201 | AT201 Mill inlet O2 % | XC303 | 1+,2- | PIW 256 | C2 | AI (4-20mA) | 4W | ANALYSER
+2 | AT_202 | AT202 | AT202 Mill inlet CO % | XC303 | 6+,7- | PIW 258 | C2 | AI (4-20mA) | 4W | ANALYSER
+3 | PT_303 | PT303 | PT303 Mill outlet Gas Pr | XC303 | 14+,11- | PIW 260 | C2 | AI (4-20mA) | 2W | FIELD
+4 | LT_302 | LT302 | LT302 Mill bed height | XC303 | 19+,16- | PIW 262 | C2 | AI (4-20mA) | 3W | FIELD
+5 | ST_307 | ST307 | ST307 Mill body vibration | XC303 | 24+,21- | PIW 264 | C2 | AI (4-20mA) | 2W | FIELD
+6 | ST_301 | ST301 | ST301 VRM X Axis Vibration | XC303 | 29+,26- | PIW 266 | C2 | AI (4-20mA) | 2W | FIELD
+7 | ST_302 | ST302 | ST302 VRM Y Axis Vibration | XC303 | 34+,31- | PIW 268 | C2 | AI (4-20mA) | 2W | FIELD
+8 | PT_301 | PT301 | PT301 Hydraulic oil pressure | XC303 | 39+,36- | PIW 270 | C2 | AI (4-20mA) | 2W | FIELD
+9 | PT_302 | PT302 | PT302 Lube oil pressure | XC304 | 4+,1- | PIW 272 | C2 | AI (4-20mA) | 2W | FIELD
+10 | MT_201. | MT201 | MT201 BFG Moisture at HGG inlet | XC304 | 6+,7- | PIW 274 | C2 | AI (4-20mA) | 4W | FIELD
+11 | faulty channel |  | faulty channel | XC304 | 14+,11- | PIW 276 | C2 | AI (4-20mA) | 2W | FIELD
+12 | PT_201 | PT201 | PT201 BFG Pr at HGG inlet | XC304 | 19+,16- | PIW 278 | C2 | AI (4-20mA) | 2W | FIELD
+13 | FT_202 | FT202 | FT202 CA Flow at HGG inlet | XC304 | 24+,21- | PIW 280 | C2 | AI (4-20mA) | 2W | FIELD
+14 | PT_203 | PT203 | PT203 CA Pr at HGG inlet | XC304 | 29+,26- | PIW 282 | C2 | AI (4-20mA) | 2W | FIELD
+
+--- SHEET 9 : PCI PLC INST TRIAL ---
+TARGET: xl/worksheets/sheet9.xml
+PREVIEW ROWS: 15
+SL NO | PLC TAG | FOX PLC TAG | DESCRIPTION | TB NAME | TB NO | S7 PLC ADRESS | PANEL | IO TYPE | RELAY CONTACT | FIELD/ELEC | COMMENT |  |  |  |  | 
+1 | LP_1_Healthy | C0310 | Lubrication pump-1 Feeder healthy | XC101 | 1,11 | I 0.0 | C2 | DI |  | ELEC |  | Note:24 V DC,70 mA power supply for SWR Flow Jam Switch |  |  |  | 
+2 | LP_1_CNTRL_ON | C0310 | Lubrication pump-1 Control on | XC101 | 2,12 | I 0.1 | C2 | DI |  | ELEC |  | Note: All DI,DQ,AI TB must be fuse TB |  |  |  | 
+3 | LP_1_EPB | C0310 | Lubrication pump-1 EPB Pressed | XC101 | 3,13 | I 0.2 | C2 | DI |  | ELEC |  |  |  |  |  | 
+4 | LP_1_Remote_FB | C0310 | Lubrication pump-1L/R Selected from field | XC101 | 4,14 | I 0.3 | C2 | DI |  | ELEC |  |  |  |  |  | 
+5 | LP_1_Run_fb | C0310 | Lubrication pump-1 Run feed back | XC101 | 5,15 | I 0.4 | C2 | DI |  | ELEC |  |  | UPS Power Distribution |  | Non UPS Power Distribution | 
+6 | LP_1_Trip_fb | C0310 | Lubrication pump-1 Tripped | XC101 | 6,16 | I 0.5 | C2 | DI |  | ELEC |  |  |  |  |  | 
+7 | MCV_204_Healthy | MCV204 | Hot Blast MCV-204 Feeder healthy | XC101 | 7,17 | I 0.6 | C2 | DI |  | ELEC |  |  |  |  |  | 
+8 | MCV_204_control_On | MCV204 | MCV204 Hot Blast MCV-204 Control on | XC101 | 8,18 | I 0.7 | C2 | DI |  | ELEC |  |  | Stove PLC UPS DB |  | Furnace auxiliary MCC | 
+9 | MCV_204_EPB | MCV204 | Hot Blast MCV-204 EPB Pressed | XC101 | 21,31 | I 1.0 | C2 | DI |  | ELEC |  |  |  |  |  | 
+10 | MCV_204_Remote_FB | MCV204 | Hot Blast MCV-204 L/R Selected from field | XC101 | 22,32 | I 1.1 | C2 | DI |  | ELEC |  |  |  |  |  | 
+11 | MCV_204_Fwd | MCV204 | Hot Blast MCV-204 Forward contractor on feed back | XC101 | 23,33 | I 1.2 | C2 | DI |  | ELEC |  |  |  |  |  | 
+12 | MCV_204_Rev | MCV204 | MCV204 Hot Blast MCV-204 Reverse contractor on feed back | XC101 | 24,34 | I 1.3 | C2 | DI |  | ELEC |  |  |  |  |  | 
+13 | MCV_204_Trip_fb | MCV204 | MCV204 Hot Blast MCV-204 Motor Tripped | XC101 | 25,35 | I 1.4 | C2 | DI |  | ELEC |  |  | MBF1 PCI RIO TB No:X1/1,2 |  | BLT Power Distribution Panel Isolator QF9 | 
+14 | MCV_204_Trq | MCV204 | MCV204 Hot Blast MCV-204 Torque Switch operated | XC101 | 26,36 | I 1.5 | C2 | DI |  | ELEC |  |  |  |  |  | 
+
+--- SHEET 10 : MBF2 PCI RIO IO ---
+TARGET: xl/worksheets/sheet10.xml
+PREVIEW ROWS: 15
+SL NO | PLC TAG | DESCRIPTION | TB NAME | TB NO | S7 PLC ADRESS |  |  |  |  | 
+1 | FS_515 | Flow jamming switch MBF-2 Tuyere-1 | XJJ101 | 1,11 | I 220.0 | Note:24 V DC,70 mA power supply for SWR Flow Jam Switch |  |  |  | 
+2 | FS_516 | Flow jamming switch MBF-2 Tuyere-2 |  | 2,12 | I 220.1 | Note: All DI,DQ,AI TB must be fuse TB |  |  |  | 
+3 | FS_517 | Flow jamming switch MBF-2 Tuyere-3 |  | 3,13 | I 220.2 |  |  |  |  | 
+4 | FS_518 | Flow jamming switch MBF-2 Tuyere-4 |  | 4,14 | I 220.3 |  |  |  |  | 
+5 | FS_519 | Flow jamming switch MBF-2 Tuyere-5 |  | 5,15 | I 220.4 |  | UPS Power Distribution |  | Non UPS Power Distribution | 
+6 | FS_520 | Flow jamming switch MBF-2 Tuyere-6 |  | 6,16 | I 220.5 |  |  |  |  | 
+7 | FS_521 | Flow jamming switch MBF-2 Tuyere-7 |  | 7,17 | I 220.6 |  |  |  |  | 
+8 | FS_522 | Flow jamming switch MBF-2 Tuyere-8 |  | 8,18 | I 220.7 |  | UPS DB |  | Stove MCC 3F1 | 
+9 | FS_523 | Flow jamming switch MBF-2 Tuyere-9 |  | 21,31 | I 221.0 |  | 7 th MCB 32 amp |  | Stove Raw Power MCB3 | 
+10 | FS_524 | Flow jamming switch MBF-2 Tuyere-10 |  | 22,32 | I 221.1 |  |  |  |  | 
+11 | Spare_1 | Spare_1 |  | 23,33 | I 221.2 |  |  |  |  | 
+12 | Spare_2 | Spare_2 |  | 24,34 | I 221.3 |  |  |  |  | 
+13 | Spare_3 | Spare_3 |  | 25,35 | I 221.4 |  | MBF2 PCI RIO TB No:X1/1,2 |  | Stove PLC Panel TB No:X2/1,2 | 
+14 | Spare_4 | Spare_4 |  | 26,36 | I 221.5 |  |  |  |  | 
+
+--- SHEET 11 : MBF1 PCI RIO IO ---
+TARGET: xl/worksheets/sheet11.xml
+PREVIEW ROWS: 15
+SL NO | PLC TAG | DESCRIPTION | TB NAME | TB NO | S7 PLC ADRESS |  |  |  |  | 
+1 | FS_525 | Flow jamming switch MBF-1 Tuyere-1 | XJJ101 | 1,11 | I 220.0 | Note:24 V DC,70 mA power supply for SWR Flow Jam Switch |  |  |  | 
+2 | FS_526 | Flow jamming switch MBF-1 Tuyere-2 |  | 2,12 | I 220.1 | Note: All DI,DQ,AI TB must be fuse TB |  |  |  | 
+3 | FS_527 | Flow jamming switch MBF-1 Tuyere-3 |  | 3,13 | I 220.2 |  |  |  |  | 
+4 | FS_528 | Flow jamming switch MBF-1 Tuyere-4 |  | 4,14 | I 220.3 |  |  |  |  | 
+5 | FS_529 | Flow jamming switch MBF-1 Tuyere-5 |  | 5,15 | I 220.4 |  | UPS Power Distribution |  | Non UPS Power Distribution | 
+6 | FS_530 | Flow jamming switch MBF-1 Tuyere-6 |  | 6,16 | I 220.5 |  |  |  |  | 
+7 | FS_531 | Flow jamming switch MBF-1 Tuyere-7 |  | 7,17 | I 220.6 |  |  |  |  | 
+8 | FS_532 | Flow jamming switch MBF-1 Tuyere-8 |  | 8,18 | I 220.7 |  | Stove PLC UPS DB |  | Furnace auxiliary MCC | 
+9 | FS_533 | Flow jamming switch MBF-1 Tuyere-9 |  | 21,31 | I 221.0 |  |  |  |  | 
+10 | FS_534 | Flow jamming switch MBF-1 Tuyere-10 |  | 22,32 | I 221.1 |  |  |  |  | 
+11 | FS_535 | Flow jamming switch MBF-1 Tuyere-11 |  | 23,33 | I 221.2 |  |  |  |  | 
+12 | FS_536 | Flow jamming switch MBF-1 Tuyere-12 |  | 24,34 | I 221.3 |  |  |  |  | 
+13 | Spare_1 | Spare_1 |  | 25,35 | I 221.4 |  | MBF1 PCI RIO TB No:X1/1,2 |  | BLT Power Distribution Panel Isolator QF9 | 
+14 | Spare_2 | Spare_2 |  | 26,36 | I 221.5 |  |  |  |  | 
+
+--- SHEET 12 : IP ADRESS ---
+TARGET: xl/worksheets/sheet12.xml
+PREVIEW ROWS: 15
+IP ADDRESS ASSIGNMENT DETAIL FOR PCI AUTOMATION PROJECT |  |  | 
+Sl no | IP ADDRESS | DESTINATION | SCOPE
+1 | 192.168.0.51 | PCI PLC CPU-1 | ANDE
+2 | 192.168.0.52 | PCI PLC CPU-2 | ANDE
+3 | 192.168.0.53 | PCI PLC ES NIC-1 | ANDE
+4 | 192.168.0.54 | PCI PLC ES NIC-2 | ANDE
+5 | 192.168.0.55 | PCI PLC OS1 NIC-1 | ANDE
+6 | 192.168.0.56 | PCI PLC OS1 NIC-2 | ANDE
+7 | 192.168.0.57 | PCI PLC ES2 NIC-1 | ANDE
+8 | 192.168.0.58 | PCI PLC ES2 NIC-2 | ANDE
+9 | 192.168.0.59 | PCI PLC A3 PRINTER | ANDE
+10 | 192.168.0.60 | PCI PLC A4 PRINTER | ANDE
+11 | 192.168.0.61 | PROGRAMMING LAPTOP | ANDE
+12 | 192.168.0.62 | PCI PLC MBF-1 PC NIC-1 | TML
+13 | 192.168.0.63 | PCI PLC MBF-1 PC NIC-2 | TML
+
+--- SHEET 13 : PCI Inst List ---
+TARGET: xl/worksheets/sheet13.xml
+PREVIEW ROWS: 15
+Sl No | Section | Description | Tag No | MODEL | Panel | Type | Quantity | PLC IO type | PLC IO type | Quantity | HMI Min | HMI Max | HMI UOM | DP | UOM | serial no
+1 | Raw coal conveying system | Conveyor below GH Zero speed switch | ZS003 |  | C2 | Zero speed switch | 1 | DI |  |  |  |  |  |  |  | 
+2 | Raw coal conveying system | Conveyor below GH Belt sway switch | BS002 |  | C2 | Belt sway switch | 1 | DI |  |  |  |  |  |  |  | 
+3 | Raw coal conveying system | Conveyor below GH Pull cord switch head pully side | PC001 |  | C2 | Pull cord switch | 1 | DI |  |  |  |  |  |  |  | 
+4 | Raw coal conveying system | GH-1 Level | LT101 |  | C2 | Level Transmitter | 1 | AI |  |  |  |  |  |  |  | 
+5 | Raw coal conveying system | Metal Detector | OD101 |  | C2 | Metal Detector | 1 | DI |  |  |  |  |  |  |  | 
+6 | Raw coal conveying system | Iron remover on feed back | IR_On |  | C2 | Iron remover | 1 | DI |  |  |  |  |  |  |  | 
+7 | Raw coal conveying system | Chute before Steep Aangl Conveyor Level | LIA101 |  | C2 | Level Swich | 1 | DI |  |  |  |  |  |  |  | 
+8 | Raw coal conveying system | Steep angle conveyor Zero speed switch | ZS006 |  | C2 | Zero speed switch | 1 | DI |  |  |  |  |  |  |  | 
+9 | Raw coal conveying system | Steep angle conveyor Pull cord switch | PC005 |  | C2 | Pull cord switch | 1 | DI |  |  |  |  |  |  |  | 
+10 | Raw coal conveying system | Steep angle conveyor Belt sway switch | BS004 |  | C2 | Belt sway switch | 1 | DI |  |  |  |  |  |  |  | 
+11 | Raw coal conveying system | Chute before RCS Level | LIA102 |  | C2 | Level Swich | 1 | DI |  |  |  |  |  |  |  | 
+12 | Raw coal conveying system | Raw coal storage silo level | LT301 |  | C2 | Radar type level transmitter | 1 | AI |  |  |  |  |  |  |  | 
+13 | Raw coal conveying system | Raw coal storage silo weight | WT301 |  | C2 | Loadcell | 1 | AI |  |  |  |  |  |  |  | 
+14 | Raw coal conveying system | Raw coal feeding rate to Mill | WT302 |  | C2 | Weigh feeder | 1 | AI |  |  |  |  |  |  |  | 
+
+--- SHEET 14 : Transmitter Range ---
+TARGET: xl/worksheets/sheet14.xml
+PREVIEW ROWS: 15
+Sl No | Area | Service | Tag | TD | PD | T raw | P Raw | Atm | DP
+1 | HGG | BFG Flow at HGG inlet | FT201 | 55 | 1.0664 | TE201 | PT201 | 1.0149999999999999 | 254.93
+2 | HGG | CA Flow at HGG inlet | FT202 |  |  |  |  |  | 
+3 | HGG | HGG inlet recirculation gas flow | FT203 |  |  |  |  |  | 
+4 | Cooling water | Cooling pump discharge water flow at return line | FT601 |  |  |  |  |  | 
+5 | Bag filter | Bag filter outlet gas flow | FT301 |  |  |  |  |  | 
+6 | Injection system | Nitrogen receiver Inlet flow | FT401 |  |  |  |  |  | 
+7 | Injection system | Compressure air receiver Inlet flow | FT402 |  |  |  |  |  | 
+8 | Injection system | N2 Flow for injection vessel-A pressurisation | FT501 |  |  |  |  |  | 
+9 | Injection system | N2 Flow for injection vessel-A fluidisation | FT502 |  |  |  |  |  | 
+10 | Injection system | Conveying media Flow for injection vessel-A | FT503 |  |  |  |  |  | 
+11 | Injection system | N2 Flow for injection vessel-B pressurisation | FT504 |  |  |  |  |  | 
+12 | Injection system | N2 Flow for injection vessel-B fluidisation | FT505 |  |  |  |  |  | 
+13 | Injection system | Conveying media Flow for injection vessel-B | FT506 |  |  |  |  |  | 
+14 | Injection system | N2 Flow for injection vessel-C pressurisation | FT507 |  |  |  |  |  | 
+
+--- SHEET 15 : PCI Inst List P&I R8 ---
+TARGET: xl/worksheets/sheet15.xml
+PREVIEW ROWS: 15
+Sl No | Section | Description | Tag No | MODEL | Panel | Type | Quantity | PLC IO type | PLC IO type | Quantity | HMI Min | HMI Max | HMI UOM | DP | UOM | serial no
+1 | Raw coal conv sys | Conveyor below GH Zero speed switch | ZS003 |  | C2 | Zero speed switch | 1 | DI |  |  |  |  |  |  |  | 
+2 | Raw coal conv sys | Conveyor below GH Belt sway switch | BS002 |  | C2 | Belt sway switch | 1 | DI |  |  |  |  |  |  |  | 
+3 | Raw coal conv sys | Conveyor below GH Pull cord switch head pully side | PC001 |  | C2 | Pull cord switch | 1 | DI |  |  |  |  |  |  |  | 
+4 | Raw coal conv sys | GH-1 Level | LT101 |  | C2 | Level Transmitter | 1 | AI |  |  |  |  |  |  |  | 
+5 | Raw coal conv sys | Metal Detector | OD101 |  | C2 | Metal Detector | 1 | DI |  |  |  |  |  |  |  | 
+6 | Raw coal conv sys | Iron remover on feed back | IR_On |  | C2 | Iron remover | 1 | DI |  |  |  |  |  |  |  | 
+7 | Raw coal conv sys | Chute before Steep Aangl Conveyor Level | LIA101 |  | C2 | Level Swich | 1 | DI |  |  |  |  |  |  |  | 
+8 | Raw coal conv sys | Steep angle conveyor Zero speed switch | ZS006 |  | C2 | Zero speed switch | 1 | DI |  |  |  |  |  |  |  | 
+9 | Raw coal conv sys | Steep angle conveyor Pull cord switch | PC005 |  | C2 | Pull cord switch | 1 | DI |  |  |  |  |  |  |  | 
+10 | Raw coal conv sys | Steep angle conveyor Belt sway switch | BS004 |  | C2 | Belt sway switch | 1 | DI |  |  |  |  |  |  |  | 
+11 | Raw coal conv sys | Chute before RCS Level | LIA102 |  | C2 | Level Swich | 1 | DI |  |  |  |  |  |  |  | 
+12 | Raw coal conv sys | Raw coal storage silo level | LT301 |  | C2 | Radar type level transmitter | 1 | AI |  |  |  |  |  |  |  | 
+13 | Raw coal conv sys | Raw coal storage silo weight | WT301 |  | C2 | Loadcell | 1 | AI |  |  |  |  |  |  |  | 
+14 | Raw coal conv sys | Raw coal feeding rate to Mill | WT302 |  | C2 | Weigh feeder | 1 | AI |  |  |  |  |  |  |  | 
+
+--- SHEET 16 : WEIGH FEEDER ---
+TARGET: xl/worksheets/sheet16.xml
+PREVIEW ROWS: 15
+PCI WEIGHING PANNEL-1 (WEIGH FEEDER) |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+L3 WEIGH FEEDER |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | FROM | TB NAME | FERRULE | TB NO | Core No | CABLE TYPE | CAB TAG | LENGTH | CAB ROUTING | TO | Core No | FERRULE | VFD TB | TB NO | ADDRESS |  |  | 
+1 | POT FREE CONTACT TO DRIVE PANNEL | P-1 | L3 | L3-308 | 308 | 1 | 7 Core x 1 Sq.mm .Armoured Cable |  |  | TRAY | WEIGH FEEDER VFD PANEL | 1 | L3-308 |  |  | NA |  |  | 
+ | DRIVE START/STOP |  |  | L3-309 | 308 | 2 |  |  |  |  |  | 2 | L3-309 |  |  | NA |  |  | 
+ | FAULT RESET |  |  | L3-310 | 308 | 3 |  |  |  |  |  | 3 | L3-310 |  |  | NA |  |  | 
+ | GRAV MODE |  |  | L3-311 | 308 | 4 |  |  |  |  |  | 4 | L3-311 |  |  | NA |  |  | 
+ | SPEED INCRASE(VOL.MODE) |  |  | L3-312 | 308 | 5 |  |  |  |  |  | 5 | L3-312 |  |  | NA |  |  | 
+ | SPEED DECRASE(VOL.MODE) |  |  | L3-313 | 308 | 6 |  |  |  |  |  | 6 | L3-313 |  |  | NA |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | COMMON | P-1 | L3 | L3-320 | 320 | 1 | 7 Core x 1 Sq.mm .Armoured Cable |  |  | TRAY | TO LOCAL CONTROL BOX | 1 | L3-320 |  |  |  |  |  | 
+ | SPEED INCREASE FROM L.C.B |  |  | L3-321 | 321 | 2 |  |  |  |  |  | 2 | L3-321 |  |  |  |  |  | 
+ | SPEED DECREASE FROM L.C.B |  |  | L3-322 | 322 | 3 |  |  |  |  |  | 3 | L3-322 |  |  |  |  |  | 
+ | EMERGENCY STOP FROM L.C.B |  |  | L3-323 | 323 | 4 |  |  |  |  |  | 4 | L3-323 |  |  |  |  |  | 
+ | START FROM L.C.B |  |  | L3-324 | 324 | 5 |  |  |  |  |  | 5 | L3-324 |  |  |  |  |  | 
+
+--- SHEET 17 : WEIGHING PANEL ---
+TARGET: xl/worksheets/sheet17.xml
+PREVIEW ROWS: 15
+PCI WEIGHING PANNEL-1 (RCS,FCS & WEIGH FEEDER) |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | FROM | TB NAME | FERRULE | TB NO | Core No | CABLE TYPE | CAB TAG | LENGTH | CAB ROUTING | TO | Core No | FERRULE | TB NAME | TB NO |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | P-1INCOMING POWER SUPPLY UPS 230VAC | UPS DB | F13 | PHASE/L1-P |  | 1 | 4 Core x 4 Sq.mm .Armoured Cable | C36 |  | TRAY | PANNEL -2 | 1 | PHASE/L1-P | L1 | L1-P |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  | NEUTRAL/L1-N |  | 2 |  |  |  |  |  | 2 | NEUTRAL/L1-N |  | L1-N |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  | EARTH/L1-E |  | 3 |  |  |  |  |  | 3 | EARTH/L1-E |  | L1-E |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+L1 RAW COAL SILO |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | FROM | TB NAME | FERRULE | TB NO | Core No | CABLE TYPE | CAB TAG | LENGTH | CAB ROUTING | TO | Core No | FERRULE | PLC TB | TB NO | ADDRESS |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | 4-20 ma ISOLATED SIGNAL FOR BIN WEIGHT TO PLC | P-1 | L1 | L1-113 (+) | 113 | 1 | 3 core 1.5 sq mm cable |  |  | TRAY | PCI PLC CABINET | 1 | L1-113 (+) | XG303 | 26+,27- | PIW 730 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  | L1-114 (-) | 114 | 2 |  |  |  |  |  | 2 | L1-114 (-) |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+THROUGH DISO BOX |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | FROM | TB NAME | FERRULE | CABLE TYPE | CAB TAG | LENGTH | CAB ROUTING | TO | FERRULE | CABLE TYPE | CAB TAG | LENGTH | CAB ROUTING | TO |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | TO BIN LOAD CELLS (1f1-1f3) | P-1 | ETHERNET CABLE | 1U11/ETHERNET CABLE | ETHERNET CABLE CAT-6 | 1U11/ETHERNET CABLE |  | TYRAY | PANNEL-1 TO TETHERNET SWITCH | 1U11/ETHERNET CABLE | ETHERNET CABLE CAT-6 | 1U11/ETHERNET CABLE |  | TRAY | ETHERNET SWITCH TO DISO BOX -1U3 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+
+--- SHEET 18 : Power Distribution ---
+TARGET: xl/worksheets/sheet18.xml
+PREVIEW ROWS: 15
+UPS POWER DISTRIBUTION |  | 
+ACDB MCB | MCB RATING | DESTINATION
+F1 | 6 AMP | OPACITY METER
+F13 | 10 AMP | WEIGHING PANEL-1
+F14 | 10 AMP | WEIGHING PANEL-2
+F15 | 10 AMP | CONTROL ROOM PC-1
+F16 | 10 AMP | CONTROL ROOM PC-2
+F17 | 10 AMP | PLC ROOM PC
+F18 | 10 AMP | AT201
+F19 | 10 AMP | AT302
+F20 | 10 AMP | AT306
+F21 | 10 AMP | AT308
+F28 | 16 AMP | PLC C1
+F29 | 16 AMP | PLC C2
+F30 | 16 AMP | PLC C3
+
+--- SHEET 19 : VFD ---
+TARGET: xl/worksheets/sheet19.xml
+PREVIEW ROWS: 15
+Weigh feeder VFD |  |  |  |  |  |  | 
+ |  |  |  |  |  |  | 
+VFD TB | CABLE | DESCRIPTION | PLC TB | TB NO | ADDRESS | PLC | IO
+T24,T25 | 6 PAIR | Weigh feeder VFD Feeder healthy MCCB | XD101 | 1,11 | I 4.0 | C2 | DI
+T18,T19 |  | Weigh feeder VFD Control on | XD101 | 2,12 | I 4.1 | C2 | DI
+T28,T29 |  | Weigh feeder VFD EPB Pressed | XD101 | 3,13 | I 4.2 | C2 | DI
+T26,T27 |  | Weigh feeder VFD L/R Selected from field | XD101 | 4,14 | I 4.3 | C2 | DI
+DRIVE: T7,T8 |  | Weigh feeder VFD Drive healthy | XD101 | 5,15 | I 4.4 | C2 | DI
+T30,T31 |  | Weigh feeder VFD on feed back | XD101 | 6,16 | I 4.5 | C2 | DI
+T20,21 |  | Weigh feeder VFD Motor Tripped | XD101 | 7,17 | I 4.6 | C2 | DI
+T16,T17 |  | Weigh feeder VFD DOL Mode selected | XD101 | 8,18 | I 4.7 | C2 | DI
+T22,T23 |  | Weigh feeder VFD DOL Mode On feed back | XD101 | 21,31 | I 5.0 | C2 | DI
+ |  |  |  |  |  |  | 
+T9,T10 | 3P | Variable speed belt motor (Weighfeeder) Start/Stop Command | XD206 | 1,11 | Q 4.0 | C2 | DO
+T5,T6 |  | Variable speed belt motor (Weighfeeder) Local permissive | XD206 | 2,12 | Q 4.1 | C2 | DO
+
+--- SHEET 20 : HYD,LUB ---
+TARGET: xl/worksheets/sheet20.xml
+PREVIEW ROWS: 15
+HYDRAULIC PUMP-JB |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | TAG | CABLE | JB NAME | JB TB NO | CORE NO | PLC | CORE NO | PLC TB | TB NO | ADDRESS
+1 | COMMON |  | 7CX1 | HYD-JB | 3 | 1 |  | 1 | XD105 | 17 | 
+2 | HYDRAULIC STATION LOW OIL LEVEL |  |  |  | 4 | 2 | C2 | 2 |  | 7 | I 20.6
+3 | HYDRAULIC STATION HIGH OIL LEVEL |  |  |  | 6 | 3 | C2 | 3 |  | 8 | I 20.7
+4 | HYDRAULIC STATION HIGH PR OIL FILTER CLOGGED |  |  |  | 8 | 4 | C2 | 4 |  | 21 | I 21.0
+5 | HYDRAULIC STATION RETURN OIL FILTER CLOGGED |  |  |  | 10 | 5 | C2 | 5 |  | 22 | I 21.1
+ | POWER | 24 V DC POSITIVE FROM P1-24 WILL BE CONNECTED TO XC-202/55 |  |  |  |  | C2 | XC-202/55,56 & 57 WILL BE SHORTED IN PLC |  | 55 | 24VDC
+ |  |  |  |  |  |  |  |  |  | 56 | 
+ |  |  |  |  |  |  |  |  |  | 57 | 
+ | C0309 HYDRAULIC STATION PRESSURE RELIEVE VALVE |  | 7CX1 | HYD-JB | 11(-) |  | C2 | 1(-) | M1 | 24 | (-)
+6 |  |  |  |  | 12(+) |  | C2 | 2(+) | XC202 | 45 | Q 2.4
+7 | C0309 HYDRAULIC STATION ROLLER LIFTING |  |  |  | 14+ |  | C2 | 3 |  | 46 | Q 2.5
+8 | C0309 HYDRAULIC STATION ROLLER LOWERING |  |  |  | 16+ |  | C2 | 4 |  | 47 | Q 2.6
+9 | PT301 Hydraulic oil pressure | PT_301 | 1T x 1.5 |  | 18,19 | 1,2 | AI-JB -7 |  |  | 11,12 | 
+
+--- SHEET 21 : Ignitation Panel ---
+TARGET: xl/worksheets/sheet21.xml
+PREVIEW ROWS: 14
+IGNITION PANEL Main Power Supplied from MCC |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | POWER | 1 | 3C | PDB FEDDER-NO |  |  |  |  |  |  |  |  | 
+ |  | 2 |  |  |  |  |  |  |  |  |  |  | 
+ | DESCRIPTION | IGNITION PANEL |  | POWER | PLC TB | PLC TB NO | ADDRESS | PLC |  |  |  |  | 
+ | COMMON | 22 | 3 PAIR | COMMON | XG101 | 71 |  |  |  |  |  |  | 
+ | Ignitor-1 | 19 |  | Ignitor-1 | XG101 | 61 | I 71.0 | C4 | DI |  |  |  | 
+ | Ignitor-2 | 20 |  | Ignitor-2 | XG101 | 62 | I 71.1 | C4 | DI |  |  |  | 
+ | Flame On No Contact | 21 |  | Ignitor-3 | XG101 | 63 | I 71.2 | C4 | DI |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Ignitor Start Command | 5,6 | 3 PAIR | Ignitor Start Command | XH205 | 41,51 | Q 58.0 | C4 | DO |  |  |  | 
+ | Ignitor Panel Enable/Local Permission | 2,4 |  | Ignitor Stop Command | XH205 | 42,52 | Q 58.1 | C4 | DO |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Flame Switch | Power from Ignition Panel |  |  | PLC TB | PLC TB NO |  |  |  |  |  |  | 
+ | Flame On No Contact | Ignition Panel :21,22 |  |  | XG101 | 71,63 |  |  |  |  |  |  | 
+
+--- SHEET 22 : PCI CAB_FIELD_SCH AI_AO_DI_DO ---
+TARGET: xl/worksheets/sheet22.xml
+PREVIEW ROWS: 15
+DI |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | TAG | VALVE TB | CABLE | CAB TAG | LENGTH | JB NAME | JB TB NO | CORE NO | CABLE | CAB TAG | PLC | CORE NO | PLC TB | TB NO | ADDRESS
+ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Mill emergency nitrogen shut off valve Open F/B | FSV_401_op |  |  |  |  |  |  |  |  |  | C2 |  | XD105 | 23,33 | I 21.2
+ | Mill emergency nitrogen shut off valve Close F/B | FSV_401_cl |  |  |  |  |  |  |  |  |  | C2 |  | XD105 | 24,34 | I 21.3
+ | Valve JV TB common Common 1 & 3 shorted | Common | 1 | 3C/1 SQMM | DI-1 |  | DI DO-JB | 1 | 1 | 12Core x 1 Sq.mm | DI DO-JB | C3 | 1 | XE102 | 13 | 24vdc
+1 | FSV-402 Bag filter emergency nitrogen shut off valve open | FSV_402_op | 2 |  |  |  | DI DO-JB | 2 | 2 |  |  | C3 | 2 | XE102 | 3 | I 44.2
+2 | FSV-402 Bag filter emergency nitrogen shut off valve close | FSV_402_cls | 4 |  |  |  | DI DO-JB | 3 | 3 |  |  | C3 | 3 | XE102 | 4 | I 44.3
+3 | Valve JV TB common Common 1 & 3 shorted | Common | 1 | 3C/1 SQMM | DI-3 |  | DI DO-JB | 4 | 4 |  |  | C3 | 4 | XE102 | 17 | 24vdc
+4 | FSV-403 FCS Emergency N2 shut off valve | FSV_403_op | 2 |  |  |  | DI DO-JB | 5 | 5 |  |  | C3 | 5 | XE102 | 7 | I 44.6
+5 | FSV-403 FCS Emergency N2 shut off valve | FSV_403_cls | 4 |  |  |  | DI DO-JB | 6 | 6 |  |  | C3 | 6 | XE102 | 8 | I 44.7
+6 | Valve JV TB common Common 1 & 3 shorted | Common | 1 | 3C/1 SQMM | DI-4 |  | DI DO-JB | 7 | 7 |  |  | C3 | 7 | XE102 | 31 | 24vdc
+7 | PSV-502FCS Fluidising shut off valve | PSV-502_op | 2 |  |  |  | DI DO-JB | 8 | 8 |  |  | C3 | 8 | XE102 | 21 | I 45.0
+8 | PSV-502 FCS Fluidising shut off valve | PSV-502_cls | 4 |  |  |  | DI DO-JB | 9 | 9 |  |  | C3 | 9 | XE102 | 22 | I 45.1
+SL NO | DESCRIPTION | TAG | VALVE TB | CABLE | CAB TAG | LENGTH | JB NAME | JB TB NO | CORE NO | CABLE | CAB TAG | PLC | CORE NO | PLC TB | TB NO | ADDRESS
+
+--- SHEET 23 : Compressor ---
+TARGET: xl/worksheets/sheet23.xml
+PREVIEW ROWS: 15
+Compressor-1 |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  | 
+Compressor-1 TB | CABLE | Core No | DESCRIPTION | PLC TB | TB NO | ADDRESS | PLC | IO
+CTB-1 | 19 core | 1 | Compressor-1 Stop Command | XG202 | 5 | Q 52.4 | C2 | DO
+CTB-2 |  | 2 | Compressor-1 Stop Command | XG202 | 15 |  | C2 | DO
+CTB-3 |  | 3 | Compressor-1 Start Command | XG202 | 1 | Q 52.0 | C2 | DO
+CTB-4 |  | 4 | Compressor-1 Start Command | XG202 | 11 |  | C2 | DO
+ |  |  |  |  |  |  |  | 
+CTB-9 |  | 5 | Compressor-1 Common Tirp Feed Back | XG101 | 1 | I68.0 | C4 | DI
+CTB-10 |  | 6 | Compressor-1 Common Tirp Feed Back | XG101 | 11 |  | C4 | DI
+CTB-11 |  | 7 |  |  |  |  |  | 
+CTB-12 |  | 8 | Compressor-1 Common Alarm Feed Back | XG101 | 2 | I68.1 | C4 | DI
+CTB-13 |  | 9 | Compressor-1 Common Alarm Feed Back | XG101 | 12 |  | C4 | DI
+CTB-14 |  | 10 |  |  |  |  |  | 
+CTB-15 |  | 11 | Compressor-1 On Feed Back | XG101 | 3 | I68.2 | C4 | DI
+
+--- SHEET 24 : VRM BED HEIGHT LT_COAL FLOW FT ---
+TARGET: xl/worksheets/sheet24.xml
+PREVIEW ROWS: 15
+LT302 | C2 | PIW 262
+TB |  | XC303
+OUT |  | 16
+ |  | 17
+ |  | 18
+POSITIVE |  | 19
+NEGATIVE |  | 20
+VRM BED HEIGHT LEVEL TRANSMITTER CONNECTION |  | 
+FT_514 | C3 | PIW 550
+TB |  | XE307
+OUT |  | 16
+ |  | 17
+ |  | 18
+POSITIVE |  | 19
+NEGATIVE |  | 20
+
+--- SHEET 25 : PCI ELEC CAB SCHEDULE ---
+TARGET: xl/worksheets/sheet25.xml
+PREVIEW ROWS: 15
+Sl No | Description | Capacity (kw) | Feeder Name | Feeder Type | DI | DO | AI | AO | 5C | 7C | 10C | 3CS |  |  | 
+1 | Pulverized Coal Vibrating Screen 1 | 0.75 | 1F1 | DOL | 6 | 2 | 0 | 0 | 0 | 60 | 60 | 0 |  |  | 
+2 | Air Compressor-1 | 139.5 | 1F2 | PD | 6 | 1 | 1 | 0 | 60 | 60 | 60 |  |  |  | 
+3 | Charging belt conveyor | 7.5 | 2F2 | DOL | 6 | 2 | 0 | 0 | 0 | 60 | 60 | 0 |  |  | 
+4 | Iron remover | 3 | 2F3 | DOL | 6 | 2 | 0 | 0 | 0 | 60 | 60 | 0 |  |  | 
+5 | Steep angle conveyor | 30 | 3F1 | SDOL | 6 | 2 | 1 | 0 | 0 | 60 | 60 | 60 |  |  | 
+6 | Belt feeder | 3 | 3F2 | VVVF | 10 | 2 | 3 | 1 | 0 | 60 | 60 | 60 |  |  | 
+7 | UPS Power-1 | 63 | 3F3 | PD | 4 | 0 | 0 | 0 | 60 | 60 | 60 | 0 |  |  | 
+8 | Bulk head vibrator Dust hopper-1 | 0.75 | 3F4 | DOL | 6 | 2 | 0 | 0 | 0 | 60 | 60 | 0 |  |  | 
+9 | PDB Incomer-1 | 400 | 4F1 | PD | 0 | 0 | 1 | 0 | 60 | 60 | 60 | 0 |  |  | 
+21 | HGG Bleeding control MCV-203 | 0.25 | 4F2 | RDOL | 10 | 3 | 0 | 0 | 0 | 60 | 60 | 60 |  |  | 
+22 | Lubrication pump-2 | 4 | 5F2 | DOL | 6 | 2 | 1 | 0 | 0 | 60 | 60 | 60 |  |  | 
+13 | UPS Power-2 | 63 | 6F3 | PD | 4 | 0 | 0 | 0 | 60 | 60 | 60 | 0 |  |  | 
+24 | Hot Blast MCV-204 | 0.25 | 6F4 | RDOL | 10 | 3 | 0 | 0 | 0 | 60 | 60 | 60 |  |  | 
+15 | Bulk head vibrator | 0.75 | 7F1 | DOL | 6 | 2 | 0 | 0 | 0 | 60 | 60 | 0 |  |  | 
+
+--- SHEET 26 : PCI CAB_SCH ANA_WP_OM_FJS ---
+TARGET: xl/worksheets/sheet26.xml
+PREVIEW ROWS: 15
+OPACITY METER |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | DESCRIPTION | TB NAME | FERRULE | TB No | Core No | CABLE TYPE | CAB TAG | LENGTH | POWER SOURCE | Core No | UPS DB TB NO |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | SB30 Opacity Meter Analyser Power | TB01 | PHASE | 1 | 1 | 3 Core x 1.5 Sq.mm .Armoured Cable | C1 | 50 |  | 1 | F1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  | NEUTRAL | 2 | 2 |  |  |  |  | 2 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  | EARTH | 3 | 3 |  |  |  |  | 3 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Description | From | TB Name | Ferrule | TB No | Cable Ttpe | Cab Tag | Length | Routing | To | Ferrule | Connector | Pin no |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Opacity Meter SICK Duster hunter SB30 Control JB for RS485 communication | Opacity Meter SICK Duster hunter SB30 Control JB | TB04 | 24VDC+ BROWN/TB04-1 | 1 | FLEXIBLE CONNECTION CABLE SUPPLIED BY SICK | OPC SENDER/RECIEVER UNIT | 10mts | Tray | SENDER/RECIEVER UNIT | 24VDC+ BROWN | CONNECTOR 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  | SPARE | 2 |  |  |  |  |  | SPARE |  | 2 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  | RS485 B/YELLOW/TB04-3 | 3 |  |  |  |  |  | RS485 B/YELLOW |  | 3 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  | RS485 A/YELLOW/TB04-4 | 4 |  |  |  |  |  | RS485 A/YELLOW |  | 4 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  | 24VDC+BROWN/TB04-5 | 5 |  |  |  |  |  | 24VDC+BROWN |  | 5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  | 0V DC-WHITE/TB04-6 | 6 |  |  |  |  |  | 0V DC-WHITE |  | 6 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  | BLACK/TB04-7 | 7 |  |  |  |  |  | BLACK |  | 7 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+
+--- SHEET 27 : PCI PLC TOTAL IO ---
+TARGET: xl/worksheets/sheet27.xml
+PREVIEW ROWS: 15
+SL NO | PLC TAG | FOX PLC TAG | DESCRIPTION | TB NAME | TB NO | S7 PLC ADRESS | PANEL | IO TYPE |  |  |  |  |  |  | 
+1 | LP_1_Healthy | C0310 | Lubrication pump-1 Feeder healthy | XC101 | 1,11 | I 0.0 | C2 | DI |  |  | Note:24 V DC,70 mA power supply for SWR Flow Jam Switch |  |  |  | 
+2 | LP_1_CNTRL_ON | C0310 | Lubrication pump-1 Control on |  | 2,12 | I 0.1 | C2 | DI |  |  | Note: All DI,DQ,AI TB must be fuse TB |  |  |  | 
+3 | LP_1_EPB | C0310 | Lubrication pump-1 EPB Pressed |  | 3,13 | I 0.2 | C2 | DI |  |  |  |  |  |  | 
+4 | LP_1_Remote_FB | C0310 | Lubrication pump-1L/R Selected from field |  | 4,14 | I 0.3 | C2 | DI |  |  |  |  |  |  | 
+5 | LP_1_Run_fb | C0310 | Lubrication pump-1 Run feed back |  | 5,15 | I 0.4 | C2 | DI |  |  |  | UPS Power Distribution |  | Non UPS Power Distribution | 
+6 | LP_1_Trip_fb | C0310 | Lubrication pump-1 Tripped |  | 6,16 | I 0.5 | C2 | DI |  |  |  |  |  |  | 
+7 | MCV_204_Healthy | MCV204 | Hot Blast MCV-204 Feeder healthy |  | 7,17 | I 0.6 | C2 | DI |  |  |  |  |  |  | 
+8 | MCV_204_control_On | MCV204 | MCV204 Hot Blast MCV-204 Control on |  | 8,18 | I 0.7 | C2 | DI |  |  |  | Stove PLC UPS DB |  | Furnace auxiliary MCC | 
+9 | MCV_204_EPB | MCV204 | Hot Blast MCV-204 EPB Pressed |  | 21,31 | I 1.0 | C2 | DI |  |  |  |  |  |  | 
+10 | MCV_204_Remote_FB | MCV204 | Hot Blast MCV-204 L/R Selected from field |  | 22,32 | I 1.1 | C2 | DI |  |  |  |  |  |  | 
+11 | MCV_204_Fwd | MCV204 | Hot Blast MCV-204 Forward contractor on feed back |  | 23,33 | I 1.2 | C2 | DI |  |  |  |  |  |  | 
+12 | MCV_204_Rev | MCV204 | MCV204 Hot Blast MCV-204 Reverse contractor on feed back |  | 24,34 | I 1.3 | C2 | DI |  |  |  |  |  |  | 
+13 | MCV_204_Trip_fb | MCV204 | MCV204 Hot Blast MCV-204 Motor Tripped |  | 25,35 | I 1.4 | C2 | DI |  |  |  | MBF1 PCI RIO TB No:X1/1,2 |  | BLT Power Distribution Panel Isolator QF9 | 
+14 | MCV_204_Trq | MCV204 | MCV204 Hot Blast MCV-204 Torque Switch operated |  | 26,36 | I 1.5 | C2 | DI |  |  |  |  |  |  | 
+
+--- SHEET 28 : JB LAYOUT ---
+TARGET: xl/worksheets/sheet28.xml
+PREVIEW ROWS: 0
+
+--- SHEET 29 : PCI CABLE SCHEDULE ---
+TARGET: xl/worksheets/sheet29.xml
+PREVIEW ROWS: 15
+DI |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | TAG | CABLE | CAB TAG | LENGTH | JB NAME | JB TB NO | CORE NO | CABLE | CAB TAG | LENGTH | PLC | CORE NO | PLC TB | TB NO | ADDRESS
+1 | FSV-402 Bag filter emergency nitrogen shut off valve open | FSV_402_op | 3 Core x 1 Sq.mm | DI-1 |  | DI-JB1 | 2 | 2 | 19 Core x 1 Sq.mm .Armoured Cable NOTE: FOR 24V DC Short TB no- 1,4,7,10,13,16,19,22,25,28,31,34,37,40 | DI-JB1-C1 |  | C3 | 1,2 | XE102 | 3,13 | I 44.2
+2 | FSV-402 Bag filter emergency nitrogen shut off valve close | FSV_402_cls |  |  |  | DI-JB1 | 3 | 3 |  |  |  | C3 | 3 | XE102 | 4,14 | I 44.3
+3 | FSV-501 Injection Vessel header to bag filter shut off valve for back filling open | FSV_501_op | 3 Core x 1 Sq.mm | DI-2 |  | DI-JB1 | 5 | 4 |  |  |  | C3 | 4 | XE102 | 5,15 | I 44.4
+4 | FSV-501 Injection Vessel header to bag filter shut off valve for back filling close | FSV_501_cls |  |  |  | DI-JB1 | 6 | 5 |  |  |  | C3 | 5 | XE102 | 6,16 | I 44.5
+5 | FSV-403 FCS Emergency N2 shut off valve | FSV_403_op | 3 Core x 1 Sq.mm | DI-3 |  | DI-JB1 | 8 | 6 |  |  |  | C3 | 6 | XE102 | 7,17 | I 44.6
+6 | FSV-403 FCS Emergency N2 shut off valve | FSV_403_cls |  |  |  | DI-JB1 | 9 | 7 |  |  |  | C3 | 7 | XE102 | 8,18 | I 44.7
+7 | FSV-404 FCS Fluidising shut off valve | FSV_404_op | 3 Core x 1 Sq.mm | DI-4 |  | DI-JB1 | 11 | 8 |  |  |  | C3 | 8 | XE102 | 21,31 | I 45.0
+8 | FSV-404 FCS Fluidising shut off valve | FSV_404_cls |  |  |  | DI-JB1 | 12 | 9 |  |  |  | C3 | 9 | XE102 | 22,32 | I 45.1
+9 | FSV-502 Injection Vessel-A to FCS shut off valve for back filling | FSV_502_op | 3 Core x 1 Sq.mm | DI-5 |  | DI-JB1 | 14 | 10 |  |  |  | C3 | 10 | XE102 | 23,33 | I 45.2
+10 | FSV-502 Injection Vessel-A to FCS shut off valve for back filling | FSV_502_cls |  |  |  | DI-JB1 | 15 | 11 |  |  |  | C3 | 11 | XE102 | 24,34 | I 45.3
+11 | FV-506 FCS to injection vessel-A inlet shut off valve | FSV_506_op | 3 Core x 1 Sq.mm | DI-6 |  | DI-JB1 | 17 | 12 |  |  |  | C3 | 12 | XE102 | 25,35 | I 45.4
+12 | FSV-506 FCS to injection vessel-A inlet shut off valve | FSV_506_cls |  |  |  | DI-JB1 | 18 | 13 |  |  |  | C3 | 13 | XE102 | 26,36 | I 45.5
+13 | FSV-507 injection vessel-A pressure control shut off valve | FSV_507_op | 3 Core x 1 Sq.mm | DI-7 |  | DI-JB1 | 20 | 14 |  |  |  | C3 | 14 | XE102 | 27,37 | I 45.6
+
+--- SHEET 30 : PCI ELEC FEEDER_20180718 _2pm ---
+TARGET: xl/worksheets/sheet30.xml
+PREVIEW ROWS: 15
+Sl No | Tag | Panel | Rack No | Description | Capacity (kw) | Feeder Name | Feeder Type | DI | DO | AI | AO
+1 | A0102 | C4 |  | Belt feeder | 3 | 3F2 | VVVF | 10 | 2 | 3 | 1
+2 | A0104 | C4 |  | Charging belt conveyor | 7.5 | 2F2 | DOL | 6 | 2 | 1 | 0
+3 | A0105 | C4 |  | Steep angle conveyor | 30 | 3F1 | SDOL | 6 | 2 | 1 | 0
+4 | A0103 | C4 |  | Iron remover | 3 | 2F3 | DOL | 6 | 2 | 0 | 0
+6 | C0315 | C3 | R1 | Bulk head vibrator Dust hopper-1 | 0.75 | 3F4 | DOL | 6 | 2 | 0 | 0
+7 | C0316 | C3 | R2 | Bulk head vibrator Dust hopper-2 | 0.75 | 4F4 | DOL | 6 | 2 | 0 | 0
+8 | C0317 | C3 | R1 | Discharger-1(RALV-1) | 2.2000000000000002 | 5F2 | DOL | 6 | 2 | 0 | 0
+9 | C0318 | C3 | R2 | Discharger-2(RALV-2) | 2.2000000000000002 | 5F3 | DOL | 6 | 2 | 0 | 0
+10 | C0319 | C3 | R1 | Pulverized Coal Vibrating Screen 1 | 0.75 | 1F1 | DOL | 6 | 2 | 0 | 0
+11 | C0320 | C3 | R2 | Pulverized Coal Vibrating Screen 2 | 0.75 | 6F4 | DOL | 6 | 2 | 0 | 0
+15 | D0403 | C4 | R1 | Air Compressor-1 | 139.5 | 1F2 | VVVF | 10 | 2 | 3 | 1
+18 | D0404 | C4 | R2 | Air Compressor-2 | 400 | 12F2 | VVVF | 10 | 2 | 3 | 1
+19 | C0303 | C2 |  | Variable speed belt motor (Weighfeeder) | 3 |  | VVVF | 10 | 2 | 3 | 1
+20 | C0303-1 | C2 |  | Cooling fan for Variable speed belt motor(Weigh feeder) | 0.2 |  | DOL | 6 | 2 | 0 | 0
+
+--- SHEET 31 : PLC_PCI_IOLIST_20180718 ---
+TARGET: xl/worksheets/sheet31.xml
+PREVIEW ROWS: 15
+Sl No | Section | Description | Tag No | Panel | Rack No | Type | Quantity | PLC IO type | PLC IO type | Quantity | Tx Type
+1 | Raw coal conveying system | Conveyor below GH Zero speed switch | ZS003 | C4 |  | Zero speed switch | 1 | DI |  |  | 
+2 | Raw coal conveying system | Conveyor below GH Belt sway switch | BS002-1 | C4 |  | Belt sway switch | 1 | DI |  |  | 
+3 | Raw coal conveying system | Conveyor below GH Belt sway switch | BS002-2 | C4 |  | Belt sway switch | 1 | DI |  |  | 
+4 | Raw coal conveying system | Conveyor below GH Belt sway switch | BS002-3 | C4 |  | Belt sway switch | 1 | DI |  |  | 
+5 | Raw coal conveying system | Conveyor below GH Belt sway switch | BS002-4 | C4 |  | Belt sway switch | 1 | DI |  |  | 
+6 | Raw coal conveying system | Conveyor below GH Pull cord switch head pully side | PC001-1 | C4 |  | Pull cord switch | 1 | DI |  |  | 
+7 | Raw coal conveying system | Conveyor below GH Pull cord switch head pully side | PC001-2 | C4 |  | Pull cord switch | 1 | DI |  |  | 
+8 | Raw coal conveying system | Conveyor below GH Pull cord switch head pully side | PC001-3 | C4 |  | Pull cord switch | 1 | DI |  |  | 
+9 | Raw coal conveying system | Conveyor below GH Pull cord switch head pully side | PC001-4 | C4 |  | Pull cord switch | 1 | DI |  |  | 
+10 | Raw coal conveying system | Belt feeder ZSS | ZS009 | C4 |  | Zero speed switch | 1 | DI |  |  | 
+11 | Raw coal conveying system | GH-1 Level | LT101 | C4 |  | Level Transmitter | 1 | AI |  |  | 2W
+12 | Raw coal conveying system | Metal Detector | OD101 | C4 |  | Metal Detector | 1 | DI |  |  | 
+13 | Raw coal conveying system | Chute before Steep Aangl Conveyor Level | LIA101 | C4 |  | Level Swich | 1 | DI |  |  | 
+14 | Raw coal conveying system | Steep angle conveyor Zero speed switch | ZS006 | C4 |  | Zero speed switch | 1 | DI |  |  | 
+
+--- SHEET 32 : Calc_20180718 ---
+TARGET: xl/worksheets/sheet32.xml
+PREVIEW ROWS: 15
+Panel | Process/Electrical | DI | DO | AI | AO |  | Panel | DI with 20% | DI Module | DO with 20% | DO Module | AI with 20% | AI Module | AO with 20% | AO Module | 
+C2 | Process | 32 | 12 | 60 | 0 |  | C2 | 185 | 6 | 60 | 2 | 82 | 11 | 3 | 1 | 20
+C2 | Electrical | 122 | 38 | 8 | 2 |  | C3 | 144 | 4 | 113 | 4 | 86 | 11 | 15 | 2 | 21
+C3 | Process | 52 | 70 | 69 | 12 |  | C4 | 172 | 5 | 44 | 2 | 71 | 9 | 18 | 3 | 19
+C3 | Electrical | 68 | 24 | 2 | 0 |  |  | Requirement | 15 |  | 8 |  | 31 |  | 6 | 
+C4 | Process | 83 | 20 | 46 | 12 |  |  | Fox BOQ | 15 |  | 8 |  | 31 |  | 6 | 
+C4 | Electrical | 60 | 16 | 13 | 3 |  |  |  |  |  |  |  |  |  |  | 
+ | Total Count | 417 | 180 | 198 | 29 | 824 |  |  |  |  |  |  |  |  |  | 
+ | Total Count with 20% | 500.4 | 216 | 237.6 | 34.799999999999997 | 988.8 |  |  |  |  |  |  |  |  |  | 
+ | Total Count with 20% Rounding | 501 | 216 | 238 | 35 | 990 |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | C2 : Panel 2 |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | C3 : Panel 3 |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | C4 : Panel 4 |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+
+====================================================================================================
+XLSX: /storage/emulated/0/Download/PCI_INSTRUMENT_RANGE.xlsx
+SIZE: 12809 bytes
+====================================================================================================
+SHEETS: 3
+
+--- SHEET 1 : Sheet1 ---
+TARGET: xl/worksheets/sheet1.xml
+PREVIEW ROWS: 15
+SL NO | INSTRUMENT TAG | RANGE | UOM
+1 | TE_201 | 0-100 | degC
+2 | TE_202 | 0-1200 | degC
+3 | TE_203 | 0-100 | degC
+4 | TE_204 | 0-600 | degC
+5 | TE_205 | 0-100 | degC
+6 | TE_319A | 0-200 | degC
+7 | TE_319B | 0-200 | degC
+8 | TE_320 | 0-201 | degC
+9 | TE_321 | 0-100 | degC
+10 | TE_330 | 0-100 | degC
+11 | TE_331 | 0-100 | degC
+12 | TE_332 | 0-100 | degC
+13 | TE_333 | 0-100 | degC
+14 | TE_334 | 0-100 | degC
+
+--- SHEET 2 : Sheet2 ---
+TARGET: xl/worksheets/sheet2.xml
+PREVIEW ROWS: 0
+
+--- SHEET 3 : Sheet3 ---
+TARGET: xl/worksheets/sheet3.xml
+PREVIEW ROWS: 0
+
+====================================================================================================
+XLSX: /storage/emulated/0/Download/critical spares in pci.xlsx
+SIZE: 69815 bytes
+====================================================================================================
+SHEETS: 13
+
+--- SHEET 1 : RTD ---
+TARGET: xl/worksheets/sheet1.xml
+PREVIEW ROWS: 15
+SPARES FOR PR |  |  |  |  |  |  |  | CHECKLIST |  |  |  |  |  | Spare to be indent
+SL.NO | INSTRUMENT | Qty Instld | Qty Req | TAG NO | DESCRIPTION | INSTALATION SITE | AVAILABLE | JUL | AUG | SEP | OCT | NOV | DEC | Qty
+1 | PCI_THERMOCOUPLE | 1 | 1 | TE202 | 0 - 1200℃ graduation No. S, ø20 corundum ferrule-type flange matched with one nos. of flange with the same model, length 1200mm, explsion-proof type | HGG inside temp | 1 | 1 | 1 | 1 | 1 |  |  | 0
+2 | PCI_RTD-PT100 | 2 | 1 | TE201 | Graduation No. Pt100, 0 - 100℃, ø16 armored 304 protecting tube, M27×2 matched base with fixed thread, insertion length 100mm, total length 300mm, wear-resistant & explosion-proof type | BFG Temp at HGG inlet | 2 | 2 | 2 | 2 | 2 |  |  | -1
+ |  |  |  | TE203 |  | CA Temp at HGG inlet |  |  |  |  |  |  |  | 0
+3 | PCI_RTD-PT100 | 4 | 1 | TE204 | Graduation No. Pt100, 0 - 600℃, ø16 armored 304 protecting tube, M27×2 matched base with fixed thread, insertion length 300mm, total length 600mm, wear-resistant & explosion-proof type | Mill inlet Hot Gas Temp | 3 | 3 | 3 | 3 | 3 |  |  | -2
+ |  |  |  | TE319A | Graduation No. Pt100, 0 - 200℃, ø16 armored 304 protecting tube, M27×2 matched base with fixed thread, insertion length 300mm, total length 600mm, wear-resistant & explosion-proof type | Mill outlet Gas Temp-1 |  |  |  |  |  |  |  | 0
+ |  |  |  | TE319B |  | Mill outlet Gas Temp-2 |  |  |  |  |  |  |  | 0
+ |  |  |  | TE320 |  | Bag filter inlet temp |  |  |  |  |  |  |  | 0
+4 | PCI_RTD-PT100 | 17 | 5 | TE205 | Graduation No. Pt100, 0 - 100℃, ø16 armored 304 protecting tube, M27×2 matched base with fixed thread, insertion length 300mm, total length 500mm, wear-resistant & explosion-proof type | HGG inlet recirculation gas temperature | 6 | 6 | 6 | 6 | 6 |  |  | -1
+ |  |  |  | TE321 |  | Bag filter outlet temp |  |  |  |  |  |  |  | 0
+ |  |  |  | TE330 |  | Chimney inside Temp |  |  |  |  |  |  |  | 0
+ |  |  |  | TE331 |  | Bag filter hopper-1 temp |  |  |  |  |  |  |  | 0
+ |  |  |  | TE332 |  | Bag filter hopper-2 temp |  |  |  |  |  |  |  | 0
+ |  |  |  | TE333 |  | Fine coal Silo Temp-1 |  |  |  |  |  |  |  | 0
+
+--- SHEET 2 : LT ---
+TARGET: xl/worksheets/sheet2.xml
+PREVIEW ROWS: 10
+SL.NO | INSTRUMENT | Qty Instld | Qty Req | TAG NO | DESCRIPTION | INSTALATION SITE |  | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC | Spare to be indent
+1 | Radar Model 5402ASH1E5YJAM1 | 3 | 1 | LE 101 | Model 5408A3SHA1E11R4AACAA4PC1M5Q4 Range:-0-14m, flange connection Suitable for medium:- coal | GH-1 Level |  | 1 | 1 |  |  |  |  |  | 0
+2 |  |  |  | LE-301 |  | Raw coal storage silo level |  |  |  |  |  |  |  |  | 0
+3 |  |  |  | LE-302 |  | Fine Coal Silo |  |  |  |  |  |  |  |  | 0
+4 | PCI_level switch | 3 | 1 | LE-103 | Capacitance admittance level meter Armored 304 protecting tube ZG1", matched base with fixed thread, insertion length 200mm, total length 300mm, explosion-proof type Model:-L-2000D-SCA1-200NEX Suitable for medium:- coal Supply Voltage:- 24 VDC | Chute before Steep Aangl Conveyor Level |  | 0 | 0 |  |  |  |  |  | 1
+ |  |  |  | LE-104 |  | Chute before RCS Level |  |  |  |  |  |  |  |  | 0
+ |  |  |  | LE-304 |  | Chute before VRM INLRT |  |  |  |  |  |  |  |  | 0
+5 | PCI UV Detector | 1 | 1 | XT203 | Model:-BWZJ-13T, Supply- 230VAC, Out Put- Switch Output. | HGG |  | 1 | 1 |  |  |  |  |  | 0
+6 | PCI_Bed LVL Transmitter | 1 | 1 | LT-302 | Out Put- 4-20 mA, Range-= 0-50 mm, Supply 24V, Make- Autobolin | mill bed height |  | 1 | 1 |  |  |  |  |  | 0
+ |  | 8 |  |  |  |  |  | 0 |  |  |  |  |  |  | 1
+
+--- SHEET 3 : PT ---
+TARGET: xl/worksheets/sheet3.xml
+PREVIEW ROWS: 15
+SL.NO | SHORT DESCRIPTION | Qty Instld | SL.NO | Qty Req | TAG NO | DESCRIPTION | INSTALATION SITE | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC | Spare to be indent
+1 | PCI_PT 3051CG4A +0-0.2Kg/cm² | 1 | 1 | 1 | PT-201 | Model No:- 3051CG4A52A1BH2S 1S00B915L 4M5J Range: 0 to 0.2Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof type, 304 ball valve direct installation | BFG Pr at HGG inlet | 1 | 1 |  |  |  |  |  | 
+2 | PCI_PT 3051DR2A 0 -0.01-0.01Kg/cm² | 1 | 2 | 1 | PT-202 | Model No:- 3051DR2A52A1BH2S 1S00B915L 4M5J Range: -0.01 to 0.01Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof type, 304 ball valve direct installation | HGG inside Pr | 0 | 0 |  |  |  |  |  | 1
+3 | PCI_PT 3051CG3A +0-0.06Kg/cm² | 1 | 3 | 1 | PT-203 | Model No:- 3051CG3A52A1BH2S 1S00B915L 4M5J Range: 0 to 0.06Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof type, 304 ball valve direct installation | CA Pr at HGG inlet | 0 | 0 |  |  |  |  |  | 1
+4 | PCI_PT 3051CG3A -0.05-0Kg/cm² | 1 | 4 | 1 | PT-204 | Model No:- 3051CG3A52A1BH2S 1S00B915L 4M5J Range: -0.05 to 0Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof type, 304 ball valve direct installation | Mill inlet Gas Pr | 0 | 0 |  |  |  |  |  | 1
+5 | PCI_PT 3051CG4A -0.05-0.1Kg/cm² | 1 | 5 | 1 | PT-205 | Model No:- 3051CG4A52A1BH2S 1S00B915L 4M5J Range: -0.05 to 0.1Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof type, 304 ball valve direct installation | HGG inlet recirculation gas pressure | 0 | 0 |  |  |  |  |  | 1
+6 | Pressure transmitter |  | 6 |  | PT-206 | Range: --0.05-0.1Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof type, 304 ball valve direct installation |  |  |  |  |  |  |  |  | 0
+7 | Pressure transmitter |  | 7 |  | PT-207 | Range: --0.05-0.1Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof type, 304 ball valve direct installation |  |  |  |  |  |  |  |  | 0
+6 | PCI_PT 3051L5A-0.15-0Kg/cm² | 2 | 8 | 1 | PT-303 | 3051L5AG0QA-11BA01K5L5M3J1 Range: -0.15 to 0Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof typematched with one nos. of ø50 flange- | Mill outlet Gas Pr | 0 | 0 |  |  |  |  |  | 1
+ |  |  | 9 |  | PT-304 |  | Bag filter inlet pr | 0 | 0 |  |  |  |  |  | 0
+7 | PCI_PT 3051DR2A -0.015-0Kg/cm² | 1 | 10 | 1 | PT-305 | Model No:- 3051DR2A52A1BH2S 1S00B915L 4M5J Range: -0.015 to 0Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof type, 304 ball valve direct installation | Bag filter outlet pr | 0 | 0 |  |  |  |  |  | 1
+8 | PCI_PT 3051L4A -0.15-0.15Kg/cm² | 1 | 11 | 1 | PT-306 | 3051L4AG0QA-11BA01K5L5M3J1 Range: -0.15 to 0.15Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof typematched with one nos. of ø50 flange | Fine coal Silo Pr | 0 | 0 |  |  |  |  |  | 1
+9 | PCI_PT 3051CG7A -0.015-0Kg/cm² | 15 | 12 | 3 | PT-401 | Model No:- 3051CG7A52A1BH2S 1S00B915L 4M5J Range: 0-10Kg/cm², output signal: 4-20mADC, with digital display, HART digital communication, intrinsically safe & explosion-proof type, 304 ball valve direct installation | Nitrogen receiver Inlet pressure | 1 | 1 |  |  |  |  |  | 2
+ |  |  | 13 |  | PT-402 |  |  |  |  |  |  |  |  |  | 0
+ |  |  | 14 |  | PT-403 |  |  |  |  |  |  |  |  |  | 0
+
+--- SHEET 4 : FT ---
+TARGET: xl/worksheets/sheet4.xml
+PREVIEW ROWS: 15
+SL.NO | SHORT DESCRIPTION | Qty Instld | Qty Req | TAG NO | DESCRIPTION | INSTALATION SITE | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC | Spare to be indent
+1 | PCI_FT (0-2.5 kpa) | 1 | 1 | FT-201 | Model:-JSYH-BK-377+3051DP Range: 0-6000Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | BFG Flow at HGG inlet | 1 | 1 |  |  |  |  |  | 0
+2 | PCI_FT (0-6 kpa) | 1 | 1 | FT-202 | Model:-JSYH-BK-325+3051DP Range: 0-6000Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | CA Flow at HGG inlet | 0 | 0 |  |  |  |  |  | 1
+3 | PCI_FT (0-467.7 pa) | 1 | 1 | FT-203 | Model:-JSYH-YSG-820+3051DP Range: 0-30000Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | HGG inlet recirculation gas flow | 0 | 0 |  |  |  |  |  | 1
+4 | PCI_FT (0-1427.8 pa) | 1 | 1 | FT-301 | Model No:-JSYH-YSG-920+3051DP Range: 0-65000Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | Bag filter outlet gas flow | 0 | 0 |  |  |  |  |  | 1
+5 | PCI_FT (0-16kpa) | 1 | 1 | FT-401 | Model No:-JSYH-BK-108+3051DP Range: 2500Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | Nitrogen receiver Inlet flow | 0 | 0 |  |  |  |  |  | 1
+6 | PCI_FT (0-10kpa) | 1 | 1 | FT-402 | Model No:-JSYH-BK-108+3051DP Range: 2000Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | Compressure air receiver Inlet flow | 0 | 0 |  |  |  |  |  | 1
+7 | PCI_FT (0-7 kpa) | 4 | 1 | FT-502 | Model No:- JSYH-BK-48+3051DP Range: 300Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | N2 Flow for injection vessel-A fluidisation | 0 | 0 |  |  |  |  |  | 1
+ |  |  |  | FT-505 | Model No:- JSYH-BK-48+3051DP Range: 300Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | N2 Flow for injection vessel-B fluidisation | 0 | 0 |  |  |  |  |  | 0
+ |  |  |  | FT-508 | Model No:- JSYH-BK-48+3051DP Range: 300Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | N2 Flow for injection vessel-C fluidisation | 0 | 0 |  |  |  |  |  | 0
+ |  |  |  | FT-511 | Model No:- JSYH-BK-48+3051DP Range: 300Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | N2 Flow for injection vessel-D fluidisation | 0 | 0 |  |  |  |  |  | 0
+8 | PCI_FT-(0-90 kpa) | 4 | 1 | FT-503 | Model NO:-JSYH-BK-32+3051DP Range: 500Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | Conveying media Flow for injection vessel-A | 0 | 0 |  |  |  |  |  | 1
+ |  |  |  | FT-506 | Model No:- JSYH-BK-32+3051DP Range: 500Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | Conveying media Flow for injection vessel-B | 0 | 0 |  |  |  |  |  | 0
+ |  |  |  | FT-509 | Model No:- JSYH-BK-32+3051DP Range: 500Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | Conveying media Flow for injection vessel-C | 0 | 0 |  |  |  |  |  | 0
+ |  |  |  | FT-512 | Model No:- JSYH-BK-32+3051DP Range: 500Nm³N/h. Output signal: 4-20mADC, with digital display, HART digital communication. See Throttle Device Consultation for others, matched with stainless steel tri-valve set | Conveying media Flow for injection vessel-D | 0 | 0 |  |  |  |  |  | 0
+
+--- SHEET 5 : MCV ---
+TARGET: xl/worksheets/sheet5.xml
+PREVIEW ROWS: 10
+S NO | Short Description | TAG NO | Qty Instld | Qty Req | Specification | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC | Spare to be indent
+1 | PCI_MCV DN300 | MCV-202 | 1 | 1 | Pg2.5kg/cm2;medium: normal air; control: 4～20mA,415VAC, explosion-proof Dia- DN300 Model-DN941-2.5C Make:- Gongkai | 0 | 0 |  |  |  |  |  | 1
+2 | PCI_MCV DN400 | MCV-205 | 1 | 1 | Pg2.5kg/cm2; medium: hot gas, T≤200℃,control:4～20mA,415VAC, explosion-proof Dia- DN400 Model-DN941-2.5C Make:- Gongkai | 1 | 1 |  |  |  |  |  | 0
+3 | PCI_MCV DN600 | MCV-203 | 1 | 1 | Pg2.5kg/cm2;medium: hot gas,T=400℃， control: 4～20mA , 415VAC,explosion-proof Dia- DN600 Model-DN941-2.5C Make:- Gongkai | 1 | 1 |  |  |  |  |  | 0
+4 | PCI_MCV DN800 | MCV-206 | 1 | 1 | Pg2.5kg/cm2; medium: Hot gas,T≤100℃, control: 4～20mA,415VAC,explosion-proof Dia- DN800 Model-DN941-2.5C Make:- Gongkai | 0 | 0 |  |  |  |  |  | 1
+5 | PCI_MCV DN300 | MCV-301 | 1 | 1 | Pg2.5kg/cm2; medium:hot gas,t＜100℃, control: 4～20mA, 415VAC, explosion-proof Dia- DN900 Model-DN941-2.5C Make:- Gongkai | 0 | 0 |  |  |  |  |  | 1
+6 | PCI_MCV DN1000 | MCV-204 | 1 | 1 | Pg2.5kg/cm2; medium: hot gas, T=400℃, control: 4～20mA, 415VAC, explosion-proof Dia- DN 1000 Model-DN941-2.5C Make:- Gongkai | 0 | 0 |  |  |  |  |  | 1
+7 | PCI_MCV DN350 | MCV-201 | 1 | 1 | ,Pg2.5kg/cm2; medium: coal gas,T＜100℃,control:4～20mA, 415VAC, explosion-proof Dia- DN350 Model-DN943-2.5C Make:- Gongkai | 0 | 0 |  |  |  |  |  | 1
+8 | PCI_MCV DY1000 | MCV-302 | 1 | 1 | ,Pg2.5kg/cm2; medium: coal gas,T＜100℃,control:4～20mA, 415VAC, explosion-proof MODEL:-DY1000 MAKE -RIZHAO DEYI INTELLIGENT INSTRUMENT.CO.LTD | 0 | 0 |  |  |  |  |  | 1
+ |  |  | 8 |  |  |  |  |  |  |  |  |  | 6
+
+--- SHEET 6 : FSV&PCV ---
+TARGET: xl/worksheets/sheet6.xml
+PREVIEW ROWS: 15
+SNO | SHORT DESCRIPTION | TAG NO | Qty Instld | Qty Req | Item | Specification | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC | Spare to be indent
+1 | PCI_FSV DN 350 | FSV-201 | 1 | 1 | Pneumatic quick cut off valves | Pg10kg/cm2; medium: fulverized coal, T＜100℃, DC24V, explosion-proof Model:- D643H-2.5C, DN 350,Size-185mm Make:- Gonkai | 0 | 0 |  |  |  |  |  | 1
+2 | PCI_FSV DN 250 | FSV-506/513/520/527 | 4 | 1 | Pneumatic metal hard sealing butterfly valves | Pg10kg/cm2; medium: fulverized coal, T＜100℃, DC24V, explosion-proof Model:- D643Y-10C, DN 250,Size:-160mm Make:- Gonkai | 0 | 0 |  |  |  |  |  | 1
+3 | PCI_FSV DN 25 | FSV-502/503/504/505 | 4 | 1 | Pneumatic explosion-proof ball valve | Pg2.5kg/cm2; medium: nitrogen,T＜100℃, DC24V,explosion-proof Model:- Q641-10C, DN 25,Size;187mm Make:- Gonkai | 4 | 4 |  |  |  |  |  | -3
+4 | PCI_FSV DN25 SZ146 | FSV-511/518/525/532 | 4 | 1 | Pneumatic explosion-proof ball valve | Pg10kg/cm2; medium: nitrogen, T＜100℃, DC24V,explosion-proof Model:- Q641-10C, DN 25,Size:-146mm Make:- Gonkai | 0 | 0 |  |  |  |  |  | 1
+5 | PCI_FSV DN40 | FSV-508/515/522/529/507/521/514/528 | 8 | 2 | Pneumatic explosion-proof ball valve | Pg10kg/cm2; medium: nitrogen,T＜100℃,DC24V, explosion-proof Model:- Q641-10C, DN 40,Size-177mm Make:- Gonkai | 6 | 6 |  |  |  |  |  | -4
+6 | PCI_FSV DN50 | FSV-401/402/403 PSV-502 | 4 | 1 | Pneumatic explosion-proof ball valve | Pg10kg/cm2; medium: nitrogen, normal temp., control: switch value; DC24V,explosion-proof Model:- Q641-10C, DN 50,Size-198mm Make:- Gonkai | 1 | 1 |  |  |  |  |  | 0
+7 | PCI_FSV DN100 | FSV-501 | 1 | 1 | Pneumatic explosion-proof ball valve | Pg2.5kg/cm2; medium: air with dust T＜100℃, control: switch value; DC24V,explosion-proof Model:- Q641-10C, DN 100,Size-277mm Make:- Gonkai | 0 | 0 |  |  |  |  |  | 1
+8 | PCI_FSV DN 25 SZ180 | FSV-512/519/526/533 | 4 | 1 | Pneumatci explosion-proof three-way ball valves | Pg10kg/cm2; medium: nitrogen,T＜100℃,DC24V,explosion-proof Model:- Q645F-10C, DN 25,Size-180mm Make:- Gonkai | 3 | 3 |  |  |  |  |  | -2
+9 | PCI_FSV DN250 | FSV-536/537/538/539 | 4 | 1 | Pneumatic dome valves | Pg10kg/cm2; medium: pulverized cial,T＜100℃， control: switch value; DC24V,explosion-proof Model:- YDF-10C, DN 250 Make:- Gonkai | 1 | 1 |  |  |  |  |  | 0
+10 | PCI_PCV DN25 | PCV-503/507/511/515 FCV-501/502/503/504 | 8 | 2 | Film penumatic control valve | Pg10kg/cm2;medium: nitrogen,T＜100℃,DC24V,explosion-proof Model:- ZJHP-10C, DN 25,Size-187mm Make:- Gonkai | 0 | 0 |  |  |  |  |  | 2
+11 | PCI_PCV DN40 FILM | PCV-504/508/512/516 | 4 | 1 | Film penumatic control valve | Pg10kg/cm2; medium: nitrogen,T＜100℃,DC24V,explosion-proof Model:- ZJHP-10C, DN 40,Size-222mm Make:- Gonkai | 0 | 0 |  |  |  |  |  | 1
+12 | PCI_PCV DN40 | PCV-502/506/510/514 | 4 | 1 | Pneumatic explosion-proof control ball valve | Pg10kg/cm2; medium: nitrogen,T＜100℃,DC24V,explosion-proof Model:- VQ6T47H-10C, DN 40,Size-112mm Make:- Gonkai | 1 | 1 |  |  |  |  |  | 0
+13 | PCI_PCV DN50 | FSV-509/510/516/517/523/ 524/530/531/534/535 | 10 | 2 | Pneumatic explosion-proof wearing-resistance ball valves | Pg10kg/cm2;medium: nitrogen,T＜100℃,DC24V,explosion-proof Model:- VQ647Y-10C, DN 50,Size-122mm Make:- Gonkai | 0 | 0 |  |  |  |  |  | 2
+14 | PCI_PCV DN 80 | PCV-501/505/509/513 | 4 | 1 | Pneumatic explosion-proof control ball valve | Pg10kg/cm2; medium: nitrogen,T＜100℃,DC24V,explosion-proof Model:- VQ6T47H-10C, DN 80,Size:-163mm Make:- Gonkai | 0 | 0 |  |  |  |  |  | 1
+
+--- SHEET 7 : SOV ---
+TARGET: xl/worksheets/sheet7.xml
+PREVIEW ROWS: 14
+SNO | SHORT DESCRIPTION | Qty Instld | Qty Req | Item | Specification | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC | Spare to be indent
+1 | PCI_BOKE 4M310-08 | 39 | 10 | solenoid valve | Make - BOKE, Model no-4M310-08, Pressure-0.15-0.8MPa | 1 | 1 |  |  |  |  |  | 9
+2 | PCI_BOKE 4V310-10 | 9 | 3 | solenoid valve | Make - BOKE, Model no-4V310-10, Pressure-0.15-0.8MPa | 8 | 8 |  |  |  |  |  | -5
+3 | PCI_ZMF-Y-76S | 40 | 10 | Solenoid Pulse valve for Bag Filter | Model no-ZMF-Y-76S, Supply Voltage:- 24 VDC | 4 | 3 |  |  |  |  |  | 6
+4 | PCI_LIFT VALVE | 8 | 2 | LIFT Valve for Bag filter | Model- 4v310-10 , Pressure- 1.5-8 kgf/cm2, Make- KUROGANE | 0 | 0 |  |  |  |  |  | 2
+SNO | SHORT DESCRIPTION | Qty Instld | Qty Req | Item | Specification | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC | Spare to be indent
+1 | PCI_POSTNR_YT1000RDi131 | 8 | 2 |  | Make- YTC, Model no-YT1000RDi131, Serial No-17654, Explosion Proof:Exiall CT6, Input Signle-4῀20mADC, Ambient temp- -20῀70⁰C, Supply pressure- 1.4῀7.0 kgf/cm2 | 0 | 0 |  |  |  |  |  | 2
+2 | PCI_POSITNR_YT1000LS1 | 12 | 3 |  | Make- YTC, Model no-YT1000LS1, Serial No-13118410, Explosion Proof:Exiall CT6, Input Signal-4 to 20mADC, Ambient temp-20 to 60⁰C, Supply pressure- 1.4 to 7.0 kgf/cm2 | 0 | 0 |  |  |  |  |  | 3
+ |  | 20 |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  | 
+
+--- SHEET 8 : POS'R ---
+TARGET: xl/worksheets/sheet8.xml
+PREVIEW ROWS: 15
+SNO | SHORT DESCRIPTION | Qty Instld | Qty Req | Item | Specification | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC
+1 | PCI_POSTNR_YT1000RDi131 | 8 | 2 |  | Make- YTC, Model no-YT1000RDi131, Serial No-17654, Explosion Proof:Exiall CT6, Input Signle-4῀20mADC, Ambient temp- -20῀70⁰C, Supply pressure- 1.4῀7.0 kgf/cm2 | 0 |  |  |  |  |  | 
+2 | PCI_POSITNR_YT1000LS1 | 12 | 3 |  | Make- YTC, Model no-YT1000LS1, Serial No-13118410, Explosion Proof:Exiall CT6, Input Signal-4 to 20mADC, Ambient temp-20 to 60⁰C, Supply pressure- 1.4 to 7.0 kgf/cm2 | 0 |  |  |  |  |  | 
+ |  | 20 |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  | 
+
+--- SHEET 9 : LOAD CELL ---
+TARGET: xl/worksheets/sheet9.xml
+PREVIEW ROWS: 15
+SL.NO | SHORT DESCRIPTION | Qty Instld | Qty Req | TAG NO | DESCRIPTION | INSTALATION SITE | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC | Spare to be indent
+1 | PCI_LOAD CELL-RTD 4.7T | 12 | 3 | WT-501,WT-502,WT-503,WT-504 | SCHENCK PROCESS Load Cell Type-RTD 4.7T Accuracy (+/-)0.02% with zero balance Input Resistance 4480 ohms (+/-50 ohms) Output Resistance 4010 ohms (+/-50 ohms) Loadcell Sensitivity 2.85mV/V Loadcell Excitation Voltage 12 V AC | INJECTION VESSEL | 2 | 2 |  |  |  |  |  | 1
+2 | PCI_LOAD CELL-RTD 68T | 7 | 2 | WT-301,WT-303 | SCHENCK PROCESS Load Cell Type-RTD 68T Input Resistance 4480 ohms (+/-50 ohms) Output Resistance 4010 ohms (+/-50 ohms) Loadcell Sensitivity 2.85mV/V Loadcell Excitation Voltage 12 V AC Accuracy (+/-)0.02% with zero balance | PCS &FCS | 0 | 0 |  |  |  |  |  | 2
+ |  |  |  |  |  |  |  |  |  |  |  |  |  | 0
+3 | PCI_LOAD CELL-PWS 100KG | 2 | 1 | WT-302 | SCHENCK PROCESS Platform Load Cell, Type-PWS 100 kg Accuracy (+/-) 0.05% Input Resistance 390 ±10 Ω Output Resistance 350 ±2 Ω Loadcell Sensitivity 2 ±0.002 mV/V Loadcell Excitation Voltage 6 V AC | WEIGH FEEDER | 0 | 0 |  |  |  |  |  | 1
+4 | PCI_ENCODER | 1 | 1 | NA | SPEED SENSOR TYPE - Type-FGA 1O IP-67 EXC VOL-(5-25V) Cable Length (m)-5mtr |  | 0 | 0 |  |  |  |  |  | 1
+5 | PCI_JAM SWITCH | 22 | 6 | FS-515 TO FS 536 | MAKE- SWR FLOW JAM SWITCH, MAKE- SWR POWER SUPPLY-18 -24V DC/AC, RANGE (0-2M) MODEL :89/336/EEC | MBF1&2 | 0 | 0 |  |  |  |  |  | 6
+6 | PCI_COAL FLOW METER | 2 | 1 | FT-514&FT-513 | Provided by power supply/conditioning PCBSFI 15-30VDC, 100mA max.Conduit Connection: (2) 1/2" NPT Detection Range: 0 to 10’ free air Sensitivity: Switch selectable HI/LOW Minimum Velocity: 2.5 ft/sec (762 mm/sec) Output:4-20mA Process Connection 1-1/4" NPT &DN50 Flange(Seals Adapter) Pipe diameterΦ63.5×7 | COAL CONVEYING LINE | 0 | 0 |  |  |  |  |  | 1
+ | DISOMAT TERSUS CONTROLLER | 6 | 2 |  |  |  | 1 | 1 |  |  |  |  |  | 1
+ | SHENCKPROCESS WEIGHFEEDER | 1 | 1 |  |  |  | 1 | 1 |  |  |  |  |  | 0
+ |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  | 46 |  |  |  |  |  |  |  |  |  |  |  | 0
+ |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+
+--- SHEET 10 : Analyser ---
+TARGET: xl/worksheets/sheet10.xml
+PREVIEW ROWS: 15
+SL.NO | SHORT DESCRIPTION | Qty Instld | Qty Req | TAG NO | DESCRIPTION | INSTALATION SITE | Qty avbl | JUL | AUG | SEP | OCT | NOV | DEC | Spare to be indent
+1 | PCI_ANALYSER_SV_1/4 | 8(2x4) | 2 |  | SOLENOID VALVE, 2 WAY MOC: SS Size: 1/4” Power Supply: 220VAC, 50 Hz, Make-ASCO Cat No- SCX5202C220V | SOV-104,106 | 0 | 0 |  |  |  |  |  | 2
+2 | PCI_ANALYSER_SV_1/2 | 24(6x4) | 6 |  | SOLENOID VALVE, 2 WAY MOC: BRASS Size: 1/2” Power Supply: 220VAC, 50 Hz SCX8210C094MB | SV101/102/ 103/105/10 6/107 | 6 | 5 |  |  |  |  |  | 0
+3 | PCI_ANALYSER_GASCOOLER | 4(4x1) | 1 |  | SAMPLE GAS COOLER Dual Gas Path SS coils Power Supply: 220VAC, 50Hz,Mains- 230V AC 50 HZ Model No- C.G.EK. - 5 Gas charge- 134-A Super Refrigeration Industries. Com No-B042069B Including Temperature sensor | GC01, abb approved | 0 | 1 |  |  |  |  |  | 1
+4 | PCI_ANALYSER_PERISTALTIC_PUMP | 8(4x2) | 2 |  | PERISTALTIC PUMP Power Supply: 220VAC, 50 Hz,Make- ASF Thomas POWER-5.5w S3;40 DEG- 2 MIN ON/2 MIN OFF REF S. NnO.-70300001 | PP01 | 2 | 4 |  |  |  |  |  | 0
+5 | PCI_BV_1/4 | 12(4x3) | 3 |  | 2 Way Ball Valve, SS316, 1/4 ”- Make- Baldota. | BV01,BV02,BV04 | 0 | 0 |  |  |  |  |  | 3
+6 | PCI_SV_3WAY_1/4 | 8(4x2) |  |  | SOLENOID VALVE, 3 WAY MOC: SS Size: 1/4” Power Supply: 220VAC, 50 Hz, Make- ASCO CAT NO- SCX8320A201V | SV01/SV02 | 0 | 0 |  |  |  |  |  | 0
+7 | PCI_BV_5WAY_1/4 | 4(1x4) |  |  | 5 Way Ball Valve, SS316, ¼ ", ABB Vendor approved- | BV03 | 0 | 0 |  |  |  |  |  | 0
+8 | PCI_ANALYZER_PUMP | 8(4x2) | 2 |  | SAMPLE & BYPASS PUMP Capacity: 280 LPH Power Supply: 220VAC, 50 Hz, Make- knf Type- PM31272-86 Power- 55W,I-0.6A. | MP01, MP02 | 2 | 2 |  |  |  |  |  | 0
+9 | PCI_GAS_FLOW_METER | 4(4x1) | 1 |  | GLASS TUBE FLOWMETER WITH P&F MAKE RING SENSOR UNIT Range: 7-70 LPH Size: ¼”, Make- PLACKA Model no- GA- 10 | FM01 | 0 |  |  |  |  |  |  | 1
+ |  |  |  |  |  |  | 0 | 0 |  |  |  |  |  | 0
+10 | PCI_ANALYZER_SWITCHAMPLIFIER | 4(4x1) | 1 |  | SWITCHING AMPLIFIER (For low Flow Alarm) Power Supply: 24VDC | SA01 | 0 | 0 |  |  |  |  |  | 1
+11 | PCI_ANALYZER_COND_MONITOR | 4(4x1) | 1 |  | CONDENSATE MONITOR with membrane Filter papers, ABB Vendor approved | CM01 | 0 | 0 |  |  |  |  |  | 1
+12 | PCI_ANALZER_SU | 4(4x1) | 1 |  | SWITCHING UNIT (For Condensate alarm) Power Supply: 220VAC, 50 Hz E.L.B. ER 144/A Make- ABB | SU01 | 0 | 0 |  |  |  |  |  | 1
+13 | PCI_ANALZER_PLC | 4(4x1) | 1 Set |  | PLC (AC500 SERIES) With CPU(PM-554-R) And Necessary I/O Cards(DO-571) Power Supply: 24VDC PL01- CPU PM554-RP-AC 8DI 24VDC 6DO-R 240VAC 2A -01 No. Module- DO 571-8DO-R 240VAC 2A- 1No. DO 571 8DO-R 240VAC 2A- 1No. Make- ABB | PL01 | 0 | 1 |  |  |  |  |  | #VALUE!
+
+--- SHEET 11 : Sheet1 ---
+TARGET: xl/worksheets/sheet11.xml
+PREVIEW ROWS: 15
+SPARES IN PCI PLANT |  |  |  |  |  |  |  |  | 
+SL no | Description | Qty | Location | JUL | AUG | SEP | OCT | NOV | DEC
+1 | THERMOCOUPLE | 1 | RACK-1 ANALYSER ROOM |  |  |  |  |  | 
+2 | RTD | 6 |  |  |  |  |  |  | 
+3 | CAT6 CABLE | 2 BOX |  |  |  |  |  |  | 
+4 | LPBS JB | 1 |  |  |  |  |  |  | 
+5 | BAGFILTER DIAPHGRAM SOV | 4 |  |  |  |  |  |  | 
+6 | HOOTER WITH RED LIGHT | 2 |  |  |  |  |  |  | 
+7 | MICROWAVE SOLIDS FLOW MONITORS | 2 |  |  |  |  |  |  | 
+8 | CHINESSE SMALL -JB | 4 |  |  |  |  |  |  | 
+9 | CHINESSE BIG- JB | 2 |  |  |  |  |  |  | 
+10 | 8MM BALL VALVE | 13 |  |  |  |  |  |  | 
+11 | 3 WAY MANIFOLD | 19 |  |  |  |  |  |  | 
+12 | 1/2" BALL VALVE | 1 |  |  |  |  |  |  | 
+SL no | Description | Qty | Location |  |  |  |  |  | 
+
+--- SHEET 12 : AIR COMPRESSOR ---
+TARGET: xl/worksheets/sheet12.xml
+PREVIEW ROWS: 15
+AIR COMPRESSOR SPARES |  |  |  |  |  |  |  |  |  |  |  |  | 
+SNO | SHORT DESCRIPTION | TAG | Qty Instld | Qty Req | Item | Specification | Qty | JUL | AUG | SEP | OCT | NOV | DEC
+1 | SOLENOID VALVE FOR LOAD | 1SV | 2 | 1 | SOV |  |  |  |  |  |  |  | 
+2 | DISCHARGE CONDENSATE VALVE | 6SV | 2 | 1 | SOV |  |  |  |  |  |  |  | 
+3 | DISCHARGE CONDENSATE VALVE | 9SV | 2 | 1 | SOV |  |  |  |  |  |  |  | 
+4 | PRESSURE TRANSDUCER FOR INLET VACCUM | 1AVPT | 2 | 1 | PT |  |  |  |  |  |  |  | 
+5 | 2ND STAGE INLET PRESSURE | 2APT | 2 | 1 | PT |  |  |  |  |  |  |  | 
+6 | 2ND STAGE DISCHARGE PRESSURE | 3APT | 2 | 1 | PT |  |  |  |  |  |  |  | 
+7 | PACKAGE DISCHARGE PRESSURE | 4APT | 2 | 1 | PT |  |  |  |  |  |  |  | 
+8 | OIL FILTER INLET PRESSURE | 5OPT | 2 | 1 | PT |  |  |  |  |  |  |  | 
+9 | BEARING OIL PRESSURE | 6OPT | 2 | 1 | PT |  |  |  |  |  |  |  | 
+10 | 1ST STAGE DISCHARGE TEMPERATURE | 2ATT | 2 | 1 | TT |  |  |  |  |  |  |  | 
+11 | 2ND STAGE INLET TEMPERATURE | 3ATT | 2 | 1 | TT |  |  |  |  |  |  |  | 
+12 | 2ND STAGE DISCHARGE TEMPERATURE | 4ATT | 2 | 1 | TT |  |  |  |  |  |  |  | 
+13 | BEARING OIL TEMPERATURE | 5OTT | 2 | 1 | TT |  |  |  |  |  |  |  | 
+
+--- SHEET 13 : Sheet2 ---
+TARGET: xl/worksheets/sheet13.xml
+PREVIEW ROWS: 13
+Spare AO |  | Spare AO | XC410 | 13,14 | PQW264 | C2 | AO | 4-20 ma o/p
+Spare AI |  | Spare AI | XE307 | 26+,27- | PIW 554 | C3 | AI (4-20mA) | 4W
+Spare AI |  | Spare AI | XE307 | 31+,32- | PIW 556 | C3 | AI (4-20mA) | 4W
+Spare DO_Q 26.0 |  | Spare DO | XE203 | 41,51 | Q 26.0 | C3 |  | 
+Spare DO_Q 26.1 |  | Spare DO | XE203 | 42,52 | Q 26.1 | C3 |  | 
+Spare DO_Q 26.2 |  | Spare DO | XE203 | 43,53 | Q 26.2 | C3 |  | 
+Spare DI |  |  | XF101 | 62,72 | I 51.1 | C3 |  | 
+Spare DI |  |  | XF101 | 63,73 | I 51.2 | C3 |  | 
+Spare DI |  |  | XF101 | 64,74 | I 51.3 | C3 |  | 
+Spare DI |  |  | XF101 | 65,75 | I 51.4 | C3 |  | 
+Spare DI |  |  | XF101 | 66,76 | I 51.5 | C3 |  | 
+Spare DI |  |  | XF101 | 67,77 | I 51.6 | C3 |  | 
+Spare DI |  |  | XF101 | 68,78 | I 51.7 | C3 |  | 
+
+====================================================================================================
+XLSX: /storage/emulated/0/Download/MBF2  PCI  cable schedule .xlsx
+SIZE: 27881 bytes
+====================================================================================================
+SHEETS: 1
+
+--- SHEET 1 : Sheet1 ---
+TARGET: xl/worksheets/sheet1.xml
+PREVIEW ROWS: 15
+MBF-2 3WAY COAL DISTRIBUTION VALVE |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+DO |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | TAG | VALVE TB | CABLE | CAB TAG | LENGTH | JB NAME | JB TB NO | CORE NO | CABLE | CAB TAG | PLC | CORE NO | PLC TB | TB NO | ADDRESS |  |  |  | 
+1 | FSV-1001 3 way tuyere-1 coal distribution valve | FSV_1001_op_Cmd | 1+ | 3Cx1 | FSV-1001 | 15MTR | LOOP NEUTRAL TB NO -2,4,6,8,10,12,14,16,18,20,22,24 DISTRIBUTION JB | 1 | 1 | 24 Core x 1 Sq.mm 100MTR | DO-C1 | MBF-1PCI RIO | 1 | XJJ203 | 1 | Q 200.0 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 2 | 2NEUTRAL |  |  |  | 2NEUTRAL | XJJ203 | 11 |  |  |  |  | 
+2 | FSV-1002 3 way tuyere-2 coal distribution valve | FSV_1002_op_Cmd | 1+ | 3Cx1 | FSV-1002 | 15MTR |  | 3 | 3 |  |  |  | 3 | XJJ203 | 2 | Q 200.1 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 4 | N |  |  |  | N | XJJ203 | 12 |  |  |  |  | 
+3 | FSV-1003 3 way tuyere-3 coal distribution valve | FSV_1003_op_Cmd | 1+ | 3Cx1 | FSV-1003 | 15MTR |  | 5 | 4 |  |  |  | 4 | XJJ203 | 3 | Q 200.2 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 6 | N |  |  |  | N | XJJ203 | 13 |  |  |  |  | 
+4 | FSV-1004 3 way tuyere-4 coal distribution valve | FSV_1004_op_Cmd | 1+ | 3Cx1 | FSV-1004 | 15MTR |  | 7 | 5 |  |  |  | 5 | XJJ203 | 4 | Q 200.3 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 8 | N |  |  |  | N | XJJ203 | 14 |  |  |  |  | 
+5 | FSV-1005 3 way tuyere-5 coal distribution valve | FSV_1005_op_Cmd | 1+ | 3Cx1 | FSV-1005 | 15MTR |  | 9 | 6 |  |  |  | 6 | XJJ203 | 5 | Q 200.4 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 10 | 7NEUTRAL |  |  |  | 7NEUTRAL | XJJ203 | 15 |  |  |  |  | 
+6 | FSV-1006 3 way tuyere-6 coal distribution valve | FSV_1006_op_Cmd | 1+ | 3Cx1 | FSV-1006 | 15MTR |  | 11 | 7 |  |  |  | 7 | XJJ203 | 6 | Q 200.5 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 12 | N |  |  |  | N | XJJ203 | 16 |  |  |  |  | 
+
+====================================================================================================
+XLSX: /storage/emulated/0/Download/MBF2  PCI  cable schedule  (1).xlsx
+SIZE: 26765 bytes
+====================================================================================================
+SHEETS: 1
+
+--- SHEET 1 : Sheet1 ---
+TARGET: xl/worksheets/sheet1.xml
+PREVIEW ROWS: 15
+MBF-2 3WAY COAL DISTRIBUTION VALVE |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+DO |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+SL NO | DESCRIPTION | TAG | VALVE TB | CABLE | CAB TAG | LENGTH | JB NAME | JB TB NO | CORE NO | CABLE | CAB TAG | PLC | CORE NO | PLC TB | TB NO | ADDRESS |  |  |  | 
+1 | FSV-1001 3 way tuyere-1 coal distribution valve | FSV_1001_op_Cmd | 1+ | 3Cx1 | FSV-1001 | 15MTR | DO-JB | 1 | 1 | 24 Core x 1 Sq.mm 100MTR | DO-C1 | MBF-1PCI RIO | 1 | XJJ203 | 1 | Q 200.0 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 2 | 2 |  |  |  | 2 | XJJ203 | 11 |  |  |  |  | 
+2 | FSV-1002 3 way tuyere-2 coal distribution valve | FSV_1002_op_Cmd | 1+ | 3Cx1 | FSV-1002 | 15MTR |  | 3 | 3 |  |  |  | 3 | XJJ203 | 2 | Q 200.1 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 4 | 4 |  |  |  | 4 | XJJ203 | 12 |  |  |  |  | 
+3 | FSV-1003 3 way tuyere-3 coal distribution valve | FSV_1003_op_Cmd | 1+ | 3Cx1 | FSV-1003 | 15MTR |  | 5 | 5 |  |  |  | 5 | XJJ203 | 3 | Q 200.2 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 6 | 6 |  |  |  | 6 | XJJ203 | 13 |  |  |  |  | 
+4 | FSV-1004 3 way tuyere-4 coal distribution valve | FSV_1004_op_Cmd | 1+ | 3Cx1 | FSV-1004 | 15MTR |  | 7 | 7 |  |  |  | 7 | XJJ203 | 4 | Q 200.3 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 8 | 8 |  |  |  | 8 | XJJ203 | 14 |  |  |  |  | 
+5 | FSV-1005 3 way tuyere-5 coal distribution valve | FSV_1005_op_Cmd | 1+ | 3Cx1 | FSV-1005 | 15MTR |  | 9 | 9 |  |  |  | 9 | XJJ203 | 5 | Q 200.4 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 10 | 10 |  |  |  | 10 | XJJ203 | 15 |  |  |  |  | 
+6 | FSV-1006 3 way tuyere-6 coal distribution valve | FSV_1006_op_Cmd | 1+ | 3Cx1 | FSV-1006 | 15MTR |  | 11 | 11 |  |  |  | 11 | XJJ203 | 6 | Q 200.5 |  |  |  | 
+ |  |  | 2- |  |  |  |  | 12 | 12 |  |  |  | 12 | XJJ203 | 16 |  |  |  |  | 
+
+===== CSV SOURCES =====
+
+====================================================================================================
+CSV: /storage/emulated/0/Download/pci_instrument_database.csv
+SIZE: 140683 bytes
+====================================================================================================
+tag | fox_plc_tag | description | area | plc_address | panel | io_type | tb_name | tb_no | field_elec | criticality | process_role | source_sheet
+LP_1_Healthy | C0310 | Lubrication pump-1 Feeder healthy | VRM / MILL | I 0.0 | C2 | DI | XC101 | 1,11 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_CNTRL_ON | C0310 | Lubrication pump-1 Control on | VRM / MILL | I 0.1 | C2 | DI | XC101 | 2,12 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_EPB | C0310 | Lubrication pump-1 EPB Pressed | VRM / MILL | I 0.2 | C2 | DI | XC101 | 3,13 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_Remote_FB | C0310 | Lubrication pump-1L/R Selected from field | VRM / MILL | I 0.3 | C2 | DI | XC101 | 4,14 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_Run_fb | C0310 | Lubrication pump-1 Run feed back | VRM / MILL | I 0.4 | C2 | DI | XC101 | 5,15 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_Trip_fb | C0310 | Lubrication pump-1 Tripped | VRM / MILL | I 0.5 | C2 | DI | XC101 | 6,16 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Healthy | MCV204 | Hot Blast MCV-204 Feeder healthy | WEIGH FEEDING | I 0.6 | C2 | DI | XC101 | 7,17 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_control_On | MCV204 | MCV204 Hot Blast MCV-204 Control on | PNEUMATIC / VALVES | I 0.7 | C2 | DI | XC101 | 8,18 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_EPB | MCV204 | Hot Blast MCV-204 EPB Pressed | PNEUMATIC / VALVES | I 1.0 | C2 | DI | XC101 | 21,31 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Remote_FB | MCV204 | Hot Blast MCV-204 L/R Selected from field | PNEUMATIC / VALVES | I 1.1 | C2 | DI | XC101 | 22,32 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Fwd | MCV204 | Hot Blast MCV-204 Forward contractor on feed back | PNEUMATIC / VALVES | I 1.2 | C2 | DI | XC101 | 23,33 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Rev | MCV204 | MCV204 Hot Blast MCV-204 Reverse contractor on feed back | PNEUMATIC / VALVES | I 1.3 | C2 | DI | XC101 | 24,34 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Trip_fb | MCV204 | MCV204 Hot Blast MCV-204 Motor Tripped | PNEUMATIC / VALVES | I 1.4 | C2 | DI | XC101 | 25,35 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Trq | MCV204 | MCV204 Hot Blast MCV-204 Torque Switch operated | PNEUMATIC / VALVES | I 1.5 | C2 | DI | XC101 | 26,36 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_op_FB | MCV204 | Hot Blast MCV-204 Actuator full open feedback | PNEUMATIC / VALVES | I 1.6 | C2 | DI | XC101 | 27,37 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+
+====================================================================================================
+CSV: /storage/emulated/0/Download/pci_instrument_database-1.csv
+SIZE: 140683 bytes
+====================================================================================================
+tag | fox_plc_tag | description | area | plc_address | panel | io_type | tb_name | tb_no | field_elec | criticality | process_role | source_sheet
+LP_1_Healthy | C0310 | Lubrication pump-1 Feeder healthy | VRM / MILL | I 0.0 | C2 | DI | XC101 | 1,11 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_CNTRL_ON | C0310 | Lubrication pump-1 Control on | VRM / MILL | I 0.1 | C2 | DI | XC101 | 2,12 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_EPB | C0310 | Lubrication pump-1 EPB Pressed | VRM / MILL | I 0.2 | C2 | DI | XC101 | 3,13 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_Remote_FB | C0310 | Lubrication pump-1L/R Selected from field | VRM / MILL | I 0.3 | C2 | DI | XC101 | 4,14 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_Run_fb | C0310 | Lubrication pump-1 Run feed back | VRM / MILL | I 0.4 | C2 | DI | XC101 | 5,15 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+LP_1_Trip_fb | C0310 | Lubrication pump-1 Tripped | VRM / MILL | I 0.5 | C2 | DI | XC101 | 6,16 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Healthy | MCV204 | Hot Blast MCV-204 Feeder healthy | WEIGH FEEDING | I 0.6 | C2 | DI | XC101 | 7,17 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_control_On | MCV204 | MCV204 Hot Blast MCV-204 Control on | PNEUMATIC / VALVES | I 0.7 | C2 | DI | XC101 | 8,18 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_EPB | MCV204 | Hot Blast MCV-204 EPB Pressed | PNEUMATIC / VALVES | I 1.0 | C2 | DI | XC101 | 21,31 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Remote_FB | MCV204 | Hot Blast MCV-204 L/R Selected from field | PNEUMATIC / VALVES | I 1.1 | C2 | DI | XC101 | 22,32 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Fwd | MCV204 | Hot Blast MCV-204 Forward contractor on feed back | PNEUMATIC / VALVES | I 1.2 | C2 | DI | XC101 | 23,33 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Rev | MCV204 | MCV204 Hot Blast MCV-204 Reverse contractor on feed back | PNEUMATIC / VALVES | I 1.3 | C2 | DI | XC101 | 24,34 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Trip_fb | MCV204 | MCV204 Hot Blast MCV-204 Motor Tripped | PNEUMATIC / VALVES | I 1.4 | C2 | DI | XC101 | 25,35 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_Trq | MCV204 | MCV204 Hot Blast MCV-204 Torque Switch operated | PNEUMATIC / VALVES | I 1.5 | C2 | DI | XC101 | 26,36 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+MCV_204_op_FB | MCV204 | Hot Blast MCV-204 Actuator full open feedback | PNEUMATIC / VALVES | I 1.6 | C2 | DI | XC101 | 27,37 | ELEC |  |  | PCI PLC TOTAL IO_2018_10_9
+
+===== JSON SOURCES =====
+
+====================================================================================================
+JSON: /storage/emulated/0/Download/pci_instrument_database.json
+====================================================================================================
+TYPE: dict
+KEYS: ['database', 'version', 'source_document', 'source_sheets', 'status', 'control_mode', 'plc_write', 'scada_control', 'human_decision_required', 'record_count', 'io_type_counts', 'critical_process_tags', 'records']
+
+====================================================================================================
+JSON: database/pci/pci_instrument_database.json
+====================================================================================================
+TYPE: dict
+KEYS: ['database', 'version', 'source_document', 'source_sheets', 'status', 'control_mode', 'plc_write', 'scada_control', 'human_decision_required', 'record_count', 'io_type_counts', 'critical_process_tags', 'records']
+
+===== DOCX SOURCES =====
+
+====================================================================================================
+DOCX: /storage/emulated/0/Download/PCI-Process Control Philosophy.docx
+SIZE: 106830 bytes
+====================================================================================================
+PARAGRAPHS: 862
+TATA METALIKS Ltd.
+PCI SYSTEM (Lean Phase) FOR 1 X 305 m³ & 1×259 m³ MBF
+ANDE METALLURGICAL MACHINERY CO., LTD.
+July 4. 2018
+PCI System Process Control Instructions
+Chapter I. System Configuration
+1.0 The process system composition:
+The system according to the production process and function divided into 6 (Six) subsystems:
+I. Raw Coal Storage and Transportation System
+II. Hot Gas Generator (HGG) system
+III. Coal Grinding & Pulverizing system
+IV. Injection System
+V. Utility System
+VI.PC based Automation, Instrumentation, and Electrical System:
+I. Raw Coal Storage and Transportation System
+It includes Raw coal shed, Grab bucket crane, Raw coal hopper (1 no.), Vibro feeder, Belt feeder (A0102), charging conveyor (A0104), Iron remover (A0103), Metal Detector (OD-101), Chute Jam Switch, Steep angle conveyor (65 deg angle) along with belt safety devices, chute jam switch, Raw coal silo along with load cell (WT-301) and Radar Type level transmitter (LT-301), Air Gun etc.
+A)Raw Coal Silo feeding system START & STOP Interlock:
+RAW COAL SILO FEEDING SEQUENCE:
+START Steep angle conveyor (SEQ-1)
+START Charging Belt Conveyor with delay (SEQ-2)
+START Belt feeder with delay (SEQ-3)
+Rod gate of hopper (Manually Control) (SEQ-4)
+Feed with grab Bucket (Manually Control) (SEQ-5)
+Note: There will be two mode of operation AUTO (Remote) and MANUAL (Remote & Local)
+AUTO Mode: SEQ-1to3 will be executed from HMI located at PCI Control room (Single Button) and SEQ-4&5 will be operated manually from field. STARTING shall be done by single button from HMI followed by control request from HMI
+MANUAL Mode: There are two mode of operation i.e. Remote & Local
+Remote Operation: will be operated from control room based on sequence and interlocks.
+Local Operation: will be operated from field based on the permissive from HMI and individual equipment interlocks.
+INTERLOCKS
+STEEP ANGLE CONVEYOR:
+1.0Raw coal silo level (LT_301) must be < 90 %.( Settable at higher level from HMI)
+2.0Raw coal net weight (WT_301) must be < 100 Ton. (Settable at higher level from HMI.)
+3.0There will be four mode of interlock.
+i)Level Mode,
+ii)Weight Mode,
+iii)Level & Weight Mode,
+iv) Level or Weight Mode.
+In Level Mode only RCS level will be considered for interlock. In “Weight Mode” Mode only RCS weight will be considered for interlock. In Level & Weight Mode both RCS level & weight will be considered for interlock, in Level or Weight Mode either level or weight will be considered for interlock.
+6.0Electrical system healthy.
+i) Feeder healthy
+ii) Control on
+iii) EPB Not Pressed
+iv) L/R Selected from field (L-Local Mode, R-Remote Mode)
+v) Run feed back
+vi) Tripped
+7.0Chute Jam Switch (LIA102) healthy.
+8.0Belt sway switch (BS-004A, BS-004B, BS-004C, BS-004D, BS-004E, BS-004F) zero speed switch (ZS-006), pull cord switch healthy (PC-005A, PC-005B, PC-005C, PC-005D, PC-005E).
+CHARGING BELT (A0104)
+1.0Steep angle conveyor is running.
+2.0Chute jam switch (LIA-101)
+3.0Metal detector (OD-001) healthy.
+4.0Iron Remover helthy and running.
+5.0Electrical system healthy.
+i) Feeder healthy
+ii) Control on
+iii) EPB Not Pressed
+iv) L/R Selected from field (L-Local Mode, R-Remote Mode)
+v) Run feed back
+vi) Tripped
+6.0Belt sway switches (BS-002A, BS-002B, BS-002C, BS-002D, zero speed switch (ZS-003), Pull Cord switches (PC-001A, PC-001B PC-001C, PC-001D) healthy.
+BELT FEEDER
+1.0Steep angle conveyor is running.
+2.0Charging belt is running.
+3.0Electrical system healthy.
+i) Feeder healthy
+ii) Control on
+iii) EPB Pressed
+iv) L/R Selected from field
+v) Forward on feed back
+B)RAW COAL SILO FEEDING STOP SEQUENCE:
+STOP Belt feeder (SEQ-1)
+STOP Charging conveyor with delay (SEQ-2)
+STOP Steep angle conveyor with delay (SEQ-3)
+Note: For normal stopping first stop the raw coal feeding from grab crane then closed rod gate and SEQ 1 to 3 shall be followed automatically. STOP shall be done with a single button from HMI followed by control request from HMI.
+For emergency stopping SEQ-1 to 3 shall be followed.
+II. Hot Gas Generator (HGG) system
+It includes Flame scanner (XT-203), Ignition system by using LPG, shut off valve (MSV-201), LPG manual isolation valve , NRV, Pressure switch (PS-201), Pressure gauge (PI-201),
+BFG: Shut off valve (FSV-201), control valve (MCV-201), manual isolation valve, U-seal, moisture trapper, off-line moisture measurement system (MT-201), Pressure (PT-201), Flow (FT-201), temp. (TE-201) measurement.
+Combustion air: Control valve (MCV-202), manual isolation valve, Pressure (PT-203), flow (FT-202), temp. (TE-203) measurement, mill inlet valve (MCV204).
+Waste gas from bag filter outlet.
+Bleed valve (MCV-203)
+Emergency nitrogen valve (xxxx) (ANDE to provide Tag.No.) for HGG and mill inlet duct.
+VRM inlet temp. Control loop and air fuel ratio control (FIC 201 & FIC 202)
+HGG STARTING SEQUENCE
+Before caring out any operation, Nitrogen Flushing (Nitrogen availability to be checked; pressure more than 6 Kg/Cm2, PT-401) from HGG inlet to VRM inlet to Bag filter to fine coal silo ensuring VRM inlet oxygen(AT-201) & CO (AT-202) bag filter inlet oxygen(AT-301) & CO (AT-302) Bag filter outlet oxygen(AT-305) & CO (AT-306) and fine coal silo oxygen(AT-307) & CO (AT-308) is less than 6%.
+Nitrogen Flushing sequence
+START Main ID Fan (C03021)
+HGG inlet Valve Tag. No. (xxx) (ANDE to provide Tag.No.)
+Close Valve bleed valve MCV-203, Mill inlet duct valve MCV-205 & stack outlet valve MCV-301 (Full close)
+Open valve ID fan I/L Tag. No. MCV-302 (25% opening) & MCV-206 (Full Open)
+HGG to VRM duct inlet nitrogen Valve Tag. No. (xxx)
+Open mill inlet nitrogen valve (FSV-401)
+Bag Filter inlet nitrogen valve (FSV-402)
+Fine coal Silo inlet nitrogen valve (FSV-403)
+Nitrogen Flushing will continue for 180 sec (Settable at higher level from HMI)
+Ensure oxygen level at each point <6%.
+Flushing Completed and closing the following valve FSV-401,402 & 403. Single button from HMI followed by control request from HMI.
+HGG STARTING SEQUENCE
+Before starting, break U-seal of HGG inlet of BFG line and monitor BFG pressure (PT-201)>700 mmWC and moisture trapper should be in line (Inlet, Outlet moisture Valve and inlet water valve shall be in open condition)
+Nitrogen Flushing has been completed (Time delay-180sec AND Oxygen less than 6%)
+Close mill inlet valve MCV-204 & 205
+Open Bleed Valve MCV-203
+START CA Fan
+Monitor Combustion air Pressure (PT-203) >300 mmWC and BFG pressure (PT-201)>700 mmWC
+START Ignition (single button) from HMI followed by control request from HMI.
+Monitor LPG Pressure (PS-201) > 10000 mmWC , Open LPG Valve MSV-201
+Monitor LPG Flame through flame scanner (XT-203)
+(If LPG flame is not detected within 10 sec. ignition system to be STOP wait for 5 min restart the system)
+Open BFG Shut off valve FSV-201
+Switch ON CA & BFG flow control PID FIC201&202 with set point of CA 1500 Nm3/hr & ratio 70%
+Monitor BFG Flame through flame scanner (XT-203) once flame has been detected STOP ignition system, wait for flame stability (Intensity > 80 %) through flame scanner (XT-203) once flame is stabilized wait for 10 sec and close LPG supply valve (MSV-201).
+Increase set point of CA & BFG ratio as per process condition ensuring HGG inside temp (TE -203) < xxxx0C .
+EMERGENCY ISOLATION CONDITION AND SEQUENCE OF ISOLATION OF HGG FOR HEATING CONDITION
+Combustion air pressure (PT-203) <150 mmWC
+BGF Pressure (PT-201) < 200 mmWC
+CA Fan TRIP/ OFF
+Flame off
+HGG inside Temperature > 1000 deg. C
+SEQUENCE
+Close MSV-201 (LPG)
+
+===== PDF SOURCES =====
+
+====================================================================================================
+PDF: /storage/emulated/0/Download/TMLPCI-ANDE-00-PRO-BE-E0003-01-8_P&IDiagramforPCIUnit_20082018-Model.pdf
+SIZE: 929025 bytes
+====================================================================================================
+PDF TEXT EXTRACTION NOT AVAILABLE
+
+====================================================================================================
+PDF: /storage/emulated/0/Download/PCI-Process Control Philosophy.pdf
+SIZE: 205332 bytes
+====================================================================================================
+PDF TEXT EXTRACTION NOT AVAILABLE
+
+====================================================================================================
+PDF: /storage/emulated/0/Download/SOPFORPLCANDDCS.pdf
+SIZE: 171584 bytes
+====================================================================================================
+PDF TEXT EXTRACTION NOT AVAILABLE
+
+====================================================================================================
+PDF: /storage/emulated/0/Download/WORKINGINPLC.pdf
+SIZE: 206522 bytes
+====================================================================================================
+PDF TEXT EXTRACTION NOT AVAILABLE
+
+====================================================================================================
+PDF: /storage/emulated/0/Download/TMLPCI-ANDE-15-INS-DE-D0055-01-0.pdf
+SIZE: 2549565 bytes
+====================================================================================================
+PDF TEXT EXTRACTION NOT AVAILABLE
+
+====================================================================================================
+SOURCE FORENSIC AUDIT COMPLETE
+NO PCI/V5 INTELLIGENCE WAS MODIFIED
+====================================================================================================

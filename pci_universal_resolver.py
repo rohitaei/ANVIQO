@@ -193,6 +193,64 @@ def resolve(query, records=None):
     if not nq:
         return [], None
 
+    # ---------------------------------------------------------------
+    # EXPLICIT I/O FAMILY FILTER
+    #
+    # Equipment family queries:
+    #   MCV204       -> complete verified family
+    #   MCV204 DI    -> verified DI records only
+    #   MCV204 DO    -> verified DO records only
+    #   MCV204 AI    -> verified AI records only
+    #   MCV204 AO    -> verified AO records only
+    #
+    # Only apply DI/DO/AI/AO as a filter when the remaining identifier
+    # is itself proven to be a multi-record equipment family.
+    #
+    # This protects exact signal tags such as AO_203 and PT303.
+    # ---------------------------------------------------------------
+    io_filter = None
+    family_query = q
+
+    m = re.match(
+        r"^(.+?)\s+(DI|DO|AI|AO)\s*$",
+        q,
+        flags=re.IGNORECASE,
+    )
+
+    if m:
+        candidate = _clean(m.group(1))
+        candidate_n = normalize(candidate)
+
+        if candidate_n in families and len(families[candidate_n]) > 1:
+            io_filter = m.group(2).upper()
+            family_query = candidate
+
+    if io_filter:
+        family_query_n = normalize(family_query)
+        family_rows = families.get(family_query_n, [])
+
+        filtered_rows = [
+            row
+            for row in _dedupe(family_rows)
+            if _clean(row.get("io_type")).upper() == io_filter
+        ]
+
+        return filtered_rows, "FAMILY_IO"
+
+    # Explicit complete-family request.
+    all_io_match = re.match(
+        r"^(.+?)\s+ALL\s+I/?O\s*$",
+        q,
+        flags=re.IGNORECASE,
+    )
+
+    if all_io_match:
+        candidate = _clean(all_io_match.group(1))
+        candidate_n = normalize(candidate)
+
+        if candidate_n in families and len(families[candidate_n]) > 1:
+            return _dedupe(families[candidate_n]), "FAMILY"
+
     exact_rows = exact.get(nq, [])
     family_rows = families.get(nq, [])
 

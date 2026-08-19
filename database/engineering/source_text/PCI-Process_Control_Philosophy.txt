@@ -1,0 +1,842 @@
+                       PULVERIZED COAL INJECTION UNIT                                                    PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                FOR MBF-1 & MBF-2          ANDE METALLURGICAL   TATA METALIKS                     FOR MBF-1 & MBF-2                      ANDE METALLURGICAL
+
+
+
+
+                                                                                                     PCI System Process Control Instructions
+
+                                                                                                        Chapter I. System Configuration
+
+
+                      TATA METALIKS Ltd.                                         1.0          The process system composition:
+                                                                                              The system according to the production process and function
+                                                                                              divided into 6 (Six) subsystems:
+
+                                                                                              I.       Raw Coal Storage and Transportation System
+     PCI SYSTEM (Lean Phase) FOR 1 X 305 m³ & 1×259 m³                                        II.      Hot Gas Generator (HGG) system
+                                                                                              III.     Coal Grinding & Pulverizing system
+                                   MBF                                                        IV.      Injection System
+                                                                                              V.       Utility System
+                                                                                              VI.      PC based Automation, Instrumentation, and Electrical
+                                                                                                       System:
+
+                                                                                 I.           Raw Coal Storage and Transportation System
+
+                                                                                               It includes Raw coal shed, Grab bucket crane, Raw coal hopper
+                                                                                 (1 no.), Vibro feeder, Belt feeder (A0102), charging conveyor (A0104), Iron
+                                                                                 remover (A0103), Metal Detector (OD-101), Chute Jam Switch, Steep angle
+                                                                                 conveyor (65 deg angle) along with belt safety devices, chute jam switch, Raw
+                                                                                 coal silo along with load cell (WT-301) and Radar Type level transmitter (LT-
+                                                                                 301), Air Gun etc.
+
+                                                                                              A)       Raw Coal Silo feeding system START & STOP Interlock:
+        ANDE METALLURGICAL MACHINERY CO., LTD.
+                               July 4. 2018                                                           RAW COAL SILO FEEDING SEQUENCE:
+                                                                                                       START Steep angle conveyor (SEQ-1)
+
+
+
+                                                                                              START Charging Belt Conveyor with delay (SEQ-2)
+
+
+
+                                                                                                       START Belt feeder with delay (SEQ-3)
+
+
+
+                                                                                                   Rod gate of hopper (Manually Control) (SEQ-4)
+
+
+
+                                                                                              Feed with grab Bucket (Manually Control) (SEQ-5)
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 0 of 31                                                                 Page 1 of 31
+                           PULVERIZED COAL INJECTION UNIT                                                                PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                    FOR MBF-1 & MBF-2                         ANDE METALLURGICAL   TATA METALIKS                  FOR MBF-1 & MBF-2                     ANDE METALLURGICAL
+
+
+
+
+    Note: There will be two mode of operation AUTO (Remote) and MANUAL                              8.0       Belt sway switch (BS-004A, BS-004B, BS-004C, BS-004D, BS-
+    (Remote & Local)                                                                                          004E, BS-004F) zero speed switch (ZS-006), pull cord switch
+    AUTO Mode: SEQ-1to3 will be executed from HMI located at PCI Control                                      healthy (PC-005A, PC-005B, PC-005C, PC-005D, PC-005E).
+    room (Single Button) and SEQ-4&5 will be operated manually from field.                          CHARGING BELT (A0104)
+    STARTING shall be done by single button from HMI followed by control                                      1.0    Steep angle conveyor is running.
+    request from HMI                                                                                          2.0    Chute jam switch (LIA-101)
+    MANUAL Mode: There are two mode of operation i.e. Remote & Local                                          3.0    Metal detector (OD-001) healthy.
+    Remote Operation: will be operated from control room based on sequence                                    4.0    Iron Remover helthy and running.
+    and interlocks.                                                                                           5.0    Electrical system healthy.
+    Local Operation: will be operated from field based on the permissive from                                          i) Feeder healthy
+    HMI and individual equipment interlocks.                                                                           ii) Control on
+                                                                                                                       iii) EPB Not Pressed
+    INTERLOCKS                                                                                                         iv) L/R Selected from field (L-Local Mode, R-Remote
+                                                                                                                       Mode)
+                                                                                                                       v) Run feed back
+    STEEP ANGLE CONVEYOR:
+                                                                                                                       vi) Tripped
+
+                                                                                                                6.0   Belt sway switches (BS-002A, BS-002B, BS-002C, BS-
+          1.0     Raw coal silo level (LT_301) must be < 90 %.( Settable at higher
+                                                                                                                      002D, zero speed switch (ZS-003), Pull Cord switches
+                  level from HMI)
+                                                                                                                      (PC-001A, PC-001B PC-001C, PC-001D) healthy.
+           2.0    Raw coal net weight (WT_301) must be < 100 Ton. (Settable at
+                                                                                                    BELT FEEDER
+                  higher level from HMI.)
+                                                                                                              1.0     Steep angle conveyor is running.
+           3.0     There will be four mode of interlock.
+                                                                                                              2.0     Charging belt is running.
+                  i)      Level Mode,
+                                                                                                              3.0     Electrical system healthy.
+                  ii)     Weight Mode,
+                                                                                                                        i) Feeder healthy
+                  iii)    Level & Weight Mode,                                                                          ii) Control on
+                  iv)     Level or Weight Mode.                                                                         iii) EPB Pressed
+                  In Level Mode only RCS level will be considered for interlock.                                        iv) L/R Selected from field
+    In “Weight Mode” Mode only RCS weight will be considered for interlock. In                                          v) Forward on feed back
+    Level & Weight Mode both RCS level & weight will be considered for
+    interlock, in Level or Weight Mode either level or weight will be considered for
+    interlock.                                                                                      B)    RAW COAL SILO FEEDING STOP SEQUENCE:
+
+    6.0          Electrical system healthy.                                                                                 STOP Belt feeder (SEQ-1)
+                          i) Feeder healthy
+                          ii) Control on
+                          iii) EPB Not Pressed
+                                                                                                                   STOP Charging conveyor with delay (SEQ-2)
+                          iv) L/R Selected from field (L-Local Mode, R-Remote
+                          Mode)
+                          v) Run feed back
+                          vi) Tripped                                                                             STOP Steep angle conveyor with delay (SEQ-3)
+
+
+    7.0          Chute Jam Switch (LIA102) healthy.
+                                                                                                    Note: For normal stopping first stop the raw coal feeding from grab crane
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                       CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 2 of 31                                                                                    Page 3 of 31
+                          PULVERIZED COAL INJECTION UNIT                                                                PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                   FOR MBF-1 & MBF-2                       ANDE METALLURGICAL   TATA METALIKS                    FOR MBF-1 & MBF-2                      ANDE METALLURGICAL
+
+
+    then closed rod gate and SEQ 1 to 3 shall be followed automatically. STOP                    HGG to VRM duct inlet nitrogen Valve Tag. No. (xxx)
+    shall be done with a single button from HMI followed by control request from
+    HMI.
+    For emergency stopping SEQ-1 to 3 shall be followed.
+                                                                                                 Open mill inlet nitrogen valve (FSV-401)
+    II.          Hot Gas Generator (HGG) system
+
+                  It includes Flame scanner (XT-203), Ignition system by using                   Bag Filter inlet nitrogen valve (FSV-402)
+    LPG, shut off valve (MSV-201), LPG manual isolation valve , NRV, Pressure
+    switch (PS-201), Pressure gauge (PI-201),
+    BFG: Shut off valve (FSV-201), control valve (MCV-201), manual isolation                     Fine coal Silo inlet nitrogen valve (FSV-403)
+    valve, U-seal, moisture trapper, off-line moisture measurement system (MT-
+    201), Pressure (PT-201), Flow (FT-201), temp. (TE-201) measurement.
+    Combustion air: Control valve (MCV-202), manual isolation valve, Pressure                    Nitrogen Flushing will continue for 180 sec (Settable at higher level from
+    (PT-203), flow (FT-202), temp. (TE-203) measurement, mill inlet valve                        HMI)
+    (MCV204).
+    Waste gas from bag filter outlet.                                                            Ensure oxygen level at each point <6%.
+    Bleed valve (MCV-203)
+    Emergency nitrogen valve (xxxx) (ANDE to provide Tag.No.) for HGG and mill                   Flushing Completed and closing the following valve FSV-401,402 & 403.
+    inlet duct.                                                                                  Single button from HMI followed by control request from HMI.
+    VRM inlet temp. Control loop and air fuel ratio control (FIC 201 & FIC 202)
+                                                                                                 HGG STARTING SEQUENCE
+    HGG STARTING SEQUENCE                                                                        Before starting, break U-seal of HGG inlet of BFG line and monitor BFG
+    Before caring out any operation, Nitrogen Flushing (Nitrogen availability to                 pressure (PT-201)>700 mmWC and moisture trapper should be in line
+    be checked; pressure more than 6 Kg/Cm2, PT-401) from HGG inlet to VRM                       (Inlet, Outlet moisture Valve and inlet water valve shall be in open
+    inlet to Bag filter to fine coal silo ensuring VRM inlet oxygen(AT-201) & CO                 condition)
+    (AT-202) bag filter inlet oxygen(AT-301) & CO (AT-302) Bag filter outlet
+    oxygen(AT-305) & CO (AT-306) and fine coal silo oxygen(AT-307) & CO (AT-                     Nitrogen Flushing has been completed (Time delay-180sec AND Oxygen less
+    308) is less than 6%.                                                                        than 6%)
+    Nitrogen Flushing sequence
+    START Main ID Fan (C03021)                                                                                       Close mill inlet valve MCV-204 & 205
+
+     HGG inlet Valve Tag. No. (xxx) (ANDE to provide Tag.No.)
+                                                                                                                          Open Bleed Valve MCV-203
+
+    Close Valve bleed valve MCV-203, Mill inlet duct valve MCV-205 & stack
+    outlet valve MCV-301 (Full close)                                                                                            START CA Fan
+
+                                                                                                  Monitor Combustion air Pressure (PT-203) >300 mmWC and BFG pressure
+    Open valve ID fan I/L Tag. No. MCV-302 (25% opening) & MCV-206 (Full                                                   (PT-201)>700 mmWC
+    Open)
+
+                                                                                                   START Ignition (single button) from HMI followed by control request from
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 4 of 31                                                                                 Page 5 of 31
+                          PULVERIZED COAL INJECTION UNIT                                                                 PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                   FOR MBF-1 & MBF-2                        ANDE METALLURGICAL   TATA METALIKS                    FOR MBF-1 & MBF-2                  ANDE METALLURGICAL
+
+
+                                       HMI.                                                       Wait for 10 sec. (air purging)
+
+                                                                                                  Close MCV-202 (CA)
+    Monitor LPG Pressure (PS-201) > 10000 mmWC , Open LPG Valve MSV-201
+                                                                                                  EMERGENCY ISOLATION CONDITION AND SEQUENCE OF ISOLATION
+                                                                                                  OF HGG FOR EMERGENCY VRM OFF CONDITION
+                Monitor LPG Flame through flame scanner (XT-203)
+    (If LPG flame is not detected within 10 sec. ignition system to be STOP wait                  Combustion air pressure (PT-203) <150 mmWC
+                            for 5 min restart the system)                                         BGF Pressure (PT-201) < 200 mmWC
+                                                                                                  CA Fan TRIP/ OFF
+                                                                                                  Flame off
+                          Open BFG Shut off valve FSV-201                                         HGG inside Temperature > 1000 deg. C
+
+      Switch ON CA & BFG flow control PID FIC201&202 with set point of CA                         SEQUENCE
+                          1500 Nm3/hr & ratio 70%                                                 Close MSV-201 (LPG)
+
+     Monitor BFG Flame through flame scanner (XT-203) once flame has been
+      detected STOP ignition system, wait for flame stability (Intensity > 80 %)                  Close-FSV-201 (BFG)
+    through flame scanner (XT-203) once flame is stabilized wait for 10 sec and
+                        close LPG supply valve (MSV-201).
+                                                                                                  Full close MCV-201(BFG)
+    Increase set point of CA & BFG ratio as per process condition ensuring HGG
+                           inside temp (TE -203) < xxxx0C .
+                                                                                                  Wait for 10 sec. (air purging)
+    EMERGENCY ISOLATION CONDITION AND SEQUENCE OF ISOLATION
+    OF HGG FOR HEATING CONDITION                                                                  Close MCV-202 (CA)
+
+    Combustion air pressure (PT-203) <150 mmWC                                                    N2 purging as per procedure mentioned above (clause no-xxxxx) (ANDE to
+    BGF Pressure (PT-201) < 200 mmWC                                                              provide)
+    CA Fan TRIP/ OFF
+    Flame off                                                                                     ID FAN Interlocks:
+    HGG inside Temperature > 1000 deg. C
+                                                                                                  1.0 Feeder healthy
+    SEQUENCE                                                                                      2.0 Control on
+    Close MSV-201 (LPG)                                                                           3.0 EPB Pressed
+                                                                                                  4.0 Run feed back
+                                                                                                  5.0 Tripped
+    Close-FSV-201 (BFG)                                                                           6.0 ID fan Inlet (MCV-302) and manual valve, Stack inlet valve (MCV-301)
+                                                                                                  and HGG re-circulation valve (MVC-206) of ID fan should be closed. (For
+                                                                                                  Start up Only)
+    Full close MCV-201                                                                            7.0 Motor & Fan vibration < xxxxxxx (ANDE to provide)
+                                                                                                  8.0 Motor bearing & winding temperature <xxxxxx (ANDE to provide)
+                                                                                                  9.0 Motorized valve interlock
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                     CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 6 of 31                                                                                  Page 7 of 31
+                           PULVERIZED COAL INJECTION UNIT                                                                PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                    FOR MBF-1 & MBF-2                         ANDE METALLURGICAL   TATA METALIKS                  FOR MBF-1 & MBF-2                     ANDE METALLURGICAL
+
+
+    Feeder healthy                                                                                  considered for interlock
+    Control on                                                                                      Electrical interlock:
+    EPB Pressed                                                                                     Feeder healthy
+    Motor Tripped                                                                                   Control on
+    Torque Switch operated                                                                          EPB Pressed
+    Actuator full open feedback (OPENING CONDITION)                                                 Run feed back
+    Actuator full close feedback (CLOSE CONDITION)                                                  Tripped
+                                                                                                        • Mill vibration ST-301 & 302< …mills/s (ANDE to provide)
+                                                                                                        • Weigh feeder (WT_302) is healthy and feed rate set point >= 2 TPH.
+    III.         Coal Grinding & Pulverizing system                                                         (Settable at higher level from HMI.).
+                                                                                                     Feeder healthy
+                  The system is mainly composed of hermetically sealed weigh                         Control on
+    feeder (WT-302), vertical roller mill (VRM) (ARM1400), seal air fan                              EPB Pressed
+    (C0308),Hydraulic Station (C0310/311/312), Lubrication System (C0309),                           Forward on feed back
+    Separator/Dynamic classifier (C0306) , Mill bed height measurement (LT-                          Reverse on feed back
+    302), Cylinder parking position detection system (VRM-CYL-PP1/PP2/PP3),                          Motor Tripped
+    Mill rejection door open detection (VRM-RD-OP), Mill body vibration system                      Belt sway switch (BS-007) and zero jam switch (ZS-008) healthy
+    (ST-307), Oxygen monitoring system (AT-201 & AT-202), Bulk head vibrator,                          • Main Id Fan is running
+    Rotary air lock valves & vibrating screens, Mill inlet valve MCV-204.                              • Weigh feeder chute jam switch (LIA_304) is not activated.
+                                                                                                       • VRM inlet hot gas temperature (TE_204) <=3200C .(Settable at higher
+    Following inter lock has to be fulfilled for VRM start up and running.                                 level from HMI.).
+                                                                                                       • VRM inlet hot gas Pressure (PT_204) < - 20 mmwc .(Settable at higher
+    Before start up Mill, Bag Filter, HGG, and Pulverized Coal Silo Must be                                level from HMI.).
+    flushed with Nitrogen to ensure Oxygen level below 6% at all O2                                    • VRM rollers are in parking position (Only for VRM start up
+    concentration measuring level.                                                                         permissive).
+       • Raw coal silo level (LT_301) must not be < 20 %.(Settable at higher                           • VRM Bed Height (LT_302) >=10%..(Settable at higher level from HMI.)
+          level from HMI)                                                                              • VRM hydraulic system is ok.
+       • Raw coal net weight (WT_301) must not be < 10 Ton .(Settable at                               • VRM hydraulic oil pressure (PT_301)> 100 kg/cm2. (Settable at higher
+          higher level from HMI)                                                                           level from HMI.)
+       • Pulverized coal silo level (LT_308) must not be > 90 %.(Settable at                           • VRM hydraulic oil temperature (TE_301) < 600C. (Settable at higher
+          higher level from HMI)                                                                           level from HMI.)
+       • Pulverized coal net weight (WT_303) must not be > 80 Ton. (Settable                           • VRM lubrication system is ok.
+          at higher level from HMI.)                                                                   • VRM lubrication oil pressure (PT_302)> 1 kg/cm2. (Settable at higher
+                                                                                                           level from HMI.)
+           There will be four mode of interlock;
+           •                                                                                           • VRM lubrication oil temperature (TE_318) < 550C. (Settable at higher
+           1.     Level Mode,                                                                              level from HMI.)
+           2.     Weight Mode,                                                                         • VRM rejection door is closed (Only for VRM starts up permissive).
+           3.     Level & Weight Mode,                                                                 • Seal air fan is running.
+           4.     Level or Weight Mode                                                                 • Classifier is running.
+    In level Mode only RCS & PCS level will be considered for interlock.                               • VRM body Vibration (ST_307) < 9 mil/sec. (Settable at higher level
+    In “Weight Mode” Mode only RCS & PCS weight will be considered for                                     from HMI.)
+    interlock. In Level & Weight Mode both RCS & PCS level & weight will be                            • RALV-1 & 2 is running.
+    considered for interlock, in Level or Weight Mode either level or weight will be                   • Screen-1 & 2 is running.
+
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                       CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 8 of 31                                                                                    Page 9 of 31
+                         PULVERIZED COAL INJECTION UNIT                                                                 PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                  FOR MBF-1 & MBF-2                         ANDE METALLURGICAL   TATA METALIKS                   FOR MBF-1 & MBF-2                        ANDE METALLURGICAL
+
+
+       • VRM Outlet gas temperature (TE_319A & TE_319B) < 750C. (Settable                                v)     VRM ROLLAR table temp. (TE-505 to
+         at higher level from HMI).                                                                             508)<XXXXXX(ANDE to provide)
+                                                                                                         vi)    VRM Motor X-Y direction vibration(XT-
+      • VRM outlet hot gas Pressure (PT_303) < - 30 mmwc. (Settable at
+                                                                                                                301 & 302 ) <XXXXXX(ANDE to
+         higher level from HMI).                                                                                provide)
+      • Electrical system of all auxiliary drives from raw coal silo to pulverized
+         coal silo are healthy.
+      • Hot air PID control of HGG is on.                                                         VRM Sequence of operation: (Operation shall be done manually from
+      • VRM inlet hot gas temperature > 1500C .(Settable at higher level from                     HMI)
+         HMI.)                                                                                      1. Start seal air fan.
+      • Oxygen level at VRM inlet (AT_201), Bag Filter Inlet (AT_301), Bag                          2. Start ID fan ( 20 Sec delay interlock from Start of seal air fan ON
+         Filter outlet (AT_305) and pulverized coal silo (AT_307) < 12 %.(                              feedback)
+         Settable at higher level from HMI.)                                                        3. Open ID inlet damper (MCV_301) by 20 %
+      • CO level at VRM inlet (AT_202), Bag Filter Inlet (AT_302), Bag Filter                       4. Open Stack inlet damper (MCV_302) by 20 %
+         outlet (AT_306) and Pulverized coal silo (AT_308) < 600 ppm. (Settable                     5. Open HGG inlet damper (MCV_206) by 20 % (Re circulated gas)
+         at higher level from HMI.)                                                                 6. Open VRM inlet damper (MCV_204) by 20 %
+      • Differential pressure (PT_301-PT_304) across bag filter <= 150 mmWC                         7. Start Classifier with 40% of full load RPM (Maximum Operating RPM to
+         (Settable at higher level from HMI.)                                                           be provided by ANDE)
+      • Bag filter inlet gas temperature (TE_320) < 750C. (Settable at higher                       8. Start VRM.
+         level from HMI).                                                                           9. Check ON feedback for VRM Motor (Main Contactor ON)
+      • Bag filter outlet gas temperature (TE_321) < 750C. (Settable at higher                      10. Check Mill DP (Difference pressure of PT-303 & 204) (Maximum &
+         level from HMI).                                                                               minimum DP value to be provided by ANDE)
+      • Following signals shall be healthy for seal air fan, RALV                                   11. Start weigh feeder with minimum set point of 2 TPH from HMI
+    Feeder healthy                                                                                  12. Check Mill bed height 10% (LT-302)
+    Control on                                                                                      13. Lower rollers
+    EPB Pressed                                                                                     14. Gradually adjust classifier to control fineness.
+    Run feed back                                                                                   15. Increase weight feeder feed rate as per process requirement.
+    Tripped                                                                                         16. Start RALV-1 & RALV-2
+                                                                                                    17. Start Screen-1& 2
+      • Following signals shall be healthy for classifier
+                                                                                                    18. MCV-203 & 205 closed for START up only.
+    Feeder healthy
+                                                                                                    19. After starting MCV-205 to be controlled through mill inlet temp. PID
+    Control on
+                                                                                                        (PIC-204) control during emergency condition.
+    EPB Pressed
+    Forward on feedback.(Classifier VFD must be
+    programmed for forward run only at VFD)                                                       Note:
+                                                                                                  1.0   If mill inlet temp overshoots beyond preset value (Maximum 270 deg.
+    Motor Tripped                                                                                       C) then it will be controlled by raw coal feed rate if not then through
+                                                                                                        mill suction pressure PID control (PIC -301), followed by recirculation
+           •Following interlock shall be incorporated:
+                                                                                                        gas flow control PID (PIC-206) in spite of the if temperature is not
+           i)     Roller bearing temp. (TE-302 to TE-304)
+                  <XXXXXX (ANDE to provide)                                                             being controlled then emergency N2 line will be opened for 30 sec and
+           ii)    VRM Motor winding temp. (TE-312 to                                                    finally through MCV 206 PID (FIC206). During PID control it will keep
+                  TE-317) <XXXXX (ANDE to provide)                                                      on monitoring Mill inlet O2 level < 9%.If situation goes beyond out of
+           iii)   VRM Motor DE bearing temp. (TE-                                                       control then we have to shut down the system followed by N2 purging
+                  310)<XXXXXX(ANDE to provide)
+                                                                                                        (FSVXXXXX) until O2 level get down below <6 %.
+           iv)    VRM Motor NDE bearing temp. (TE-
+                  311)<XXXXXX(ANDE to provide)                                                    2.0   Field Operator has to open VRM rejection door at an interval of 2
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                     CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 10 of 31                                                                                 Page 11 of 31
+                         PULVERIZED COAL INJECTION UNIT                                                                 PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                  FOR MBF-1 & MBF-2                        ANDE METALLURGICAL   TATA METALIKS                    FOR MBF-1 & MBF-2                          ANDE METALLURGICAL
+
+
+          hours as well as starting and stopping of VRM.
+                                                                                                 BAG FILTER, HYDRAULIC SYSTEM, LUBRICATION SYSTEM CONTROL
+          STOPPING SEQUENCE: (Operation shall be done from HMI                                   PHILOSOPHY TO BE UPADATED BY ANDE INLINE WITH THE ABOVE
+          manually)
+                                                                                                 IV.           Injection System
+          1.0    Gradually reduce coal feed rate through weigh feeder set point
+          2.0    Gradually reduce suction through PIC-204.                                       1)            Injection system is mainly through the Nitrogen/Compressed
+          3.0    Gradually reduce recirculation gas flow through FIC -206.                       Air to the blast furnace to transport pulverized coal. Each blast furnace
+          4.0    Wait for up to Mill bed height (LT-302) 10% and check mill                      design has two parallel Injection Vessels. Fine coal powder from the
+                 vibration.                                                                      Pulverized coal Silo shall be filled into injection vessel and pressurized by
+          5.0    Lift Rollers                                                                    Nitrogen. When a Injection vessel filled with pulverized coal and pressurized
+          6.0    Click STOP button from HMI Single button from HMI followed                      to the set value, it is ready to inject coal (known as the waiting vessel); when
+                 by control request from HMI.                                                    another injection vessel (operating vessel) is injecting, the waiting vessel is
+          7.0    Close BFG Shutoff valve (FSV-201), BFG Control valve (MCV-                      switched on to the operation vessel to start the coal injection (To reduce the
+                 201) after 10 sec. delay close Combustion air control valve                     fluctuation in coal flow rate).After a brief transition time, the Injecting empty
+                 (MCV-202).                                                                      operating vessel stop injection and begins to depressurized. Another cycle of
+          8.0    After 30 sec delay Close MCV-204, MCV-302 MCV-206, MCV-                         pulverized coal refills and pressurizes up to set value make it ready-for
+                 301                                                                             injection (waiting vessel).
+          9.0    Stop Classifier with 10 sec delay.
+          10.0   Stop VRM with 10 sec delay.                                                     2)             Coal bin under the manual gate valve, pneumatic butterfly
+          11.0   Stop Main ID fan with 10 sec delay.                                             valve, offset-type bell valve, butterfly valve and the middle of the bell valve
+          12.0   Stop Seal Air fan with 20 sec delay.                                            can flex flexible rubber connection.
+          13.0   STOP Hydraulic station                                                          The pulverized coal silo is composed of 4
+                                                                                                 Injection Vessels defined as A,B,C and D, comprising two sets of separate
+    Note: There will be a provision for START & STOP button from HMI (Single                     injection systems for MBF 1 & 2. Injection Vessels C & D can be responsible
+    button) followed by control request at HMI for each individual equipment.                    for Injecting coal to MBF1. Injection Vessels A & B shall be responsible
+    This START & STOP action shall be logged in the operator activity report.                    for Injecting coal to MBF2 are used in two-tank parallel operation mode. The
+    DP across VRM has to be maintained <=-xxx mmWC (ANDE to provide                              effective volume of each Injection Vessels is 12m3, and can be loaded with
+    process parameter as well as procedure)                                                      coal powder 6t. The Injecting tank is provided with a feeding valve (For
+                                                                                                 Vessel A: FSV_506, Vessel B: FSV_513, Vessel C: FSV_520, Vessel D:
+    EMERGENCY STOP CONDITION FOR VRM                                                             FSV_527) , a filling valve (For Vessel A: FSV_536, Vessel B: FSV_537, Vessel
+                                                                                                 C: FSV_538, Vessel D: FSV_539), a pressurizing valve (For Vessel A: PCV-
+    1.0   Mill motor vibration                                                                   502 &503 FSV_507, Vessel B: PCV-506/507, FSV_514, Vessel C: PCV-
+    2.0   Mill inlet temp. (TE-204) > 320 Deg.C                                                  510/511,FSV_521, Vessel D: PCV-514/515,FSV_523), a relief valve (For
+    3.0   Mill Outlet temp. TE-319A & 319B > 75 deg.C                                            Vessel A: PCV_501, Vessel B: PCV_505, Vessel C: PCV_509, Vessel D:
+    4.0   Bag Filter Inlet temp. (TE-320) > 75 deg.C                                             PCV_513), a injection valve (For Vessel A: FSV_509,510, Vessel B:
+    5.0   Bag Filter Outlet temp. (TE-321)> 75 deg.C                                             FSV_516,517, Vessel C: FSV_523,524, Vessel D: FSV_530,531), a conveying
+    6.0   Oxygen level at VRM inlet (AT_201), Bag Filter Inlet (AT_301), Bag                     media valve (For Vessel A: FSV-511 & FCV-501, Vessel B: FSV_518 & FCV-
+          Filter outlet (AT_305) and pulverized coal silo (AT_307) < 12                          502, Vessel C: FSV_525 & FCV-503, Vessel D: FSV_532 & FCV-504), a
+          %.(Settable at higher level from HMI.)                                                 backfilling valve (For Vessel A: FSV_502, Vessel B: FSV_503, Vessel C:
+    7.0   CO level at VRM inlet (AT_202), Bag Filter Inlet (AT_302), Bag Filter                  FSV_504, Vessel D: FSV_505 and FSV-501), Conveying media selection valve
+          outlet (AT_306) and Pulverized coal silo (AT_308) < 600 ppm. (Settable                 (For Vessel A: FSV_512, Vessel B: FSV_519, Vessel C: FSV_526, Vessel D:
+          at higher level from HMI.)                                                             FSV_533) .
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 12 of 31                                                                                Page 13 of 31
+                           PULVERIZED COAL INJECTION UNIT                                                              PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                    FOR MBF-1 & MBF-2                     ANDE METALLURGICAL   TATA METALIKS                    FOR MBF-1 & MBF-2                       ANDE METALLURGICAL
+
+
+                                                                                                12.0   START Filling
+    INJECTION VESSEL OPERATION SEQUENCE
+    Before STARTING of injection operation ensures N2 pressure (PT-401)> 7                             2.    Injection Vessel-A Filling Sequence:
+    Kg/Cm 2 and compressed air pressure (PT-407)> 7 Kg/Cm2 and it must be
+    interlock with the operation sequence.                                                      1.0    Ensure vessel pressure PT-501 less than 0.1 kg/cm2 (ANDE to
+    1.0    De-Pressurizing                                                                             confirm)
+    2.0    Filling                                                                              2.0    Close Back filling valve FSV-502, Pressurizing valve FSV-507, PCV-
+    3.0    Pressurizing                                                                                502 & 503 and relief valve PCV-501.
+    4.0    Waiting/Ready to inject                                                              3.0    Close coal conveying valve FSV-509&510.
+    5.0    Injection                                                                            4.0    Close conveying media valves FCV-501 & FSV-511.
+    6.0    Injecting vessel change over (A –B-A, C-D-C)                                         5.0    Fluidizing valve PCV-504 & FSV-508 must be OPEN all the time.
+    7.0    Isolation mode                                                                       6.0    Open Dome valve FSV-536 and open coal feeding valve from PCS FSV-
+    Above Sequence shall be repeated accordingly.                                                      506.
+                                                                                                7.0    Check net weight of vessel (WT-501)=6T (ANDE to check)
+     MBF        Compressed Nitrogen      FSV-      FSV-      FSV-       FSV-                    8.0    Close FSV coal feeding valve FSV-506.
+                   Air                   512       519       526        533                     9.0    After 5 sec. delay Close dome valve FSV-536.
+       1            √          X         OFF       OFF        ON         ON
+       2            X          √          ON        ON       OFF        OFF
+                                                                                                       3.    Injection Vessel-A Pressurizing Sequence:
+
+    Note: Before starting injection operator has to select conveying media,
+                                                                                                1.0    Close Back filling valve FSV-502,
+    nitrogen or compressed air from HMI by selecting above matrix (by enabling
+                                                                                                2.0    Close relief valve PCV-501 .
+    check box column 2 &3) with control request and higher level password.
+                                                                                                3.0    Close coal conveying valve FSV-509&510.
+    Operator has to open the manual isolation valve from field of corresponding
+                                                                                                4.0    Close conveying media valves FCV-501 & FSV-511.
+    conveying media line.
+                                                                                                5.0    Fluidizing valve PCV-504 & FSV-508 must be OPEN all the time.
+                                                                                                6.0    Close Dome valve FSV-536
+    INJECTION VESSEL-A&B SHALL BE DEDICATED FOR INJECTING
+                                                                                                7.0    Close coal feeding valve (FSV-506) from PCS.
+    PULVARIZED COAL TO MBF-2
+                                                                                                8.0    Open Pressurizing valve FSV-507,
+                                                                                                9.0    Control Vessel pressure through PCV-502 PID coarse control up to 4
+           1.      Injection Vessel-A De-pressurizing Sequence:
+                                                                                                       kg/cm2(ANDE to confirm)
+                                                                                                10.0   Control Vessel pressure through PCV-503 PID fine control up to 4
+    1.0    Check net weight of vessel (WT-501)=1T (ANDE to check)
+                                                                                                       kg/cm2(ANDE to confirm)
+    2.0    Close Back filling valve FSV-502, Pressurizing valve FSV-507, PCV-
+                                                                                                11.0   Control Vessel pressure through relief valve PCV-501 PID fine control
+           502 & 503.
+                                                                                                       up to 4 kg/cm2(ANDE to confirm)
+    3.0    Close coal conveying valve FSV-509&510.
+                                                                                                12.0   Once Pressure achieved to desired set point of 4 kg/cm2(ANDE to
+    4.0    Close conveying media valves FCV-501 & FSV-511.
+                                                                                                       confirm)
+    5.0    Fluidizing valve PCV-504 & FSV-508 must be OPEN all the time.
+                                                                                                13.0   Close PCV-501 and FSV-507.
+    6.0    Close Dome valve FSV-536
+                                                                                                14.0   If require follow sequence from 11.0 to 13.0 during injection.
+    7.0    Close coal feeding valve FSV-506.
+    8.0    After 5 sec. delay Close dome valve FSV-536.
+                                                                                                       4.    Injection Vessel-A Ready to Inject Sequence:
+    9.0    Open relief valve PCV-501.
+    10.0   Check injection vessel pressure PT-501 less than 0.1 kg/cm2 (ANDE
+                                                                                                      After vessel pressurization close all above related valves and maintain
+           to confirm)
+                                                                                                pressure by operating auxiliary pressurizing valve PCV-503 and relief valve
+    11.0   Injection vessel De-pressurized.
+                                                                                                PCV-501. Vessel is ready for injection. PCV-503 will be operated through PID
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                   CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 14 of 31                                                                               Page 15 of 31
+                           PULVERIZED COAL INJECTION UNIT                                                                 PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                    FOR MBF-1 & MBF-2                         ANDE METALLURGICAL   TATA METALIKS                   FOR MBF-1 & MBF-2                        ANDE METALLURGICAL
+
+
+    control during injection only.                                                                  3.0    Close Dome valve FSV-537
+                                                                                                    4.0    Close relief valve PCV-505
+            5.      Injection Vessel-A Injection Sequence:                                          5.0    Close Pressurizing valve FSV-514 & PCV-506
+    0.0     Open MBF-2 distributor inlet valve (FSV-535)                                            6.0    Fluidizing valve PCV-508 & FSV-515 must be OPEN all the time.
+    1.0     Close Back filling valve FSV-502                                                        7.0    If required control vessel pressure by PID of PCV-507.
+    2.0     Close FSV coal feeding valve FSV-506.                                                   8.0    Control conveying media flow (300 m3/hr) through PID FCV-502(Flow
+    3.0     Close Dome valve FSV-536                                                                       value ANDE to confirm) & FSV-518.
+    4.0     Close relief valve PCV-501                                                              9.0    Open Coal conveying valves FSV-517.
+    5.0     Close Pressurizing valve FSV-507 & PCV-502                                              10.0   Open coal conveying valve FSV-516.
+    6.0     Fluidizing valve PCV-504 & FSV-508 must be OPEN all the time.                           11.0   Flashing display in HMI.” INJECTING”.
+    7.0     If required control vessel pressure by PID of PCV-503.
+    8.0     Open FSV-511                                                                                   7.    Isolation mode( injecting to isolation) sequence
+    9.0     Control conveying media flow (300 m3/hr) through PID FCV-
+            501(Flow value ANDE to confirm)                                                         1.0    Close FSV-509
+    10.0 Open Coal conveying valves FSV-510                                                         2.0    After 10 second delay close FSV-510.
+    11.0 Algorithm to be included for the following:                                                3.0    Close FCV-501 & FSV-511
+            i)      Injection flow rate (T/hr) vs Injection vessel pressure                         4.0    Vessel is in isolation mode.
+            ii)      Injection flow rate (T/hr) vs conveying media flow.
+    Note: Operator will provide injection flow rate (T/hr) in the HMI based on the                  Back Flashing:
+    injection flow rate actual value, vessel pressure set point and conveying                       If the injection is stopped for long time or the vessel is under maintenance
+    media flow will be adjusted automatically. ANDE to provide/include above                        the coal contain in the vessels (PCS and injection tanks) to be re-circulated
+    mentioned algorithm.                                                                            in the bag filter.
+    It will check pressure (PT-518) is more than 5 kg/cm2. (ANDE to confirm)
+    12.0 Open coal conveying valve FSV-509                                                          Sequence of Starting Back Flushing (For vessel-A)
+    13.0 Open MBF-2 Distributor I/L valve FSV-535
+    14.0 Flashing display in HMI.” INJECTING”                                                       1.0    Fluidizing valve PCV-504 & FSV-508 must be OPEN all the time.
+    15.0 Operation to be continued till next vessel put into injection.                             2.0    Close FSV-509
+    16.0 Injection rate to be displayed in HMI (Rate to be calculated through                       3.0    Close FSV-506
+            weight loss method).                                                                    4.0    Close PCV-501
+    17.0 Once injecting vessel-A approaching to minimum weight (WT-501) set                         5.0    Close PCV-503
+            point trigger for next vessel for injecting                                             XX)    Close FSV-XXX (ANDE to provide)
+    18.0 Change over to next vessel-B (operation sequence-6).                                       6.0    Open FSV-502
+    19.0 Wait for next vessel-B to go to injecting mode.                                            7.0    Open FSV-536
+    20.0 Once vessel-B switches over to injecting mode then vessel-A will                           8.0    Open FSV-507
+            switch over to de isolation mode (operation sequence-7).                                9.0    Open PCV-502
+    21.0 After 10 second delay vessel-A will go in depressurizing mode from                         10.0   “Back Flashing Running” shall be flashed in HMI
+            isolation mode (operation sequence-1). Rest of the sequence will follow
+            as according in operation sequence.                                                     This process will continue till vessel weight (WT-501) reaches to zero. After
+                                                                                                    completion of process “Back Flashing Completed” shall be flashed in HMI
+          6.     Injecting vessel change over( vessel-A to vessel-B) sequence                       and ready for filling.
+
+    1.0   Close Back filling valve FSV-503                                                          Sequence of Stopping Back Flushing (For vessel-A)
+    2.0   Close FSV coal feeding valve FSV-513.
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                       CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 16 of 31                                                                                   Page 17 of 31
+                         PULVERIZED COAL INJECTION UNIT                                                             PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                  FOR MBF-1 & MBF-2                     ANDE METALLURGICAL   TATA METALIKS                   FOR MBF-1 & MBF-2                        ANDE METALLURGICAL
+
+
+    1.0    Fluidizing valve PCV-504 & FSV-508 must be OPEN all the time.                             3.    Injection Vessel-B Pressurizing Sequence:
+    2.0    Close PCV-501
+    3.0    Close PCV-503                                                                      1.0    Close Back filling valve FSV-503,
+    4.0    Close FSV-507                                                                      2.0    Close relief valve PCV-505.
+    5.0    Close PCV-502                                                                      3.0    Close coal conveying valve FSV-516&517.
+    6.0    Close FSV-502                                                                      4.0    Close conveying media valves FCV-502 & FSV-518.
+    XX)    Close FSV-XXX (ANDE to provide)                                                    5.0    Fluidizing valve PCV-508 & FSV-515 must be OPEN all the time.
+    7.0    Close FSV-536                                                                      6.0    Close Dome valve FSV-537
+    8.0    After completion of process “Back Flashing Completed” shall be                     7.0    Close coal feeding valve (FSV-513) from PCS.
+           flashed in HMI and ready for filling.                                              8.0    Open Pressurizing valve FSV-514,
+                                                                                              9.0    Control Vessel pressure through PCV-506 PID coarse control up to 4
+           1.    Injection Vessel-B De-pressurizing Sequence:                                        kg/cm2(ANDE to confirm)
+                                                                                              10.0   Control Vessel pressure through PCV-507 PID fine control up to 4
+    1.0    Check net weight of vessel (WT-502)=1T (ANDE to check)                                    kg/cm2(ANDE to confirm)
+    2.0    Close Back filling valve FSV-503, Pressurizing valve FSV-514, PCV-                 11.0   Control Vessel pressure through relief valve PCV-505 PID fine control
+           506 & 507.                                                                                up to 4 kg/cm2(ANDE to confirm)
+    3.0    Close coal conveying valve FSV-516&517.                                            12.0   Once Pressure achieved to desired set point of 4 kg/cm2(ANDE to
+    4.0    Close conveying media valves FCV-502 & FSV-518.                                           confirm)
+    5.0    Fluidizing valve PCV-508 & FSV-515 must be OPEN all the time.                      13.0   Close PCV-505and FSV-514.
+    6.0    Close Dome valve FSV-537                                                           14.0   If require follow sequence from 11.0 to 13.0 during injection.
+    7.0    Close coal feeding valve FSV-513.
+    8.0    After 5 sec. delay Close dome valve FSV-537.
+    9.0     Open relief valve PCV-505.
+    10.0   Check injection vessel pressure PT-505 less than 0.1 kg/cm2 (ANDE                         1.0   Injection Vessel-B Ready to Inject Sequence:
+           to confirm)
+    11.0   Injection vessel De-pressurized.                                                                 After vessel pressurization close all above related valves and
+    12.0   START Filling                                                                      maintain pressure by operating auxiliary pressurizing valve PCV-507 and
+                                                                                              relief valve PCV-505. Vessel is ready for injection. PCV-507 will be operated
+           2.    Injection Vessel-B Filling Sequence:                                         through PID control during injection only.
+
+    1.0    Ensure vessel pressure PT-505 less than 0.1 kg/cm2 (ANDE to                               2.0    Injection Vessel-B Injection Sequence:
+           confirm)                                                                           0.0    Open MBF-2 Distributor I/L valve FSV-535
+    2.0    Close Back filling valve FSV-503, Pressurizing valve FSV-514, PCV-                 1.0    Close Back filling valve FSV-503
+           506 & 507 and relief valve PCV-505.                                                2.0    Close FSV coal feeding valve FSV-513.
+    3.0    Close coal conveying valve FSV-516&5170.                                           3.0    Close Dome valve FSV-537
+    4.0    Close conveying media valves FCV-502 & FSV-518.                                    4.0    Close relief valve PCV-505
+    5.0    Fluidizing valve PCV-508 & FSV-515 must be OPEN all the time.                      5.0    Close Pressurizing valve FSV-514 & PCV-506
+    6.0    Open Dome valve FSV-537 and open coal feeding valve from PCS FSV-                  6.0    Fluidizing valve PCV-508 & FSV-515 must be OPEN all the time.
+           513.                                                                               7.0    If required control vessel pressure by PID of PCV-507.
+    7.0    Check net weight of vessel (WT-502)=6T (ANDE to check)                             8.0    Open FSV-518
+    8.0    Close FSV coal feeding valve FSV-513.                                              9.0    Control conveying media flow (300 m3/hr) through PID FCV-502(Flow
+    9.0    After 5 sec. delay Close dome valve FSV-537.                                              value ANDE to confirm)
+                                                                                              10.0   Algorithm to be included for the following:
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                 CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 18 of 31                                                                             Page 19 of 31
+                           PULVERIZED COAL INJECTION UNIT                                                                   PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                    FOR MBF-1 & MBF-2                          ANDE METALLURGICAL   TATA METALIKS                    FOR MBF-1 & MBF-2                            ANDE METALLURGICAL
+
+
+           iii)   Injection flow rate (T/hr) vs Injection vessel pressure                            2.0    After 10 second delay close FSV-517.
+           iv)    Injection flow rate (T/hr) vs conveying media flow.                                3.0    Close FCV-502 & FSV-518
+                                                                                                     4.0    Vessel is in isolation mode.
+    Note: Operator will provide injection flow rate (T/hr) in the HMI based on the
+    injection flow rate actual value, vessel pressure set point and conveying                        Back Flashing:
+    media flow will be adjusted automatically. ANDE to provide/include above                         If the injection is stopped for long time or the vessel is under maintenance
+    mentioned algorithm.                                                                             the coal contain in the vessels (PCS and injection tanks) to be re-circulated
+    It will check pressure (PT-518) is more than 5 kg/cm2. (ANDE to confirm)                         in the bag filter.
+
+    11.0   Open Coal conveying valves FSV-517                                                        Sequence of Starting Back Flushing (For vessel-B)
+    12.0   Open coal conveying valve FSV-516
+    13.0   Flashing display in HMI.” INJECTING”                                                      1.0    Fluidizing valve PCV-508 & FSV-515 must be OPEN all the time.
+    14.0   Operation to be continued till next vessel put into injection.                            2.0    Close FSV-516
+    15.0   Injection rate to be displayed in HMI (Rate to be calculated through                      3.0    Close FSV-513
+           weight loss method).                                                                      4.0    Close PCV-505
+    16.0   Once injecting-B vessel approaching to minimum weight (WT-502) set                        5.0    Close PCV-507
+           point trigger for next vessel for injecting                                               xx)    Open FSV XXX (ANDE to provide)
+    17.0   Change over to next vessel-A (operation sequence-6).                                      6.0    Open FSV-503
+    18.0   Wait for next vessel-A to go to injecting mode.                                           7.0    Open FSV-537
+    19.0   Once vessel-A switches over to injecting mode then vessel-B will                          8.0    Open FSV-514
+           switch over to de isolation mode (operation sequence-7).                                  9.0    Open PCV-506
+    20.0   After 10 second delay vessel-B will go in depressurizing mode from                        10.0   “Back Flashing Running” shall be flashed in HMI.
+           isolation mode (operation sequence-1). Rest of the sequence will follow
+           as according in operation sequence.                                                       This process will continue till vessel weight (WT-502) reaches to zero.
+
+           3.0    Injecting vessel change over( vessel-B to vessel-A) sequence                       Sequence of Stopping Back Flushing (For vessel-B)
+
+    1.0    Close Back filling valve FSV-502                                                          1.0    Fluidizing valve PCV-508 & FSV-515 must be OPEN all the time.
+    2.0    Close FSV coal feeding valve FSV-506.                                                     2.0    Close PCV-505
+    3.0    Close Dome valve FSV-536                                                                  3.0    Close PCV-507
+    4.0    Close relief valve PCV-501                                                                4.0    Close FSV-514
+    5.0    Close Pressurizing valve FSV-507 & PCV-502                                                5.0    Close PCV-506
+    6.0    Fluidizing valve PCV-504 & FSV-508 must be OPEN all the time.                             6.0    Close FSV-503
+    7.0    If required control vessel pressure by PID of PCV-503.                                    xx)    Open FSV XXX (ANDE to provide)
+    8.0    Control conveying media flow (300 m3/hr) through PID FCV-501(Flow                         7.0    Close FSV-537
+           value ANDE to confirm) & FSV-511.                                                         8.0    After completion of process “Back Flashing Completed” shall be
+    9.0    Open Coal conveying valves FSV-510.                                                              flashed in HMI and ready for filling.
+    10.0   Open coal conveying valve FSV-509.
+    11.0   Flashing display in HMI.” INJECTING”.                                                     INJECTION VESSEL-C&D SHALL BE DEDICATED FOR INJECTING
+                                                                                                     PULVARIZED COAL TO MBF-1
+           4.0    Isolation mode( injecting to isolation) sequence
+                                                                                                     1.0    Injection Vessel-C De-pressurizing Sequence:
+    1.0    Close FSV-516
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                        CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 20 of 31                                                                                    Page 21 of 31
+                         PULVERIZED COAL INJECTION UNIT                                                             PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                  FOR MBF-1 & MBF-2                     ANDE METALLURGICAL   TATA METALIKS                   FOR MBF-1 & MBF-2                         ANDE METALLURGICAL
+
+
+    1.0    Check net weight of vessel (WT-503)=1T (ANDE to check)                                    kg/cm2(ANDE to confirm)
+    2.0    Close Back filling valve FSV-504, Pressurizing valve FSV-521, PCV-                 11.0   Control Vessel pressure through relief valve PCV-509 PID fine control
+           510 & 511.                                                                                up to 4 kg/cm2(ANDE to confirm)
+    3.0    Close coal conveying valve FSV-523&524.                                            12.0   Once Pressure achieved to desired set point of 4 kg/cm2(ANDE to
+    4.0    Close conveying media valves FCV-503 & FSV-525.                                           confirm)
+    5.0    Fluidizing valve PCV-512 & FSV-522 must be OPEN all the time.                      13.0   Close PCV-509 and FSV-521.
+    6.0    Close Dome valve FSV-538                                                           14.0    If require follow sequence from 11.0 to 13.0 during injection.
+    7.0    Close coal feeding valve FSV-520.
+    8.0    After 5 sec. delay Close dome valve FSV-538.                                       4.0    Injection Vessel-C Ready to Inject Sequence:
+    9.0    Open relief valve PCV-509.
+    10.0   Check injection vessel pressure PT-509 less than 0.1 kg/cm2 (ANDE                  After vessel pressurization close all above related valves and maintain
+           to confirm)                                                                        pressure by operating auxiliary pressurizing valve PCV-511 and relief valve
+    11.0   Injection vessel De-pressurized.                                                   PCV-509. Vessel is ready for injection. PCV-511 will be operated through PID
+    12.0   START Filling                                                                      control during injection only.
+
+    2.0    Injection Vessel-C Filling Sequence:                                               5.0    Injection Vessel-C Injection Sequence:
+                                                                                              0.0    Open MBF-1 Distributor I/L valve FSV-534
+    1.0    Ensure vessel pressure PT-509 less than 0.1 kg/cm2 (ANDE to                        1.0    Close Back filling valve FSV-504
+           confirm)                                                                           2.0    Close FSV coal feeding valve FSV-520.
+    2.0    Close Back filling valve FSV-504, Pressurizing valve FSV-521, PCV-                 3.0    Close Dome valve FSV-538
+           510 & 511 and relief valve PCV-509.                                                4.0    Close relief valve PCV-509
+    3.0    Close coal conveying valve FSV-523&524.                                            5.0    Close Pressurizing valve FSV-521 & PCV-510
+    4.0    Close conveying media valves FCV-503 & FSV-525.                                    6.0    Fluidizing valve PCV-512 & FSV-522 must be OPEN all the time.
+    5.0    Fluidizing valve PCV-512 & FSV-522 must be OPEN all the time.                      7.0    If required control vessel pressure by PID of PCV-511.
+     6.0   Open Dome valve FSV-538 and open coal feeding valve from PCS FSV-                  8.0    Open FSV-525
+           520.                                                                               9.0    Control conveying media flow (300 m3/hr)              through PID FCV-
+    7.0    Check net weight of vessel (WT-503)=6T (ANDE to check)                                    503(Flow value ANDE to confirm)
+    8.0    Close FSV coal feeding valve FSV-520.                                              10.0   Open Coal conveying valves FSV-524
+    9.0    After 5 sec. delay Close dome valve FSV-538.                                       11.0   Algorithm to be included for the following:
+                                                                                                     v)     Injection flow rate (T/hr) vs Injection vessel pressure
+    3.0    Injection Vessel-C Pressurizing Sequence:                                                 vi)    Injection flow rate (T/hr) vs conveying media flow.
+
+    1.0    Close Back filling valve FSV-504,                                                  Note: Operator will provide injection flow rate (T/hr) in the HMI based on the
+    2.0    Close relief valve PCV-509 .                                                       injection flow rate actual value, vessel pressure set point and conveying
+    3.0    Close coal conveying valve FSV-523&524.                                            media flow will be adjusted automatically. ANDE to provide/include above
+    4.0    Close conveying media valves FCV-503 & FSV-525.                                    mentioned algorithm.
+    5.0    Fluidizing valve PCV-512 & FSV-522 must be OPEN all the time.
+    6.0    Close Dome valve FSV-538                                                           It will check pressure (PT-520) is more than 5 kg/cm2. (ANDE to confirm)
+    7.0    Close coal feeding valve (FSV-520) from PCS.
+    8.0    Open Pressurizing valve FSV-521,                                                   12.0   Open coal conveying valve FSV-523
+    9.0    Control Vessel pressure through PCV-510 PID coarse control up to 4                 13.0   Flashing display in HMI.” INJECTING”
+           kg/cm2(ANDE to confirm)                                                            14.0   Operation to be continued till next vessel put into injection.
+    10.0   Control Vessel pressure through PCV-511 PID fine control up to 4                   15.0   Injection rate to be displayed in HMI (Rate to be calculated through
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                 CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 22 of 31                                                                             Page 23 of 31
+                          PULVERIZED COAL INJECTION UNIT                                                                 PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                   FOR MBF-1 & MBF-2                         ANDE METALLURGICAL   TATA METALIKS                   FOR MBF-1 & MBF-2                        ANDE METALLURGICAL
+
+
+           weight loss method).                                                                    4.0    Close PCV-509
+    16.0   Once injecting vessel-C approaching to minimum weight(WT-503) set                       5.0    Close PCV-511
+           point trigger for next vessel for injecting                                             XX)    Close FSV-501
+    17.0   Change over to next vessel-D (operation sequence-6).                                    6.0    Open FSV-504 (This valve will be opened during back flashing only)
+    18.0   Wait for next vessel-D to go to injecting mode.                                         7.0    Open FSV-538
+    19.0   Once vessel-D switches over to injecting mode then vessel-C will                        8.0    Open FSV-521
+           switch over to de isolation mode (operation sequence-7).                                9.0    Open PCV-510
+    20.0   After 10 second delay vessel-C will go in depressurizing mode from                      10.0   “Back Flashing Running” shall be flashed in HMI
+           isolation mode (operation sequence-1). Rest of the sequence will follow
+           as according in operation sequence.                                                     This process will continue till vessel weight (WT-503) reaches to zero. After
+                                                                                                   completion of process “Back Flashing Completed” shall be flashed in HMI
+    6.0    Injecting vessel change over( vessel-C to vessel-D) sequence                            and ready for filling.
+
+    12.0  Close Back filling valve FSV-505                                                         Sequence of Stopping Back Flushing (For vessel-C)
+    13.0  Close FSV coal feeding valve FSV-527.
+    14.0  Close Dome valve FSV-539                                                                 1.0    Fluidizing valve PCV-512 & FSV-522 must be OPEN all the time.
+    15.0  Close relief valve PCV-513                                                               2.0    Close PCV-509
+    16.0  Close Pressurizing valve FSV-528 & PCV-514                                               3.0    Close PCV-511
+    17.0  Fluidizing valve PCV-516 & FSV-529 must be OPEN all the time.                            4.0    Close FSV-521
+    18.0  If required control vessel pressure by PID of PCV-515.                                   5.0    Close PCV-510
+    19.0  Control conveying media flow (300 m3/hr) through PID FCV-504(Flow                        6.0    Close FSV-504
+          value ANDE to confirm) & FSV-532.                                                        XX) Close FSV-501
+     20.0 Open Coal conveying valves FSV-531.                                                      7.0    Close FSV-538
+    21.0 Open coal conveying valve FSV-530.                                                        After completion of process “Back Flashing Completed” shall be flashed in
+    22.0 Flashing display in HMI.” INJECTING” .                                                    HMI and ready for filling.
+
+    7.0    Isolation mode( injecting to isolation) sequence                                        1.0    Injection Vessel-D De-pressurizing Sequence:
+
+    1.0    close FSV-523                                                                           1.0    Check net weight of vessel (WT-504)=1T (ANDE to check)
+    2.0    After 10 second delay close FSV-524.                                                    2.0    Close Back filling valve FSV-505, Pressurizing valve FSV-528, PCV-
+    3.0    Close FCV-503 & FSV-525                                                                        514 & 515.
+    4.0    Vessel is in isolation mode.                                                            3.0    Close coal conveying valve FSV-530&531.
+                                                                                                   4.0    Close conveying media valves FCV-504 & FSV-532.
+    Back Flashing:                                                                                 5.0    Fluidizing valve PCV-516 & FSV-529 must be OPEN all the time.
+    If the injection is stopped for long time or the vessel is under maintenance                   6.0    Close Dome valve FSV-539
+    the coal contain in the vessels (PCS and injection tanks) to be re-circulated                  7.0    Close coal feeding valve FSV-527.
+    in the bag filter.                                                                             8.0    Open relief valve PCV-513.
+                                                                                                   9.0    Check injection vessel pressure PT-513 less than 0.1 kg/cm2 (ANDE
+    Sequence of Starting Back Flushing (For vessel-C)                                                     to confirm)
+                                                                                                   10.0   Injection vessel De-pressurized.
+    1.0    Fluidizing valve PCV-512 & FSV-522 must be OPEN all the time.                           11.0   START Filling
+    2.0    Close FSV-523
+    3.0    Close FSV-520                                                                           2.0    Injection Vessel-D Filling Sequence:
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                      CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 24 of 31                                                                                  Page 25 of 31
+                          PULVERIZED COAL INJECTION UNIT                                                                PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                   FOR MBF-1 & MBF-2                        ANDE METALLURGICAL   TATA METALIKS                   FOR MBF-1 & MBF-2                         ANDE METALLURGICAL
+
+
+                                                                                                  5.0    Injection Vessel-D Injection Sequence:
+    1.0    Ensure vessel pressure PT-513 less than 0.1 kg/cm2 (ANDE to                            0.0    Open MBF-1 Distributor I/L valve FSV-534
+           confirm)
+    2.0    Close Back filling valve FSV-505, Pressurizing valve FSV-528, PCV-
+           514 & 515 and relief valve PCV-513.                                                    1.0    Close Back filling valve FSV-505
+    3.0    Close coal conveying valve FSV-530&531.                                                2.0    Close FSV coal feeding valve FSV-527.
+    4.0    Close conveying media valves FCV-504 & FSV-532.                                        3.0    Close Dome valve FSV-539
+    5.0    Fluidizing valve PCV-516 & FSV-529 must be OPEN all the time.                          4.0    Close relief valve PCV-513
+    6.0    Open Dome valve FSV-539 and open coal feeding valve from PCS FSV-                      5.0    Close Pressurizing valve FSV-528 & PCV-514
+           527.                                                                                   6.0    Fluidizing valve PCV-516 & FSV-529 must be OPEN all the time.
+    7.0    Check net weight of vessel (WT-504)=6T (ANDE to check)                                 7.0    If required control vessel pressure by PID of PCV-515.
+    8.0    Close FSV coal feeding valve FSV-527.                                                  8.0    Open FSV-532
+    9.0    After 5 sec. delay Close dome valve FSV-539.                                           9.0    Control conveying media flow (300 m3/hr) through PID FCV-
+                                                                                                         503(Flow value ANDE to confirm)
+    3.0    Injection Vessel-D Pressurizing Sequence:                                              10.0   Open Coal conveying valves FSV-531
+                                                                                                  11.0   Algorithm to be included for the following:
+    1.0    Close Back filling valve FSV-505,                                                             vii)   Injection flow rate (T/hr) vs Injection vessel pressure
+    2.0    Close relief valve PCV-513.                                                                   viii)  Injection flow rate (T/hr) vs conveying media flow.
+    3.0    Close coal conveying valve FSV-530&531.
+    4.0    Close conveying media valves FCV-504 & FSV-532.                                        Note: Operator will provide injection flow rate (T/hr) in the HMI based on the
+    5.0    Fluidizing valve PCV-516 & FSV-529 must be OPEN all the time.                          injection flow rate actual value, vessel pressure set point and conveying
+    6.0    Close Dome valve FSV-539                                                               media flow will be adjusted automatically. ANDE to provide/include above
+    7.0    Close coal feeding valve (FSV-527) from PCS.                                           mentioned algorithm.
+    8.0    Open Pressurizing valve FSV-528,
+                                                                                                  It will check pressure (PT-520) is more than 5 kg/cm2. (ANDE to confirm)
+    9.0    Control Vessel pressure through PCV-514 PID coarse control up to 4
+           kg/cm2(ANDE to confirm)
+    10.0   Control Vessel pressure through PCV-515 PID fine control up to 4                       12.0   Open coal conveying valve FSV-530
+           kg/cm2(ANDE to confirm)                                                                13.0   Flashing display in HMI.” INJECTING”
+    11.0   Control Vessel pressure through relief valve PCV-513 PID fine control                  14.0   Operation to be continued till next vessel put into injection.
+           up to 4 kg/cm2(ANDE to confirm)                                                        15.0   Injection rate to be displayed in HMI (Rate to be calculated through
+    12.0   Once Pressure achieved to desired set point of 4 kg/cm2(ANDE to                               weight loss method).
+           confirm)                                                                               16.0   Once injecting vessel-D approaching to minimum weight(WT-504) set
+    13.0   Close PCV-513 and FSV-528.                                                                    point trigger for next vessel for injecting
+    14.0   If require follow sequence from 11.0 to 13.0 during injection.                         17.0   Change over to next vessel-C (operation sequence-6).
+                                                                                                  18.0   Wait for next vessel-C to go to injecting mode.
+    4.0    Injection Vessel-D Ready to Inject Sequence:                                           19.0   Once vessel-C switches over to injecting mode then vessel-D will
+                                                                                                         switch over to de isolation mode (operation sequence-7).
+                  After vessel pressurization close all above related valves and                  20.0   After 10 second delay vessel-D will go in depressurizing mode from
+    maintain pressure by operating auxiliary pressurizing valve PCV-515 and                              isolation mode (operation sequence-1). Rest of the sequence will follow
+    relief valve PCV-513. Vessel is ready for injection. PCV-515 will be operated                        as according in operation sequence.
+    through PID control during injection only.
+                                                                                                  6.0    Injecting vessel change over( vessel-D to vessel-C) sequence
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                     CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 26 of 31                                                                                 Page 27 of 31
+                          PULVERIZED COAL INJECTION UNIT                                                               PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                   FOR MBF-1 & MBF-2                        ANDE METALLURGICAL   TATA METALIKS                  FOR MBF-1 & MBF-2                      ANDE METALLURGICAL
+
+
+
+
+    1.0    Close Back filling valve FSV-504                                                       Sequence of Stopping Back Flushing (For vessel-D)
+    2.0    Close FSV coal feeding valve FSV-520.
+    3.0    Close Dome valve FSV-538                                                               1.0   Fluidizing valve PCV-516 & FSV-529 must be OPEN all the time.
+    4.0    Close relief valve PCV-509                                                             2.0   Close PCV-513
+    5.0    Close Pressurizing valve FSV-521 & PCV-510                                             3.0   Close FSV-528
+    6.0    Fluidizing valve PCV-512 & FSV-522 must be OPEN all the time.                          4.0   Close PCV-514
+    7.0    If required control vessel pressure by PID of PCV-511.                                 5.0   Close PCV-515
+    8.0    Control conveying media flow (300 m3/hr) through PID FCV-503(Flow                      6.0   Close FSV-505
+           value ANDE to confirm) & FSV-525.                                                      xx)   Close FSV -502
+    9.0    Open Coal conveying valves FSV-524.                                                    7.0   Close FSV-539
+    10.0   Open coal conveying valve FSV-523.
+    11.0   Flashing display in HMI.” INJECTING”.                                                  After completion of process “Back Flashing Completed” shall be flashed in
+                                                                                                  HMI and ready for filling.
+    7.0    Isolation mode( injecting to isolation) sequence
+                  1.0  close FSV-530
+                  2.0  After 10 second delay close FSV-531.                                       V.    Utility System: Including compressed air, nitrogen facilities, water
+                  3.0  Close FCV-504 & FSV-532                                                          supply and drainage facilities.
+                  4.0  Vessel is in isolation mode.
+                                                                                                  VI.    PC based Automation, Instrumentation, Electrical System:
+    Back Flashing:                                                                                       PC based Automation system consists of Siemens S-7 414-5H Hot
+    If the injection is stopped for long time or the vessel is under maintenance                  redundant CPU with Win CC, V 7.4 HMI Software along with Step-7 V 5.6
+    the coal contain in the vessels (PCS and injection tanks) to be re-circulated                 PLC Programming software .CPU to CPU communication through Single
+    in the bag filter.                                                                            Mode Fiber Optic Cable and I/O system will be connected to CPU through
+                                                                                                  redundant Profibus Link There are Two Engineering Station cum Operator
+                                                                                                  Station, One Operator Station and One programming Laptop for
+    Sequence of Starting Back Flushing (For vessel-D)                                             programming PLC, VVFD, Weigh Feed Feeder etc. One Engineering Station
+                                                                                                  cum Operator Station, One Operator Station will be located at PCI control
+    1.0    Fluidizing valve PCV-516 & FSV-529 must be OPEN all the time.                          room and One Engineering Station cum Operator Station Laptop will be
+    2.0    Close FSV-530                                                                          located at PLC hardware room for programming and trouble shooting. PCI
+    3.0    Close FSV-527                                                                          PLC, MBF-1 PLC & MBF-2 PLC will be interconnected each other through
+    4.0    Close PCV-513                                                                          multi mode Fiber Optic and Ethernet cable for data exchange and PCI plant
+    5.0    Close PCV-515                                                                          operation. System shall generate shift wise, day wise parameter report in
+    6.0    Close FSV -502                                                                         microsoft excel format and raw coal and pulverized coal consumption/
+    7.0    Open FSV-505                                                                           generation shall be in .csv format for integration with TML SAP system,
+    8.0    Open FSV-539                                                                           trend, audio visual alarm, and operator event activity. Totalize shall be
+    9.0    Open FSV-528                                                                           provided for raw coal, pulverized coal, utility consumption, electrical
+    10.0   Open PCV-514                                                                           consumption, Motor running hours etc.
+    11.0   “Back Flashing Running” shall be flashed in HMI
+                                                                                                        Instrumentation Systems consists of O2 Analyzer, CO Analyzer, Static
+    This process will continue till vessel weight (WT-504) reaches to zero. After                 weighing system, weigh feeder, Radar type level transmitter, Chute Jam
+    completion of process “Back Flashing Completed” shall be flashed in HMI                       Switch, Pressure Transmitters, Flow Transmitters, Vibration Transmitters
+    and ready for filling.                                                                        ,RTD, Thermocouple, Opacity meter, SWR Flow Jam Switch, Pulverized Coal
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017                                                     CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 28 of 31                                                                                 Page 29 of 31
+                          PULVERIZED COAL INJECTION UNIT
+TATA METALIKS                   FOR MBF-1 & MBF-2                         ANDE METALLURGICAL
+
+
+    Flow transmitter, Orifice, Offline BFG Moisture transmitter, Pressure Gauge,
+    Temperature Gauge, Pneumatic Shut off valves, Pneumatic Control off
+    valves, Motorized Control off valves, Flame Scanner, Position Transmitter,
+    Pull cord switch, Belt sway switch, Zero Speed Switch etc. Quantity and
+    location of instruments as per approved P & ID DRG No TMLPCI-ANDE-00-
+    PRO-BE-E0003-01-7
+
+    One (1) Operator Station Electrical,: Including low-voltage distribution, low-
+    voltage compensation, electrical transmission, instrumentation, industrial
+    television PLC System, etc.
+
+
+
+    LIST OF PIDS
+
+    Sl.No.                PID                       PV                OP
+       1                FIC-202                   FT-202            MCV-202
+       2                FIC-201                   FT-201            MCV-201
+       3                TIC-202                   TT-202            MCV-505
+       4                PIC-204                   PT-204            MCV-301
+       5                FIC-203                   PT-203            MCV-206
+       6               PIC-501A                   PT-501            PCV-502
+       7               PIC-501B                   PT-501            PCV-503
+       8               PIC-501C                   PT-501            PCV-501
+       9                FIC-502                   FT-502            PCV-504
+      10                FIC-503                   FT-503            FCV-501
+      11               PIC-505A                   PT-505            PCV-506
+      12               PIC-505B                   PT-505            PCV-507
+      13               PIC-505C                   PT-505            PCV-505
+      14                FIC-505                   FT-505            PCV-508
+      15                FIC-506                   FT-506            FCV-502
+      16               PIC-509A                   PT-509            PCV-510
+      17               PIC-509B                   PT-509            PCV-511
+      18               PIC-509C                   PT-509            PCV-509
+      19                FIC-508                   FT-508            PCV-512
+      20                FIC-509                   FT-509            FCV-503
+      21               PIC-513A                   PT-513            PCV-514
+      22               PIC-513B                   PT-513            PCV-515
+      23               PIC-513C                   PT-513            PCV-513
+      24                FIC-511                   FT-511            PCV-516
+      25                FIC-512                   FT-512            FCV-504
+
+
+
+    Reference Drawing:
+
+    P&ID Diagram-Drawing No. (TMLPCI-ANDE-00PRO-BE-E0003-01-7)
+
+
+    CONTRACT NO: TML/PCI/ANDE/DE-SSS/001-2017
+    Page 30 of 31
+
