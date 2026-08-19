@@ -2295,6 +2295,294 @@ else
 }
 </style>
 
+
+<style id="ANVI_PAGE_VISUAL_POLISH_ONLY_20260819">
+
+/* =========================================================
+   ANVIQO COMMAND CENTRE — VISUAL POLISH ONLY
+   IMPORTANT:
+   - NO menu blocks changed
+   - NO page blocks changed
+   - NO IDs changed
+   - NO JS changed
+   - NO API / V5 / PCI / Voice changed
+   ========================================================= */
+
+/* ---- Overall application shell ---- */
+#anvi-chat-command-centre-v1{
+  background:
+    radial-gradient(circle at 72% 0%,rgba(22,105,139,.12),transparent 34%),
+    linear-gradient(180deg,#061018 0%,#050d14 100%);
+  color:#dcecf4;
+}
+
+/* ---- Sidebar visual treatment ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-sidebar{
+  width:250px;
+  flex-basis:250px;
+  padding:20px 15px;
+  background:
+    linear-gradient(180deg,#081c29 0%,#06151f 48%,#050f17 100%);
+  border-right:1px solid rgba(67,157,190,.22);
+  box-shadow:12px 0 35px rgba(0,0,0,.18);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-brand{
+  font-size:24px;
+  letter-spacing:.8px;
+  margin:2px 9px 1px;
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-brand span{
+  text-shadow:0 0 14px rgba(32,217,255,.35);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-tag{
+  margin:2px 9px 23px;
+  color:#5e91a6;
+  letter-spacing:.5px;
+}
+
+/* ---- Menu groups remain exactly the same ---- */
+#anvi-chat-command-centre-v1 .anvi-menu-group{
+  margin-bottom:13px;
+  padding-bottom:9px;
+  border-bottom:1px solid rgba(54,111,134,.18);
+}
+
+#anvi-chat-command-centre-v1 .anvi-menu-title{
+  color:#547b8d;
+  font-size:8px;
+  letter-spacing:1.8px;
+  padding:8px 11px 6px;
+}
+
+/* ---- Existing menu buttons: appearance only ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-nav button{
+  position:relative;
+  min-height:39px;
+  margin:2px 0;
+  padding:10px 12px;
+  border:1px solid transparent;
+  border-radius:9px;
+  background:transparent;
+  color:#8fa9b7;
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:.05px;
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    color .18s ease,
+    transform .18s ease;
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-nav button:hover{
+  color:#d9f6ff;
+  background:rgba(20,75,98,.28);
+  border-color:rgba(48,139,170,.24);
+  transform:translateX(2px);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-nav button.active{
+  color:#effcff;
+  background:
+    linear-gradient(90deg,rgba(22,105,137,.52),rgba(12,52,70,.38));
+  border-color:rgba(38,178,218,.32);
+  box-shadow:
+    inset 3px 0 0 #20d9ff,
+    0 4px 16px rgba(0,0,0,.13);
+  font-weight:650;
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-nav button.active::after{
+  content:"";
+  position:absolute;
+  right:11px;
+  top:50%;
+  width:5px;
+  height:5px;
+  transform:translateY(-50%);
+  border-radius:50%;
+  background:#2de3ff;
+  box-shadow:0 0 9px rgba(45,227,255,.8);
+}
+
+/* ---- Safety panel ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-safety{
+  margin:18px 2px 0;
+  padding:13px;
+  border:1px solid rgba(58,118,139,.28);
+  border-radius:11px;
+  background:linear-gradient(180deg,rgba(8,30,42,.8),rgba(5,19,27,.8));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+/* ---- Main workspace ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-main{
+  padding:19px 22px 24px;
+  background:
+    radial-gradient(circle at 90% 5%,rgba(20,105,140,.08),transparent 28%);
+}
+
+/* ---- Top command header ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-top{
+  min-height:61px;
+  padding:4px 4px 14px;
+  margin-bottom:17px;
+  border-bottom:1px solid rgba(56,116,139,.22);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-top h1{
+  font-size:21px;
+  font-weight:720;
+  letter-spacing:.1px;
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-top p{
+  color:#668695;
+}
+
+/* ---- Status pills ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-pill{
+  padding:7px 11px;
+  background:rgba(8,28,39,.62);
+  border-color:rgba(48,106,130,.35);
+  color:#7196a6;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-pill.live{
+  color:#4ce9aa;
+  background:rgba(8,45,36,.45);
+  border-color:rgba(45,187,142,.34);
+}
+
+/* ---- Existing page blocks: visual appearance only ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-card{
+  background:
+    linear-gradient(145deg,rgba(10,34,47,.96),rgba(6,22,31,.98));
+  border-color:rgba(46,111,137,.29);
+  border-radius:14px;
+  box-shadow:
+    0 10px 30px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-card:hover{
+  border-color:rgba(47,137,166,.38);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-card h3{
+  color:#6f9caf;
+  font-size:10px;
+  letter-spacing:1px;
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-big{
+  color:#31ddff;
+  text-shadow:0 0 18px rgba(49,221,255,.10);
+}
+
+/* ---- Chat workspace ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-chat{
+  border-color:rgba(48,115,140,.34);
+  border-radius:16px;
+  background:
+    linear-gradient(180deg,#081c29,#06131c);
+  box-shadow:0 12px 35px rgba(0,0,0,.2);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-chat-head{
+  padding:17px 19px;
+  background:rgba(7,27,39,.55);
+  border-bottom-color:rgba(47,105,129,.28);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-chat-head h2{
+  font-size:18px;
+  font-weight:700;
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-messages{
+  background:
+    radial-gradient(circle at 50% 0%,rgba(21,91,119,.07),transparent 38%);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-answer{
+  background:linear-gradient(145deg,#0b2533,#081b26);
+  border-color:rgba(46,112,137,.34);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-avatar{
+  box-shadow:0 0 14px rgba(34,215,255,.08);
+}
+
+/* ---- Input ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-input{
+  background:rgba(5,16,23,.55);
+  border-top-color:rgba(47,105,129,.28);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-input input{
+  background:#06151e;
+  border-color:rgba(51,111,135,.48);
+  box-shadow:inset 0 1px 4px rgba(0,0,0,.18);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-input input:focus{
+  border-color:rgba(40,213,244,.7);
+  box-shadow:0 0 0 2px rgba(40,213,244,.07);
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-input button{
+  min-width:82px;
+  box-shadow:0 4px 14px rgba(40,213,244,.08);
+}
+
+/* ---- Quick action chips ---- */
+#anvi-chat-command-centre-v1 .anvi-v1-chip,
+#anvi-chat-command-centre-v1 .anvi-v1-chat-tools button{
+  background:rgba(8,35,49,.72);
+  border-color:rgba(45,107,132,.38);
+  color:#91c7d7;
+  transition:.18s ease;
+}
+
+#anvi-chat-command-centre-v1 .anvi-v1-chip:hover,
+#anvi-chat-command-centre-v1 .anvi-v1-chat-tools button:hover{
+  background:#0c3447;
+  border-color:rgba(43,191,226,.5);
+  color:#d8f9ff;
+}
+
+/* ---- Mobile visual treatment ---- */
+@media(max-width:850px){
+  #anvi-chat-command-centre-v1 .anvi-v1-sidebar{
+    box-shadow:none;
+    padding:17px 13px;
+  }
+
+  #anvi-chat-command-centre-v1 .anvi-v1-main{
+    padding:14px 12px 20px;
+  }
+
+  #anvi-chat-command-centre-v1 .anvi-v1-top{
+    padding-bottom:12px;
+  }
+
+  #anvi-chat-command-centre-v1 .anvi-v1-status{
+    gap:5px;
+  }
+
+  #anvi-chat-command-centre-v1 .anvi-v1-pill{
+    font-size:9px;
+    padding:6px 8px;
+  }
+}
+
+</style>
+
 <style id="ANVI_MENU_RESTRUCTURE_20260818">
 .anvi-menu-group{
   margin:0 0 14px;
