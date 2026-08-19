@@ -194,33 +194,63 @@ def _equipment(q):
 
 def _build_area_results():
     """
-    Build area-health evidence using the existing V5 area-health engine.
-    No new health/reasoning logic is created here.
+    Build plant-area health evidence from the existing PCI LIVE simulator.
+
+    This is an evidence bridge only:
+    - reuses existing PCI LIVE simulation
+    - reuses existing plant-health intelligence
+    - does not create a second health/prediction engine
+    - no PLC write
+    - no SCADA control
     """
-    from equipment_database import get_equipment
-    from area_health import build_area_health
+    from pci_live_simulator import get_live_pci_snapshot
 
-    equipment = get_equipment() or []
+    snapshot = get_live_pci_snapshot() or {}
+    pci_areas = snapshot.get("areas", [])
 
-    areas = []
-    seen = set()
+    results = []
 
-    for item in equipment:
-        area = str(item.get("area", "")).strip()
-        if not area:
+    for area in pci_areas:
+        if not isinstance(area, dict):
             continue
 
-        key = area.upper()
-        if key in seen:
+        score = area.get("health_score")
+        if score is None:
             continue
 
-        seen.add(key)
-        areas.append(area)
+        try:
+            score = float(score)
+        except (TypeError, ValueError):
+            continue
 
-    return [
-        build_area_health(area)
-        for area in areas
-    ]
+        critical = int(area.get("critical", 0) or 0)
+        warning = int(area.get("warning", 0) or 0)
+        healthy = int(area.get("healthy", 0) or 0)
+        total = int(area.get("total", 0) or 0)
+
+        if score < 40:
+            status = "CRITICAL"
+        elif score < 60:
+            status = "DEGRADED"
+        elif score < 80:
+            status = "WATCH"
+        else:
+            status = "HEALTHY"
+
+        results.append({
+            "area": area.get("area", "UNKNOWN"),
+            "status": status,
+            "health_score": round(score, 2),
+            "equipment_count": total,
+            "critical_equipment": critical,
+            "warning_equipment": warning,
+            "healthy_equipment": healthy,
+            "source": snapshot.get("source", "PCI LIVE"),
+            "mode": snapshot.get("mode", "SIMULATION"),
+            "evidence": "PCI LIVE area health"
+        })
+
+    return results
 
 
 def _plant(q):
@@ -230,6 +260,137 @@ def _plant(q):
     ql = q.lower()
 
     area_results = _build_area_results()
+
+    # ============================================================
+    # PLANT RISK / DEVELOPING-PROBLEM QUESTIONS
+    # Evidence-based only: reuse existing V5 area/health intelligence.
+    # No new prediction engine and no causation claim.
+    # ============================================================
+    plant_risk_question = any(x in ql for x in [
+        "what problems could develop",
+        "what problems may develop",
+        "what could develop in the plant",
+        "what may develop in the plant",
+        "what could go wrong",
+        "what may go wrong",
+        "developing problems",
+        "developing problem",
+        "potential problems",
+        "potential risk",
+        "plant risk",
+        "risks in the plant",
+        "risk in the plant",
+        "future problem",
+        "possible problem",
+        "could happen in the plant",
+    ])
+
+    if plant_risk_question:
+        from plant_health_intelligence import build_plant_health_intelligence
+
+        # ============================================================
+        # EXISTING PCI LIVE -> PLANT HEALTH EVIDENCE BRIDGE
+        # Use the existing 1,064-I/O simulation when equipment-history
+        # health data is unavailable.
+        #
+        # IMPORTANT:
+        # - No new prediction engine
+        # - No PLC write
+        # - No SCADA control
+        # - No V5 reasoning modification
+        # ============================================================
+        if not any(
+            isinstance(a, dict) and a.get("health_score") is not None
+            for a in area_results
+        ):
+            from pci_live_simulator import get_live_pci_snapshot
+
+            live = get_live_pci_snapshot()
+            pci_areas = live.get("areas", [])
+
+            bridged_areas = []
+
+            for area in pci_areas:
+                if not isinstance(area, dict):
+                    continue
+
+                score = area.get("health_score")
+
+                try:
+                    score = float(score)
+                except (TypeError, ValueError):
+                    continue
+
+                if score < 40:
+                    status = "CRITICAL"
+                elif score < 60:
+                    status = "DEGRADED"
+                elif score < 80:
+                    status = "WATCH"
+                else:
+                    status = "HEALTHY"
+
+                bridged_areas.append({
+                    "area": area.get("area", "UNKNOWN"),
+                    "status": status,
+                    "health_score": score,
+                    "equipment_count": area.get("total", 0),
+                    "critical_equipment": area.get("critical", 0),
+                    "healthy": area.get("healthy", 0),
+                    "warning": area.get("warning", 0),
+                    "critical": area.get("critical", 0),
+                    "source": "PCI LIVE DEMO STREAM",
+                    "mode": live.get("mode", "SIMULATION")
+                })
+
+            if bridged_areas:
+                area_results = bridged_areas
+
+        health = build_plant_health_intelligence(
+            "PLANT",
+            area_results
+        )
+
+        findings = []
+
+        for area in area_results:
+            if not isinstance(area, dict):
+                continue
+
+            status = str(area.get("status", "")).upper()
+            critical = area.get("critical_equipment", 0)
+            score = area.get("health_score")
+
+            if status in ("CRITICAL", "EARLY WARNING", "WATCH") or critical:
+                findings.append({
+                    "area": area.get("area", "UNKNOWN"),
+                    "status": status or "ATTENTION",
+                    "health_score": score,
+                    "critical_equipment": critical,
+                    "evidence": "current V5 area-health evidence"
+                })
+
+        response = {
+            "question_type": "plant_developing_problem_risk",
+            "status": "EVIDENCE_AVAILABLE" if findings else "INSUFFICIENT_EVIDENCE",
+            "plant_health": health,
+            "areas_requiring_attention": findings,
+            "explanation": (
+                "These are evidence-based developing-risk indicators from "
+                "current plant health conditions. ANVI does not claim that "
+                "a specific failure will occur."
+            ),
+            "product_boundary": {
+                "read_only": True,
+                "causation_claim": False,
+                "human_decision_required": True
+            }
+        }
+
+        return "ANVI — Plant Risk Intelligence:\n" + json.dumps(
+            response,
+            ensure_ascii=False
+        )
 
     if "what changed" in ql or "changed" in ql:
         from plant_what_changed import build_plant_what_changed
@@ -1629,6 +1790,20 @@ def ask_anvi(question):
             "executive summary",
             "hod summary",
             "management report",
+            "areas require attention",
+            "which areas require attention",
+            "areas need attention",
+            "which areas need attention",
+            "problem areas",
+            "critical areas",
+            "degraded areas",
+            "areas at risk",
+            "plant risk",
+            "risks in the plant",
+            "what problems could develop",
+            "what problems may develop",
+            "what could go wrong",
+            "what may go wrong",
         ])
 
         if plant_wide_question:
