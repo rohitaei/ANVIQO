@@ -4168,6 +4168,107 @@ status();setInterval(status,30000);
 
 
 
+
+<style id="ANVIQO_MOBILE_SLIDING_SIDEBAR_FINAL">
+/* ANVIQO FINAL MOBILE COMMAND CENTRE NAVIGATION */
+.acc-mobile-menu{
+  display:none;
+}
+.acc-mobile-overlay{
+  display:none;
+}
+
+@media(max-width:950px){
+  body > #anviqo-customer-command-centre{
+    display:block !important;
+    overflow:hidden !important;
+  }
+
+  #anviqo-customer-command-centre .acc-side{
+    display:block !important;
+    position:fixed !important;
+    left:0 !important;
+    top:0 !important;
+    bottom:0 !important;
+    width:min(310px,86vw) !important;
+    height:100vh !important;
+    z-index:2147483646 !important;
+    transform:translateX(-105%) !important;
+    transition:transform .28s ease !important;
+    box-shadow:18px 0 45px rgba(0,0,0,.55) !important;
+    overflow-y:auto !important;
+  }
+
+  #anviqo-customer-command-centre.menu-open .acc-side{
+    transform:translateX(0) !important;
+  }
+
+  .acc-mobile-menu{
+    display:flex !important;
+    position:fixed !important;
+    top:12px !important;
+    left:12px !important;
+    z-index:2147483647 !important;
+    width:44px !important;
+    height:44px !important;
+    align-items:center !important;
+    justify-content:center !important;
+    border:1px solid #214957 !important;
+    border-radius:10px !important;
+    background:#081923 !important;
+    color:#e8f7fb !important;
+    font-size:22px !important;
+    cursor:pointer !important;
+    box-shadow:0 8px 25px rgba(0,0,0,.35) !important;
+  }
+
+  .acc-mobile-overlay{
+    position:fixed !important;
+    inset:0 !important;
+    z-index:2147483645 !important;
+    background:rgba(0,0,0,.58) !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+    transition:opacity .28s ease !important;
+    display:block !important;
+  }
+
+  #anviqo-customer-command-centre.menu-open .acc-mobile-overlay{
+    opacity:1 !important;
+    pointer-events:auto !important;
+  }
+
+  .acc-mobile-close{
+    display:flex !important;
+    position:absolute !important;
+    top:13px !important;
+    right:12px !important;
+    width:34px !important;
+    height:34px !important;
+    align-items:center !important;
+    justify-content:center !important;
+    border:1px solid #214957 !important;
+    border-radius:8px !important;
+    background:#0b2530 !important;
+    color:#fff !important;
+    font-size:18px !important;
+    cursor:pointer !important;
+  }
+
+  #anviqo-customer-command-centre .acc-brand{
+    padding-right:55px !important;
+  }
+
+  #anviqo-customer-command-centre .acc-top{
+    padding-left:68px !important;
+  }
+}
+
+.acc-mobile-close{
+  display:none;
+}
+</style>
+
 <style id="ANVIQO_CUSTOMER_COMMAND_CENTRE_AUTHORITATIVE">
 
 /*
@@ -4343,8 +4444,11 @@ padding:12px;border:1px solid #183c49;border-radius:9px;background:#081923
 </style>
 
 <div id="anviqo-customer-command-centre">
+<button class="acc-mobile-menu" id="acc-mobile-menu" aria-label="Open navigation">☰</button>
+<div class="acc-mobile-overlay" id="acc-mobile-overlay"></div>
 
-<aside class="acc-side">
+
+<aside class="acc-side"><button class="acc-mobile-close" id="acc-mobile-close" aria-label="Close navigation">✕</button>
 <div class="acc-brand">ANVIQO</div>
 <div class="acc-tag">THINK • PREDICT • PROTECT</div>
 
@@ -4588,6 +4692,41 @@ events, maintenance, shift intelligence, PCI or management priorities.
 </main>
 </div>
 
+<script id="ANVIQO_MOBILE_SLIDING_SIDEBAR_JS">
+
+/* FINAL MOBILE SLIDING SIDEBAR */
+(function(){
+  const root=document.getElementById('anviqo-customer-command-centre');
+  const menu=document.getElementById('acc-mobile-menu');
+  const close=document.getElementById('acc-mobile-close');
+  const overlay=document.getElementById('acc-mobile-overlay');
+  if(!root||!menu)return;
+
+  function openMenu(){
+    root.classList.add('menu-open');
+    menu.setAttribute('aria-label','Close navigation');
+  }
+
+  function closeMenu(){
+    root.classList.remove('menu-open');
+    menu.setAttribute('aria-label','Open navigation');
+  }
+
+  menu.addEventListener('click',()=>{
+    root.classList.contains('menu-open') ? closeMenu() : openMenu();
+  });
+
+  close?.addEventListener('click',closeMenu);
+  overlay?.addEventListener('click',closeMenu);
+
+  root.querySelectorAll('[data-acc]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      if(window.innerWidth<=950) closeMenu();
+    });
+  });
+})();
+
+</script>
 <script id="ANVIQO_CUSTOMER_COMMAND_CENTRE_JS">
 (function(){
 const root=document.getElementById('anviqo-customer-command-centre');
