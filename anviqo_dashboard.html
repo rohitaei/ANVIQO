@@ -555,7 +555,17 @@ font-size:6px;
 <style id="ANVI_CHAT_COMMAND_CENTRE_V1_HIDE_OLD">
 /* The new ANVI Command Centre is the visible shell. Existing dashboard
    logic is intentionally left loaded for API compatibility. */
-body > *:not(#anvi-chat-command-centre-v1){display:none !important}
+body > *:not(#anvi-chat-command-centre-v1):not(#anvi-professional-v3){
+    display:none !important
+}
+
+#anvi-chat-command-centre-v1{
+    display:none !important
+}
+
+#anvi-professional-v3{
+    display:grid !important
+}
 body{margin:0!important;background:#061019!important;overflow-x:hidden!important}
 </style>
 
