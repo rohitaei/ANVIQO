@@ -2,840 +2,114 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ANVIQO Command Centre</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ANVIQO — ANVI</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#071018;color:#e8f6fa}
-button,input,textarea,select{font:inherit}
-button{cursor:pointer}
-
-:root{
- --bg:#071018;
- --panel:#0b1922;
- --panel2:#0d202b;
- --line:#193b49;
- --text:#e8f6fa;
- --muted:#7895a3;
- --cyan:#31d8f5;
- --green:#29dfa8;
- --amber:#ffc45c;
- --red:#ff6075;
-}
-
-#app{height:100%;display:flex;overflow:hidden}
-
-/* SIDEBAR */
-#sidebar{
- width:270px;flex:none;
- background:#06131b;
- border-right:1px solid var(--line);
- display:flex;flex-direction:column;
- transition:.25s;
- z-index:1000;
-}
-.brand{padding:20px 18px 14px}
-.brand strong{font-size:23px;letter-spacing:2px}
-.brand span{display:block;color:var(--cyan);font-size:9px;letter-spacing:1.8px;margin-top:4px}
-
-.nav{padding:4px 10px;overflow:auto;flex:1}
-.nav-title{font-size:8px;letter-spacing:1.7px;color:#547483;padding:16px 10px 7px}
-.nav button{
- width:100%;border:0;background:transparent;color:#86a4b1;
- text-align:left;padding:11px 12px;border-radius:8px;margin:2px 0;
- font-size:11px;
-}
-.nav button:hover,.nav button.active{
- background:#0d3544;color:white;border-left:3px solid var(--cyan)
-}
-.safe{
- margin:12px;padding:12px;border:1px solid #1a4657;border-radius:10px;
- font-size:8px;line-height:1.8;color:#7694a1
-}
-.safe b{color:var(--green)}
-
-#mobileShade{
- display:none;position:fixed;inset:0;background:#0009;z-index:900
-}
-
-/* MAIN */
-#main{min-width:0;flex:1;display:flex;flex-direction:column}
-.topbar{
- height:64px;flex:none;border-bottom:1px solid var(--line);
- display:flex;align-items:center;gap:12px;padding:0 20px;background:#08151d
-}
-.menu{display:none;border:1px solid var(--line);background:#0b202a;color:white;border-radius:8px;padding:8px 11px}
-.top-title{min-width:0;flex:1}
-.top-title b{font-size:14px}
-.top-title small{display:block;color:var(--muted);font-size:9px;margin-top:3px}
-.statuses{display:flex;gap:6px;flex-wrap:wrap}
-.pill{border:1px solid var(--line);border-radius:20px;padding:6px 9px;color:#8eabb7;font-size:8px}
-.pill.live{color:var(--green);border-color:#17604e}
-.pill.sim{color:var(--amber);border-color:#654d1c}
-
-#content{overflow:auto;flex:1;padding:20px}
-.page{display:none;max-width:1500px;margin:auto}
-.page.active{display:block}
-
-.hero{
- display:grid;grid-template-columns:1.5fr .7fr;gap:14px;margin-bottom:14px
-}
-.card{
- background:linear-gradient(145deg,#0b1c25,#09151d);
- border:1px solid var(--line);border-radius:13px
-}
-.hero .card{padding:22px}
-.kicker{font-size:8px;color:var(--cyan);letter-spacing:1.8px}
-h1{font-size:27px;margin:8px 0}
-h2{font-size:16px;margin:0 0 6px}
-h3{font-size:11px;margin:0 0 7px}
-p{font-size:11px;color:var(--muted);line-height:1.7}
-.brain{text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center}
-.orb{
- width:80px;height:80px;border-radius:50%;
- border:1px solid var(--cyan);display:grid;place-items:center;
- color:var(--cyan);font-weight:900;box-shadow:0 0 35px #0b5362
-}
-
-.metrics{
- display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px
-}
-.metric{padding:15px}
-.metric label{display:block;color:#668592;font-size:8px;letter-spacing:1px}
-.metric strong{display:block;font-size:24px;margin:7px 0}
-.metric small{color:#617d89;font-size:8px}
-.cyan{color:var(--cyan)}.green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}
-
-.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
-
-.card-head{
- padding:13px 15px;border-bottom:1px solid var(--line);
- display:flex;justify-content:space-between;align-items:center
-}
-.card-body{padding:15px}
-
-.row{
- padding:11px 0;border-bottom:1px solid #12303b;
- display:flex;justify-content:space-between;gap:10px;font-size:10px
-}
-.row:last-child{border-bottom:0}
-.muted{color:var(--muted)}
-.badge{
- display:inline-block;border-radius:6px;padding:4px 7px;font-size:8px;font-weight:800
-}
-.badge.green{background:#103c31}.badge.amber{background:#453817}.badge.red{background:#491c29}
-
-.btn{
- border:1px solid #20586b;background:#0b2835;color:#a8e5f0;
- border-radius:8px;padding:9px 12px;font-size:10px
-}
-.btn:hover{background:#104050}
-.btn.primary{background:#20cde9;color:#03202a;border:0;font-weight:800}
-
-/* CHAT */
-.chat{
- height:calc(100vh - 125px);min-height:520px;
- display:flex;flex-direction:column
-}
-.chat-head{padding:16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
-.messages{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-.msg{max-width:82%;padding:12px;border-radius:12px;font-size:11px;line-height:1.65;white-space:pre-wrap}
-.msg.anvi{background:#0b2732;border:1px solid #194958;align-self:flex-start}
-.msg.user{background:#145779;align-self:flex-end}
-.chat-tools{display:flex;gap:6px;flex-wrap:wrap;padding:8px 14px;border-top:1px solid var(--line)}
-.chat-input{display:flex;gap:7px;padding:12px 14px}
-.chat-input input{
- flex:1;min-width:0;background:#06141c;border:1px solid #285367;
- color:white;border-radius:9px;padding:13px;outline:none
-}
-.voice{
- width:46px;border:1px solid #286173;background:#0b2834;color:var(--cyan);border-radius:9px
-}
-.voice.listening{background:#5a1d2a;color:#fff;border-color:var(--red)}
-
-/* FORMS */
-.filters{
- display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px
-}
-input,select{
- background:#071720;color:white;border:1px solid #244a59;
- border-radius:8px;padding:10px;font-size:10px
-}
-.search{flex:1;min-width:180px}
-
-.empty{text-align:center;padding:30px;color:var(--muted);font-size:10px}
-
-/* MOBILE */
-@media(max-width:900px){
- #sidebar{
-  position:fixed;left:-280px;top:0;bottom:0;
-  box-shadow:10px 0 35px #0008
- }
- #sidebar.open{left:0}
- #mobileShade.show{display:block}
- .menu{display:block}
- .statuses .pill:nth-child(n+3){display:none}
- #content{padding:12px}
- .hero{grid-template-columns:1fr}
- .metrics{grid-template-columns:repeat(2,1fr)}
- .grid2,.grid3{grid-template-columns:1fr}
- .hero h1{font-size:22px}
- .chat{height:calc(100vh - 100px);min-height:500px}
-}
-@media(max-width:430px){
- .metrics{grid-template-columns:1fr 1fr}
- .metric strong{font-size:20px}
- .topbar{padding:0 10px}
- .top-title b{font-size:12px}
-}
+body{margin:0;background:#0b1020;color:#e8eefc;font-family:Arial,sans-serif;height:100vh;display:flex;flex-direction:column}
+header{height:64px;border-bottom:1px solid #26314d;display:flex;align-items:center;padding:0 22px;justify-content:space-between;background:#10172a}
+.logo{font-size:21px;font-weight:700;letter-spacing:.5px}.logo span{color:#55c7ff}
+.status{font-size:12px;color:#7ee2a8}
+main{flex:1;overflow:auto;padding:25px 16px 130px}
+.chat{max-width:900px;margin:auto}
+.welcome{text-align:center;margin:55px auto 30px}
+.welcome h1{font-size:32px;margin:0 0 10px}.welcome p{color:#91a0bd}
+.msg{display:flex;margin:18px 0}.user{justify-content:flex-end}
+.bubble{max-width:82%;padding:14px 17px;border-radius:17px;line-height:1.55;white-space:pre-wrap}
+.ai .bubble{background:#151e35;border:1px solid #263654}
+.user .bubble{background:#1769a8}
+.sources{font-size:11px;color:#7f91b2;margin-top:6px}
+.composer{position:fixed;bottom:0;left:0;right:0;background:#0b1020;border-top:1px solid #26314d;padding:14px}
+.box{max-width:900px;margin:auto;display:flex;gap:9px}
+textarea{flex:1;background:#111a30;color:#fff;border:1px solid #344363;border-radius:14px;padding:14px;font-size:15px;resize:none;min-height:52px;max-height:140px}
+button{border:0;border-radius:13px;padding:0 17px;background:#1677b8;color:#fff;font-weight:700}
+button:hover{background:#1b8bd3}
+#mic{background:#263653;font-size:18px}
+.thinking{opacity:.65}
 </style>
 </head>
-
 <body>
-<div id="mobileShade"></div>
-
-<div id="app">
-
-<aside id="sidebar">
- <div class="brand">
-  <strong>ANVIQO</strong>
-  <span>THINK • PREDICT • PROTECT</span>
- </div>
-
- <nav class="nav">
-  <div class="nav-title">COMMAND CENTRE</div>
-  <button class="active" data-page="overview">◈ Live Overview</button>
-  <button data-page="alarms">◉ Live Alarms</button>
-  <button data-page="events">◌ Events Timeline</button>
-  <button data-page="changed">⛓ What Changed</button>
-
-  <div class="nav-title">PLANT INTELLIGENCE</div>
-  <button data-page="analysis">🧠 Plant Analysis</button>
-  <button data-page="prediction">◈ Predictive Intelligence</button>
-  <button data-page="critical">🔴 Critical Equipment</button>
-  <button data-page="equipment">◇ Equipment Status</button>
-  <button data-page="spares">🔧 Maintenance & Spares</button>
-<button data-page="maintenance">⚙ Maintenance Intelligence</button>
-
-  <div class="nav-title">INSTRUMENTATION</div>
-  <button data-page="pci">⌁ Instruments / PCI</button>
-  <button data-page="plc">🔌 PLC & I/O Intelligence</button>
-  <button data-page="interlocks">🔗 Interlocks & Process Context</button>
-
-  <div class="nav-title">OPERATIONS</div>
-  <button data-page="shift">⇄ Shift Report</button>
-  <button data-page="management">▣ Management Decision</button>
-  <button data-page="reports">▤ Reports</button>
-
-  <div class="nav-title">ANVI</div>
-  <button data-page="ask">✦ Ask ANVI</button>
-  <button data-page="voice">🎤 ANVI Voice</button>
-
-  <div class="nav-title">SYSTEM</div>
-  <button data-page="system">⚙ System Status</button>
-  <button data-page="safety">🛡 Safety Boundary</button>
- </nav>
-
- <div class="safe">
-  <b>SIMULATION MODE</b><br>
-  1,064 PCI I/O simulated<br>
-  PLC WRITE: BLOCKED<br>
-  SCADA CONTROL: BLOCKED<br>
-  HUMAN DECISION REQUIRED
- </div>
-</aside>
-
-<main id="main">
-
-<header class="topbar">
- <button class="menu" id="menuBtn">☰</button>
- <div class="top-title">
-  <b id="pageTitle">Live Overview</b>
-  <small id="pageSubtitle">ANVIQO Plant Intelligence Command Centre</small>
- </div>
- <div class="statuses">
-  <span class="pill live">● ANVI ONLINE</span>
-  <span class="pill sim">SIMULATION</span>
-  <span class="pill">V5 FROZEN</span>
- </div>
+<header>
+<div class="logo">ANVI<span>QO</span> <small>• ANVI</small></div>
+<div class="status">● PLANT INTELLIGENCE ONLINE</div>
 </header>
 
-<section id="content">
-
-<!-- OVERVIEW -->
-<div class="page active" id="page-overview">
- <div class="hero">
-  <div class="card">
-   <div class="kicker">PLANT INTELLIGENCE COMMAND CENTRE</div>
-   <h1>From Plant Data to Plant Understanding.</h1>
-   <p>
-    ANVIQO connects plant health, alarms, equipment, events,
-    maintenance, instrumentation and operational context into
-    one evidence-backed decision-support system.
-   </p>
-   <button class="btn primary" onclick="go('ask')">✦ Ask ANVI</button>
-  </div>
-  <div class="card brain">
-   <div class="orb">ANVI</div>
-   <b>PLANT BRAIN</b>
-   <small class="muted">Understand • Correlate • Explain</small>
-  </div>
- </div>
-
- <div class="metrics">
-  <div class="card metric"><label>PLANT HEALTH</label><strong id="health" class="cyan">—</strong><small>SIMULATED</small></div>
-  <div class="card metric"><label>ACTIVE ALARMS</label><strong id="alarms" class="red">—</strong><small>LIVE</small></div>
-  <div class="card metric"><label>EQUIPMENT RISK</label><strong id="critical" class="amber">—</strong><small>PRIORITY</small></div>
-  <div class="card metric"><label>EVENT CHAINS</label><strong id="events" class="cyan">—</strong><small>CORRELATED</small></div>
-  <div class="card metric"><label>PCI I/O</label><strong>1,064</strong><small>SIMULATION</small></div>
- </div>
-
- <div class="grid3">
-  <div class="card"><div class="card-head"><b>LIVE PLANT SITUATION</b><span>REAL-TIME</span></div><div class="card-body" id="overviewSituation">Loading...</div></div>
-  <div class="card"><div class="card-head"><b>INTELLIGENCE STATUS</b><span>V5</span></div><div class="card-body">
-   <div class="row"><span>ANVI orchestrator</span><b class="green">ONLINE</b></div>
-   <div class="row"><span>Evidence layer</span><b class="green">READY</b></div>
-   <div class="row"><span>PLC control</span><b class="red">BLOCKED</b></div>
-   <div class="row"><span>SCADA control</span><b class="red">BLOCKED</b></div>
-  </div></div>
-  <div class="card"><div class="card-head"><b>QUICK INTELLIGENCE</b><span>ASK ANVI</span></div><div class="card-body">
-   <button class="btn" onclick="askQuick('What is the current plant health?')">Plant Health</button>
-   <button class="btn" onclick="askQuick('Show active alarms')">Active Alarms</button>
-   <button class="btn" onclick="askQuick('Show critical equipment')">Equipment Risk</button>
-   <button class="btn" onclick="askQuick('What changed?')">What Changed</button>
-  </div></div>
- </div>
+<main id="main">
+<div class="chat" id="chat">
+<div class="welcome" id="welcome">
+<h1>How can I help?</h1>
+<p>Ask ANVI about your plant, PCI instruments, PLC/I/O, equipment, alarms, maintenance, events or plant intelligence.</p>
 </div>
-
-<!-- GENERIC INTELLIGENCE PAGES -->
-<div class="page" id="page-alarms">
- <div class="card"><div class="card-head"><b>LIVE ALARMS</b><span>SIMULATED PCI</span></div><div class="card-body" id="alarmData">Loading...</div></div>
 </div>
-
-<div class="page" id="page-events">
- <div class="card"><div class="card-head"><b>EVENT TIMELINE</b><span>V5 INTELLIGENCE</span></div><div class="card-body" id="eventData">Loading...</div></div>
-</div>
-
-<div class="page" id="page-changed">
- <div class="card"><div class="card-head"><b>WHAT CHANGED</b><span>PLANT MEMORY</span></div><div class="card-body" id="changedData">Loading...</div></div>
-</div>
-
-<div class="page" id="page-analysis">
- <div class="hero"><div class="card"><div class="kicker">PLANT ANALYSIS</div><h1>Understand the plant.</h1><p>ANVI analyses health, alarms, equipment, events and evidence together rather than treating each signal independently.</p></div><div class="card brain"><div class="orb">🧠</div><b>ANALYSIS</b></div></div>
- <div class="grid2">
-  <div class="card"><div class="card-head"><b>PLANT HEALTH ANALYSIS</b></div><div class="card-body" id="analysisData">Loading...</div></div>
-  <div class="card"><div class="card-head"><b>CROSS-DOMAIN REASONING</b></div><div class="card-body"><p>ANVI correlates process, instrumentation, alarms, equipment and maintenance evidence.</p><button class="btn primary" onclick="askQuick('Analyse the current plant situation and explain the main risks')">Analyse with ANVI</button></div></div>
- </div>
-</div>
-
-<div class="page" id="page-prediction">
- <div class="hero"><div class="card"><div class="kicker">PREDICTIVE INTELLIGENCE</div><h1>What could happen next?</h1><p>Simulation-driven predictive indicators. Predictions remain decision support; ANVI never automatically controls the plant.</p></div><div class="card brain"><div class="orb">◈</div><b>PREDICT</b></div></div>
- <div class="grid2"><div class="card"><div class="card-head"><b>RISK INDICATORS</b></div><div class="card-body" id="predictionData">Loading...</div></div><div class="card"><div class="card-head"><b>EXPLAIN PREDICTION</b></div><div class="card-body"><button class="btn primary" onclick="askQuick('What problems could develop in the plant based on current evidence?')">Ask ANVI</button></div></div></div>
-</div>
-
-<div class="page" id="page-critical">
- <div class="card"><div class="card-head"><b>CRITICAL EQUIPMENT</b><span>PRIORITY RISK</span></div><div class="card-body" id="criticalData">Loading...</div></div>
-</div>
-
-<div class="page" id="page-equipment">
- <div class="card"><div class="card-head"><b>EQUIPMENT STATUS</b><span>LIVE SIMULATION</span></div><div class="card-body" id="equipmentData">Loading...</div></div>
-</div>
-
-<div class="page" id="page-maintenance">
- <div class="card"><div class="card-head"><b>MAINTENANCE INTELLIGENCE</b></div><div class="card-body" id="maintenanceData">Loading...</div></div>
-</div>
-
-<div class="page" id="page-pci">
- <div class="hero"><div class="card"><div class="kicker">INSTRUMENTATION / PCI</div><h1>1,064 I/O Reference Points</h1><p>Verified PCI reference database operating in read-only simulation mode.</p></div><div class="card brain"><div class="orb">⌁</div><b>PCI</b><small class="muted">SIMULATION</small></div></div>
- <div class="grid2"><div class="card"><div class="card-head"><b>PCI SNAPSHOT</b></div><div class="card-body" id="pciData">Loading...</div></div><div class="card"><div class="card-head"><b>ASK ABOUT AN INSTRUMENT</b></div><div class="card-body"><button class="btn primary" onclick="go('ask')">Open ANVI</button></div></div></div>
-</div>
-
-<div class="page" id="page-plc">
- <div class="card"><div class="card-head"><b>PLC & I/O INTELLIGENCE</b><span>READ-ONLY SIMULATION</span></div><div class="card-body" id="plcData">Loading...</div></div>
-</div>
-
-<div class="page" id="page-interlocks">
- <div class="card"><div class="card-head"><b>INTERLOCKS & PROCESS CONTEXT</b></div><div class="card-body"><p>Process and interlock evidence remains available through the PCI conversational layer.</p><button class="btn primary" onclick="askQuick('Explain the PCI interlocks and process context')">Ask ANVI</button></div></div>
-</div>
-
-<!-- SHIFT -->
-<div class="page" id="page-shift">
- <div class="hero"><div class="card"><div class="kicker">OPERATIONS</div><h1>Shift Report</h1><p>Review A, B or C shift intelligence by date.</p></div><div class="card brain"><div class="orb">⇄</div><b>SHIFT</b></div></div>
- <div class="card">
-  <div class="card-body">
-   <div class="filters">
-    <select id="shiftType"><option>A Shift</option><option>B Shift</option><option>C Shift</option></select>
-    <input id="shiftDate" type="date">
-    <input id="shiftSearch" class="search" placeholder="Search shift report...">
-    <button class="btn primary" onclick="loadShift()">Generate Report</button>
-   </div>
-   <div id="shiftResult" class="empty">Select shift/date and generate the report.</div>
-  </div>
- </div>
-</div>
-
-<div class="page" id="page-management">
- <div class="card"><div class="card-head"><b>MANAGEMENT DECISION SUPPORT</b></div><div class="card-body" id="managementData">Loading...</div></div>
-</div>
-
-<div class="page" id="page-reports">
- <div class="card"><div class="card-head"><b>REPORTS</b></div><div class="card-body">
-  <button class="btn" onclick="askQuick('Generate the latest plant intelligence report')">Plant Report</button>
-  <button class="btn" onclick="go('shift')">Shift Report</button>
-  <button class="btn" onclick="askQuick('Generate a maintenance intelligence report')">Maintenance Report</button>
- </div></div>
-</div>
-
-<!-- ASK ANVI -->
-
-<!-- MAINTENANCE & SPARES INTELLIGENCE -->
-<div class="page" id="page-spares">
- <div class="hero">
-  <div class="card">
-   <div class="kicker">MAINTENANCE INTELLIGENCE</div>
-   <h1>Maintenance & Spares Intelligence</h1>
-   <p>
-    Connect equipment, maintenance requirements and spare availability
-    into one evidence-backed view.
-   </p>
-  </div>
-  <div class="card brain">
-   <div class="orb">🔧</div>
-   <b>SPARES</b>
-   <small class="muted">READ-ONLY</small>
-  </div>
- </div>
-
- <div class="grid4">
-  <div class="card metric">
-   <label>CRITICAL SPARES</label>
-   <strong id="sparesCritical">—</strong>
-   <small>Priority items</small>
-  </div>
-  <div class="card metric">
-   <label>LOW STOCK</label>
-   <strong id="sparesLow">—</strong>
-   <small>Attention required</small>
-  </div>
-  <div class="card metric">
-   <label>MAINTENANCE ITEMS</label>
-   <strong id="sparesMaintenance">—</strong>
-   <small>Available intelligence</small>
-  </div>
-  <div class="card metric">
-   <label>STATUS</label>
-   <strong>ONLINE</strong>
-   <small>ANVI intelligence layer</small>
-  </div>
- </div>
-
- <div class="grid2">
-  <div class="card">
-   <div class="card-head">
-    <b>SPARE SEARCH</b>
-    <span>ANVI INTELLIGENCE</span>
-   </div>
-   <div class="card-body">
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-     <input
-       id="spareSearch"
-       class="search"
-       placeholder="Search spare, equipment, tag or description..."
-       style="flex:1"
-     >
-     <button class="btn primary" onclick="searchSpares()">Search</button>
-    </div>
-    <div id="spareResults" class="empty">
-      Search the maintenance and spare intelligence layer.
-    </div>
-   </div>
-  </div>
-
-  <div class="card">
-   <div class="card-head">
-    <b>EQUIPMENT → SPARES</b>
-    <span>RELATIONSHIP INTELLIGENCE</span>
-   </div>
-   <div class="card-body">
-    <p class="muted">
-      Ask ANVI which spares are associated with an instrument,
-      equipment item or maintenance requirement.
-    </p>
-    <button class="btn primary"
-      onclick="askQuick('Which critical equipment requires spare parts and what should be checked first?')">
-      Ask ANVI
-    </button>
-   </div>
-  </div>
- </div>
-
- <div class="card">
-  <div class="card-head">
-   <b>MAINTENANCE & SPARES SITUATION</b>
-   <span>DECISION SUPPORT</span>
-  </div>
-  <div class="card-body">
-   <div id="sparesSituation" class="empty">
-    Loading maintenance intelligence...
-   </div>
-  </div>
- </div>
-
- <div class="card">
-  <div class="card-head">
-   <b>QUICK INTELLIGENCE</b>
-   <span>ASK ANVI</span>
-  </div>
-  <div class="card-body">
-   <button class="btn" onclick="askQuick('Show low-stock critical spares')">
-    Low-stock critical spares
-   </button>
-   <button class="btn" onclick="askQuick('What spares are required for critical equipment?')">
-    Critical equipment spares
-   </button>
-   <button class="btn" onclick="askQuick('Which maintenance activities require spare parts?')">
-    Maintenance spare requirements
-   </button>
-   <button class="btn" onclick="askQuick('Show the most important maintenance and spare risks')">
-    Spare risk
-   </button>
-  </div>
- </div>
-</div>
-
-<div class="page" id="page-ask">
- <div class="card chat">
-  <div class="chat-head"><div><h2>✦ Ask ANVI</h2><small class="muted">Plant intelligence • evidence first • human governed</small></div><button class="btn" onclick="clearChat()">Clear</button></div>
-  <div id="messages" class="messages">
-   <div class="msg anvi">Hello. I am ANVI.
-
-Ask me about plant health, alarms, instruments, PCI I/O, equipment, maintenance, events, shift intelligence or plant context.</div>
-  </div>
-  <div class="chat-tools">
-   <button class="btn" onclick="askQuick('What is the current plant health?')">Plant Health</button>
-   <button class="btn" onclick="askQuick('Show active alarms')">Alarms</button>
-   <button class="btn" onclick="askQuick('Show critical equipment')">Critical Equipment</button>
-   <button class="btn" onclick="askQuick('What changed?')">What Changed</button>
-  </div>
-  <div class="chat-input">
-   <input id="anviInput" placeholder="Ask ANVI anything about the plant..." onkeydown="if(event.key==='Enter')sendAsk()">
-   <button id="voiceBtn" class="voice" onclick="toggleVoice()">🎤</button>
-   <button class="btn primary" onclick="sendAsk()">ASK</button>
-  </div>
- </div>
-</div>
-
-<div class="page" id="page-voice">
- <div class="hero"><div class="card"><div class="kicker">ANVI VOICE</div><h1>Speak to the plant intelligence.</h1><p>Browser speech recognition sends the same question to the existing ANVI orchestrator. Voice does not create a separate reasoning engine.</p><button class="btn primary" onclick="go('ask');toggleVoice()">🎤 Start Voice Command</button></div><div class="card brain"><div class="orb">🎤</div><b>VOICE</b></div></div>
- <div class="card"><div class="card-body"><b>Safety</b><p>Voice commands are informational only. PLC writes and SCADA control remain blocked.</p></div></div>
-</div>
-
-<div class="page" id="page-system">
- <div class="card"><div class="card-head"><b>SYSTEM STATUS</b></div><div class="card-body" id="systemData">Checking...</div></div>
-</div>
-
-<div class="page" id="page-safety">
- <div class="grid2">
-  <div class="card"><div class="card-head"><b>SAFETY BOUNDARY</b></div><div class="card-body">
-   <div class="row"><span>PLC Write</span><b class="red">BLOCKED</b></div>
-   <div class="row"><span>SCADA Control</span><b class="red">BLOCKED</b></div>
-   <div class="row"><span>Execution Mode</span><b class="amber">SIMULATION</b></div>
-   <div class="row"><span>Human Decision</span><b class="green">REQUIRED</b></div>
-  </div></div>
-  <div class="card"><div class="card-head"><b>DATA BOUNDARY</b></div><div class="card-body"><p>PCI data is being simulated. ANVIQO remains a read-only intelligence and decision-support layer.</p></div></div>
- </div>
-</div>
-
-</section>
 </main>
+
+<div class="composer">
+<div class="box">
+<textarea id="input" placeholder="Ask ANVI anything about the plant..." rows="1"></textarea>
+<button id="mic" title="Voice">🎙</button>
+<button id="send">Send</button>
+</div>
 </div>
 
 <script>
-const titles={
- overview:['Live Overview','ANVIQO Plant Intelligence Command Centre'],
- alarms:['Live Alarms','Evidence-linked alarm intelligence'],
- events:['Events Timeline','Correlated plant events'],
- changed:['What Changed','Plant change intelligence'],
- analysis:['Plant Analysis','Cross-domain plant understanding'],
- prediction:['Predictive Intelligence','Risk and prediction'],
- critical:['Critical Equipment','Priority equipment intelligence'],
- equipment:['Equipment Status','Equipment health and context'],
- spares:['Maintenance & Spares Intelligence','Equipment, maintenance and spare intelligence'],
- maintenance:['Maintenance Intelligence','Maintenance decision support'],
- pci:['Instruments / PCI','PCI instrumentation intelligence'],
- plc:['PLC & I/O Intelligence','Read-only simulated I/O'],
- interlocks:['Interlocks & Process Context','Process and interlock evidence'],
- shift:['Shift Report','A / B / C shift intelligence'],
- management:['Management Decision','Evidence-backed decision support'],
- reports:['Reports','Plant intelligence reports'],
- ask:['Ask ANVI','Conversational plant intelligence'],
- voice:['ANVI Voice','Voice command interface'],
- system:['System Status','ANVIQO system state'],
- safety:['Safety Boundary','Human-governed read-only boundary']
+const input=document.getElementById("input");
+const chat=document.getElementById("chat");
+const welcome=document.getElementById("welcome");
+const send=document.getElementById("send");
+
+function add(role,text){
+ if(welcome) welcome.remove();
+ const row=document.createElement("div");
+ row.className="msg "+role;
+ const b=document.createElement("div");
+ b.className="bubble";
+ b.textContent=text;
+ row.appendChild(b);chat.appendChild(row);
+ window.scrollTo(0,document.body.scrollHeight);
+ return b;
+}
+
+function extract(x){
+ if(typeof x==="string") return x;
+ if(!x) return "";
+ return x.answer||x.response||x.message||x.result||x.text||
+        (x.data&&(x.data.answer||x.data.response||x.data.message))||JSON.stringify(x,null,2);
+}
+
+async function ask(q){
+ const b=add("ai","ANVI is thinking...");
+ b.classList.add("thinking");
+ try{
+   let r=await fetch("/api/ask",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({question:q,query:q,message:q})
+   });
+   let t=await r.text();
+   let x;try{x=JSON.parse(t)}catch(e){x=t}
+   b.classList.remove("thinking");
+   b.textContent=extract(x)||"ANVI received the request but returned no response.";
+ }catch(e){
+   b.classList.remove("thinking");
+   b.textContent="ANVI could not reach the intelligence service. Please check the ANVIQO API.";
+ }
+}
+
+send.onclick=()=>{
+ const q=input.value.trim();if(!q)return;
+ add("user",q);input.value="";ask(q);
 };
+input.addEventListener("keydown",e=>{
+ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send.click()}
+});
 
-function go(name){
- document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
- const p=document.getElementById('page-'+name);
- if(p)p.classList.add('active');
- document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));
- document.getElementById('pageTitle').textContent=titles[name]?.[0]||name;
- document.getElementById('pageSubtitle').textContent=titles[name]?.[1]||'';
- closeMenu();
- loadPage(name);
-}
-
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
-
-const menuBtn=document.getElementById('menuBtn');
-const sidebar=document.getElementById('sidebar');
-const shade=document.getElementById('mobileShade');
-
-function closeMenu(){sidebar.classList.remove('open');shade.classList.remove('show')}
-menuBtn.onclick=()=>{sidebar.classList.add('open');shade.classList.add('show')}
-shade.onclick=closeMenu;
-
-async function api(url,options){
- const r=await fetch(url,options);
- if(r.status===401){location.href='/login';throw Error('Authentication required')}
- return r.json();
-}
-
-function box(text){
- return '<div class="row"><span>'+String(text).replace(/</g,'&lt;')+'</span></div>';
-}
-
-async function refresh(){
- try{
-  const d=await api('/api/pci/live');
-  document.getElementById('health').textContent=d.plant_health_score??'—';
-  document.getElementById('alarms').textContent=(d.warning||0)+(d.critical||0);
-  document.getElementById('critical').textContent=d.critical??0;
-  document.getElementById('events').textContent=d.active_events??0;
-  document.getElementById('overviewSituation').innerHTML=
-   '<div class="row"><span>Mode</span><b class="amber">'+(d.mode||'SIMULATION')+'</b></div>'+
-   '<div class="row"><span>Total I/O</span><b>1,064</b></div>'+
-   '<div class="row"><span>Healthy</span><b class="green">'+(d.healthy??0)+'</b></div>'+
-   '<div class="row"><span>Warning</span><b class="amber">'+(d.warning??0)+'</b></div>'+
-   '<div class="row"><span>Critical</span><b class="red">'+(d.critical??0)+'</b></div>';
- }catch(e){
-  document.getElementById('overviewSituation').textContent='API connection unavailable';
- }
-}
-
-async function loadPage(name){
- if(name==='overview')return refresh();
-
- if(name==='pci'||name==='plc'||name==='alarms'||name==='analysis'||name==='prediction'||name==='critical'||name==='equipment'){
-  try{
-   const d=await api('/api/pci/live');
-   let html=
-    '<div class="row"><span>MODE</span><b class="amber">'+(d.mode||'SIMULATION')+'</b></div>'+
-    '<div class="row"><span>TOTAL I/O</span><b>1,064</b></div>'+
-    '<div class="row"><span>HEALTHY</span><b class="green">'+(d.healthy??0)+'</b></div>'+
-    '<div class="row"><span>WARNING</span><b class="amber">'+(d.warning??0)+'</b></div>'+
-    '<div class="row"><span>CRITICAL</span><b class="red">'+(d.critical??0)+'</b></div>'+
-    '<div class="row"><span>CHANGED</span><b>'+JSON.stringify(d.changed??0)+'</b></div>';
-   const ids={pci:'pciData',plc:'plcData',alarms:'alarmData',analysis:'analysisData',prediction:'predictionData',critical:'criticalData',equipment:'equipmentData'};
-   if(ids[name])document.getElementById(ids[name]).innerHTML=html;
-  }catch(e){}
- }
-
- if(name==='maintenance')loadAskInto('maintenanceData','Generate the current maintenance intelligence summary');
- if(name==='management')loadAskInto('managementData','Generate the current management decision support summary');
- if(name==='events')loadAskInto('eventData','Show the current event timeline and correlated events');
- if(name==='changed')loadAskInto('changedData','What changed in the plant recently?');
- if(name==='system')loadSystem();
-}
-
-async function loadAskInto(id,q){
- const el=document.getElementById(id);
- el.innerHTML='<div class="empty">ANVI is analysing...</div>';
- try{
-  const d=await askAPI(q);
-  el.innerHTML='<div style="white-space:pre-wrap;line-height:1.7;font-size:11px">'+escapeHtml(d.answer||d.response||JSON.stringify(d))+'</div>';
- }catch(e){el.innerHTML='<div class="empty">Unable to load intelligence.</div>'}
-}
-
-function escapeHtml(s){
- return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-}
-
-async function askAPI(q){
- const r=await fetch('/api/ask',{
-  method:'POST',
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({question:q,query:q,message:q})
- });
- if(r.status===401){location.href='/login';throw Error('auth')}
- return await r.json();
-}
-
-function addMsg(text,type){
- const m=document.getElementById('messages');
- const d=document.createElement('div');
- d.className='msg '+type;
- d.textContent=text;
- m.appendChild(d);
- m.scrollTop=m.scrollHeight;
-}
-
-async function sendAsk(){
- const input=document.getElementById('anviInput');
- const q=input.value.trim();
- if(!q)return;
- input.value='';
- addMsg(q,'user');
- addMsg('ANVI is analysing the plant evidence...','anvi');
- const last=document.querySelector('#messages .msg.anvi:last-child');
- try{
-  const d=await askAPI(q);
-  last.textContent=d.answer||d.response||d.message||JSON.stringify(d,null,2);
- }catch(e){last.textContent='Unable to connect to ANVI.'}
-}
-
-function askQuick(q){
- go('ask');
- setTimeout(()=>{document.getElementById('anviInput').value=q;sendAsk()},100);
-}
-
-function clearChat(){
- document.getElementById('messages').innerHTML='<div class="msg anvi">Chat cleared. Ask ANVI about the plant.</div>';
-}
-
-async function loadShift(){
- const shift=document.getElementById('shiftType').value;
- const date=document.getElementById('shiftDate').value;
- const search=document.getElementById('shiftSearch').value;
- const q='Generate the '+shift+' shift report for '+(date||'the selected date')+(search?' and focus on: '+search:'')+'. Include alarms, events, changes, equipment, maintenance actions, plant health and important handover points.';
- document.getElementById('shiftResult').innerHTML='<div class="empty">Generating shift intelligence...</div>';
- try{
-  const d=await askAPI(q);
-  document.getElementById('shiftResult').innerHTML='<div style="white-space:pre-wrap;line-height:1.8;font-size:11px">'+escapeHtml(d.answer||d.response||JSON.stringify(d,null,2))+'</div>';
- }catch(e){
-  document.getElementById('shiftResult').innerHTML='<div class="empty">Unable to generate report.</div>';
- }
-}
-
-async function loadSystem(){
- const el=document.getElementById('systemData');
- try{
-  const d=await api('/api/status');
-  el.innerHTML='<div class="row"><span>API</span><b class="green">ONLINE</b></div>'+
-  '<div class="row"><span>ANVI</span><b class="green">AVAILABLE</b></div>'+
-  '<div class="row"><span>Mode</span><b class="amber">SIMULATION</b></div>'+
-  '<div class="row"><span>PLC Write</span><b class="red">BLOCKED</b></div>'+
-  '<div class="row"><span>SCADA Control</span><b class="red">BLOCKED</b></div>';
- }catch(e){el.textContent='Unable to read system status.'}
-}
-
-let recognition=null;
-let listening=false;
-
-function toggleVoice(){
- if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
-  alert('Speech recognition is not available in this browser.');
-  return;
- }
- if(listening){recognition.stop();return}
+const mic=document.getElementById("mic");
+if("webkitSpeechRecognition" in window || "SpeechRecognition" in window){
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- recognition=new SR();
- recognition.lang='en-IN';
- recognition.continuous=false;
- recognition.interimResults=false;
- recognition.onstart=()=>{
-  listening=true;
-  document.getElementById('voiceBtn').classList.add('listening');
-  document.getElementById('voiceBtn').textContent='■';
- };
- recognition.onresult=e=>{
-  document.getElementById('anviInput').value=e.results[0][0].transcript;
-  sendAsk();
- };
- recognition.onend=()=>{
-  listening=false;
-  document.getElementById('voiceBtn').classList.remove('listening');
-  document.getElementById('voiceBtn').textContent='🎤';
- };
- recognition.start();
-}
-
-if(name==='spares') loadSpares();
-
-document.getElementById('shiftDate').value=new Date().toISOString().slice(0,10);
-refresh();
-setInterval(refresh,15000);
-
-async function loadSpares(){
-  const box=document.getElementById('sparesSituation');
-  if(!box) return;
-
-  try{
-    const r=await fetch('/api/maintenance');
-    const d=await r.json();
-
-    const text =
-      d.answer ||
-      d.response ||
-      d.message ||
-      'Maintenance intelligence is available through ANVI.';
-
-    box.innerHTML='<div style="white-space:pre-wrap;line-height:1.8">'+
-      escapeHtml(text)+'</div>';
-
-    const raw=JSON.stringify(d).toLowerCase();
-
-    const critical=(raw.match(/critical/g)||[]).length;
-    const low=(raw.match(/low stock|low-stock/g)||[]).length;
-
-    const c=document.getElementById('sparesCritical');
-    const l=document.getElementById('sparesLow');
-    const m=document.getElementById('sparesMaintenance');
-
-    if(c)c.textContent=critical||'0';
-    if(l)l.textContent=low||'0';
-    if(m)m.textContent='READY';
-
-  }catch(e){
-    box.innerHTML='<div class="empty">Maintenance intelligence unavailable. Use Ask ANVI for evidence-backed maintenance queries.</div>';
-  }
-}
-
-async function searchSpares(){
-  const q=(document.getElementById('spareSearch')||{}).value||'';
-  const box=document.getElementById('spareResults');
-
-  if(!q.trim()){
-    box.innerHTML='<div class="empty">Enter a spare, equipment tag or maintenance query.</div>';
-    return;
-  }
-
-  box.innerHTML='<div class="empty">ANVI is searching maintenance and spare intelligence...</div>';
-
-  try{
-    const r=await fetch('/api/ask',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        question:
-          'Search maintenance and spare intelligence for: '+q+
-          '. Return only evidence-backed information. Include equipment/tag, spare information, availability if known, maintenance relevance and source/context. Do not invent inventory data.'
-      })
-    });
-
-    const d=await r.json();
-
-    box.innerHTML='<div style="white-space:pre-wrap;line-height:1.8">'+
-      escapeHtml(d.answer||d.response||JSON.stringify(d,null,2))+
-      '</div>';
-
-  }catch(e){
-    box.innerHTML='<div class="empty">Unable to query ANVI.</div>';
-  }
-}
-
+ const rec=new SR();rec.lang="en-IN";
+ rec.onresult=e=>{input.value=e.results[0][0].transcript;send.click()};
+ mic.onclick=()=>rec.start();
+}else mic.style.display="none";
 </script>
 </body>
 </html>
