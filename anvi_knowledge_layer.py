@@ -1,3 +1,4 @@
+from pci_universal_resolver import resolve as _universal_pci_resolve
 """
 ANVIQO KNOWLEDGE LAYER
 Conversational front door to the existing V5 intelligence stack.
@@ -32,73 +33,23 @@ def _records():
 
 def _tag_from_question(q):
     """
-    UNIVERSAL VERIFIED TAG RESOLUTION
+    UNIVERSAL VERIFIED PCI RESOLUTION.
 
-    Resolve natural-language tag formatting against the actual PCI
-    registry instead of relying on a hard-coded list of prefixes.
+    Resolves:
+      1. exact verified tag
+      2. verified equipment family
+      3. natural-language formatting
 
-    Examples:
-        MCV 204  -> MCV_204 / MCV-204 / MCV204
-        PT 303   -> PT_303 / PT-303 / PT303
-        LP 1 Healthy -> LP_1_Healthy
-
-    Only an exact normalized match against an existing verified PCI
-    record is accepted. No tag is invented.
+    Never invents a tag.
     """
-
-    question = str(q or "").strip()
     records = _records()
 
-    def normalize(value):
-        return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+    rows, mode = _universal_pci_resolve(q, records)
 
-    q_norm = normalize(question)
+    if not rows:
+        return None, None
 
-    # 1. Exact normalized database-tag match.
-    # This handles spaces, hyphens and underscores automatically.
-    candidates = []
-
-    for item in records:
-        tag = str(item.get("tag", "")).strip()
-        if not tag:
-            continue
-
-        tag_norm = normalize(tag)
-
-        if tag_norm and tag_norm in q_norm:
-            candidates.append((tag, item, len(tag_norm)))
-
-    if candidates:
-        # Prefer the longest exact normalized tag to avoid
-        # accidentally selecting a shorter tag contained in a longer one.
-        candidates.sort(key=lambda x: x[2], reverse=True)
-        return candidates[0][0], candidates[0][1]
-
-    # 2. Preserve the existing structured-tag behaviour.
-    tags = re.findall(
-        r"\b[A-Za-z]{1,12}[-_][A-Za-z0-9_]+\b",
-        question.upper()
-    )
-
-    known = {
-        str(x.get("tag", "")).upper(): x
-        for x in records
-    }
-
-    for tag in tags:
-        if tag in known:
-            return tag, known[tag]
-
-    # 3. Exact case-insensitive literal match.
-    q_lower = question.lower()
-
-    for item in records:
-        tag = str(item.get("tag", "")).strip()
-        if tag and tag.lower() in q_lower:
-            return tag, item
-
-    return None, None
-
+    return rows[0].get("tag"), rows[0]
 
 def _pci_answer(q):
     ql = q.lower()
@@ -1462,6 +1413,36 @@ def ask_anvi(question):
     ql = q.lower()
 
     try:
+        # ============================================================
+        # VERIFIED PCI TAG PRIORITY
+        # Any question containing a verified PCI tag must first resolve
+        # against the existing PCI database before other routing.
+        # ============================================================
+        try:
+            pci_tag, pci_item = _tag_from_question(q)
+            if pci_tag and pci_item:
+                return {
+                    "answer": (
+                        f"{pci_tag}: {pci_item.get('description','No description available')}. "
+                        f"Area: {pci_item.get('area','UNKNOWN')}. "
+                        f"I/O type: {pci_item.get('io_type','UNKNOWN')}. "
+                        f"PLC address: {pci_item.get('plc_address','UNKNOWN')}. "
+                        f"Panel: {pci_item.get('panel','UNKNOWN')}. "
+                        f"TB: {pci_item.get('tb_name','UNKNOWN')} "
+                        f"{pci_item.get('tb_no','')}. "
+                        f"Source: {pci_item.get('source_sheet','UNKNOWN')}."
+                    ),
+                    "domain": "pci",
+                    "tag": pci_tag,
+                    "evidence": "verified PCI database",
+                    "record": pci_item,
+                    "read_only": True,
+                    "plc_write": False,
+                    "scada_control": False,
+                }
+        except Exception:
+            pass
+
         # ============================================================
         # 0. PCI SEMANTIC COLLECTION QUERY — BEFORE EXACT TAG CONTEXT
         # ============================================================
