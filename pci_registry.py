@@ -153,14 +153,136 @@ def search(
     return results
 
 
+def semantic_search_pci(
+    query=None,
+    area=None,
+    io_type=None,
+    panel=None,
+    tb_name=None,
+    criticality=None,
+    kind=None,
+    limit=1064,
+):
+    """
+    Deterministic natural-language-friendly PCI search.
+
+    This is a retrieval layer over the verified 1,064-record registry.
+    It does not invent records and does not perform PLC/SCADA writes.
+    """
+
+    records = load_records()
+
+    q = _text(query).strip().lower()
+    area_q = _text(area).strip().lower()
+    io_q = _text(io_type).strip().upper()
+    panel_q = _text(panel).strip().lower()
+    tb_q = _text(tb_name).strip().lower()
+    critical_q = _text(criticality).strip().upper()
+    kind_q = _text(kind).strip().lower()
+
+    results = []
+
+    for r in records:
+        tag = _text(r.get("tag"))
+        desc = _text(r.get("description"))
+        role = _text(r.get("process_role"))
+        area_v = _text(r.get("area"))
+        io_v = _text(r.get("io_type"))
+        panel_v = _text(r.get("panel"))
+        tb_v = _text(r.get("tb_name"))
+        critical_v = _text(r.get("criticality"))
+
+        blob = " ".join([
+            tag,
+            desc,
+            role,
+            area_v,
+            io_v,
+            _text(r.get("plc_address")),
+            panel_v,
+            tb_v,
+            _text(r.get("tb_no")),
+            _text(r.get("field_elec")),
+        ]).lower()
+
+        if q and q not in blob:
+            continue
+
+        if area_q and area_q not in area_v.lower():
+            continue
+
+        # Exact I/O-type matching.
+        if io_q:
+            if io_v.upper() != io_q:
+                continue
+
+        if panel_q and panel_v.lower() != panel_q:
+            continue
+
+        if tb_q and tb_q not in tb_v.lower():
+            continue
+
+        if critical_q and critical_v.upper() != critical_q:
+            continue
+
+        # Semantic equipment/instrument type matching.
+        if kind_q:
+            if kind_q == "pressure_transmitter":
+                # PT tags are authoritative when the tag starts with PT.
+                # Descriptions/process roles provide a secondary signal.
+                if not (
+                    tag.upper().startswith("PT_")
+                    or tag.upper().startswith("PT-")
+                    or "pressure" in desc.lower()
+                    or "pressure" in role.lower()
+                ):
+                    continue
+
+            elif kind_q == "control_valve":
+                if not any(
+                    x in tag.upper()
+                    for x in ("CV_", "CV-", "PCV_", "PCV-", "FCV_", "FCV-",
+                              "TCV_", "TCV-", "LCV_", "LCV-", "XV_", "XV-",
+                              "FV_", "FV-", "PV_", "PV-", "LV_", "LV-")
+                ) and "control valve" not in blob:
+                    continue
+
+            elif kind_q == "valve":
+                if not any(
+                    x in tag.upper()
+                    for x in ("CV_", "CV-", "PCV_", "PCV-", "FCV_", "FCV-",
+                              "TCV_", "TCV-", "LCV_", "LCV-", "XV_", "XV-",
+                              "FV_", "FV-", "PV_", "PV-", "LV_", "LV-")
+                ) and "valve" not in blob:
+                    continue
+
+        results.append(r)
+
+        if len(results) >= limit:
+            break
+
+    return results
+
+
+def search_panel(panel, limit=1064):
+    return semantic_search_pci(panel=panel, limit=limit)
+
+
+def search_tb(tb_name, limit=1064):
+    return semantic_search_pci(tb_name=tb_name, limit=limit)
+
+
 def search_pressure_transmitters(limit=100):
-    return [
-        r for r in load_records()
-        if (
-            "pressure transmitter"
-            in _text(r.get("description")).lower()
-        )
-    ][:limit]
+    return semantic_search_pci(kind="pressure_transmitter", limit=limit)
+
+
+def search_control_valves(limit=100):
+    return semantic_search_pci(kind="control_valve", limit=limit)
+
+
+
+def search_pressure_transmitters(limit=100):
+    return semantic_search_pci(kind="pressure_transmitter", limit=limit)
 
 
 def search_area(area, limit=100):

@@ -1106,39 +1106,76 @@ def _anvi_troubleshooting_question(question):
 
 def _anvi_establish_explicit_pci_context(question):
     """
-    Establish conversational PCI context from an explicit instrument tag.
+    Establish conversational PCI context from an explicit REAL PCI tag.
 
-    This is deterministic evidence retrieval only.
+    IMPORTANT:
+    - Uses the authoritative PCI registry.
+    - Matches complete database tags, including tags containing multiple
+      underscores such as LP_1_Healthy and MCV_204_control_On.
+    - Never falls back to remembered context.
+    - Never invents or modifies a tag.
     """
     try:
-        import pci_conversation as pc
+        from pci_registry import search
 
         q = str(question or "").strip()
+        if not q:
+            return None
 
-        # First allow the existing PCI resolver to recognize the
-        # complete question, e.g. "Tell me about PT_303".
-        try:
-            record = pc.find_tag(q)
-            if isinstance(record, dict) and record.get("tag"):
-                _remember_pci_context(record=record)
-                return record
-        except Exception:
-            pass
+        q_upper = q.upper()
 
-        # Then extract explicit instrument-like identifiers.
-        ids = re.findall(
-            r"\b[A-Za-z]{1,16}[-_]?\d+\b",
-            q.upper()
+        # ------------------------------------------------------------
+        # 1. EXACT COMPLETE TAG MATCH AGAINST THE REAL PCI REGISTRY
+        # ------------------------------------------------------------
+        records = search(query=None, limit=1064)
+
+        # Longest tags first prevents a shorter tag from winning when
+        # one tag is contained inside another.
+        records = sorted(
+            records,
+            key=lambda r: len(str(r.get("tag", ""))),
+            reverse=True,
         )
 
-        for ident in ids:
-            try:
-                record = pc.find_tag(ident)
-                if isinstance(record, dict) and record.get("tag"):
+        for record in records:
+            tag = str(record.get("tag", "")).strip()
+            if not tag:
+                continue
+
+            tag_upper = tag.upper()
+
+            # Exact token boundary around the complete database tag.
+            pattern = r"(?<![A-Z0-9_])" + re.escape(tag_upper) + r"(?![A-Z0-9_])"
+
+            if re.search(pattern, q_upper):
+                _remember_pci_context(record=record)
+                return record
+
+        # ------------------------------------------------------------
+        # 2. NORMALIZED PREFIX+NUMBER TAGS
+        # ------------------------------------------------------------
+        # Examples:
+        # PT303 / PT 303 / PT-303 -> PT_303
+        normalized = _normalize_pci_instrument_tags(q)
+
+        if normalized != q:
+            normalized_upper = normalized.upper()
+
+            for record in records:
+                tag = str(record.get("tag", "")).strip()
+                if not tag:
+                    continue
+
+                tag_upper = tag.upper()
+                pattern = (
+                    r"(?<![A-Z0-9_])"
+                    + re.escape(tag_upper)
+                    + r"(?![A-Z0-9_])"
+                )
+
+                if re.search(pattern, normalized_upper):
                     _remember_pci_context(record=record)
                     return record
-            except Exception:
-                pass
 
     except Exception:
         pass
@@ -1373,7 +1410,37 @@ def ask_anvi(question):
 
     try:
         # ============================================================
-        # 0. EXPLICIT PCI TAG -> ESTABLISH CONTEXT FIRST
+        # 0. PCI SEMANTIC COLLECTION QUERY — BEFORE EXACT TAG CONTEXT
+        # ============================================================
+        # IMPORTANT:
+        # Questions such as:
+        #   Which instruments are DI?
+        #   Which instruments are in VRM / MILL?
+        #   Show me instruments on panel C2
+        # must be handled by the deterministic PCI registry before
+        # exact-tag context. Otherwise a database tag such as "DI"
+        # can hijack the question.
+
+        if _is_pci_question(q):
+            try:
+                import pci_conversation as pc
+                semantic_result = pc.answer(q)
+
+                if isinstance(semantic_result, dict):
+                    if semantic_result.get("records") or (
+                        semantic_result.get("count") is not None
+                        and semantic_result.get("evidence") == "verified PCI database"
+                    ):
+                        records = semantic_result.get("records")
+                        if isinstance(records, list):
+                            _remember_pci_context(results=records)
+
+                        return semantic_result
+            except Exception:
+                pass
+
+        # ============================================================
+        # 1. EXPLICIT PCI TAG -> ESTABLISH CONTEXT FIRST
         # ============================================================
         #
         # This MUST happen before direct follow-up routing.
