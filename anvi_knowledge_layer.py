@@ -1790,6 +1790,68 @@ def ask_anvi(question):
 
     try:
         # ============================================================
+        # SPARE / INVENTORY INTENT PRIORITY
+        # ============================================================
+        # Explicit spare/inventory questions must reach the
+        # deterministic spare engine BEFORE verified PCI-tag
+        # identity routing.
+        #
+        # Example:
+        #   Do we have a spare for PT303?
+        # -> PT-303 | qty=0 | indent=1
+        #
+        # Ordinary engineering questions such as:
+        #   Tell me about PT303
+        # continue through the PCI identity route below.
+        # ============================================================
+
+        spare_intent_terms = (
+            "spare",
+            "spares",
+            "critical spare",
+            "critical spares",
+            "inventory",
+            "in stock",
+            "stock available",
+            "available as a spare",
+            "available spare",
+            "available spares",
+            "to indent",
+            "indent",
+        )
+
+        if any(term in ql for term in spare_intent_terms):
+            try:
+                import pci_conversation as pc
+
+                spare_result = pc.answer(q)
+
+                if isinstance(spare_result, dict):
+                    spare_domain = str(
+                        spare_result.get("domain", "")
+                    ).lower()
+
+                    spare_records = spare_result.get("records")
+
+                    if (
+                        spare_domain == "critical_spares"
+                        or (
+                            isinstance(spare_records, list)
+                            and len(spare_records) > 0
+                            and any(
+                                "spare" in str(
+                                    spare_result.get("answer", "")
+                                ).lower()
+                                for _ in [0]
+                            )
+                        )
+                    ):
+                        return spare_result
+
+            except Exception:
+                pass
+
+        # ============================================================
         # VERIFIED PCI TAG PRIORITY
         # Any question containing a verified PCI tag must first resolve
         # against the existing PCI database before other routing.

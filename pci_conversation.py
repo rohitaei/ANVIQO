@@ -798,12 +798,25 @@ def _semantic_answer(question):
 def answer(question):
     # CRITICAL SPARES ROUTING: instrument spares only; never spare PLC I/O.
     # Explicit spare intent is resolved before generic PCI tag/family routing.
-    _spare = answer_spare_query(question)
-    if _spare is not None and any(x in str(question).lower() for x in (
-        "spare", "spares", "critical spare", "available spare", "stock",
-        "do we have", "availability"
-    )):
-        return _spare
+    # This is intentionally phrase-based so normal questions such as
+    # "Tell me about PT-303" continue to use PCI intelligence.
+    _ql = str(question).lower()
+
+    _spare_intent = any(x in _ql for x in (
+        "spare",
+        "spares",
+        "critical spare",
+        "available spare",
+        "availability",
+        "in stock",
+        "stock",
+        "to indent",
+    ))
+
+    if _spare_intent:
+        _spare = answer_spare_query(question)
+        if _spare is not None:
+            return _spare
 
     # --------------------------------------------------------
     # PRIORITY ROUTE: NATURAL EQUIPMENT FAMILY + I/O
@@ -1150,6 +1163,34 @@ def answer(question):
     """
 
     q = str(question or "").strip()
+
+    # --------------------------------------------------------
+    # 0. CRITICAL SPARES ROUTING
+    # --------------------------------------------------------
+    # Spare questions must be resolved before exact PCI instrument lookup.
+    # Example:
+    #   "Tell me about PT-303" -> PCI intelligence
+    #   "Is PT-303 available as a spare?" -> Critical Spares
+    #
+    # This preserves the existing PCI/V5 intelligence path while ensuring
+    # explicit spare intent is handled by pci_spares.py.
+    _ql = q.lower()
+
+    _spare_intent = any(x in _ql for x in (
+        "spare",
+        "spares",
+        "critical spare",
+        "available spare",
+        "availability",
+        "in stock",
+        "stock",
+        "to indent",
+    ))
+
+    if _spare_intent:
+        _spare = answer_spare_query(q)
+        if _spare is not None:
+            return _spare
 
     # --------------------------------------------------------
     # 1. Exact instrument lookup FIRST
