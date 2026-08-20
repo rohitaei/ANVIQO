@@ -109,6 +109,117 @@ def _record_text(r):
     )
 
 
+
+def _natural_family_io_question(q):
+    """
+    Resolve natural-language equipment-family + I/O questions.
+
+    Examples:
+      what is the DO for MCV 204
+      show me MCV 204 DO
+      MCV-204 digital output
+      tell me the DOs of MCV 204
+
+    Uses ONLY authoritative PCI resolver results.
+    No tag or I/O point is invented.
+    """
+    import re
+
+    text = str(q or "").strip()
+
+    m = re.search(
+        r"\b(MCV|PT|FT|TT|LT|LIC|PIC|FIC|TIC|AT|FV|XV)"
+        r"[\s_-]*(\d+)\b"
+        r".{0,80}?"
+        r"\b(DI|DO|AI|AO|DIGITAL\s+INPUT|DIGITAL\s+OUTPUT|"
+        r"ANALOG\s+INPUT|ANALOG\s+OUTPUT)\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    reverse = re.search(
+        r"\b(DI|DO|AI|AO|DIGITAL\s+INPUT|DIGITAL\s+OUTPUT|"
+        r"ANALOG\s+INPUT|ANALOG\s+OUTPUT)\b"
+        r".{0,80}?"
+        r"\b(MCV|PT|FT|TT|LT|LIC|PIC|FIC|TIC|AT|FV|XV)"
+        r"[\s_-]*(\d+)\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    if m:
+        prefix = m.group(1).upper()
+        number = m.group(2)
+        io_raw = m.group(3).upper()
+    elif reverse:
+        io_raw = reverse.group(1).upper()
+        prefix = reverse.group(2).upper()
+        number = reverse.group(3)
+    else:
+        return None
+
+    io_map = {
+        "DI": "DI",
+        "DO": "DO",
+        "AI": "AI",
+        "AO": "AO",
+        "DIGITAL INPUT": "DI",
+        "DIGITAL OUTPUT": "DO",
+        "ANALOG INPUT": "AI",
+        "ANALOG OUTPUT": "AO",
+    }
+
+    io_type = io_map.get(io_raw)
+    if not io_type:
+        return None
+
+    family = f"{prefix}{number}"
+
+    try:
+        rows, mode = _universal_pci_resolve(
+            f"{family} {io_type}"
+        )
+    except Exception:
+        return None
+
+    if not rows:
+        return None
+
+    # Only accept the resolver's explicit family-I/O result.
+    if mode not in ("NATURAL_FAMILY_IO", "FAMILY_IO"):
+        return None
+
+    lines = [
+        f"ANVI found {len(rows)} verified {io_type} point(s) for {prefix}-{number}:"
+    ]
+
+    for r in rows:
+        tag = r.get("tag", "UNKNOWN")
+        desc = r.get("description", "No description available")
+        plc = r.get("plc_address", "UNKNOWN")
+        panel = r.get("panel", "UNKNOWN")
+        tb_name = r.get("tb_name", "UNKNOWN")
+        tb_no = r.get("tb_no", "")
+        source = r.get("source_sheet", "UNKNOWN")
+
+        lines.append(
+            f"- {desc} — {tag} — PLC {plc} — Panel {panel} — "
+            f"TB {tb_name} {tb_no}"
+        )
+
+    lines.append(
+        f"Source: {rows[0].get('source_sheet', 'UNKNOWN')}."
+    )
+    lines.append(
+        "This is verified PCI evidence in read-only mode. "
+        "No PLC or SCADA command is executed."
+    )
+
+    _remember(results=rows)
+
+    return "\n".join(lines)
+
+
 def _find_tag_in_question(q):
     """
     UNIVERSAL VERIFIED PCI TAG/FAMILY RESOLUTION.
@@ -626,6 +737,32 @@ def _semantic_answer(question):
 
 
 def answer(question):
+
+    # --------------------------------------------------------
+    # PRIORITY ROUTE: NATURAL EQUIPMENT FAMILY + I/O
+    #
+    # This MUST execute before generic exact/family resolution.
+    # Example:
+    #   "what is the DO for MCV 204"
+    # must resolve to the verified MCV-204 DO family,
+    # not the first MCV-204 signal such as MCV_204_Healthy.
+    # --------------------------------------------------------
+    natural_family_answer = _natural_family_io_question(question)
+    if natural_family_answer:
+        return {
+            "answer": natural_family_answer,
+            "domain": "pci",
+            "evidence": "verified PCI database",
+            "count": len(_CONTEXT.get("last_results", [])),
+            "records": [
+                compact(r)
+                for r in _CONTEXT.get("last_results", [])
+            ],
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+        }
+
     """
     ANVI PCI conversational entry point.
 

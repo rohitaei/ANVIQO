@@ -194,6 +194,158 @@ def resolve(query, records=None):
         return [], None
 
     # ---------------------------------------------------------------
+    # NATURAL-LANGUAGE FAMILY + I/O RESOLUTION
+    #
+    # Examples:
+    #   MCV 204 DO
+    #   MCV-204 DO
+    #   MCV_204 DO
+    #   what is the DO for MCV 204
+    #   show me MCV 204 DO
+    #   tell me the digital output of MCV 204
+    #
+    # Resolve only against verified database families.
+    # Never invent a tag or I/O point.
+    # ---------------------------------------------------------------
+    natural_io = re.search(
+        r"\b(MCV|PT|FT|TT|LT|LIC|PIC|FIC|TIC|AT|FV|XV)"
+        r"[\s_-]*(\d+)\b"
+        r".{0,60}?\b(DI|DO|AI|AO|DIGITAL\s+INPUT|DIGITAL\s+OUTPUT|"
+        r"ANALOG\s+INPUT|ANALOG\s+OUTPUT)\b",
+        q,
+        flags=re.IGNORECASE,
+    )
+
+    natural_io_reverse = re.search(
+        r"\b(DI|DO|AI|AO|DIGITAL\s+INPUT|DIGITAL\s+OUTPUT|"
+        r"ANALOG\s+INPUT|ANALOG\s+OUTPUT)\b"
+        r".{0,60}?\b(MCV|PT|FT|TT|LT|LIC|PIC|FIC|TIC|AT|FV|XV)"
+        r"[\s_-]*(\d+)\b",
+        q,
+        flags=re.IGNORECASE,
+    )
+
+    if natural_io:
+        prefix = natural_io.group(1).upper()
+        number = natural_io.group(2)
+        io_raw = natural_io.group(3).upper()
+    elif natural_io_reverse:
+        io_raw = natural_io_reverse.group(1).upper()
+        prefix = natural_io_reverse.group(2).upper()
+        number = natural_io_reverse.group(3)
+    else:
+        prefix = number = io_raw = None
+
+    if prefix and number and io_raw:
+        io_map = {
+            "DI": "DI",
+            "DO": "DO",
+            "AI": "AI",
+            "AO": "AO",
+            "DIGITAL INPUT": "DI",
+            "DIGITAL OUTPUT": "DO",
+            "ANALOG INPUT": "AI",
+            "ANALOG OUTPUT": "AO",
+        }
+
+        io_filter = io_map.get(io_raw)
+        family_query = f"{prefix}{number}"
+        family_query_n = normalize(family_query)
+
+        family_rows = families.get(family_query_n, [])
+
+        if family_rows and len(family_rows) > 1:
+            filtered_rows = []
+
+            for row in _dedupe(family_rows):
+                actual_io = _clean(row.get("io_type")).upper()
+
+                if io_filter == "AI":
+                    if actual_io.startswith("AI"):
+                        filtered_rows.append(row)
+                elif actual_io == io_filter:
+                    filtered_rows.append(row)
+
+            if filtered_rows:
+                return filtered_rows, "NATURAL_FAMILY_IO"
+
+    # ---------------------------------------------------------------
+    # NATURAL-LANGUAGE FAMILY + I/O RESOLUTION
+    #
+    # Examples:
+    #   MCV 204 DO
+    #   MCV-204 DO
+    #   MCV_204 DO
+    #   what is the DO for MCV 204
+    #   show me MCV 204 DO
+    #   tell me the digital output of MCV 204
+    #
+    # Resolve only against verified database families.
+    # Never invent a tag or I/O point.
+    # ---------------------------------------------------------------
+    natural_io = re.search(
+        r"\b(MCV|PT|FT|TT|LT|LIC|PIC|FIC|TIC|AT|FV|XV)"
+        r"[\s_-]*(\d+)\b"
+        r".{0,60}?\b(DI|DO|AI|AO|DIGITAL\s+INPUT|DIGITAL\s+OUTPUT|"
+        r"ANALOG\s+INPUT|ANALOG\s+OUTPUT)\b",
+        q,
+        flags=re.IGNORECASE,
+    )
+
+    natural_io_reverse = re.search(
+        r"\b(DI|DO|AI|AO|DIGITAL\s+INPUT|DIGITAL\s+OUTPUT|"
+        r"ANALOG\s+INPUT|ANALOG\s+OUTPUT)\b"
+        r".{0,60}?\b(MCV|PT|FT|TT|LT|LIC|PIC|FIC|TIC|AT|FV|XV)"
+        r"[\s_-]*(\d+)\b",
+        q,
+        flags=re.IGNORECASE,
+    )
+
+    if natural_io:
+        prefix = natural_io.group(1).upper()
+        number = natural_io.group(2)
+        io_raw = natural_io.group(3).upper()
+    elif natural_io_reverse:
+        io_raw = natural_io_reverse.group(1).upper()
+        prefix = natural_io_reverse.group(2).upper()
+        number = natural_io_reverse.group(3)
+    else:
+        prefix = number = io_raw = None
+
+    if prefix and number and io_raw:
+        io_map = {
+            "DI": "DI",
+            "DO": "DO",
+            "AI": "AI",
+            "AO": "AO",
+            "DIGITAL INPUT": "DI",
+            "DIGITAL OUTPUT": "DO",
+            "ANALOG INPUT": "AI",
+            "ANALOG OUTPUT": "AO",
+        }
+
+        io_filter = io_map.get(io_raw)
+        family_query = f"{prefix}{number}"
+        family_query_n = normalize(family_query)
+
+        family_rows = families.get(family_query_n, [])
+
+        if family_rows and len(family_rows) > 1:
+            filtered_rows = []
+
+            for row in _dedupe(family_rows):
+                actual_io = _clean(row.get("io_type")).upper()
+
+                if io_filter == "AI":
+                    if actual_io.startswith("AI"):
+                        filtered_rows.append(row)
+                elif actual_io == io_filter:
+                    filtered_rows.append(row)
+
+            if filtered_rows:
+                return filtered_rows, "NATURAL_FAMILY_IO"
+
+    # ---------------------------------------------------------------
     # EXPLICIT I/O FAMILY FILTER
     #
     # Equipment family queries:

@@ -55,6 +55,60 @@ def _pci_answer(q):
     ql = q.lower()
 
     # --------------------------------------------------------
+    # NATURAL-LANGUAGE FAMILY + I/O HAS HIGHEST PCI PRIORITY
+    #
+    # Examples:
+    #   what is the DO for MCV 204
+    #   show me MCV 204 DO
+    #   MCV-204 digital output
+    #
+    # The universal resolver already proves these records.
+    # Do NOT allow generic family resolution to collapse the
+    # request to the first record (for example MCV_204_Healthy).
+    # --------------------------------------------------------
+    try:
+        rows, mode = _universal_pci_resolve(q)
+
+        if rows and mode in ("NATURAL_FAMILY_IO", "FAMILY_IO"):
+            records = list(rows)
+
+            def _io_name(value):
+                return str(value or "").strip().upper()
+
+            io_label = _io_name(records[0].get("io_type", "I/O"))
+
+            lines = [
+                f"ANVI found {len(records)} verified {io_label} records for {q.strip()}:"
+            ]
+
+            for r in records:
+                lines.append(
+                    f"{r.get('tag','UNKNOWN')} — "
+                    f"{r.get('description','No description')}; "
+                    f"PLC: {r.get('plc_address','UNKNOWN')}; "
+                    f"Panel: {r.get('panel','UNKNOWN')}; "
+                    f"TB: {r.get('tb_name','UNKNOWN')} {r.get('tb_no','')}; "
+                    f"Source: {r.get('source_sheet','UNKNOWN')}"
+                )
+
+            return {
+                "answer": "\n".join(lines),
+                "domain": "pci",
+                "evidence": "verified PCI database",
+                "count": len(records),
+                "records": records,
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "human_decision_required": True,
+                "context_tag": None,
+                "conversation_context": False,
+                "match_mode": mode,
+            }
+    except Exception:
+        pass
+
+    # --------------------------------------------------------
     # CONSOLIDATED CONVERSATIONAL ROUTING
     # Explicit current intent ALWAYS beats remembered context.
     # --------------------------------------------------------
