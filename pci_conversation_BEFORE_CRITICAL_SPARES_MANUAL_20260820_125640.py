@@ -1,4 +1,3 @@
-from pci_spares import answer_spare_query
 from pci_universal_resolver import resolve as _universal_pci_resolve
 import re
 """
@@ -796,14 +795,6 @@ def _semantic_answer(question):
 
 
 def answer(question):
-    # CRITICAL SPARES ROUTING: instrument spares only; never spare PLC I/O.
-    # Explicit spare intent is resolved before generic PCI tag/family routing.
-    _spare = answer_spare_query(question)
-    if _spare is not None and any(x in str(question).lower() for x in (
-        "spare", "spares", "critical spare", "available spare", "stock",
-        "do we have", "availability"
-    )):
-        return _spare
 
     # --------------------------------------------------------
     # PRIORITY ROUTE: NATURAL EQUIPMENT FAMILY + I/O
