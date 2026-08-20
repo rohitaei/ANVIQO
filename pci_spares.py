@@ -91,12 +91,108 @@ def load_spares():
 
 
 def _sheet_hint(q):
-    qn = _norm(q)
-    for sheet, aliases in SHEET_ALIASES.items():
-        if any(_norm(a) and _norm(a) in qn for a in aliases):
-            return sheet
-    return None
+    """
+    Deterministic instrument-family detection.
 
+    IMPORTANT:
+    Do not use generic substring matching for plant queries.
+    Explicit instrument terminology gets priority.
+    """
+
+    ql = _text(q).lower()
+
+    # Most specific phrases first.
+    family_rules = [
+        ("FSV&PCV", (
+            "fsv",
+            "pcv",
+            "shut off valve",
+            "shutoff valve",
+            "pneumatic valve",
+        )),
+        ("AIR COMPRESSOR", (
+            "air compressor",
+            "compressor spare",
+            "compressor spares",
+        )),
+        ("LOAD CELL", (
+            "load cell",
+            "loadcell",
+            "coal flow meter",
+            "jam switch",
+        )),
+        ("Analyser", (
+            "analyser",
+            "analyzer",
+            "gas analyser",
+            "gas analyzer",
+        )),
+        ("POS'R", (
+            "positioner",
+            "pos'r",
+            "posr",
+        )),
+        ("MCV", (
+            "mcv",
+            "motorized control valve",
+            "motorized valve",
+        )),
+        ("SOV", (
+            "sov",
+            "solenoid valve",
+            "solenoid",
+        )),
+        ("RTD", (
+            "rtd",
+            "pt100",
+            "temperature transmitter",
+            "temperature sensor",
+            "temperature element",
+        )),
+        ("LT", (
+            "lt transmitter",
+            "level transmitter",
+            "level sensor",
+            "radar level",
+        )),
+        ("PT", (
+            "pt transmitter",
+            "pressure transmitter",
+            "pressure sensor",
+            "pressure instrument",
+        )),
+        ("FT", (
+            "ft transmitter",
+            "flow transmitter",
+            "flow sensor",
+            "flow meter",
+            "flowmeter",
+        )),
+    ]
+
+    for sheet, phrases in family_rules:
+        for phrase in phrases:
+            if phrase in ql:
+                return sheet
+
+    # Exact tag-family recognition.
+    import re
+
+    for prefix, sheet in (
+        ("MCV", "MCV"),
+        ("PT", "PT"),
+        ("FT", "FT"),
+        ("LT", "LT"),
+        ("RTD", "RTD"),
+        ("TE", "RTD"),
+        ("SOV", "SOV"),
+        ("FSV", "FSV&PCV"),
+        ("PCV", "FSV&PCV"),
+    ):
+        if re.search(r"\b" + re.escape(prefix) + r"[-_ ]?\d+[A-Z]?\b", ql):
+            return sheet
+
+    return None
 
 def _qty_num(v):
     try:
@@ -106,37 +202,161 @@ def _qty_num(v):
 
 
 def search_spares(query, limit=50):
+    """
+    Search critical spare instrument records.
+
+    Family intent is enforced when a recognizable instrument family is
+    present in the query. Availability intent is also enforced so that
+    "available spares" does not return zero-stock records.
+    """
     q = _text(query)
     ql = q.lower()
     qn = _norm(q)
+
     rows = load_spares()
     if not rows:
         return []
+
     sheet_hint = _sheet_hint(q)
+
+    # ------------------------------------------------------------
+    # EXACT SPARE TAG MATCH
+    # ------------------------------------------------------------
+    # Resolve explicit instrument tags before availability filtering.
+    # This preserves zero-stock records such as:
+    # PT-303 -> qty available 0, spare to indent 1.
+    #
+    # Therefore:
+    # "Is PT-303 available as a spare?"
+    # must return PT-303, not unrelated available spares.
+
+    tag_pattern = re.compile(
+        r"\b(MCV|PT|FT|LT|RTD|TE|SOV|FSV|PCV)[-_ ]?\d+[A-Z]?\b",
+        re.IGNORECASE,
+    )
+
+    tag_match = tag_pattern.search(q)
+
+    if tag_match:
+        exact_tag_norm = _norm(tag_match.group(0))
+
+        exact_rows = [
+            r for r in rows
+            if _norm(r.get("tag")) == exact_tag_norm
+        ]
+
+        if exact_rows:
+            return exact_rows[:limit]
+
+    # Explicit availability intent.
+    available_only = any(x in ql for x in (
+        "available spare",
+        "available spares",
+        "available",
+        "in stock",
+        "stock available",
+        "currently available",
+    ))
+
+    unavailable_only = any(x in ql for x in (
+        "not available",
+        "unavailable",
+        "out of stock",
+        "to indent",
+        "indent",
+    ))
+
     # Remove conversational words for scoring.
-    stop = {'DO','DI','AI','AO','THE','FOR','OF','A','AN','IS','ARE','WE','HAVE','DOES','HAVE','SPARE','SPARES','CRITICAL','AVAILABLE','AVAILABILITY','SHOW','ME','TELL','WHAT','ABOUT','INSTRUMENT','INSTRUMENTS'}
-    tokens = [_norm(x) for x in re.findall(r'[A-Za-z0-9_-]+', q) if _norm(x) not in stop]
+    stop = {
+        'DO','DI','AI','AO','THE','FOR','OF','A','AN','IS','ARE',
+        'WE','HAVE','DOES','SPARE','SPARES','CRITICAL','AVAILABLE',
+        'AVAILABILITY','SHOW','ME','TELL','WHAT','ABOUT','INSTRUMENT',
+        'INSTRUMENTS','CURRENTLY','STOCK','IN','OUT','OF'
+    }
+
+    tokens = [
+        _norm(x)
+        for x in re.findall(r'[A-Za-z0-9_-]+', q)
+        if _norm(x) not in stop
+    ]
+
+    # IMPORTANT:
+    # If the user explicitly identifies an instrument family, restrict
+    # the search to that source sheet. This prevents FT queries from
+    # returning RTD/Analyser/other records.
+    candidate_rows = rows
+
+    if sheet_hint:
+        candidate_rows = [
+            r for r in rows
+            if r['sheet'] == sheet_hint
+        ]
+
+    # Availability filtering.
+    if available_only and not unavailable_only:
+        filtered = []
+        for r in candidate_rows:
+            qty = _qty_num(r.get('qty_available'))
+            if qty is not None and qty > 0:
+                filtered.append(r)
+        candidate_rows = filtered
+
+    elif unavailable_only:
+        filtered = []
+        for r in candidate_rows:
+            qty = _qty_num(r.get('qty_available'))
+            if qty is None or qty <= 0:
+                filtered.append(r)
+        candidate_rows = filtered
+
     scored = []
-    for r in rows:
-        fields = ' '.join([r['tag'], r['instrument'], r['description'], r['specification'], r['location'], r['sheet']])
+
+    for r in candidate_rows:
+        fields = ' '.join([
+            r['tag'],
+            r['instrument'],
+            r['description'],
+            r['specification'],
+            r['location'],
+            r['sheet']
+        ])
+
         fn = _norm(fields)
         score = 0
+
         if sheet_hint and r['sheet'] == sheet_hint:
-            score += 25
+            score += 100
+
         if qn and qn in fn:
             score += 80
+
         for t in tokens:
             if t and t in fn:
                 score += 15
-        # Strong exact tag/family matching: PT303 == PT-303, MCV204 == MCV-204.
+
+        # Strong exact tag/family matching:
+        # PT303 == PT-303, MCV204 == MCV-204.
         tag_norm = _norm(r['tag'])
-        if tag_norm and any(_norm(t) == tag_norm for t in tokens):
-            score += 100
+
+        if tag_norm and any(
+            _norm(t) == tag_norm for t in tokens
+        ):
+            score += 150
+
+        # Family-specific boost.
+        if sheet_hint:
+            family_norm = _norm(sheet_hint)
+            if family_norm and family_norm in fn:
+                score += 50
+
         if score:
             scored.append((score, r))
-    scored.sort(key=lambda x: (-x[0], x[1]['sheet'], x[1]['row']))
-    return [r for _, r in scored[:limit]]
 
+    scored.sort(
+        key=lambda x: (-x[0], x[1]['sheet'], x[1]['row'])
+    )
+
+    return [r for _, r in scored[:limit]]
 
 def answer_spare_query(query):
     rows = search_spares(query)
