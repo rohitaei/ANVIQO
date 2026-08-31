@@ -1,4 +1,4 @@
-from pci_spares import answer_spare_query
+from pci_spares import answer_spare_query, execute_spare_mutation, _v16_action
 from pci_universal_resolver import resolve as _universal_pci_resolve
 import re
 """
@@ -1009,9 +1009,15 @@ def answer(question):
     # Must execute before normal spare read-only routing.
     # Explicit confirmation/cancellation is handled first.
     # --------------------------------------------------------
-    _direct_spare_answer = _spare_direct_answer(question)
-    if _direct_spare_answer is not None:
-        return _direct_spare_answer
+    # V1.6.6 is the authoritative spare mutation engine.
+    # Do not allow the legacy V1.2 direct-Excel parser to intercept
+    # explicit ADD / RECEIVE / USE / REMOVE spare mutations.
+    if _v16_action(question):
+        # V1.6.6 direct conversational inventory mutation.
+        # Ordinary explicit ADD/RECEIVE/USE commands are authorized
+        # to update the master Excel inventory directly.
+        # Safety gates remain inside execute_spare_mutation().
+        return execute_spare_mutation(question, confirmed=True)
 
 
     # CRITICAL SPARES ROUTING: instrument spares only; never spare PLC I/O.
