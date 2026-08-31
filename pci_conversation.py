@@ -1177,13 +1177,6 @@ def answer(question):
     # Must execute before normal spare read-only routing.
     # Explicit confirmation/cancellation is handled first.
     # --------------------------------------------------------
-    _transaction_control = _spare_transaction_control(question)
-    if _transaction_control is not None:
-        return _transaction_control
-
-    _transaction_answer = _spare_transaction_answer(question)
-    if _transaction_answer is not None:
-        return _transaction_answer
 
     # --------------------------------------------------------
     # SPARE TRANSACTION CONTROL / MUTATION
