@@ -3,3 +3,6 @@
 2026-09-01T03:47:03 | ADD | PCI_BOKE 4M310-08 | Sheet=SOV | Row=2 | AvailableColumn=7 | Before=1 | Quantity=5 | After=6 | VERIFIED=YES
 2026-09-01T03:57:03 | ADD | PCI_BOKE 4M310-08 | Sheet=SOV | Row=2 | AvailableColumn=7 | Before=6 | Quantity=2 | After=8 | VERIFIED=YES
 2026-09-01T03:57:05 | USE | PT-303 | Sheet=PT | Row=9 | AvailableColumn=9 | Before=7 | Quantity=1 | After=6 | VERIFIED=YES
+2026-09-01T04:56:42 | ADD | PCI_BOKE 4M310-08 | Sheet=SOV | Row=2 | AvailableColumn=7 | Before=8 | Quantity=2 | After=10 | VERIFIED=YES
+2026-09-01T04:56:44 | ADD | MCV-205 | Sheet=MCV | Row=3 | AvailableColumn=7 | Before=7 | Quantity=2 | After=9 | VERIFIED=YES
+2026-09-01T04:56:45 | USE | PT-303 | Sheet=PT | Row=9 | AvailableColumn=9 | Before=6 | Quantity=1 | After=5 | VERIFIED=YES
