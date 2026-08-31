@@ -797,38 +797,29 @@ def _semantic_answer(question):
 
 
 # ============================================================
-# ANVIQO CRITICAL SPARE TRANSACTION ROUTER V1.1
 # ============================================================
-# Conversational ADD / REMOVE transaction layer.
+# ANVIQO CRITICAL SPARE DIRECT EXCEL ROUTER V1.2
+# ============================================================
+# Explicit ADD / USED / REMOVE commands modify the authoritative
+# critical_spares.xlsx directly through pci_spare_direct_excel.
 #
-# IMPORTANT:
-# - Does NOT modify critical_spares.xlsx
-# - Uses pci_spare_transactions.py only
-# - Every mutation requires human confirmation
-# - Normal spare lookup remains read-only
-# - No PLC write
-# - No SCADA control
+# Rules:
+# - Excel is authoritative current inventory.
+# - No pending confirmation transaction is required.
+# - Every applied change is audit logged by the direct engine.
+# - Quantity can never become negative.
+# - No PLC write.
+# - No SCADA control.
 # ============================================================
 
-def _spare_transaction_intent(question):
-    """
-    Detect explicit critical-spare ADD / REMOVE requests.
-
-    Tag-first parser:
-    1. Detect instrument tag.
-    2. Remove tag from query.
-    3. Parse quantity only from remaining text.
-    4. Never interpret PT-303 / FT-201 / MCV-205 numbers as quantity.
-    """
+def _spare_direct_intent(question):
+    """Detect explicit direct spare inventory ADD / REMOVE commands."""
 
     import re
 
     q = str(question or "").strip()
     ql = q.lower()
 
-    # --------------------------------------------------------
-    # 1. EXPLICIT MUTATION INTENT
-    # --------------------------------------------------------
     add_words = (
         "add",
         "new spare",
@@ -843,13 +834,24 @@ def _spare_transaction_intent(question):
     remove_words = (
         "remove",
         "delete spare",
+        "delete",
         "consume",
         "consumed",
+        "consume spare",
+        "issue",
         "issue spare",
+        "issued",
         "issued spare",
+        "use",
         "use spare",
+        "used",
         "used spare",
+        "i used",
+        "i have used",
+        "i used spare",
+        "i have used spare",
         "decrease spare",
+        "decrease",
     )
 
     has_add = any(x in ql for x in add_words)
@@ -863,9 +865,8 @@ def _spare_transaction_intent(question):
 
     action = "ADD" if has_add else "REMOVE"
 
-    # --------------------------------------------------------
-    # 2. TAG FIRST
-    # --------------------------------------------------------
+    # Tag-first parsing. Never interpret the numeric part of PT-303,
+    # MCV-205, FT-201 etc. as the quantity.
     tag_pattern = re.compile(
         r"\b"
         r"(MCV|PT|FT|LT|RTD|TE|SOV|FSV|PCV)"
@@ -876,18 +877,8 @@ def _spare_transaction_intent(question):
 
     tag_match = tag_pattern.search(q)
 
-    tag = None
+    tag = tag_match.group(0).strip() if tag_match else None
 
-    if tag_match:
-        tag = tag_match.group(0).strip()
-
-    # --------------------------------------------------------
-    # 3. REMOVE TAG BEFORE QUANTITY PARSING
-    #
-    # PT-303  -> removed completely
-    # FT-201  -> removed completely
-    # MCV-205 -> removed completely
-    # --------------------------------------------------------
     quantity_text = q
 
     if tag_match:
@@ -897,20 +888,6 @@ def _spare_transaction_intent(question):
             + q[tag_match.end():]
         )
 
-    # --------------------------------------------------------
-    # 4. QUANTITY FROM TAG-REMOVED TEXT
-    #
-    # Supported:
-    #   3
-    #   3 nos
-    #   3 no
-    #   3 pcs
-    #   3 pieces
-    #   3 units
-    #
-    # IMPORTANT:
-    # tag digits can no longer be matched.
-    # --------------------------------------------------------
     qty_match = re.search(
         r"\b(\d+(?:\.\d+)?)"
         r"(?:\s*(?:nos?|pieces?|pcs?|units?))?\b",
@@ -923,42 +900,29 @@ def _spare_transaction_intent(question):
             "action": action,
             "tag": tag,
             "quantity": None,
-            "raw_quantity": None,
         }
 
-    raw_quantity = qty_match.group(1)
-
     try:
-        quantity = float(raw_quantity)
+        quantity = float(qty_match.group(1))
     except Exception:
         quantity = None
 
     if quantity is None or quantity <= 0:
-        return {
-            "action": action,
-            "tag": tag,
-            "quantity": None,
-            "raw_quantity": raw_quantity,
-        }
+        quantity = None
 
     return {
         "action": action,
         "tag": tag,
         "quantity": quantity,
-        "raw_quantity": raw_quantity,
     }
 
 
-def _spare_transaction_answer(question):
-    """
-    Create a PENDING spare transaction from an explicit
-    conversational mutation request.
+def _spare_direct_answer(question):
+    """Apply an explicit spare ADD / USED / REMOVE directly to Excel."""
 
-    Nothing is committed until a human confirms it.
-    """
-    import pci_spare_transactions as tx
+    from pci_spare_direct_excel import add_spare, remove_spare
 
-    intent = _spare_transaction_intent(question)
+    intent = _spare_direct_intent(question)
 
     if intent is None:
         return None
@@ -967,208 +931,70 @@ def _spare_transaction_answer(question):
     tag = intent.get("tag")
     quantity = intent.get("quantity")
 
+    base = {
+        "domain": "critical_spares",
+        "evidence": "critical_spares.xlsx",
+        "count": 0,
+        "records": [],
+        "read_only": False,
+        "plc_write": False,
+        "scada_control": False,
+        "human_decision_required": False,
+        "direct_excel_update": True,
+    }
+
     if not tag:
-        return {
-            "answer": (
-                "I detected a spare inventory change request, but I "
-                "could not identify the instrument tag. Please specify "
-                "a verified tag such as PT-303 or MCV-205."
-            ),
-            "domain": "critical_spares_transaction",
-            "evidence": "transaction engine",
-            "count": 0,
-            "records": [],
-            "read_only": True,
-            "plc_write": False,
-            "scada_control": False,
-            "human_decision_required": True,
-        }
+        base["answer"] = (
+            "I detected a spare inventory change request, but I "
+            "could not identify the instrument tag. Please specify "
+            "a verified tag such as PT-303 or MCV-205."
+        )
+        return base
 
     if quantity is None:
-        return {
-            "answer": (
-                f"I detected a {action} request for {tag}, but the "
-                "quantity is missing. Please specify the quantity, "
-                "for example: '{tag} 3 nos {action.lower()}'."
-            ),
-            "domain": "critical_spares_transaction",
-            "evidence": "transaction engine",
-            "count": 0,
-            "records": [],
-            "read_only": True,
-            "plc_write": False,
-            "scada_control": False,
-            "human_decision_required": True,
-        }
+        base["answer"] = (
+            f"I detected a {action} request for {tag}, but the "
+            "quantity is missing. Please specify the quantity, "
+            f"for example: add 3 {tag}."
+        )
+        return base
 
-    # Normalize the tag to the transaction system's canonical form.
     canonical_tag = tag.upper().replace("_", "-").replace(" ", "-")
 
     try:
-        transaction = tx.create_transaction(
-            tag=canonical_tag,
-            quantity=quantity,
-            action=action,
-            requested_by="ANVI",
-            reason=str(question),
-        )
+        if action == "ADD":
+            result = add_spare(canonical_tag, quantity)
+        else:
+            result = remove_spare(canonical_tag, quantity)
+
     except Exception as e:
-        return {
-            "answer": (
-                "I detected the spare transaction request, but the "
-                f"transaction could not be created: {e}"
-            ),
-            "domain": "critical_spares_transaction",
-            "evidence": "transaction engine",
-            "count": 0,
-            "records": [],
-            "read_only": True,
-            "plc_write": False,
-            "scada_control": False,
-            "human_decision_required": True,
-        }
+        base["answer"] = (
+            f"I could not apply the {action} for {canonical_tag}: {e}\n"
+            "No Excel inventory change was applied."
+        )
+        return base
 
-    transaction_id = transaction.get("id") or transaction.get(
-        "transaction_id"
-    )
+    before = result.get("before")
+    after = result.get("after")
+    txn_id = result.get("transaction_id")
 
-    return {
-        "answer": (
-            f"Pending spare transaction created.\n"
-            f"Action: {action}\n"
-            f"Tag: {canonical_tag}\n"
-            f"Quantity: {quantity:g}\n"
-            f"Transaction ID: {transaction_id}\n\n"
-            "No inventory source record was modified. "
-            "Human confirmation is required before this transaction "
-            "affects ANVIQO effective inventory."
-        ),
-        "domain": "critical_spares_transaction",
-        "evidence": "ANVIQO spare transaction engine",
+    verb = "Added" if action == "ADD" else "Used/removed"
+
+    base.update({
         "count": 1,
-        "records": [transaction],
-        "transaction": transaction,
-        "read_only": True,
-        "plc_write": False,
-        "scada_control": False,
-        "human_decision_required": True,
-        "pending_confirmation": True,
-    }
-
-
-def _spare_transaction_control(question):
-    """
-    Handle explicit confirmation/cancellation of a transaction.
-    """
-    import re
-    import pci_spare_transactions as tx
-
-    q = str(question or "").strip()
-    ql = q.lower()
-
-    m = re.search(
-        r"\b(SPARE-TXN-\d{14}-[A-Z0-9]+)\b",
-        q.upper(),
-    )
-
-    if not m:
-        return None
-
-    transaction_id = m.group(1)
-
-    if re.search(r"\b(confirm|confirmed|approve|approved)\b", ql):
-        try:
-            result = tx.confirm_transaction(
-                transaction_id,
-                confirmed_by="USER",
-            )
-
-            return {
-                "answer": (
-                    f"Spare transaction {transaction_id} confirmed.\n"
-                    f"Status: {result.get('status', 'CONFIRMED') if isinstance(result, dict) else 'CONFIRMED'}\n"
-                    "The verified Excel source remains unchanged. "
-                    "The confirmed transaction is applied only through "
-                    "ANVIQO's inventory transaction overlay."
-                ),
-                "domain": "critical_spares_transaction",
-                "evidence": "ANVIQO spare transaction engine",
-                "count": 1,
-                "records": [result],
-                "transaction": result,
-                "read_only": True,
-                "plc_write": False,
-                "scada_control": False,
-                "human_decision_required": True,
-            }
-
-        except Exception as e:
-            return {
-                "answer": (
-                    f"I could not confirm transaction {transaction_id}: {e}"
-                ),
-                "domain": "critical_spares_transaction",
-                "evidence": "transaction engine",
-                "count": 0,
-                "records": [],
-                "read_only": True,
-                "plc_write": False,
-                "scada_control": False,
-                "human_decision_required": True,
-            }
-
-    if re.search(r"\b(cancel|cancelled|reject|rejected)\b", ql):
-        try:
-            result = tx.cancel_transaction(
-                transaction_id,
-                cancelled_by="USER",
-            )
-
-            return {
-                "answer": (
-                    f"Spare transaction {transaction_id} cancelled.\n"
-                    "No inventory change was applied."
-                ),
-                "domain": "critical_spares_transaction",
-                "evidence": "ANVIQO spare transaction engine",
-                "count": 1,
-                "records": [result],
-                "transaction": result,
-                "read_only": True,
-                "plc_write": False,
-                "scada_control": False,
-                "human_decision_required": True,
-            }
-
-        except Exception as e:
-            return {
-                "answer": (
-                    f"I could not cancel transaction {transaction_id}: {e}"
-                ),
-                "domain": "critical_spares_transaction",
-                "evidence": "transaction engine",
-                "count": 0,
-                "records": [],
-                "read_only": True,
-                "plc_write": False,
-                "scada_control": False,
-                "human_decision_required": True,
-            }
-
-    return {
+        "transaction_id": txn_id,
+        "result": result,
         "answer": (
-            f"Transaction {transaction_id} was identified. "
-            "Please say confirm or cancel."
+            f"{canonical_tag} spare quantity updated directly in Excel.\n"
+            f"Previous quantity: {before:g}\n"
+            f"{verb}: {quantity:g}\n"
+            f"Current quantity: {after:g}\n"
+            "Direct Excel update: APPLIED\n"
+            f"Audit ID: {txn_id}"
         ),
-        "domain": "critical_spares_transaction",
-        "evidence": "transaction engine",
-        "count": 0,
-        "records": [],
-        "read_only": True,
-        "plc_write": False,
-        "scada_control": False,
-        "human_decision_required": True,
-    }
+    })
+
+    return base
 
 
 def answer(question):
@@ -1183,13 +1009,10 @@ def answer(question):
     # Must execute before normal spare read-only routing.
     # Explicit confirmation/cancellation is handled first.
     # --------------------------------------------------------
-    _transaction_control = _spare_transaction_control(question)
-    if _transaction_control is not None:
-        return _transaction_control
+    _direct_spare_answer = _spare_direct_answer(question)
+    if _direct_spare_answer is not None:
+        return _direct_spare_answer
 
-    _transaction_answer = _spare_transaction_answer(question)
-    if _transaction_answer is not None:
-        return _transaction_answer
 
     # CRITICAL SPARES ROUTING: instrument spares only; never spare PLC I/O.
     # Explicit spare intent is resolved before generic PCI tag/family routing.
