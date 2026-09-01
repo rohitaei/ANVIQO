@@ -1,0 +1,14 @@
+{
+  "version": "PLANT-MEMORY-1.0",
+  "policy": "verified_evidence_only",
+  "required": [
+    "event",
+    "source",
+    "verified"
+  ],
+  "safety": {
+    "plc_write": false,
+    "scada_control": false,
+    "human_decision_required": true
+  }
+}

@@ -122,14 +122,6 @@ def _pci_answer(q):
         except Exception:
             pass
 
-    if _anvi_memory_question(q):
-        try:
-            return __import__("pci_plant_memory").search_reports(q)
-        except Exception:
-            try:
-                return __import__("pci_plant_memory").similar_reports(q)
-            except Exception:
-                pass
 
     records = _records()
 
@@ -1083,6 +1075,154 @@ def _pci_memory_route(question):
         }
 
     # ------------------------------------------------------------
+    # Comprehensive verified context recall.
+    #
+    # Example:
+    #   "Tell me everything you remember about PT-303"
+    #
+    # Combine the current PCI engineering identity with verified
+    # Plant Memory. This is still retrieval-only and read-only.
+    # ------------------------------------------------------------
+
+    comprehensive_intent = any(x in ql for x in [
+        "everything you remember",
+        "everything you know about",
+        "tell me everything you remember",
+        "tell me everything about",
+        "what do you remember about",
+        "what do we remember about",
+        "all previous experience",
+        "all previous history",
+    ])
+
+    if comprehensive_intent:
+        first = verified[0]
+
+        # Resolve the current PCI engineering record for the same tag.
+        pci_record = None
+
+        try:
+            from pci_registry import search
+
+            registry = search(query=None, limit=1064)
+
+            target_tag = str(first.get("tag") or tag or "").strip().upper()
+            target_norm = target_tag.replace("-", "_")
+
+            for item in registry:
+                item_tag = str(item.get("tag", "")).strip().upper()
+                item_norm = item_tag.replace("-", "_")
+
+                if item_tag == target_tag or item_norm == target_norm:
+                    pci_record = item
+                    break
+
+        except Exception:
+            pci_record = None
+
+        answer_lines = []
+
+        answer_lines.append(
+            "ANVI — Complete verified context for "
+            + str(first.get("tag") or tag or "this equipment")
+            + "."
+        )
+
+        # -------------------------
+        # Engineering identity
+        # -------------------------
+        if pci_record:
+            answer_lines.append("")
+            answer_lines.append("ENGINEERING IDENTITY:")
+
+            engineering_fields = [
+                ("Description", [
+                    "description",
+                    "instrument_description",
+                    "service",
+                    "location",
+                ]),
+                ("Area", ["area"]),
+                ("I/O type", ["io_type", "i/o_type", "io"]),
+                ("PLC address", ["plc_address", "address"]),
+                ("Panel", ["panel"]),
+                ("TB", ["tb", "terminal_block"]),
+                ("Source", ["source", "source_document"]),
+            ]
+
+            for label, keys in engineering_fields:
+                value = ""
+                for key in keys:
+                    candidate = pci_record.get(key)
+                    if candidate not in (None, ""):
+                        value = str(candidate).strip()
+                        break
+
+                if value:
+                    answer_lines.append(f"{label}: {value}")
+
+        # -------------------------
+        # Verified Plant Memory
+        # -------------------------
+        answer_lines.append("")
+        answer_lines.append("VERIFIED PLANT MEMORY:")
+
+        event = str(first.get("event", "")).strip()
+        finding = str(first.get("finding", "")).strip()
+        action = str(first.get("maintenance_action", "")).strip()
+        outcome = str(first.get("outcome", "")).strip()
+        evidence = str(first.get("confirmation_evidence", "")).strip()
+        recovery = str(first.get("recovery_status", "")).strip()
+        spare = str(first.get("spare_used", "")).strip()
+
+        if event:
+            answer_lines.append("Previous event: " + event)
+
+        if finding:
+            answer_lines.append("Finding: " + finding)
+
+        if action:
+            answer_lines.append("Action: " + action)
+
+        if outcome:
+            answer_lines.append("Outcome: " + outcome)
+
+        if evidence:
+            answer_lines.append("Confirmation evidence: " + evidence)
+
+        if recovery:
+            answer_lines.append("Recovery status: " + recovery)
+
+        if spare:
+            answer_lines.append("Spare used: " + spare)
+
+        if first.get("memory_id"):
+            answer_lines.append("Memory ID: " + str(first["memory_id"]))
+
+        answer_lines.append("Verification status: VERIFIED")
+        answer_lines.append("")
+        answer_lines.append(
+            "This history is verified human field experience, "
+            "not an automatic maintenance command."
+        )
+
+        return {
+            "answer": "\n".join(answer_lines),
+            "domain": "plant_memory",
+            "evidence": "verified PCI database + verified plant memory",
+            "tag": first.get("tag") or tag,
+            "pci_record": pci_record,
+            "plant_memory_records": verified,
+            "plant_memory_count": len(verified),
+            "memory_id": first.get("memory_id"),
+            "verification_status": "VERIFIED",
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "human_decision_required": True,
+        }
+
+    # ------------------------------------------------------------
     # Determine whether the user is asking specifically for the
     # previous corrective action / what worked.
     # ------------------------------------------------------------
@@ -1357,6 +1497,15 @@ def _is_memory_question(q):
     """
     ql = str(q or "").lower()
 
+    # Semantic recovery questions may contain the equipment tag
+    # between the subject and the recovery word.
+    # Example: "Was PT-303 recovered?"
+    if re.search(r"\bwas\b.{0,80}\brecovered\b", ql):
+        return True
+
+    if re.search(r"\b(recovery status|recovered after|recovered previously)\b", ql):
+        return True
+
     return any(x in ql for x in [
         "have we seen this before",
         "have we seen",
@@ -1405,6 +1554,39 @@ def _is_memory_question(q):
         "plant memory",
         "previous maintenance",
         "past maintenance",
+
+        # Recovery / outcome recall
+        "was recovered",
+        "were recovered",
+        "recovered after",
+        "recovered previously",
+        "was it recovered",
+        "did it recover",
+        "did we recover",
+        "recovery status",
+        "was restored",
+        "were restored",
+
+        # Finding / discovery recall
+        "what was the finding",
+        "what was the fault",
+        "what was found",
+        "what did we find",
+        "what did the technician find",
+        "what did maintenance find",
+        "what was discovered",
+        "what was the issue found",
+        "what was wrong previously",
+
+        # Comprehensive Plant Memory recall
+        "everything you remember",
+        "everything you know about",
+        "tell me everything you remember",
+        "tell me everything about",
+        "what do you remember about",
+        "what do we remember about",
+        "all previous experience",
+        "all previous history",
     ])
 
 

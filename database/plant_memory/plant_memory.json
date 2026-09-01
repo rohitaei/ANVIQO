@@ -1,0 +1,25 @@
+{
+  "version": "PLANT-MEMORY-1.0",
+  "records": [
+    {
+      "memory_id": "PM-A3DF27161F0D",
+      "timestamp": "2026-09-01T01:54:51.763443+00:00",
+      "event": "PT-303 abnormal pressure indication",
+      "equipment": "Pressure Transmitter",
+      "tag": "PT-303",
+      "area": "Mill outlet Gas Pr",
+      "source": "verified maintenance record",
+      "observation": "Pressure indication abnormal",
+      "maintenance_action": "Inspected and replaced transmitter",
+      "finding": "Transmitter found faulty",
+      "confirmation_evidence": "Post-replacement signal returned healthy",
+      "outcome": "Healthy signal restored",
+      "recovery_status": "Recovered",
+      "spare_used": "PT-303 x1",
+      "related_event_id": "",
+      "related_maintenance_record": "",
+      "notes": "",
+      "verified": true
+    }
+  ]
+}
