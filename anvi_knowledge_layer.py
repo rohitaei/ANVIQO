@@ -668,6 +668,133 @@ def _maintenance(q):
         pattern
     )
 
+    # ========================================================
+    # V5 DIRECT PLANT MEMORY BRIDGE
+    # ========================================================
+    # Maintenance recommendation data may not automatically carry
+    # verified Plant Memory records. Attach the verified historical
+    # records here so every troubleshooting path can use the same
+    # authoritative Plant Memory evidence.
+    #
+    # This does NOT create a new reasoning engine.
+    # It only enriches the existing V5 maintenance result.
+    # ========================================================
+    plant_memory_records = []
+
+    if tag:
+        try:
+            from plant_memory import search_memory
+
+            plant_memory_records = search_memory(
+                tag=tag,
+                limit=20
+            )
+
+            if not isinstance(plant_memory_records, list):
+                plant_memory_records = []
+
+        except Exception:
+            plant_memory_records = []
+
+    if isinstance(recommendation, dict):
+        recommendation["plant_memory_records"] = (
+            plant_memory_records
+        )
+        recommendation["plant_memory_count"] = (
+            len(plant_memory_records)
+        )
+
+    # ============================================================
+    # VERIFIED PLANT MEMORY -> EXISTING V5 MAINTENANCE BRIDGE
+    # ============================================================
+    # Plant Memory is historical verified human field experience.
+    # It supplements V5 evidence; it does NOT replace or modify the
+    # existing V5 maintenance/recommendation engine.
+    #
+    # Safety:
+    #   - no PLC write
+    #   - no SCADA control
+    #   - no automatic action
+    #   - historical evidence is never treated as proof of the
+    #     current fault.
+    # ============================================================
+    verified_memory = []
+
+    try:
+        if tag:
+            import plant_memory
+
+            # --------------------------------------------------------
+            # UNIVERSAL PCI TAG VARIANTS
+            # PT_303, PT-303 and PT303 must resolve to the same
+            # Plant Memory equipment identity.
+            # --------------------------------------------------------
+            tag_variants = []
+
+            raw_tag = str(tag or "").strip()
+
+            if raw_tag:
+                tag_variants.extend([
+                    raw_tag,
+                    raw_tag.replace("_", "-"),
+                    raw_tag.replace("-", "_"),
+                    raw_tag.replace("_", ""),
+                    raw_tag.replace("-", ""),
+                ])
+
+            # Remove duplicates while preserving order.
+            tag_variants = list(dict.fromkeys(
+                x for x in tag_variants if x
+            ))
+
+            verified_memory = []
+
+            for memory_tag in tag_variants:
+                try:
+                    matches = plant_memory.search_memory(
+                        tag=memory_tag,
+                        limit=20
+                    )
+                except Exception:
+                    matches = []
+
+                if isinstance(matches, list):
+                    verified_memory.extend(matches)
+
+            # --------------------------------------------------------
+            # De-duplicate Plant Memory records by memory_id.
+            # --------------------------------------------------------
+            unique_memory = {}
+
+            for memory_record in verified_memory:
+                if not isinstance(memory_record, dict):
+                    continue
+
+                if memory_record.get("verified") is not True:
+                    continue
+
+                memory_id = str(
+                    memory_record.get("memory_id") or ""
+                ).strip()
+
+                if memory_id:
+                    unique_memory[memory_id] = memory_record
+
+            verified_memory = list(unique_memory.values())
+
+    except Exception:
+        verified_memory = []
+    except Exception:
+        verified_memory = []
+
+    if isinstance(recommendation, dict):
+        recommendation = dict(recommendation)
+
+        # Preserve the authoritative V5 result unchanged while
+        # exposing verified historical field evidence separately.
+        recommendation["plant_memory_records"] = verified_memory
+        recommendation["plant_memory_count"] = len(verified_memory)
+
     if (
         "recommend" in ql
         or "action" in ql
@@ -676,6 +803,9 @@ def _maintenance(q):
         or "repair" in ql
         or "inspection" in ql
         or "fix" in ql
+        or "troubleshoot" in ql
+        or "diagnose" in ql
+        or "diagnosis" in ql
     ):
         return "ANVI — Maintenance Intelligence:\n" + json.dumps(
             {
@@ -736,72 +866,30 @@ def _executive(q):
 
 def _pci_memory_route(question):
     """
-    ANVIQO Plant Memory conversational router.
+    ANVIQO Plant Memory / Verified Action Recall bridge.
 
-    This layer stores human field experience and retrieves
-    previous experience. It does NOT create a new reasoning
-    engine and does NOT claim automatic causation.
+    Uses the current plant_memory.py structured memory store.
+
+    Important:
+      - Verified memories may be recalled as evidence.
+      - Unverified memories are never presented as proven facts.
+      - This layer performs retrieval only.
+      - No PLC/SCADA write is performed.
     """
 
     q = str(question or "").strip()
     ql = q.lower()
 
-    memory_question = any(x in ql for x in [
-        "have we seen this before",
-        "seen this before",
-        "previous experience",
-        "previous report",
-        "past experience",
-        "past report",
-        "similar problem",
-        "similar issue",
-        "similar failure",
-        "history of this problem",
-        "plant memory",
-    ])
+    memory_question = _is_memory_question(q)
 
-    field_report = any(x in ql for x in [
-        "was not working",
-        "wasn't working",
-        "not working",
-        "was faulty",
-        "was failed",
-        "checked and found",
-        "found that",
-        "found ",
-        "inspection found",
-        "during inspection",
-        "technician checked",
-        "operator checked",
-        "air pressure was low",
-        "pneumatic pressure was low",
-        "pneumatic air pressure",
-        "valve was jammed",
-        "valve jammed",
-        "controller was faulty",
-        "controller fault",
-        "replaced ",
-        "repaired ",
-        "restored ",
-        "after repair",
-        "after replacement",
-        "issue resolved",
-        "problem resolved",
-        "failure occurred",
-    ])
-
-    if not memory_question and not field_report:
+    if not memory_question:
         return None
 
-    from pci_plant_memory import (
-        save_report,
-        search_reports,
-        similar_reports,
-    )
-
-    # --------------------------------------------------------
-    # Find exact PCI tag from the 1064-record registry
-    # --------------------------------------------------------
+    # ------------------------------------------------------------
+    # Resolve the engineering tag from the verified PCI registry.
+    # Normalized questions may contain PT_303 while the memory
+    # record uses PT-303. Resolve both forms.
+    # ------------------------------------------------------------
 
     tag = None
 
@@ -813,127 +901,374 @@ def _pci_memory_route(question):
             limit=1064
         )
 
-        qu = q.upper()
+        normalized_q = re.sub(
+            r"[\s_-]+",
+            "_",
+            q.upper()
+        )
 
         for item in registry:
             candidate = str(
                 item.get("tag", "")
             ).strip()
 
-            if candidate and candidate.upper() in qu:
+            if not candidate:
+                continue
+
+            candidates = {
+                candidate.upper(),
+                candidate.upper().replace("-", "_"),
+                candidate.upper().replace("_", "-"),
+            }
+
+            if any(
+                c in normalized_q
+                for c in candidates
+            ):
                 tag = candidate
                 break
 
     except Exception:
         pass
 
-    # --------------------------------------------------------
-    # RETRIEVE PREVIOUS EXPERIENCE
-    # --------------------------------------------------------
+    # ------------------------------------------------------------
+    # Search CURRENT Plant Memory.
+    # Do NOT use the legacy pci_plant_memory.py database here.
+    # ------------------------------------------------------------
 
-    if memory_question:
+    try:
+        import plant_memory
 
-        results = similar_reports(
-            q,
-            tag=tag
+        results = plant_memory.search_memory(
+            query=q,
+            tag=tag or "",
+            limit=20
         )
 
-        if not results and tag:
-            results = search_reports(
-                tag=tag
-            )
-
-        if not results:
-            return {
-                "answer": (
-                    "I could not find a previous human field report "
-                    "matching this request. I will not invent plant "
-                    "history."
-                ),
-                "domain": "pci_plant_memory",
-                "evidence": "plant memory",
-                "count": 0,
-                "tag": tag,
-                "read_only": True,
-                "plc_write": False,
-                "scada_control": False,
-                "human_verification_required": True,
-            }
-
+    except Exception as e:
         return {
             "answer": (
-                f"I found {len(results)} previous human field "
-                "report(s)"
-                + (f" associated with {tag}." if tag else ".")
-                + " These are technician/operator experience "
-                  "records. They are not automatically treated "
-                  "as proven causation."
+                "ANVI could not access the current Plant Memory "
+                "service. No plant-history claim has been made."
             ),
-            "domain": "pci_plant_memory",
-            "evidence": "plant memory",
-            "count": len(results),
+            "domain": "plant_memory",
+            "evidence": "plant memory service error",
             "tag": tag,
-            "reports": results,
+            "error": str(e),
             "read_only": True,
             "plc_write": False,
             "scada_control": False,
             "human_verification_required": True,
         }
 
-    # --------------------------------------------------------
-    # SAVE NEW HUMAN EXPERIENCE
-    # --------------------------------------------------------
+    if not isinstance(results, list):
+        results = []
 
-    entry = save_report(
-        q,
-        tag=tag,
-        source="TECHNICIAN / OPERATOR REPORT"
-    )
+    # ------------------------------------------------------------
+    # Structured fallback:
+    #
+    # A natural-language action question may have no keyword
+    # overlap with the original event description.
+    #
+    # Example:
+    #   "What action fixed PT-303 previously?"
+    #
+    # The memory record itself contains:
+    #   maintenance_action
+    #   finding
+    #   confirmation_evidence
+    #   outcome
+    #
+    # Therefore, when a tag is known, retrieve by tag rather than
+    # requiring lexical similarity.
+    # ------------------------------------------------------------
 
-    previous = similar_reports(
-        q,
-        tag=tag
-    )
+    if not results and tag:
 
-    # Current report will normally appear in the similarity
-    # results. Exclude its own memory_id when counting previous.
-    previous = [
-        x for x in previous
-        if x.get("memory_id") != entry.get("memory_id")
+        try:
+            results = plant_memory.search_memory(
+                query="",
+                tag=tag,
+                limit=20
+            )
+        except Exception:
+            results = []
+
+    # ------------------------------------------------------------
+    # Normalize PT_303 <-> PT-303 matching if direct tag search
+    # did not return anything.
+    # ------------------------------------------------------------
+
+    if not results and tag:
+
+        tag_variants = {
+            tag.lower(),
+            tag.lower().replace("-", "_"),
+            tag.lower().replace("_", "-"),
+        }
+
+        try:
+            all_results = plant_memory.search_memory(
+                query="",
+                limit=100
+            )
+
+            for record in all_results:
+                record_tag = str(
+                    record.get("tag", "")
+                ).strip().lower()
+
+                if (
+                    record_tag in tag_variants
+                    or record_tag.replace("-", "_")
+                    in {
+                        x.replace("-", "_")
+                        for x in tag_variants
+                    }
+                ):
+                    results.append(record)
+
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------
+    # No memory found.
+    # ------------------------------------------------------------
+
+    if not results:
+        return {
+            "answer": (
+                f"I could not find verified Plant Memory evidence"
+                + (f" for {tag}." if tag else ".")
+                + " I will not invent plant history or recommend "
+                  "an action without supporting evidence."
+            ),
+            "domain": "plant_memory",
+            "evidence": "plant memory",
+            "count": 0,
+            "tag": tag,
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "human_verification_required": True,
+        }
+
+    # ------------------------------------------------------------
+    # Only VERIFIED records may be used for Verified Action Recall.
+    # ------------------------------------------------------------
+
+    verified = [
+        r for r in results
+        if r.get("verified") is True
     ]
 
-    if previous:
-        answer = (
-            "I have saved this as a human field report."
-            + (f" It is associated with {tag}." if tag else "")
-            + f" I also found {len(previous)} previous related "
-              "experience record(s). The reported cause remains "
-              "unverified until a human confirms it."
-        )
-    else:
-        answer = (
-            "I have saved this as a human field report."
-            + (f" It is associated with {tag}." if tag else "")
-            + " The report is currently marked UNVERIFIED HUMAN "
-              "REPORT. ANVI will not treat the reported cause as "
-              "proven until a human verifies it."
-        )
+    if not verified:
+        return {
+            "answer": (
+                f"I found {len(results)} Plant Memory record(s)"
+                + (f" for {tag}." if tag else ".")
+                + " However, none are verified, so ANVI will not "
+                  "present a previous action as proven."
+            ),
+            "domain": "plant_memory",
+            "evidence": "unverified plant memory",
+            "count": len(results),
+            "tag": tag,
+            "reports": results,
+            "verification_status": "UNVERIFIED",
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "human_verification_required": True,
+        }
+
+    # ------------------------------------------------------------
+    # Determine whether the user is asking specifically for the
+    # previous corrective action / what worked.
+    # ------------------------------------------------------------
+
+    action_intent = any(x in ql for x in [
+        "what action fixed",
+        "what action solved",
+        "what fixed",
+        "what solved",
+        "what worked before",
+        "what worked previously",
+        "what did we do before",
+        "what did we do last time",
+        "previous action",
+        "previous repair",
+        "previous solution",
+        "previous fix",
+        "how was it fixed",
+        "how did we fix",
+        "how was this fixed",
+    ])
+
+    if action_intent:
+
+        recalled = []
+
+        for r in verified:
+
+            action = str(
+                r.get("maintenance_action", "")
+            ).strip()
+
+            finding = str(
+                r.get("finding", "")
+            ).strip()
+
+            evidence = str(
+                r.get("confirmation_evidence", "")
+            ).strip()
+
+            outcome = str(
+                r.get("outcome", "")
+            ).strip()
+
+            if not action:
+                continue
+
+            recalled.append({
+                "memory_id": r.get("memory_id"),
+                "tag": r.get("tag") or tag,
+                "event": r.get("event", ""),
+                "finding": finding,
+                "maintenance_action": action,
+                "confirmation_evidence": evidence,
+                "outcome": outcome,
+                "verification_status": "VERIFIED",
+            })
+
+        if recalled:
+
+            first = recalled[0]
+
+            answer = (
+                "ANVI found verified previous maintenance experience"
+                + (
+                    f" for {first.get('tag')}."
+                    if first.get("tag")
+                    else "."
+                )
+                + "\n\n"
+                + "Previous action: "
+                + first["maintenance_action"]
+                + "\n"
+                + "Finding: "
+                + (first["finding"] or "Not recorded.")
+                + "\n"
+                + "Outcome: "
+                + (first["outcome"] or "Not recorded.")
+                + "\n"
+                + "Confirmation evidence: "
+                + (
+                    first["confirmation_evidence"]
+                    or "Not recorded."
+                )
+                + "\n\n"
+                + "This is verified maintenance experience, "
+                  "not an automatic maintenance command."
+            )
+
+            return {
+                "answer": answer,
+                "domain": "verified_action_recall",
+                "evidence": "verified plant memory",
+                "tag": first.get("tag") or tag,
+                "memory_id": first.get("memory_id"),
+                "finding": first.get("finding"),
+                "maintenance_action": first.get(
+                    "maintenance_action"
+                ),
+                "outcome": first.get("outcome"),
+                "confirmation_evidence": first.get(
+                    "confirmation_evidence"
+                ),
+                "verification_status": "VERIFIED",
+                "records": recalled,
+                "count": len(recalled),
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "human_decision_required": True,
+            }
+
+    # ------------------------------------------------------------
+    # General previous-experience recall.
+    #
+    # Show the actual verified experience instead of only reporting
+    # that a memory record exists.
+    # ------------------------------------------------------------
+
+    first = verified[0]
+
+    event = str(
+        first.get("event", "")
+    ).strip()
+
+    finding = str(
+        first.get("finding", "")
+    ).strip()
+
+    action = str(
+        first.get("maintenance_action", "")
+    ).strip()
+
+    outcome = str(
+        first.get("outcome", "")
+    ).strip()
+
+    evidence = str(
+        first.get("confirmation_evidence", "")
+    ).strip()
+
+    answer_lines = [
+        "Yes — ANVI found "
+        + str(len(verified))
+        + " verified previous human field experience "
+          "record(s)"
+        + (f" for {first.get('tag') or tag}." if (first.get("tag") or tag) else ".")
+    ]
+
+    if event:
+        answer_lines.append("Previous event: " + event)
+
+    if finding:
+        answer_lines.append("Finding: " + finding)
+
+    if action:
+        answer_lines.append("Action: " + action)
+
+    if outcome:
+        answer_lines.append("Outcome: " + outcome)
+
+    if evidence:
+        answer_lines.append("Evidence: " + evidence)
+
+    if first.get("memory_id"):
+        answer_lines.append("Memory: " + str(first["memory_id"]))
+
+    answer_lines.append("Status: VERIFIED")
+    answer_lines.append(
+        "This is verified maintenance experience, not an "
+        "automatic maintenance command."
+    )
 
     return {
-        "answer": answer,
-        "domain": "pci_plant_memory",
-        "evidence": "human field report",
-        "memory_id": entry["memory_id"],
+        "answer": "\n".join(answer_lines),
+        "domain": "plant_memory",
+        "evidence": "verified plant memory",
+        "count": len(verified),
         "tag": tag,
-        "previous_related_reports": len(previous),
-        "verification_status": "UNVERIFIED HUMAN REPORT",
+        "reports": verified,
+        "verification_status": "VERIFIED",
         "read_only": True,
         "plc_write": False,
         "scada_control": False,
         "human_verification_required": True,
     }
-
-
 
 
 # ============================================================
@@ -1013,26 +1348,72 @@ def _remember_pci_context(record=None, results=None):
 
 
 def _is_memory_question(q):
+    """
+    Detect Plant Memory / previous human experience questions.
+
+    IMPORTANT:
+    A verified PCI tag inside the question must NOT prevent memory
+    retrieval. The tag is used as context for the memory search.
+    """
     ql = str(q or "").lower()
 
     return any(x in ql for x in [
         "have we seen this before",
+        "have we seen",
         "seen this before",
         "seen this pattern before",
+        "seen this problem before",
+        "seen this issue before",
+        "seen this failure before",
         "previous experience",
         "past experience",
         "previous report",
         "past report",
         "previous problem",
         "past problem",
+        "previous issue",
+        "past issue",
+        "previous failure",
+        "past failure",
+        "previous action",
+        "previous repair",
+        "previous solution",
+        "previous fix",
+        "previously",
         "last time",
         "earlier experience",
+        "earlier problem",
+        "earlier issue",
         "what happened before",
-        "any previous",
+        "what did we do before",
+        "what did we do last time",
+        "what action fixed",
+        "what action solved",
+        "what fixed",
+        "what solved",
+        "what worked before",
+        "what worked previously",
+        "how was it fixed",
+        "how did we fix",
+        "how was this fixed",
+        "similar problem",
+        "similar issue",
+        "similar failure",
+        "similar event",
+        "history of this problem",
+        "history of this issue",
+        "plant memory",
+        "previous maintenance",
+        "past maintenance",
     ])
 
 
 def _is_pci_question(q):
+    # Explicit troubleshooting must never be downgraded to
+    # a generic PCI information lookup.
+    if _is_troubleshooting_question(q):
+        return False
+
     ql = str(q or "").lower()
 
     return any(x in ql for x in [
@@ -1197,6 +1578,71 @@ def _anvi_field_report_question(question):
     return any(x in ql for x in markers)
 
 
+def _anvi_memory_tag_variants(tag):
+    """
+    Return equivalent tag forms used across ANVIQO data sources.
+
+    PCI/V5 commonly uses PT_303 while Plant Memory may use PT-303.
+    Memory search is normalized here so the underlying databases remain
+    unchanged.
+    """
+    raw = str(tag or "").strip()
+
+    if not raw:
+        return []
+
+    variants = []
+    for value in (
+        raw,
+        raw.replace("_", "-"),
+        raw.replace("-", "_"),
+    ):
+        value = value.strip()
+        if value and value not in variants:
+            variants.append(value)
+
+    return variants
+
+
+def _anvi_search_memory_for_tag(tag="", equipment="", area="", query="",
+                                limit=20):
+    """
+    Search verified Plant Memory using all equivalent tag formats.
+    """
+    from plant_memory import search_memory
+
+    variants = _anvi_memory_tag_variants(tag)
+
+    results = []
+    seen = set()
+
+    if not variants:
+        variants = [""]
+
+    for variant in variants:
+        rows = search_memory(
+            query=query,
+            tag=variant,
+            equipment=equipment,
+            area=area,
+            limit=limit
+        )
+
+        for row in rows:
+            memory_id = row.get("memory_id")
+
+            if memory_id in seen:
+                continue
+
+            seen.add(memory_id)
+            results.append(row)
+
+            if len(results) >= limit:
+                return results
+
+    return results
+
+
 def _anvi_memory_question(question):
     ql=str(question or "").lower()
 
@@ -1236,6 +1682,110 @@ def _anvi_conversational_maintenance_answer(
     """
 
     data = maintenance_result if isinstance(maintenance_result, dict) else {}
+
+    # ------------------------------------------------------------
+    # DIRECT VERIFIED PLANT MEMORY LOOKUP — FINAL BRIDGE
+    # ------------------------------------------------------------
+    # Plant Memory stores canonical instrument tags such as PT-303,
+    # while PCI/V5 commonly uses PT_303.
+    #
+    # Do NOT depend on conversation context or an intermediate bridge.
+    # Troubleshooting already has the resolved PCI equipment tag.
+    #
+    # Search both canonical forms directly in the authoritative
+    # Plant Memory database. Only verified=True records are returned
+    # by plant_memory.search_memory().
+    # ------------------------------------------------------------
+    direct_memory_records = []
+
+    try:
+        from plant_memory import search_memory
+
+        bridge_tag = str(
+            data.get("equipment")
+            or ""
+        ).strip()
+
+        if not bridge_tag and isinstance(pci_record, dict):
+            bridge_tag = str(
+                pci_record.get("tag")
+                or pci_record.get("instrument_tag")
+                or pci_record.get("name")
+                or ""
+            ).strip()
+
+        if bridge_tag:
+            tag_variants = []
+
+            for candidate in (
+                bridge_tag,
+                bridge_tag.replace("_", "-"),
+                bridge_tag.replace("-", "_"),
+                bridge_tag.replace(" ", "-"),
+                bridge_tag.replace(" ", "_"),
+            ):
+                candidate = str(candidate or "").strip()
+
+                if candidate and candidate.lower() not in {
+                    x.lower() for x in tag_variants
+                }:
+                    tag_variants.append(candidate)
+
+            found = {}
+
+            for candidate in tag_variants:
+                try:
+                    records = search_memory(
+                        tag=candidate,
+                        limit=20
+                    )
+
+                    if isinstance(records, list):
+                        for memory in records:
+                            if not isinstance(memory, dict):
+                                continue
+
+                            if memory.get("verified") is not True:
+                                continue
+
+                            mid = memory.get("memory_id")
+
+                            if mid:
+                                found[mid] = memory
+                except Exception:
+                    continue
+
+            direct_memory_records = list(found.values())
+
+    except Exception:
+        direct_memory_records = []
+
+    # Merge direct verified memory into the V5 recommendation result.
+    existing = recommendation_records = data.get(
+        "plant_memory_records"
+    )
+
+    if not isinstance(existing, list):
+        existing = []
+
+    known_ids = {
+        x.get("memory_id")
+        for x in existing
+        if isinstance(x, dict)
+    }
+
+    for memory in direct_memory_records:
+        mid = memory.get("memory_id")
+
+        if mid and mid not in known_ids:
+            existing.append(memory)
+            known_ids.add(mid)
+
+    if existing:
+        data["plant_memory_records"] = existing
+        data["plant_memory_count"] = len(existing)
+
+
 
     record = pci_record
     if not isinstance(record, dict):
@@ -1306,6 +1856,37 @@ def _anvi_conversational_maintenance_answer(
     recommendation = data.get("recommendation")
     if not isinstance(recommendation, dict):
         recommendation = {}
+
+    # --------------------------------------------------------
+    # V5 -> PLANT MEMORY BRIDGE
+    # --------------------------------------------------------
+    # Existing V5 maintenance intelligence may already contain
+    # verified Plant Memory records. Preserve them in the
+    # conversational response instead of dropping them.
+    plant_memory_records = recommendation.get(
+        "plant_memory_records"
+    )
+
+    if not isinstance(plant_memory_records, list):
+        plant_memory_records = data.get("plant_memory_records", [])
+
+    if not isinstance(plant_memory_records, list):
+        plant_memory_records = []
+
+    plant_memory_count = recommendation.get(
+        "plant_memory_count"
+    )
+
+    if plant_memory_count is None:
+        plant_memory_count = data.get(
+            "plant_memory_count",
+            len(plant_memory_records)
+        )
+
+    try:
+        plant_memory_count = int(plant_memory_count)
+    except Exception:
+        plant_memory_count = len(plant_memory_records)
 
     message = str(
         recommendation.get("message")
@@ -1411,6 +1992,63 @@ def _anvi_conversational_maintenance_answer(
         lines.append(f"Evidence status: {evidence_status}.")
 
     # ------------------------------------------------------------
+    # VERIFIED PLANT MEMORY
+    # ------------------------------------------------------------
+    if plant_memory_records:
+        lines.append(
+            f"ANVI found {plant_memory_count} verified Plant Memory "
+            f"record(s) relevant to this equipment."
+        )
+
+        for memory in plant_memory_records[:5]:
+            memory_id = str(
+                memory.get("memory_id") or ""
+            ).strip()
+
+            event = str(
+                memory.get("event") or ""
+            ).strip()
+
+            finding = str(
+                memory.get("finding") or ""
+            ).strip()
+
+            action = str(
+                memory.get("maintenance_action") or ""
+            ).strip()
+
+            outcome = str(
+                memory.get("outcome") or ""
+            ).strip()
+
+            evidence = str(
+                memory.get("confirmation_evidence") or ""
+            ).strip()
+
+            if memory_id:
+                lines.append(f"Memory: {memory_id}.")
+
+            if event:
+                lines.append(f"Previous event: {event}.")
+
+            if finding:
+                lines.append(f"Finding: {finding}.")
+
+            if action:
+                lines.append(f"Previous action: {action}.")
+
+            if outcome:
+                lines.append(f"Outcome: {outcome}.")
+
+            if evidence:
+                lines.append(f"Confirmation evidence: {evidence}.")
+
+        lines.append(
+            "These are verified previous human field experiences, "
+            "not automatic maintenance commands."
+        )
+
+    # ------------------------------------------------------------
     # SAFETY BOUNDARY
     # ------------------------------------------------------------
     lines.append(
@@ -1424,12 +2062,55 @@ def _anvi_conversational_maintenance_answer(
         "domain": "troubleshooting",
         "evidence": "verified PCI database + existing V5 maintenance intelligence",
         "equipment": tag or data.get("equipment"),
+
+        # --------------------------------------------------------
+        # EXPOSE VERIFIED PLANT MEMORY TO THE API CALLER
+        # --------------------------------------------------------
+        # The formatter may discover Plant Memory directly above.
+        # Return the actual merged records/count so API/dashboard/
+        # regression tests can consume them without parsing text.
+        # --------------------------------------------------------
+        "plant_memory_records": plant_memory_records,
+        "plant_memory_count": len(plant_memory_records),
+
         "read_only": True,
         "human_decision_required": True,
         "plc_write": False,
         "scada_control": False,
         "v5_result": data,
     }
+
+
+
+def _anvi_troubleshooting_memory_bridge(question, tag="", pci_record=None):
+    """
+    Direct Plant Memory -> troubleshooting bridge.
+
+    The troubleshooting route must not depend on conversational PCI context
+    being populated first. Resolve the equipment tag explicitly and query
+    verified Plant Memory using normalized tag variants.
+    """
+    try:
+        resolved_tag = str(tag or "").strip()
+
+        if not resolved_tag:
+            try:
+                resolved_tag, resolved_record = _tag_from_question(question)
+                if pci_record is None:
+                    pci_record = resolved_record
+            except Exception:
+                resolved_tag = ""
+
+        if not resolved_tag:
+            return []
+
+        return _anvi_search_memory_for_tag(
+            tag=resolved_tag,
+            limit=20
+        )
+
+    except Exception:
+        return []
 
 
 def _anvi_troubleshooting_question(question):
@@ -1469,6 +2150,12 @@ def _anvi_troubleshooting_question(question):
         "why is it not working",
         "why isn't it working",
         "why did it fail",
+        "abnormal pressure",
+        "abnormal indication",
+        "abnormal signal",
+        "pressure abnormal",
+        "pressure indication abnormal",
+        "signal abnormal",
         "diagnose",
         "diagnosis",
         "check the instrument",
@@ -1765,6 +2452,83 @@ def _normalize_pci_instrument_tags(question):
     return pattern.sub(repl, text)
 
 
+
+# ============================================================
+# ANVIQO V1.2 ROUTING PRIORITY FIX
+# ============================================================
+
+def _is_troubleshooting_question(q):
+    """
+    Detect explicit troubleshooting/diagnostic requests.
+
+    This MUST take priority over generic PCI information lookup.
+    It does not create a new reasoning engine.
+    """
+    ql = str(q or "").strip().lower()
+
+    phrases = [
+        "what should i check",
+        "what should we check",
+        "what do i check",
+        "what do we check",
+        "what can i check",
+        "what can we check",
+        "how do i troubleshoot",
+        "how should i troubleshoot",
+        "how can i troubleshoot",
+        "troubleshoot this",
+        "troubleshoot it",
+        "troubleshooting",
+        "what could be wrong",
+        "what might be wrong",
+        "what is wrong",
+        "why is it faulty",
+        "why is it failing",
+        "why did it fail",
+        "possible cause",
+        "possible causes",
+        "diagnose this",
+        "diagnose it",
+        "diagnostic check",
+        "checks to perform",
+        "checks should i perform",
+    ]
+
+    return any(p in ql for p in phrases)
+
+
+def _memory_response_contract(result):
+    """
+    Normalize Plant Memory responses without changing their meaning.
+    """
+    if not isinstance(result, dict):
+        return result
+
+    if result.get("domain") in {
+        "plant_memory",
+        "verified_action_recall",
+        "pci_plant_memory",
+    }:
+        result.setdefault("read_only", True)
+        result.setdefault("plc_write", False)
+        result.setdefault("scada_control", False)
+
+        if result.get("verification") == "VERIFIED":
+            result.setdefault("human_decision_required", True)
+
+        if "memory_id" not in result:
+            reports = result.get("reports") or []
+            if reports:
+                result["memory_id"] = reports[0].get("memory_id")
+
+        if result.get("domain") == "plant_memory":
+            result.setdefault(
+                "human_decision_required",
+                True
+            )
+
+    return result
+
 def ask_anvi(question):
     # Normalize natural-language PCI/instrument tag variants before
     # any routing, context lookup, PCI lookup, troubleshooting or LLM fallback.
@@ -1789,6 +2553,32 @@ def ask_anvi(question):
     ql = q.lower()
 
     try:
+        # ============================================================
+        # PLANT MEMORY — BEFORE VERIFIED PCI TAG ROUTING
+        # ============================================================
+        # A question may contain a valid PCI tag AND still be a
+        # Plant Memory question.
+        #
+        # Example:
+        #   Have we seen PT-303 abnormal pressure before?
+        #   What action fixed PT-303 previously?
+        #
+        # These MUST reach Plant Memory before the PCI identity route.
+        # ============================================================
+
+        if _is_memory_question(q):
+            try:
+                memory_result = _pci_memory_route(q)
+
+                if isinstance(memory_result, dict):
+                    return memory_result
+
+            except Exception:
+                pass
+
+        # ============================================================
+        # SPARE / INVENTORY INTENT PRIORITY
+        # ============================================================
         # ============================================================
         # SPARE / INVENTORY INTENT PRIORITY
         # ============================================================
@@ -1852,34 +2642,91 @@ def ask_anvi(question):
                 pass
 
         # ============================================================
-        # VERIFIED PCI TAG PRIORITY
-        # Any question containing a verified PCI tag must first resolve
-        # against the existing PCI database before other routing.
+        # VERIFIED PCI TAG — RESOLVE CONTEXT, DO NOT RETURN YET
         # ============================================================
+        # A verified PCI tag may also be part of a troubleshooting
+        # question. Resolve the record first, but allow the authoritative
+        # troubleshooting route below to take priority.
+        #
+        # Example:
+        #   What should I check for PT-303?
+        #
+        # MUST reach V5 maintenance intelligence rather than returning
+        # only the PCI identity record.
+        # ============================================================
+        pci_tag = None
+        pci_item = None
+
         try:
             pci_tag, pci_item = _tag_from_question(q)
-            if pci_tag and pci_item:
+        except Exception:
+            pci_tag, pci_item = None, None
+
+        if pci_tag and pci_item:
+            try:
+                _remember_pci_context(record=pci_item)
+            except Exception:
+                pass
+
+            # --------------------------------------------------------
+            # TROUBLESHOOTING OVERRIDES NORMAL PCI IDENTITY ANSWER
+            # --------------------------------------------------------
+            if _anvi_troubleshooting_question(q):
+                tag = str(
+                    pci_item.get("tag")
+                    or pci_item.get("instrument_tag")
+                    or pci_item.get("name")
+                    or pci_tag
+                    or ""
+                ).strip()
+
+                try:
+                    maintenance_result = _maintenance(
+                        f"{q} [{tag}]"
+                    )
+                except Exception:
+                    maintenance_result = _maintenance(q)
+
+                formatted = _anvi_conversational_maintenance_answer(
+                    q,
+                    maintenance_result,
+                    pci_record=pci_item,
+                )
+
+                if isinstance(formatted, dict):
+                    return formatted
+
                 return {
-                    "answer": (
-                        f"{pci_tag}: {pci_item.get('description','No description available')}. "
-                        f"Area: {pci_item.get('area','UNKNOWN')}. "
-                        f"I/O type: {pci_item.get('io_type','UNKNOWN')}. "
-                        f"PLC address: {pci_item.get('plc_address','UNKNOWN')}. "
-                        f"Panel: {pci_item.get('panel','UNKNOWN')}. "
-                        f"TB: {pci_item.get('tb_name','UNKNOWN')} "
-                        f"{pci_item.get('tb_no','')}. "
-                        f"Source: {pci_item.get('source_sheet','UNKNOWN')}."
-                    ),
-                    "domain": "pci",
-                    "tag": pci_tag,
-                    "evidence": "verified PCI database",
-                    "record": pci_item,
+                    "answer": str(formatted),
+                    "domain": "troubleshooting",
+                    "equipment": tag,
+                    "context_tag": tag,
                     "read_only": True,
+                    "human_decision_required": True,
                     "plc_write": False,
                     "scada_control": False,
                 }
-        except Exception:
-            pass
+
+            # Normal PCI question — return the verified identity record.
+            return {
+                "answer": (
+                    f"{pci_tag}: {pci_item.get('description','No description available')}. "
+                    f"Area: {pci_item.get('area','UNKNOWN')}. "
+                    f"I/O type: {pci_item.get('io_type','UNKNOWN')}. "
+                    f"PLC address: {pci_item.get('plc_address','UNKNOWN')}. "
+                    f"Panel: {pci_item.get('panel','UNKNOWN')}. "
+                    f"TB: {pci_item.get('tb_name','UNKNOWN')} "
+                    f"{pci_item.get('tb_no','')}. "
+                    f"Source: {pci_item.get('source_sheet','UNKNOWN')}."
+                ),
+                "domain": "pci",
+                "tag": pci_tag,
+                "evidence": "verified PCI database",
+                "record": pci_item,
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+            }
 
         # ============================================================
         # 0. PCI SEMANTIC COLLECTION QUERY — BEFORE EXACT TAG CONTEXT
@@ -2028,27 +2875,6 @@ def ask_anvi(question):
 
         if direct_pci:
             return direct_pci
-
-        # ============================================================
-        # 1. PLANT MEMORY — HIGHEST PRIORITY FOR EXPERIENCE QUESTIONS
-        # ============================================================
-        if _is_memory_question(q):
-            try:
-                result = _pci_memory_route(q)
-                if result:
-                    return result
-            except Exception:
-                pass
-
-            return {
-                "answer": (
-                    "I can search ANVIQO Plant Memory for previous "
-                    "human field experience, but I could not complete "
-                    "that search."
-                ),
-                "domain": "pci_plant_memory",
-                "read_only": True,
-            }
 
         # ============================================================
         # 2. PLANT-WIDE QUESTIONS
