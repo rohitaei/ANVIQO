@@ -1223,6 +1223,215 @@ def _pci_memory_route(question):
         }
 
     # ------------------------------------------------------------
+    # Specific verified recovery-status recall.
+    #
+    # Examples:
+    #   "Was PT-303 recovered?"
+    #   "Was PT-303 recovered after the previous failure?"
+    #   "What is the recovery status of PT-303?"
+    # ------------------------------------------------------------
+
+    recovery_intent = any(x in ql for x in [
+        "was recovered",
+        "were recovered",
+        "recovered after",
+        "recovered previously",
+        "was it recovered",
+        "did it recover",
+        "did we recover",
+        "recovery status",
+        "was restored",
+        "were restored",
+    ])
+
+    # Robust recovery-question detection, including:
+    # "Was PT-303 recovered?"
+    # "Was PT-303 recovered after the previous failure?"
+    # "Is PT-303 recovered?"
+    if re.search(r"\bwas\b.{0,100}\brecovered\b", ql):
+        recovery_intent = True
+
+    if re.search(r"\b(is|was)\b.{0,100}\b(recovered|restored)\b", ql):
+        recovery_intent = True
+
+
+    if recovery_intent:
+        first = verified[0]
+
+        recovery = str(
+            first.get("recovery_status", "")
+        ).strip()
+
+        outcome = str(
+            first.get("outcome", "")
+        ).strip()
+
+        evidence = str(
+            first.get("confirmation_evidence", "")
+        ).strip()
+
+        event = str(
+            first.get("event", "")
+        ).strip()
+
+        if recovery:
+            recovery_status = recovery
+        elif outcome:
+            recovery_status = "Recovered" if any(
+                x in outcome.lower()
+                for x in [
+                    "healthy signal restored",
+                    "restored",
+                    "recovered",
+                    "returned healthy",
+                ]
+            ) else "Not recorded."
+        else:
+            recovery_status = "Not recorded."
+
+        answer_lines = [
+            "ANVI found verified previous maintenance experience"
+            + (
+                f" for {first.get('tag') or tag}."
+                if (first.get('tag') or tag)
+                else "."
+            ),
+        ]
+
+        if event:
+            answer_lines.append("Previous event: " + event)
+
+        answer_lines.append("Recovery status: " + recovery_status)
+
+        if outcome:
+            answer_lines.append("Outcome: " + outcome)
+
+        if evidence:
+            answer_lines.append("Confirmation evidence: " + evidence)
+
+        if first.get("memory_id"):
+            answer_lines.append(
+                "Memory: " + str(first["memory_id"])
+            )
+
+        answer_lines.append("Verification status: VERIFIED")
+        answer_lines.append(
+            "This is verified maintenance experience, not an "
+            "automatic maintenance command."
+        )
+
+        return {
+            "answer": "\n".join(answer_lines),
+            "domain": "plant_memory",
+            "evidence": "verified plant memory",
+            "tag": first.get("tag") or tag,
+            "memory_id": first.get("memory_id"),
+            "recovery_status": recovery_status,
+            "outcome": first.get("outcome"),
+            "confirmation_evidence": first.get(
+                "confirmation_evidence"
+            ),
+            "verification_status": "VERIFIED",
+            "records": verified,
+            "count": len(verified),
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "human_decision_required": True,
+        }
+
+    # ------------------------------------------------------------
+    # Specific verified spare-use recall.
+    #
+    # Examples:
+    #   "Did we use a spare for PT-303 previously?"
+    #   "Was a spare used for PT-303?"
+    # ------------------------------------------------------------
+
+    spare_intent = any(x in ql for x in [
+        "did we use a spare",
+        "did we use spare",
+        "was a spare used",
+        "was spare used",
+        "used a spare",
+        "used spare",
+        "spare used",
+        "previous spare",
+        "previously use a spare",
+        "previously used a spare",
+        "did we replace it with a spare",
+        "was it replaced with a spare",
+    ])
+
+    if spare_intent:
+        first = verified[0]
+
+        spare = str(
+            first.get("spare_used", "")
+        ).strip()
+
+        if spare:
+            spare_text = spare
+            spare_statement = "Spare used: " + spare_text
+        else:
+            spare_statement = "Spare used: No verified spare usage recorded."
+
+        event = str(
+            first.get("event", "")
+        ).strip()
+
+        action = str(
+            first.get("maintenance_action", "")
+        ).strip()
+
+        answer_lines = [
+            "ANVI found verified previous maintenance experience"
+            + (
+                f" for {first.get('tag') or tag}."
+                if (first.get('tag') or tag)
+                else "."
+            ),
+        ]
+
+        if event:
+            answer_lines.append("Previous event: " + event)
+
+        answer_lines.append(spare_statement)
+
+        if action:
+            answer_lines.append("Action: " + action)
+
+        if first.get("memory_id"):
+            answer_lines.append(
+                "Memory: " + str(first["memory_id"])
+            )
+
+        answer_lines.append("Verification status: VERIFIED")
+        answer_lines.append(
+            "This is verified maintenance experience, not an "
+            "automatic maintenance command."
+        )
+
+        return {
+            "answer": "\n".join(answer_lines),
+            "domain": "plant_memory",
+            "evidence": "verified plant memory",
+            "tag": first.get("tag") or tag,
+            "memory_id": first.get("memory_id"),
+            "spare_used": spare,
+            "maintenance_action": first.get(
+                "maintenance_action"
+            ),
+            "verification_status": "VERIFIED",
+            "records": verified,
+            "count": len(verified),
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "human_decision_required": True,
+        }
+
+    # ------------------------------------------------------------
     # Determine whether the user is asking specifically for the
     # previous corrective action / what worked.
     # ------------------------------------------------------------
@@ -1566,6 +1775,20 @@ def _is_memory_question(q):
         "recovery status",
         "was restored",
         "were restored",
+
+        # Spare-use / replacement recall
+        "did we use a spare",
+        "did we use spare",
+        "was a spare used",
+        "was spare used",
+        "used a spare",
+        "used spare",
+        "spare used",
+        "previous spare",
+        "previously use a spare",
+        "previously used a spare",
+        "did we replace it with a spare",
+        "was it replaced with a spare",
 
         # Finding / discovery recall
         "what was the finding",
