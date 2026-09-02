@@ -60,9 +60,9 @@ def create_memory(
     related_maintenance_record="",
     notes=""
 ):
-    if verified is not True:
+    if verified not in (True, False):
         raise ValueError(
-            "Plant Memory accepts verified=True records only."
+            "verified must be True or False"
         )
 
     if not str(event).strip():
@@ -91,23 +91,177 @@ def create_memory(
             related_maintenance_record
         ).strip(),
         "notes": str(notes).strip(),
-        "verified": True
+        "verified": bool(verified),
+        "verification_status": (
+            "VERIFIED" if verified is True else "PENDING_VERIFICATION"
+        )
     }
 
 def store_memory(record):
     if not isinstance(record, dict):
         raise ValueError("Memory record must be a dictionary")
 
-    if record.get("verified") is not True:
-        raise ValueError("Rejected: memory is not verified")
+    # Conversationally supplied memories may be stored for later
+    # human verification, but they are NEVER treated as verified
+    # evidence until verified=True is explicitly recorded.
+    if record.get("verified") not in (True, False):
+        raise ValueError("verified must be True or False")
+
+    if record.get("verified") is True:
+        record["verification_status"] = "VERIFIED"
+    else:
+        record["verification_status"] = "PENDING_VERIFICATION"
 
     data = _load()
+
+    # Duplicate protection: same tag + event + action + finding
+    # is not inserted repeatedly.
+    for existing in data["records"]:
+        if (
+            _norm(existing.get("tag")) == _norm(record.get("tag"))
+            and _norm(existing.get("event")) == _norm(record.get("event"))
+            and _norm(existing.get("maintenance_action"))
+                == _norm(record.get("maintenance_action"))
+            and _norm(existing.get("finding"))
+                == _norm(record.get("finding"))
+        ):
+            return existing
 
     data["records"].append(record)
 
     _save(data)
 
     return record
+
+
+def create_conversational_memory(
+    event,
+    source,
+    equipment="",
+    tag="",
+    area="",
+    observation="",
+    maintenance_action="",
+    finding="",
+    confirmation_evidence="",
+    outcome="",
+    recovery_status="",
+    spare_used="",
+    related_event_id="",
+    related_maintenance_record="",
+    notes=""
+):
+    """
+    Store user-supplied maintenance history.
+
+    IMPORTANT:
+    Conversationally supplied history is PENDING_VERIFICATION.
+    It is never presented as verified evidence until a human
+    verification step explicitly changes verified=True.
+    """
+
+    record = create_memory(
+        event=event,
+        source=source,
+        verified=False,
+        equipment=equipment,
+        tag=tag,
+        area=area,
+        observation=observation,
+        maintenance_action=maintenance_action,
+        finding=finding,
+        confirmation_evidence=confirmation_evidence,
+        outcome=outcome,
+        recovery_status=recovery_status,
+        spare_used=spare_used,
+        related_event_id=related_event_id,
+        related_maintenance_record=related_maintenance_record,
+        notes=notes
+    )
+
+    return store_memory(record)
+
+
+def verify_memory(memory_id, notes=""):
+    """
+    Explicit human verification step.
+
+    This is the ONLY path provided by this module for converting
+    a pending conversational memory into verified memory.
+    """
+
+    data = _load()
+
+    for record in data["records"]:
+        if record.get("memory_id") == memory_id:
+            record["verified"] = True
+            record["verification_status"] = "VERIFIED"
+            record["verified_at"] = _now()
+
+            if notes:
+                record["verification_notes"] = str(notes).strip()
+
+            _save(data)
+            return record
+
+    raise KeyError("Memory not found: " + str(memory_id))
+
+
+def search_all_memory(
+    query="",
+    tag="",
+    equipment="",
+    area="",
+    limit=20
+):
+    """
+    Internal/admin retrieval including pending memories.
+
+    Normal verified recall must continue using search_memory().
+    """
+
+    data = _load()
+
+    q = _norm(query)
+    t = _norm(tag)
+    e = _norm(equipment)
+    a = _norm(area)
+
+    results = []
+
+    for record in reversed(data["records"]):
+        searchable = _norm(" ".join([
+            record.get("event", ""),
+            record.get("observation", ""),
+            record.get("maintenance_action", ""),
+            record.get("finding", ""),
+            record.get("confirmation_evidence", ""),
+            record.get("outcome", ""),
+            record.get("tag", ""),
+            record.get("equipment", ""),
+            record.get("area", ""),
+            record.get("source", "")
+        ]))
+
+        if q and q not in searchable:
+            continue
+
+        if t and t not in _norm(record.get("tag")):
+            continue
+
+        if e and e not in _norm(record.get("equipment")):
+            continue
+
+        if a and a not in _norm(record.get("area")):
+            continue
+
+        results.append(record)
+
+        if len(results) >= limit:
+            break
+
+    return results
+
 
 def search_memory(
     query="",

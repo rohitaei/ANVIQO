@@ -20,6 +20,29 @@
       "related_maintenance_record": "",
       "notes": "",
       "verified": true
+    },
+    {
+      "memory_id": "PM-75618A10F22E",
+      "timestamp": "2026-09-01T22:22:00.897758+00:00",
+      "event": "PT-304 abnormal pressure indication",
+      "equipment": "Pressure Transmitter",
+      "tag": "PT-304",
+      "area": "",
+      "source": "conversational maintenance history",
+      "observation": "Pressure indication abnormal",
+      "maintenance_action": "Replaced transmitter",
+      "finding": "Transmitter found faulty",
+      "confirmation_evidence": "Signal returned healthy",
+      "outcome": "Healthy signal restored",
+      "recovery_status": "Recovered",
+      "spare_used": "PT-304 x1",
+      "related_event_id": "",
+      "related_maintenance_record": "",
+      "notes": "",
+      "verified": true,
+      "verification_status": "VERIFIED",
+      "verified_at": "2026-09-02T09:03:55.140418+00:00",
+      "verification_notes": "Human verified maintenance history for PT-304."
     }
   ]
 }
