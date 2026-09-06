@@ -1,5 +1,7 @@
-from flask import Flask, jsonify, render_template_string, session, redirect, url_for
+from flask import Flask, jsonify, render_template_string, session, redirect, url_for, request
 from datetime import datetime
+from anvi_knowledge_layer import ask_anvi
+
 
 app = Flask(__name__)
 app.secret_key = "anviqo-production-session-key"
@@ -730,66 +732,24 @@ def voice_capabilities_api():
         }), 500
 
 @app.route("/api/ask", methods=["POST"])
-def ask_anvi():
-    from flask import request
-    import json as _json
+def ask_anvi_api():
+    data = request.get_json(silent=True) or {}
+    question = (
+        data.get("question")
+        or data.get("query")
+        or data.get("message")
+        or ""
+    )
 
-    try:
-        q=(request.get_json(silent=True) or {}).get("question","").strip()
-        ql=q.lower()
+    if not question:
+        return jsonify({
+            "error": "question is required",
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+        }), 400
 
-        with open(os.path.join("database","pci","pci_instrument_database.json"),encoding="utf-8") as f:
-            db=_json.load(f)
-
-        records=db.get("records",[])
-
-        # ---- PCI evidence ----
-        if any(k in ql for k in ["pci","at_201","at_202","pt_303","lt_302","instrument","i/o","io","critical"]):
-
-            if "at_201" in ql or "at_202" in ql or "pt_303" in ql or "lt_302" in ql:
-                for x in records:
-                    tag=str(x.get("tag","")).lower()
-                    if tag and tag in ql:
-                        return {"answer":
-                            f"ANVI PCI evidence — {x.get('tag')}: "
-                            f"{x.get('description','No description')}. "
-                            f"Area: {x.get('area','UNKNOWN')}. "
-                            f"I/O type: {x.get('io_type','UNKNOWN')}. "
-                            f"Criticality: {x.get('criticality','NOT CLASSIFIED')}."
-                        }
-
-            if "critical" in ql:
-                critical=[x for x in records if x.get("criticality")=="HIGH"]
-                return {"answer":
-                    "ANVI PCI evidence: I found "
-                    f"{len(critical)} HIGH-criticality instruments in the verified 1,064-I/O PCI database: "
-                    + "; ".join(
-                        f"{x.get('tag')} — {x.get('description')} ({x.get('area')})"
-                        for x in critical
-                    ) + "."
-                }
-
-            from collections import Counter
-            io=Counter(x.get("io_type","UNKNOWN") for x in records)
-            areas=Counter(x.get("area","UNKNOWN") for x in records)
-
-            return {"answer":
-                f"ANVI PCI evidence is connected. "
-                f"The PCI database contains {len(records)} I/O records across {len(areas)} areas. "
-                f"Distribution: " +
-                ", ".join(f"{k}: {v}" for k,v in io.items()) +
-                ". The database is read-only and does not authorize PLC/SCADA control."
-            }
-
-        return {"answer":
-            "ANVI is online and connected to the V5 Frozen intelligence product. "
-            "I can answer PCI questions, equipment questions, plant-condition questions, "
-            "events, maintenance and management-intelligence questions."
-        }
-
-    except Exception as e:
-        return {"answer":"ANVI evidence service error: "+str(e)}
-
+    return jsonify(ask_anvi(question))
 @app.route("/api/status")
 def status():
 

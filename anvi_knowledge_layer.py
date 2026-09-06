@@ -3307,7 +3307,7 @@ def _memory_response_contract(result):
 
     return result
 
-def ask_anvi(question):
+def _anviqo_authoritative_core(question):
     # Normalize natural-language PCI/instrument tag variants before
     # any routing, context lookup, PCI lookup, troubleshooting or LLM fallback.
     question = _normalize_pci_instrument_tags(question)
@@ -3946,3 +3946,61 @@ def ask_anvi(question):
             "read_only": True,
         }
 
+
+
+# ============================================================
+# ANVIQO INTELLIGENCE FABRIC — AUTHORITATIVE RESPONSE BRIDGE
+# ============================================================
+
+def ask_anvi(question, *args, **kwargs):
+    """
+    Single authoritative ANVIQO conversational entry point.
+
+    Existing V5 knowledge-layer intelligence remains authoritative.
+    Intelligence Fabric is an evidence/enrichment layer only.
+    No PLC write, SCADA control, or automatic execution is introduced.
+    """
+    result = _anviqo_authoritative_core(question, *args, **kwargs)
+
+    if not isinstance(result, dict):
+        return result
+
+    try:
+        from anviqo_intelligence_fabric import build_intelligence_fabric
+
+        fabric = build_intelligence_fabric(question)
+
+        result["intelligence_fabric"] = {
+            "version": fabric.get("version"),
+            "tag": fabric.get("tag"),
+            "confidence": fabric.get("confidence"),
+            "sources": (
+                fabric.get("sources")
+                or (fabric.get("confidence") or {}).get("sources")
+                or []
+            ),
+            "evidence": fabric.get("evidence"),
+            "safety": fabric.get("safety"),
+        }
+
+        # Preserve the strongest existing safety declaration.
+        result["read_only"] = True
+        result["plc_write"] = False
+        result["scada_control"] = False
+
+    except Exception as exc:
+        # Intelligence Fabric is enrichment, never a reason to
+        # break the existing authoritative V5 answer path.
+        result["intelligence_fabric"] = {
+            "status": "ENRICHMENT_UNAVAILABLE",
+            "error": repr(exc),
+            "safety": {
+                "control_mode": "READ_ONLY",
+                "plc_write": False,
+                "scada_control": False,
+                "automatic_execution": False,
+                "human_decision_required": True,
+            },
+        }
+
+    return result

@@ -846,5 +846,348 @@ async function searchSpares(){
 }
 
 </script>
+
+
+<!-- ============================================================
+     ANVIQO_EVIDENCE_INTELLIGENCE_UI_V1
+     Evidence-backed Command Centre presentation layer.
+     Does NOT replace existing V5 intelligence.
+     Does NOT create PLC/SCADA control.
+     ============================================================ -->
+
+<style>
+#anviqoEvidencePanel {
+    display:none;
+    margin:18px 0;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:18px;
+    overflow:hidden;
+    background:linear-gradient(135deg,rgba(20,27,40,.98),rgba(10,15,24,.98));
+    box-shadow:0 12px 40px rgba(0,0,0,.28);
+}
+
+#anviqoEvidencePanel .aep-head {
+    padding:20px 22px;
+    border-bottom:1px solid rgba(255,255,255,.10);
+}
+
+#anviqoEvidencePanel .aep-title {
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:.2px;
+}
+
+#anviqoEvidencePanel .aep-sub {
+    margin-top:5px;
+    opacity:.68;
+    font-size:13px;
+}
+
+#anviqoEvidencePanel .aep-grid {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+    padding:16px 20px;
+}
+
+#anviqoEvidencePanel .aep-card {
+    padding:15px;
+    border-radius:13px;
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.08);
+}
+
+#anviqoEvidencePanel .aep-label {
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    opacity:.58;
+}
+
+#anviqoEvidencePanel .aep-value {
+    margin-top:6px;
+    font-size:17px;
+    font-weight:750;
+}
+
+#anviqoEvidencePanel .aep-section {
+    padding:0 20px 18px;
+}
+
+#anviqoEvidencePanel .aep-section-title {
+    font-size:13px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    opacity:.72;
+    margin-bottom:9px;
+}
+
+#anviqoEvidencePanel .aep-chips {
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+}
+
+#anviqoEvidencePanel .aep-chip {
+    display:inline-flex;
+    padding:7px 10px;
+    border-radius:999px;
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.10);
+    font-size:12px;
+}
+
+#anviqoEvidencePanel .aep-list {
+    margin:0;
+    padding-left:20px;
+    line-height:1.7;
+    font-size:14px;
+}
+
+#anviqoEvidencePanel .aep-safety {
+    margin:0 20px 20px;
+    padding:13px 15px;
+    border-radius:12px;
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.10);
+    font-size:13px;
+    line-height:1.6;
+}
+
+@media(max-width:850px){
+    #anviqoEvidencePanel .aep-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
+@media(max-width:520px){
+    #anviqoEvidencePanel .aep-grid{
+        grid-template-columns:1fr 1fr;
+        padding:12px;
+    }
+    #anviqoEvidencePanel .aep-section{
+        padding-left:12px;
+        padding-right:12px;
+    }
+    #anviqoEvidencePanel .aep-safety{
+        margin-left:12px;
+        margin-right:12px;
+    }
+}
+</style>
+
+<div id="anviqoEvidencePanel">
+    <div class="aep-head">
+        <div class="aep-title">ANVIQO Evidence Intelligence</div>
+        <div class="aep-sub" id="aepSub">
+            Evidence-backed intelligence assembled from authoritative plant sources.
+        </div>
+    </div>
+
+    <div class="aep-grid">
+        <div class="aep-card">
+            <div class="aep-label">Equipment</div>
+            <div class="aep-value" id="aepTag">—</div>
+        </div>
+        <div class="aep-card">
+            <div class="aep-label">Confidence</div>
+            <div class="aep-value" id="aepConfidence">—</div>
+        </div>
+        <div class="aep-card">
+            <div class="aep-label">Evidence Sources</div>
+            <div class="aep-value" id="aepSourceCount">—</div>
+        </div>
+        <div class="aep-card">
+            <div class="aep-label">Operating Mode</div>
+            <div class="aep-value">READ ONLY</div>
+        </div>
+    </div>
+
+    <div class="aep-section">
+        <div class="aep-section-title">Evidence Chain</div>
+        <div class="aep-chips" id="aepSources"></div>
+    </div>
+
+    <div class="aep-section">
+        <div class="aep-section-title">Intelligence Interpretation</div>
+        <ul class="aep-list" id="aepInterpretation">
+            <li>Waiting for an ANVIQO intelligence response.</li>
+        </ul>
+    </div>
+
+    <div class="aep-section">
+        <div class="aep-section-title">Investigation Guidance</div>
+        <ol class="aep-list" id="aepGuidance">
+            <li>Use ANVIQO evidence as decision support.</li>
+            <li>Verify field conditions before intervention.</li>
+            <li>Follow plant isolation, permit and risk-assessment requirements.</li>
+        </ol>
+    </div>
+
+    <div class="aep-safety">
+        <strong>🛡️ Safety Boundary</strong><br>
+        Read-only intelligence. PLC write is blocked. SCADA control is blocked.
+        Automatic execution is blocked. Human decision and field verification remain mandatory.
+    </div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    const PANEL_ID = "anviqoEvidencePanel";
+
+    function esc(value) {
+        return String(value ?? "")
+            .replace(/&/g,"&amp;")
+            .replace(/</g,"&lt;")
+            .replace(/>/g,"&gt;")
+            .replace(/"/g,"&quot;")
+            .replace(/'/g,"&#039;");
+    }
+
+    function findMountPoint() {
+        const selectors = [
+            "#response",
+            "#answer",
+            "#chat",
+            "#chatContainer",
+            ".chat-container",
+            ".response-container",
+            ".answer-container",
+            "main"
+        ];
+
+        for (const selector of selectors) {
+            const el = document.querySelector(selector);
+            if (el) return el;
+        }
+
+        return document.body;
+    }
+
+    function ensurePanel() {
+        let panel = document.getElementById(PANEL_ID);
+        if (!panel) return null;
+
+        const mount = findMountPoint();
+
+        if (panel.parentElement !== mount) {
+            try {
+                mount.prepend(panel);
+            } catch (_) {}
+        }
+
+        return panel;
+    }
+
+    function renderFabric(payload) {
+        const panel = ensurePanel();
+        if (!panel) return;
+
+        const fabric = payload && payload.intelligence_fabric;
+        if (!fabric || fabric.status === "ENRICHMENT_UNAVAILABLE") return;
+
+        const confidence = fabric.confidence || {};
+        const sources = Array.isArray(fabric.sources)
+            ? fabric.sources
+            : (confidence.sources || []);
+
+        const tag = fabric.tag || "Plant-wide";
+        const score = confidence.score;
+        const level = confidence.level || "—";
+
+        document.getElementById("aepTag").textContent = tag;
+        document.getElementById("aepConfidence").textContent =
+            (score !== undefined ? score + "/100 " : "") + level;
+        document.getElementById("aepSourceCount").textContent =
+            sources.length + " sources";
+
+        document.getElementById("aepSources").innerHTML =
+            sources.map(s => '<span class="aep-chip">' + esc(s) + '</span>').join("");
+
+        const interpretation = [];
+
+        if (payload.domain)
+            interpretation.push("ANVIQO routed this request through: " + payload.domain + ".");
+
+        if (score !== undefined)
+            interpretation.push(
+                "Evidence confidence is " + score + "/100 (" + level + ")."
+            );
+
+        if (sources.length)
+            interpretation.push(
+                "The response is supported by " + sources.length +
+                " authoritative ANVIQO evidence source(s)."
+            );
+
+        interpretation.push(
+            "Evidence supports investigation and decision-making; it does not by itself establish causation or authorize intervention."
+        );
+
+        document.getElementById("aepInterpretation").innerHTML =
+            interpretation.map(x => "<li>" + esc(x) + "</li>").join("");
+
+        const guidance = [
+            "Start with the strongest verified evidence associated with the equipment or condition.",
+            "Compare the current indication with engineering identity and available plant evidence.",
+            "Use verified maintenance history and spare availability when relevant.",
+            "Verify the physical condition and follow isolation, permit and risk-assessment requirements before field intervention."
+        ];
+
+        document.getElementById("aepGuidance").innerHTML =
+            guidance.map(x => "<li>" + esc(x) + "</li>").join("");
+
+        panel.style.display = "block";
+    }
+
+    /*
+     * Observe /api/ask responses without replacing the existing
+     * dashboard request behavior. The original request object is
+     * captured before entering the Promise callback.
+     */
+    const originalFetch = window.fetch;
+
+    if (!window.__ANVIQO_EVIDENCE_FETCH_WRAPPED__) {
+        window.fetch = function () {
+            const fetchArgs = arguments;
+            const requestTarget = fetchArgs[0];
+
+            let requestUrl = "";
+
+            try {
+                if (typeof requestTarget === "string") {
+                    requestUrl = requestTarget;
+                } else if (requestTarget && requestTarget.url) {
+                    requestUrl = requestTarget.url;
+                }
+            } catch (_) {}
+
+            return originalFetch.apply(this, fetchArgs).then(function (response) {
+                try {
+                    if (requestUrl.includes("/api/ask")) {
+                        response.clone().json().then(function (payload) {
+                            renderFabric(payload);
+                        }).catch(function () {});
+                    }
+                } catch (_) {}
+
+                return response;
+            });
+        };
+
+        window.__ANVIQO_EVIDENCE_FETCH_WRAPPED__ = true;
+    }
+
+    window.anviqoRenderEvidence = renderFabric;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        ensurePanel();
+    });
+})();
+</script>
+
 </body>
 </html>
