@@ -1295,27 +1295,125 @@ def _v14_load_spares():
 
 
 def _v14_sheet_hint(q):
-    qn = _v14_norm(q)
-    aliases = {
-        "RTD": {"RTD", "THERMOCOUPLE", "TEMPERATURE", "TE"},
-        "LT": {"LT", "LEVEL", "LEVELTRANSMITTER", "RADAR", "LE"},
-        "PT": {"PT", "PRESSURE", "PRESSURETRANSMITTER"},
-        "FT": {"FT", "FLOW", "FLOWTRANSMITTER", "FLOWMETER"},
-        "MCV": {"MCV", "MOTORCONTROLVALVE", "MOTORIZEDCONTROLVALVE", "MOTORIZEDVALVE"},
-        "FSV&PCV": {"FSV", "PCV", "SHUTOFFVALVE", "PNEUMATICVALVE"},
-        "SOV": {"SOV", "SOLENOID", "SOLENOIDVALVE"},
-        "POS'R": {"POSR", "POSITIONER", "POSITIONERVALVE"},
-        "LOAD CELL": {"LOADCELL", "LOADCELLRTD", "LOADCELLPWS", "WT"},
-        "Analyser": {"ANALYSER", "ANALYZER", "GASANALYSER", "GASANALYZER"},
-        "AIR COMPRESSOR": {"AIRCOMPRESSOR", "COMPRESSOR"},
-        "Sheet1": {"GENERAL", "GENERALSPARES", "PLANTSPARES", "OTHERS"},
-    }
-    # Prefer explicit sheet token / family token over broad words.
-    for sheet, vals in aliases.items():
-        for a in vals:
-            if _v14_norm(a) and _v14_norm(a) in qn:
-                return sheet
+    """
+    ANVIQO V1.7 deterministic spare-family resolver.
+
+    IMPORTANT:
+    Never classify a family from an arbitrary substring such as
+    'TE' inside 'transmitter' or 'LE' inside 'available'.
+    Family aliases must be exact tokens or explicit phrases.
+    """
+    import re as _re
+
+    raw = str(q or "")
+    qn = _v14_norm(raw)
+
+    # Explicit multi-word equipment families first.
+    phrase_rules = [
+        ("FSV&PCV", [
+            r"\bfsv\b", r"\bpcv\b",
+            r"\bshut[\s-]*off\s+valve\b",
+            r"\bpneumatic\s+valve\b",
+        ]),
+        ("POS'R", [
+            r"\bpos['’]?\s*r\b",
+            r"\bpositioner\b",
+            r"\bvalve\s+positioner\b",
+        ]),
+        ("LOAD CELL", [
+            r"\bload\s+cell\b",
+            r"\bloadcell\b",
+        ]),
+        ("AIR COMPRESSOR", [
+            r"\bair\s+compressor\b",
+            r"\bcompressor\b",
+        ]),
+        ("Analyser", [
+            r"\banaly[sz]er\b",
+            r"\bgas\s+analy[sz]er\b",
+        ]),
+        ("MCV", [
+            r"\bmcv\b",
+            r"\bmotorized\s+control\s+valve\b",
+            r"\bmotorised\s+control\s+valve\b",
+            r"\bmotorized\s+valve\b",
+            r"\bmotorised\s+valve\b",
+            r"\bmotor\s+control\s+valve\b",
+        ]),
+        ("SOV", [
+            r"\bsov\b",
+            r"\bsolenoid\s+valve\b",
+            r"\bsolenoid\b",
+        ]),
+        ("FT", [
+            r"\bflow\s+transmitter\b",
+            r"\bflow\s+meter\b",
+            r"\bflowmeter\b",
+            r"\bflow\s+measurement\b",
+        ]),
+        ("PT", [
+            r"\bpressure\s+transmitter\b",
+            r"\bpressure\s+transducer\b",
+            r"\bpressure\s+measurement\b",
+        ]),
+        ("LT", [
+            r"\blevel\s+transmitter\b",
+            r"\blevel\s+measurement\b",
+            r"\blevel\s+sensor\b",
+            r"\bradar\s+level\b",
+            r"\blevel\s+switch\b",
+        ]),
+        ("RTD", [
+            r"\brtd\b",
+            r"\bthermocouple\b",
+            r"\btemperature\s+(?:sensor|transmitter|element|probe)\b",
+            r"\btemperature\b",
+        ]),
+    ]
+
+    for sheet, patterns in phrase_rules:
+        if any(_re.search(p, raw, flags=_re.I) for p in patterns):
+            return sheet
+
+    # Exact family tokens / tag prefixes only.
+    exact_rules = [
+        ("FSV&PCV", [r"\bFSV\b", r"\bPCV\b"]),
+        ("POS'R", [r"\bPOSR\b", r"\bPOS['’]R\b"]),
+        ("LOAD CELL", [r"\bLOADCELL\b", r"\bWT\b"]),
+        ("AIR COMPRESSOR", [r"\bAIRCOMPRESSOR\b"]),
+        ("Analyser", [r"\bANALYSER\b", r"\bANALYZER\b"]),
+        ("MCV", [r"\bMCV\b"]),
+        ("SOV", [r"\bSOV\b"]),
+        ("FT", [r"\bFT\b"]),
+        ("PT", [r"\bPT\b"]),
+        ("LT", [r"\bLT\b"]),
+        ("RTD", [r"\bRTD\b", r"\bTE\b"]),
+    ]
+
+    for sheet, patterns in exact_rules:
+        if any(_re.search(p, raw, flags=_re.I) for p in patterns):
+            return sheet
+
+    # Exact tag-family form, e.g. PT-303, FT-201, MCV-205.
+    m=_re.search(
+        r"(?<![A-Za-z0-9])"
+        r"(PT|FT|LT|RTD|TE|MCV|SOV|FSV|PCV|LE)"
+        r"(?:[-_ ]?[A-Za-z0-9]+)?"
+        r"(?![A-Za-z0-9])",
+        raw,
+        flags=_re.I
+    )
+    if m:
+        family=m.group(1).upper()
+        tag_map={
+            "PT":"PT","FT":"FT","LT":"LT","RTD":"RTD","TE":"RTD",
+            "MCV":"MCV","SOV":"SOV","FSV":"FSV&PCV","PCV":"FSV&PCV",
+            "LE":"LT"
+        }
+        return tag_map.get(family)
+
     return None
+
 
 
 def _v14_intent(q):
