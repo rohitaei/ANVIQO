@@ -3954,53 +3954,67 @@ def _anviqo_authoritative_core(question):
 
 def ask_anvi(question, *args, **kwargs):
     """
-    Single authoritative ANVIQO conversational entry point.
+    ANVIQO authoritative conversational entrypoint.
 
-    Existing V5 knowledge-layer intelligence remains authoritative.
-    Intelligence Fabric is an evidence/enrichment layer only.
-    No PLC write, SCADA control, or automatic execution is introduced.
+    V1.6 spare mutation gate executes ordinary inventory add/use
+    commands before the general intelligence router.
+
+    Safety boundary:
+      - Excel critical-spare inventory only
+      - PLC write = False
+      - SCADA control = False
+      - automatic PLC/SCADA execution = False
     """
-    result = _anviqo_authoritative_core(question, *args, **kwargs)
 
-    if not isinstance(result, dict):
-        return result
-
+    # ================================================================
+    # ANVIQO_V16_SPARE_MUTATION_GATE_V1
+    # ================================================================
     try:
-        from anviqo_intelligence_fabric import build_intelligence_fabric
+        from pci_spares import _v16_action, execute_spare_mutation
 
-        fabric = build_intelligence_fabric(question)
+        _v16_spare_action = _v16_action(question)
 
-        result["intelligence_fabric"] = {
-            "version": fabric.get("version"),
-            "tag": fabric.get("tag"),
-            "confidence": fabric.get("confidence"),
-            "sources": (
-                fabric.get("sources")
-                or (fabric.get("confidence") or {}).get("sources")
-                or []
-            ),
-            "evidence": fabric.get("evidence"),
-            "safety": fabric.get("safety"),
-        }
+        if _v16_spare_action in ("ADD", "USE"):
+            _v16_spare_result = execute_spare_mutation(
+                question,
+                confirmed=True
+            )
 
-        # Preserve the strongest existing safety declaration.
-        result["read_only"] = True
-        result["plc_write"] = False
-        result["scada_control"] = False
+            # Direct conversational inventory mutation.
+            # Do NOT send a mutation command through PCI routing.
+            if isinstance(_v16_spare_result, dict):
+                _v16_spare_result["domain"] = "critical_spares"
+                _v16_spare_result["read_only_inventory_query"] = False
+                _v16_spare_result["inventory_mutation"] = True
+                _v16_spare_result["plc_write"] = False
+                _v16_spare_result["scada_control"] = False
+                _v16_spare_result["automatic_execution"] = False
+                _v16_spare_result["human_decision_required"] = True
 
-    except Exception as exc:
-        # Intelligence Fabric is enrichment, never a reason to
-        # break the existing authoritative V5 answer path.
-        result["intelligence_fabric"] = {
-            "status": "ENRICHMENT_UNAVAILABLE",
-            "error": repr(exc),
-            "safety": {
-                "control_mode": "READ_ONLY",
+                if _v16_spare_result.get("ok"):
+                    _v16_spare_result["answer"] = (
+                        _v16_spare_result.get("answer")
+                        or "ANVIQO inventory updated successfully."
+                    )
+
+                return _v16_spare_result
+
+    except Exception as _v16_spare_error:
+        # Mutation commands must never silently fall through to PCI.
+        if "_v16_spare_action" in locals() and _v16_spare_action in ("ADD", "USE"):
+            return {
+                "ok": False,
+                "executed": False,
+                "domain": "critical_spares",
+                "inventory_mutation": True,
+                "error": f"Spare inventory mutation failed safely: {_v16_spare_error}",
                 "plc_write": False,
                 "scada_control": False,
                 "automatic_execution": False,
-                "human_decision_required": True,
-            },
-        }
+                "human_decision_required": True
+            }
 
-    return result
+    # ================================================================
+    # EXISTING AUTHORITATIVE ANVIQO ROUTER
+    # ================================================================
+    return _anviqo_authoritative_core(question)
