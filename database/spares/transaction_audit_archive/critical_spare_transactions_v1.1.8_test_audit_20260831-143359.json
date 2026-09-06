@@ -1,0 +1,115 @@
+{
+  "version": "SPARE-TXN-1.0",
+  "transactions": [
+    {
+      "transaction_id": "SPARE-TXN-20260826010823-C3648434",
+      "timestamp_utc": "2026-08-25T19:38:23.105939+00:00",
+      "tag": "PT-303",
+      "quantity": 3.0,
+      "action": "ADD",
+      "status": "CANCELLED",
+      "requested_by": "ANVI",
+      "reason": "V1 transaction engine test",
+      "cancelled_at_utc": "2026-08-25T19:38:23.168421+00:00",
+      "cancelled_by": "REGRESSION_TEST"
+    },
+    {
+      "transaction_id": "SPARE-TXN-20260827014543-BB837AED",
+      "timestamp_utc": "2026-08-26T20:15:43.117111+00:00",
+      "tag": "PT-303",
+      "quantity": 3.0,
+      "action": "ADD",
+      "status": "PENDING",
+      "requested_by": "ANVI",
+      "reason": "ANVI new spares PT-303 3 nos add"
+    },
+    {
+      "transaction_id": "SPARE-TXN-20260827014543-77A4F12F",
+      "timestamp_utc": "2026-08-26T20:15:43.145050+00:00",
+      "tag": "MCV-205",
+      "quantity": 2.0,
+      "action": "ADD",
+      "status": "PENDING",
+      "requested_by": "ANVI",
+      "reason": "ANVI add 2 MCV-205 spares"
+    },
+    {
+      "transaction_id": "SPARE-TXN-20260827014543-37B57768",
+      "timestamp_utc": "2026-08-26T20:15:43.188140+00:00",
+      "tag": "PT-303",
+      "quantity": 1.0,
+      "action": "REMOVE",
+      "status": "PENDING",
+      "requested_by": "ANVI",
+      "reason": "ANVI remove 1 PT-303 spare"
+    },
+    {
+      "transaction_id": "SPARE-TXN-20260827014720-C0B84878",
+      "timestamp_utc": "2026-08-26T20:17:20.312401+00:00",
+      "tag": "PT-303",
+      "quantity": 3.0,
+      "action": "ADD",
+      "status": "CONFIRMED",
+      "requested_by": "TEST",
+      "reason": "V1.1.6 confirmation audit",
+      "confirmed_at_utc": "2026-08-26T20:17:20.390504+00:00",
+      "confirmed_by": "TEST"
+    },
+    {
+      "transaction_id": "SPARE-TXN-20260827014720-BCE798EA",
+      "timestamp_utc": "2026-08-26T20:17:20.447915+00:00",
+      "tag": "PT-303",
+      "quantity": 1.0,
+      "action": "REMOVE",
+      "status": "CONFIRMED",
+      "requested_by": "TEST",
+      "reason": "V1.1.6 removal audit",
+      "confirmed_at_utc": "2026-08-26T20:17:20.488857+00:00",
+      "confirmed_by": "TEST"
+    },
+    {
+      "transaction_id": "SPARE-TXN-20260831135958-63A5CAA3",
+      "timestamp_utc": "2026-08-31T08:29:58.680094+00:00",
+      "tag": "PT-303",
+      "quantity": 1.0,
+      "action": "REMOVE",
+      "status": "CONFIRMED",
+      "requested_by": "V117-TEST",
+      "reason": "Negative inventory safe-remove test",
+      "confirmed_at_utc": "2026-08-31T08:29:58.994821+00:00",
+      "confirmed_by": "V117-TEST"
+    },
+    {
+      "transaction_id": "SPARE-TXN-20260831135959-3D560617",
+      "timestamp_utc": "2026-08-31T08:29:59.020932+00:00",
+      "tag": "PT-303",
+      "quantity": 99.0,
+      "action": "REMOVE",
+      "status": "PENDING",
+      "requested_by": "V117-TEST",
+      "reason": "Negative inventory protection test"
+    },
+    {
+      "transaction_id": "SPARE-TXN-20260831143022-901A94AE",
+      "timestamp_utc": "2026-08-31T09:00:22.734889+00:00",
+      "tag": "PT-303",
+      "quantity": 3.0,
+      "action": "ADD",
+      "status": "PENDING",
+      "requested_by": "ANVI",
+      "reason": "ANVI add 3 PT-303 spares"
+    },
+    {
+      "transaction_id": "SPARE-TXN-20260831143106-9351F00D",
+      "timestamp_utc": "2026-08-31T09:01:06.889578+00:00",
+      "tag": "PT-303",
+      "quantity": 3.0,
+      "action": "ADD",
+      "status": "CONFIRMED",
+      "requested_by": "ANVI",
+      "reason": "ANVI add 3 PT-303 spares",
+      "confirmed_at_utc": "2026-08-31T09:02:29.059975+00:00",
+      "confirmed_by": "USER"
+    }
+  ]
+}

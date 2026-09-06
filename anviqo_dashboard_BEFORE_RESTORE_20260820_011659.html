@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ANVIQO — Plant Intelligence Command Centre</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:#07111f;color:#e8f0f7}
+button,input{font:inherit}
+.app{display:flex;min-height:100vh}
+.sidebar{width:245px;background:#091522;border-right:1px solid #1d3044;padding:22px 15px;position:fixed;top:0;bottom:0}
+.logo{font-size:25px;font-weight:800;letter-spacing:2px}
+.logo span{color:#31d3a5}
+.sub{font-size:11px;color:#7890a5;margin-top:4px}
+.nav{margin-top:28px}
+.nav button{width:100%;padding:12px 13px;margin:3px 0;background:transparent;border:0;border-radius:9px;color:#91a6b8;text-align:left;cursor:pointer}
+.nav button:hover,.nav button.active{background:#10263a;color:#fff}
+.main{margin-left:245px;width:calc(100% - 245px);padding:25px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.title{font-size:27px;font-weight:750}
+.badge{padding:7px 11px;border-radius:20px;background:#10352e;color:#50e1b5;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{background:#0c1b2b;border:1px solid #1b3043;border-radius:14px;padding:18px}
+.label{font-size:11px;color:#7890a5;text-transform:uppercase;letter-spacing:1px}
+.value{font-size:30px;font-weight:750;margin-top:8px}
+.small{font-size:12px;color:#8197a9;margin-top:5px}
+.green{color:#45dfb1}.yellow{color:#f0c45a}.red{color:#ff6e72}
+.section{margin-top:18px}
+.section-title{font-size:16px;font-weight:700;margin-bottom:10px}
+.two{display:grid;grid-template-columns:1.35fr 1fr;gap:15px}
+.chat{height:440px;display:flex;flex-direction:column}
+.messages{flex:1;overflow:auto;padding:4px}
+.msg{padding:11px 13px;border-radius:10px;margin:7px 0;max-width:90%;font-size:13px;line-height:1.5}
+.user{margin-left:auto;background:#123b55}
+.anvi{background:#10283a;border:1px solid #1e4055}
+.chatbar{display:flex;gap:8px;margin-top:10px}
+.chatbar input{flex:1;background:#071521;border:1px solid #284054;border-radius:9px;padding:12px;color:white;outline:none}
+.chatbar button{border:0;border-radius:9px;padding:0 15px;background:#1d8e78;color:white;cursor:pointer}
+.list{max-height:440px;overflow:auto}
+.row{display:flex;justify-content:space-between;gap:15px;padding:13px 0;border-bottom:1px solid #172b3c;font-size:13px}
+.row:last-child{border-bottom:0}
+.statusdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px;background:#45dfb1}
+.footer{margin-top:18px;color:#62788a;font-size:11px;text-align:center}
+@media(max-width:900px){
+.sidebar{width:72px;padding:15px 8px}.logo{font-size:16px}.sub,.nav span{display:none}
+.main{margin-left:72px;width:calc(100% - 72px);padding:15px}
+.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}
+}
+@media(max-width:520px){.grid{grid-template-columns:1fr}.title{font-size:21px}}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<aside class="sidebar">
+  <div class="logo">ANVI<span>QO</span></div>
+  <div class="sub">PLANT INTELLIGENCE</div>
+
+  <div class="nav">
+    <button class="active" onclick="show('overview')">◉ <span>Command Centre</span></button>
+    <button onclick="askPreset('Show me the current plant health')">♥ <span>Plant Health</span></button>
+    <button onclick="askPreset('Show me the critical alarms')">⚠ <span>Live Alarms</span></button>
+    <button onclick="askPreset('Show me recent plant events')">◷ <span>Events Timeline</span></button>
+    <button onclick="askPreset('Give me equipment intelligence')">▣ <span>Equipment Intelligence</span></button>
+    <button onclick="askPreset('Give me maintenance intelligence')">⚙ <span>Maintenance</span></button>
+    <button onclick="askPreset('Give me management decision intelligence')">◆ <span>Management</span></button>
+    <button onclick="focusChat()">✦ <span>Ask ANVI</span></button>
+  </div>
+
+  <div style="position:absolute;bottom:20px;font-size:11px;color:#60778a">
+    V5 FROZEN INTELLIGENCE<br>
+    READ-ONLY • HUMAN DECISION
+  </div>
+</aside>
+
+<main class="main">
+
+<div class="top">
+  <div>
+    <div class="title">Plant Intelligence Command Centre</div>
+    <div class="small">ANVI — your conversational intelligence layer for the industrial plant</div>
+  </div>
+  <div class="badge">● ANVI ONLINE</div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="label">Plant Health</div>
+    <div class="value green" id="health">--</div>
+    <div class="small">Demo intelligence stream</div>
+  </div>
+  <div class="card">
+    <div class="label">PCI I/O</div>
+    <div class="value" id="total">1,064</div>
+    <div class="small" id="ioState">Verified reference database</div>
+  </div>
+  <div class="card">
+    <div class="label">Critical</div>
+    <div class="value red" id="critical">--</div>
+    <div class="small">Requires human review</div>
+  </div>
+  <div class="card">
+    <div class="label">Active Events</div>
+    <div class="value yellow" id="events">--</div>
+    <div class="small">Current simulation state</div>
+  </div>
+</div>
+
+<div class="section two">
+
+<div class="card chat" id="chatPanel">
+  <div class="section-title">✦ Ask ANVI</div>
+
+  <div class="messages" id="messages">
+    <div class="msg anvi">
+      <b>ANVI</b><br>
+      Good evening. I am ready to help you investigate the plant.
+      Ask me about instruments, PLC/I/O, equipment, events, maintenance,
+      plant health, shift intelligence or management decisions.
+    </div>
+  </div>
+
+  <div class="chatbar">
+    <input id="question" placeholder="Ask ANVI anything about the plant..."
+           onkeydown="if(event.key==='Enter')send()">
+    <button onclick="voice()">🎙</button>
+    <button onclick="send()">ASK</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-title">Live Plant Intelligence</div>
+  <div class="list" id="liveList">
+    <div class="row"><span>Loading PCI intelligence...</span><span>...</span></div>
+  </div>
+</div>
+
+</div>
+
+<div class="section">
+<div class="card">
+<div class="section-title">What ANVI Connects</div>
+<div class="grid">
+  <div class="card"><b>Instrumentation</b><div class="small">Verified PCI identity, I/O, PLC address, panel and TB evidence.</div></div>
+  <div class="card"><b>Equipment</b><div class="small">Digital identity, health, relationships and event intelligence.</div></div>
+  <div class="card"><b>Maintenance</b><div class="small">Maintenance evidence, actions, learning and decision support.</div></div>
+  <div class="card"><b>Management</b><div class="small">Plant-level intelligence translated into decision support.</div></div>
+</div>
+</div>
+</div>
+
+<div class="footer">
+ANVIQO • Think • Predict • Protect • Read-only intelligence • No PLC/SCADA control
+</div>
+
+</main>
+</div>
+
+<script>
+const messages=document.getElementById("messages");
+
+function addMessage(text,who){
+  const d=document.createElement("div");
+  d.className="msg "+who;
+  d.innerHTML=who==="anvi" ? "<b>ANVI</b><br>"+escapeHtml(text).replace(/\n/g,"<br>") : escapeHtml(text);
+  messages.appendChild(d);
+  messages.scrollTop=messages.scrollHeight;
+}
+
+function escapeHtml(x){
+ return String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+
+async function send(){
+ const input=document.getElementById("question");
+ const q=input.value.trim();
+ if(!q)return;
+ input.value="";
+ addMessage(q,"user");
+ addMessage("Thinking through verified plant intelligence...","anvi");
+
+ try{
+   const r=await fetch("/api/ask",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({question:q})
+   });
+   const data=await r.json();
+   messages.lastChild.remove();
+   addMessage(data.answer || data.message || "ANVI returned no answer.", "anvi");
+   if(data.answer) speak(data.answer);
+ }catch(e){
+   messages.lastChild.remove();
+   addMessage("ANVI connection error: "+e.message,"anvi");
+ }
+}
+
+function askPreset(q){
+ document.getElementById("question").value=q;
+ focusChat();
+ send();
+}
+
+function focusChat(){
+ document.getElementById("chatPanel").scrollIntoView({behavior:"smooth"});
+ document.getElementById("question").focus();
+}
+
+function speak(text){
+ if("speechSynthesis" in window){
+   speechSynthesis.cancel();
+   const u=new SpeechSynthesisUtterance(text);
+   u.rate=.95;
+   speechSynthesis.speak(u);
+ }
+}
+
+function voice(){
+ if(!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)){
+   alert("Browser speech recognition is not available.");
+   return;
+ }
+ const R=window.SpeechRecognition||window.webkitSpeechRecognition;
+ const r=new R();
+ r.lang="en-IN";
+ r.interimResults=false;
+ r.onresult=e=>{
+   document.getElementById("question").value=e.results[0][0].transcript;
+   send();
+ };
+ r.start();
+}
+
+async function loadLive(){
+ try{
+   const r=await fetch("/api/pci/live");
+   const d=await r.json();
+
+   document.getElementById("health").textContent=
+     d.plant_health_score ?? "--";
+   document.getElementById("total").textContent=
+     d.total_io ?? d.record_count ?? "1,064";
+   document.getElementById("critical").textContent=
+     d.critical ?? d.critical_count ?? "--";
+   document.getElementById("events").textContent=
+     d.active_events ?? "--";
+
+   const list=document.getElementById("liveList");
+   list.innerHTML="";
+
+   [
+    ["Mode",d.mode||"SIMULATION"],
+    ["Healthy",d.healthy??"--"],
+    ["Warning",d.warning??"--"],
+    ["Critical",d.critical??d.critical_count??"--"],
+    ["Changed",d.changed??"--"],
+    ["Active Events",d.active_events??"--"]
+   ].forEach(x=>{
+     const row=document.createElement("div");
+     row.className="row";
+     row.innerHTML="<span><i class='statusdot'></i>"+escapeHtml(x[0])+
+       "</span><b>"+escapeHtml(x[1])+"</b>";
+     list.appendChild(row);
+   });
+ }catch(e){
+   document.getElementById("liveList").innerHTML=
+     "<div class='row'><span>Live intelligence unavailable</span></div>";
+ }
+}
+
+loadLive();
+setInterval(loadLive,15000);
+</script>
+</body>
+</html>
