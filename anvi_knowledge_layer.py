@@ -1,4 +1,5 @@
 from pci_universal_resolver import resolve as _universal_pci_resolve
+from anvi_registration import answer_registration, registration_answer_text
 """
 ANVIQO KNOWLEDGE LAYER
 Conversational front door to the existing V5 intelligence stack.
@@ -4305,6 +4306,13 @@ def _anviqo_authoritative_core(question):
 # ============================================================
 
 def ask_anvi(question, *args, **kwargs):
+    # ANVIQO_SMART_REGISTRATION_ROUTE_V1
+    try:
+        _registration_result = answer_registration(question)
+        if _registration_result is not None:
+            return registration_answer_text(_registration_result)
+    except Exception:
+        pass
     """
     ANVIQO authoritative conversational entrypoint.
 

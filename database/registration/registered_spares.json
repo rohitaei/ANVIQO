@@ -1,0 +1,21 @@
+[
+  {
+    "spare_id": "REG-SP-20260907170701565",
+    "equipment_tag": "ANVI-FINAL-REG-001",
+    "description": "Schneider 24V DC power supply",
+    "category": "",
+    "manufacturer": "",
+    "model": "",
+    "quantity": 2,
+    "location": "",
+    "minimum_quantity": null,
+    "critical_quantity": null,
+    "source": "CONVERSATIONAL_REGISTRATION",
+    "registered_at": "2026-09-07T17:07:01",
+    "verification_status": "PENDING_VERIFICATION",
+    "status": "PENDING_VERIFICATION",
+    "PLC_WRITE": false,
+    "SCADA_CONTROL": false,
+    "HUMAN_DECISION_REQUIRED": true
+  }
+]
