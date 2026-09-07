@@ -142,17 +142,18 @@ def _extract_finding(text):
 
 def _extract_action(text):
     patterns = [
-        r"\bI\s+(?:then\s+)?(.+?)(?=\.?\s+(?:After that|However|But|Then|Finally)\b|$)",
-        r"\b(?:action|work done|rectification)\s*[:=-]\s*(.+?)(?:\n|$)",
+        r"\b(?:action|work done|rectification)\s*[:=-]\s*(.+?)(?:\.|\n|$)",
+        r"\b(?:I\s+)?(?:then\s+)?(changed|replaced|tightened|loosened|cleaned|adjusted|repaired|reset|restarted|restored|calibrated|tested|checked|inspected|power[- ]cycled)\s+(?:the\s+)?(.+?)(?=\.|\n|$)",
     ]
-    values = []
-    for p in patterns:
-        for m in re.finditer(p, text, re.I | re.S):
-            value = _clean(m.group(1))
-            if value and len(value) > 3:
-                values.append(value)
-    return "; ".join(values[:5])
 
+    values = []
+    for pattern in patterns:
+        for m in re.finditer(pattern, text, re.I | re.S):
+            value = _clean(m.group(0))
+            if value and len(value) > 3 and value not in values:
+                values.append(value)
+
+    return "; ".join(values[:5])
 
 def _extract_outcome(text):
     patterns = [
@@ -170,29 +171,47 @@ def _extract_outcome(text):
 def _extract_recovery(text):
     low = text.lower()
 
-    if any(x in low for x in [
-        "now ok",
-        "now normal",
-        "returned to normal",
-        "back to normal",
-        "healthy signal restored",
-        "working normally",
-        "working normal",
-    ]):
-        return "Recovered"
-
-    if any(x in low for x in [
+    # Final unresolved/current-condition state has priority.
+    unresolved_patterns = [
+        "blinking intermittently",
         "still abnormal",
         "still faulty",
         "still not working",
         "still fluctuating",
+        "issue remains",
+        "problem remains",
+        "not fully recovered",
         "intermittent",
-        "blinking intermittently",
-    ]):
-        return "Not fully recovered / requires verification"
+    ]
+
+    for phrase in unresolved_patterns:
+        if phrase in low:
+            return "Not fully recovered / requires verification"
+
+    recovered_patterns = [
+        "now ok",
+        "now normal",
+        "now working",
+        "working again",
+        "started working",
+        "back to normal",
+        "returned to normal",
+        "returned to service",
+        "healthy signal restored",
+        "working normally",
+        "working normal",
+        "signal is healthy",
+        "signal healthy",
+        "signal returned healthy",
+        "everything is normal",
+        "everything returned to normal",
+    ]
+
+    for phrase in recovered_patterns:
+        if phrase in low:
+            return "Recovered"
 
     return ""
-
 
 def _extract_spare(text):
     m = re.search(
