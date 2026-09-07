@@ -1,5 +1,5 @@
 from pci_universal_resolver import resolve as _universal_pci_resolve
-from anvi_registration import answer_registration, registration_answer_text
+from anvi_registration import answer_registration, registration_answer_text, answer_registered_query
 """
 ANVIQO KNOWLEDGE LAYER
 Conversational front door to the existing V5 intelligence stack.
@@ -4313,6 +4313,14 @@ def ask_anvi(question, *args, **kwargs):
             return registration_answer_text(_registration_result)
     except Exception:
         pass
+
+    # ANVIQO_REGISTERED_SPARE_RETRIEVAL_V1
+    try:
+        _registered_query_result = answer_registered_query(question)
+        if _registered_query_result is not None:
+            return _registered_query_result
+    except Exception:
+        pass
     """
     ANVIQO authoritative conversational entrypoint.
 
@@ -4325,6 +4333,20 @@ def ask_anvi(question, *args, **kwargs):
       - SCADA control = False
       - automatic PLC/SCADA execution = False
     """
+
+    # ================================================================
+    # ANVIQO_SMART_REGISTERED_SPARE_QUERY_ROUTE_V1
+    # Read registered conversational equipment/spares before legacy
+    # PCI/Critical Spare routing. This is READ ONLY.
+    # ================================================================
+    try:
+        _registered_query_result = answer_registered_query(question)
+        if _registered_query_result is not None:
+            return _registered_query_result
+    except Exception as _registered_query_error:
+        # Never break the existing intelligence stack because of the
+        # registration database. Fall through safely.
+        pass
 
     # ================================================================
     # ANVIQO_V16_SPARE_MUTATION_GATE_V1

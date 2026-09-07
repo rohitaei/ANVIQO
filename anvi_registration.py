@@ -8,7 +8,17 @@ import re
 from datetime import datetime
 
 BASE = Path(__file__).resolve().parent
-REG_DB = BASE / "database" / "registration"
+
+# ANVIQO OPERATIONAL DATA STORAGE V1
+# Render Persistent Disk: /var/data
+# Local development fallback: repository/database
+_RENDER_DATA = Path("/var/data")
+if _RENDER_DATA.exists() and _RENDER_DATA.is_dir() and _RENDER_DATA.is_writable():
+    DATA_ROOT = _RENDER_DATA
+else:
+    DATA_ROOT = BASE / "database"
+
+REG_DB = DATA_ROOT / "registration"
 SPARE_DB = REG_DB / "registered_spares.json"
 AUDIT_DB = REG_DB / "registration_audit.json"
 
@@ -465,6 +475,140 @@ def register_spare(question):
             f"Status: PENDING_VERIFICATION. "
             f"No PLC/SCADA action was performed."
         )
+    }
+
+
+def answer_registered_query(question):
+    """
+    Read-only retrieval of conversationally registered equipment/spares.
+
+    This route exists separately from the legacy PCI Critical Spare engine.
+    Registered records remain PENDING_VERIFICATION and never authorize
+    PLC/SCADA action.
+    """
+    q = _clean(question)
+    ql = q.lower()
+
+    spare_intent = any(term in ql for term in (
+        "spare", "spares", "spare available",
+        "available spare", "available spares",
+        "do we have a spare", "do we have spares",
+        "show me spares", "spare for"
+    ))
+
+    if not spare_intent:
+        return None
+
+    # Resolve an explicit equipment/tag reference.
+    candidates = []
+
+    m = re.search(
+        r"\b(?:spare|spares)\s+for\s+([A-Za-z0-9][A-Za-z0-9._/-]*)",
+        q,
+        re.I
+    )
+    if m:
+        candidates.append(_clean(m.group(1)))
+
+    m = re.search(
+        r"\b(?:equipment|tag)\s+([A-Za-z0-9][A-Za-z0-9._/-]*)",
+        q,
+        re.I
+    )
+    if m:
+        candidates.append(_clean(m.group(1)))
+
+    # Also recognise "Do we have spares for MT-401?"
+    m = re.search(
+        r"\b(?:for|of)\s+([A-Za-z][A-Za-z0-9._/-]*)\s*\??$",
+        q,
+        re.I
+    )
+    if m:
+        candidates.append(_clean(m.group(1)))
+
+    candidates = [x for x in candidates if x]
+    if not candidates:
+        return None
+
+    tag = candidates[0]
+    tag_norm = _norm(tag)
+
+    rows = _load(SPARE_DB, [])
+    if not isinstance(rows, list):
+        rows = []
+
+    matches = [
+        row for row in rows
+        if isinstance(row, dict)
+        and _norm(row.get("equipment_tag")) == tag_norm
+    ]
+
+    # Only take over routing when this is actually a registered equipment
+    # or registered spare. Otherwise the existing PCI/Critical Spare engine
+    # remains authoritative.
+    equipment = _equipment_db_lookup(tag)
+
+    if not matches and not equipment:
+        return None
+
+    if matches:
+        lines = [
+            f"ANVI found {len(matches)} registered spare record(s) for {tag}.",
+            "Source: ANVI Conversational Registration.",
+        ]
+
+        for row in matches:
+            lines.append(
+                f"{row.get('spare_id', 'UNNAMED')} — "
+                f"{row.get('description', 'Spare item')}; "
+                f"Quantity: {row.get('quantity', 0)}; "
+                f"Location: {row.get('location') or 'not recorded'}; "
+                f"Status: {row.get('verification_status') or row.get('status') or 'PENDING_VERIFICATION'}."
+            )
+
+        lines.append(
+            "These registered spare records are PENDING_VERIFICATION. "
+            "They are historical/registration evidence only and do not authorize "
+            "PLC/SCADA action. Human verification remains required."
+        )
+
+        return {
+            "ok": True,
+            "domain": "spare_registration",
+            "registered_spare_query": True,
+            "equipment_tag": tag,
+            "records": matches,
+            "count": len(matches),
+            "answer": "\n".join(lines),
+            "read_only": True,
+            "PLC_WRITE": False,
+            "SCADA_CONTROL": False,
+            "human_decision_required": True,
+        }
+
+    # Equipment exists as a conversational registration, but no registered
+    # spare is currently associated with it.
+    return {
+        "ok": True,
+        "domain": "spare_registration",
+        "registered_spare_query": True,
+        "equipment_tag": tag,
+        "records": [],
+        "count": 0,
+        "answer": (
+            f"ANVI found registered equipment {tag}, but no "
+            f"conversationally registered spare is currently associated with {tag}. "
+            f"Status of the equipment registration: "
+            f"{equipment.get('verification_status', 'PENDING_VERIFICATION')}. "
+            "This does not prove that no physical/store spare exists; "
+            "the registered-spare database contains no matching record. "
+            "No PLC/SCADA action was performed."
+        ),
+        "read_only": True,
+        "PLC_WRITE": False,
+        "SCADA_CONTROL": False,
+        "human_decision_required": True,
     }
 
 def answer_registration(question):
