@@ -3502,7 +3502,49 @@ def _anviqo_authoritative_core(question):
                 pass
 
         # ============================================================
+        # CRITICAL SPARES — AUTHORITATIVE ROUTE
+        # ============================================================
+
+        spare_intent_terms = (
+            "spare",
+            "spares",
+            "critical spare",
+            "critical spares",
+            "inventory",
+            "in stock",
+            "stock available",
+            "available as a spare",
+            "available spare",
+            "available spares",
+            "to indent",
+            "indent",
+        )
+
+        if any(term in ql for term in spare_intent_terms):
+            try:
+                import pci_spares as ps
+                spare_result = ps.answer_spare_management_v16(q)
+
+                if isinstance(spare_result, dict):
+                    return spare_result
+
+            except Exception as exc:
+                return {
+                    "answer": "Critical Spare system error. Inventory was not changed.",
+                    "domain": "critical_spares",
+                    "error": str(exc),
+                    "executed": False,
+                    "inventory_mutation": False,
+                    "plc_write": False,
+                    "scada_control": False,
+                    "human_decision_required": True,
+                }
+
+        # ============================================================
         # VERIFIED PCI TAG — RESOLVE CONTEXT, DO NOT RETURN YET
+        # ============================================================
+
+
         # ============================================================
         # A verified PCI tag may also be part of a troubleshooting
         # question. Resolve the record first, but allow the authoritative
