@@ -227,8 +227,7 @@ input,select{
   <div class="nav-title">OPERATIONS</div>
   <button data-page="shift">⇄ Shift Report</button>
   <button data-page="management">▣ Management Decision</button>
-  <button data-page="fieldreport">▤ Field Reports</button>
-<button data-page="reports">▤ Reports</button>
+  <button data-page="reports">▤ Reports</button>
 
   <div class="nav-title">ANVI</div>
   <button data-page="ask">✦ Ask ANVI</button>
@@ -504,41 +503,6 @@ input,select{
    </button>
   </div>
  </div>
-</div>
-
-
-<!-- ANVI FIELD REPORT -->
-<div class="page" id="page-fieldreport">
-  <div class="card">
-    <div class="card-head">
-      <b>FIELD REPORT INTELLIGENCE</b>
-      <span>PLANT MEMORY</span>
-    </div>
-    <div class="card-body">
-      <p class="muted">
-        Paste a technician report or upload TXT, PDF, DOCX or XLSX.
-        ANVI extracts equipment, symptoms, checks, findings, actions
-        and outcome without inventing root cause.
-      </p>
-
-      <textarea id="fieldReportText"
-        style="width:100%;min-height:180px;padding:12px;
-        background:#07111f;color:#eaf2f8;border:1px solid #29415b;
-        border-radius:7px;"
-        placeholder="Paste technician field report here..."></textarea>
-
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
-        <input id="fieldReportFile" type="file"
-          accept=".txt,.log,.csv,.pdf,.docx,.xlsx,.xlsm">
-
-        <button class="btn primary" onclick="submitFieldReport()">
-          Save Field Report
-        </button>
-      </div>
-
-      <div id="fieldReportResult" style="margin-top:16px;"></div>
-    </div>
-  </div>
 </div>
 
 <div class="page" id="page-ask">
@@ -1223,64 +1187,6 @@ async function searchSpares(){
         ensurePanel();
     });
 })();
-
-
-async function submitFieldReport(){
-  const text = document.getElementById('fieldReportText').value.trim();
-  const fileInput = document.getElementById('fieldReportFile');
-  const result = document.getElementById('fieldReportResult');
-
-  result.innerHTML = '<div class="muted">Processing field report...</div>';
-
-  const form = new FormData();
-
-  if (fileInput.files && fileInput.files.length > 0) {
-    form.append('file', fileInput.files[0]);
-  } else {
-    form.append('text', text);
-  }
-
-  if (!text && (!fileInput.files || fileInput.files.length === 0)) {
-    result.innerHTML =
-      '<div class="urgent">Enter report text or select a file.</div>';
-    return;
-  }
-
-  try {
-    const response = await fetch('/api/field_report', {
-      method: 'POST',
-      body: form
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Field report processing failed');
-    }
-
-    const p = data.parsed_report || {};
-
-    result.innerHTML =
-      '<div class="card">' +
-      '<b>FIELD REPORT CAPTURED</b>' +
-      '<p><b>Status:</b> ' + (data.status || '') + '</p>' +
-      '<p><b>Equipment:</b> ' + (p.equipment || '') + '</p>' +
-      '<p><b>Tag:</b> ' + (p.tag || '') + '</p>' +
-      '<p><b>Location:</b> ' + (p.area || '') + '</p>' +
-      '<p><b>Observation:</b> ' + (p.observation || '') + '</p>' +
-      '<p><b>Finding:</b> ' + (p.finding || '') + '</p>' +
-      '<p><b>Action:</b> ' + (p.maintenance_action || '') + '</p>' +
-      '<p><b>Outcome:</b> ' + (p.outcome || '') + '</p>' +
-      '<p><b>Recovery:</b> ' + (p.recovery_status || '') + '</p>' +
-      '<p><b>Safety:</b> Read-only • Human verification required</p>' +
-      '</div>';
-
-  } catch (err) {
-    result.innerHTML =
-      '<div class="urgent">' + err.message + '</div>';
-  }
-}
-
 </script>
 
 </body>

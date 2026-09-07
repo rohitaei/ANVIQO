@@ -1,11 +1,10 @@
-import os
 from flask import Flask, jsonify, render_template_string, session, redirect, url_for, request
 from datetime import datetime
 from anvi_knowledge_layer import ask_anvi
 
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("ANVIQO_SECRET_KEY")
+app.secret_key = "anviqo-production-session-key"
 
 VERSION = "ANVIQO PRODUCT V1.0"
 

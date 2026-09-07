@@ -1295,125 +1295,27 @@ def _v14_load_spares():
 
 
 def _v14_sheet_hint(q):
-    """
-    ANVIQO V1.7 deterministic spare-family resolver.
-
-    IMPORTANT:
-    Never classify a family from an arbitrary substring such as
-    'TE' inside 'transmitter' or 'LE' inside 'available'.
-    Family aliases must be exact tokens or explicit phrases.
-    """
-    import re as _re
-
-    raw = str(q or "")
-    qn = _v14_norm(raw)
-
-    # Explicit multi-word equipment families first.
-    phrase_rules = [
-        ("FSV&PCV", [
-            r"\bfsv\b", r"\bpcv\b",
-            r"\bshut[\s-]*off\s+valve\b",
-            r"\bpneumatic\s+valve\b",
-        ]),
-        ("POS'R", [
-            r"\bpos['’]?\s*r\b",
-            r"\bpositioner\b",
-            r"\bvalve\s+positioner\b",
-        ]),
-        ("LOAD CELL", [
-            r"\bload\s+cell\b",
-            r"\bloadcell\b",
-        ]),
-        ("AIR COMPRESSOR", [
-            r"\bair\s+compressor\b",
-            r"\bcompressor\b",
-        ]),
-        ("Analyser", [
-            r"\banaly[sz]er\b",
-            r"\bgas\s+analy[sz]er\b",
-        ]),
-        ("MCV", [
-            r"\bmcv\b",
-            r"\bmotorized\s+control\s+valve\b",
-            r"\bmotorised\s+control\s+valve\b",
-            r"\bmotorized\s+valve\b",
-            r"\bmotorised\s+valve\b",
-            r"\bmotor\s+control\s+valve\b",
-        ]),
-        ("SOV", [
-            r"\bsov\b",
-            r"\bsolenoid\s+valve\b",
-            r"\bsolenoid\b",
-        ]),
-        ("FT", [
-            r"\bflow\s+transmitter\b",
-            r"\bflow\s+meter\b",
-            r"\bflowmeter\b",
-            r"\bflow\s+measurement\b",
-        ]),
-        ("PT", [
-            r"\bpressure\s+transmitter\b",
-            r"\bpressure\s+transducer\b",
-            r"\bpressure\s+measurement\b",
-        ]),
-        ("LT", [
-            r"\blevel\s+transmitter\b",
-            r"\blevel\s+measurement\b",
-            r"\blevel\s+sensor\b",
-            r"\bradar\s+level\b",
-            r"\blevel\s+switch\b",
-        ]),
-        ("RTD", [
-            r"\brtd\b",
-            r"\bthermocouple\b",
-            r"\btemperature\s+(?:sensor|transmitter|element|probe)\b",
-            r"\btemperature\b",
-        ]),
-    ]
-
-    for sheet, patterns in phrase_rules:
-        if any(_re.search(p, raw, flags=_re.I) for p in patterns):
-            return sheet
-
-    # Exact family tokens / tag prefixes only.
-    exact_rules = [
-        ("FSV&PCV", [r"\bFSV\b", r"\bPCV\b"]),
-        ("POS'R", [r"\bPOSR\b", r"\bPOS['’]R\b"]),
-        ("LOAD CELL", [r"\bLOADCELL\b", r"\bWT\b"]),
-        ("AIR COMPRESSOR", [r"\bAIRCOMPRESSOR\b"]),
-        ("Analyser", [r"\bANALYSER\b", r"\bANALYZER\b"]),
-        ("MCV", [r"\bMCV\b"]),
-        ("SOV", [r"\bSOV\b"]),
-        ("FT", [r"\bFT\b"]),
-        ("PT", [r"\bPT\b"]),
-        ("LT", [r"\bLT\b"]),
-        ("RTD", [r"\bRTD\b", r"\bTE\b"]),
-    ]
-
-    for sheet, patterns in exact_rules:
-        if any(_re.search(p, raw, flags=_re.I) for p in patterns):
-            return sheet
-
-    # Exact tag-family form, e.g. PT-303, FT-201, MCV-205.
-    m=_re.search(
-        r"(?<![A-Za-z0-9])"
-        r"(PT|FT|LT|RTD|TE|MCV|SOV|FSV|PCV|LE)"
-        r"(?:[-_ ]?[A-Za-z0-9]+)?"
-        r"(?![A-Za-z0-9])",
-        raw,
-        flags=_re.I
-    )
-    if m:
-        family=m.group(1).upper()
-        tag_map={
-            "PT":"PT","FT":"FT","LT":"LT","RTD":"RTD","TE":"RTD",
-            "MCV":"MCV","SOV":"SOV","FSV":"FSV&PCV","PCV":"FSV&PCV",
-            "LE":"LT"
-        }
-        return tag_map.get(family)
-
+    qn = _v14_norm(q)
+    aliases = {
+        "RTD": {"RTD", "THERMOCOUPLE", "TEMPERATURE", "TE"},
+        "LT": {"LT", "LEVEL", "LEVELTRANSMITTER", "RADAR", "LE"},
+        "PT": {"PT", "PRESSURE", "PRESSURETRANSMITTER"},
+        "FT": {"FT", "FLOW", "FLOWTRANSMITTER", "FLOWMETER"},
+        "MCV": {"MCV", "MOTORCONTROLVALVE", "MOTORIZEDCONTROLVALVE", "MOTORIZEDVALVE"},
+        "FSV&PCV": {"FSV", "PCV", "SHUTOFFVALVE", "PNEUMATICVALVE"},
+        "SOV": {"SOV", "SOLENOID", "SOLENOIDVALVE"},
+        "POS'R": {"POSR", "POSITIONER", "POSITIONERVALVE"},
+        "LOAD CELL": {"LOADCELL", "LOADCELLRTD", "LOADCELLPWS", "WT"},
+        "Analyser": {"ANALYSER", "ANALYZER", "GASANALYSER", "GASANALYZER"},
+        "AIR COMPRESSOR": {"AIRCOMPRESSOR", "COMPRESSOR"},
+        "Sheet1": {"GENERAL", "GENERALSPARES", "PLANTSPARES", "OTHERS"},
+    }
+    # Prefer explicit sheet token / family token over broad words.
+    for sheet, vals in aliases.items():
+        for a in vals:
+            if _v14_norm(a) and _v14_norm(a) in qn:
+                return sheet
     return None
-
 
 
 def _v14_intent(q):
@@ -1802,372 +1704,411 @@ _V16_XLSX = _v16_Path(__file__).resolve().parent / \
 _V16_AUDIT = _V16_XLSX.parent / "spare_inventory_audit.log"
 
 
+def _v16_action(q):
+    q = str(q or "").lower()
 
-# ============================================================
-# ANVIQO CRITICAL SPARES V1.8
-# Direct conversational inventory mutation.
-#
-# Contract:
-#   add 3 PT-303              -> direct Excel increase
-#   I used 1 PT-303 spare     -> direct Excel decrease
-#   use 999999 PT-303         -> blocked; never negative
-#
-# Safety:
-#   PLC WRITE       = FALSE
-#   SCADA CONTROL   = FALSE
-#   HUMAN DECISION  = REQUIRED
-# ============================================================
-
-def _v18_action(q):
-    q = str(q or "").strip().lower()
-
-    add_words = (
-        "add", "receive", "received", "increase",
-        "put", "stock in", "stock-in"
-    )
-
-    use_words = (
-        "use", "used", "consume", "consumed",
-        "issue", "issued", "remove", "decrease",
-        "withdraw", "taken"
-    )
-
-    if any(re.search(r"\b" + re.escape(w) + r"\b", q)
-           for w in add_words):
+    # ADD / RECEIVE
+    if any(x in q for x in (
+        "add", "receive", "received",
+        "increase", "put"
+    )) and "spare" in q:
         return "ADD"
 
-    if any(re.search(r"\b" + re.escape(w) + r"\b", q)
-           for w in use_words):
+    # USE / CONSUME / ISSUE / REMOVE
+    if any(x in q for x in (
+        "use", "used", "consume", "consumed",
+        "issue", "issued", "remove", "decrease"
+    )) and "spare" in q:
         return "USE"
 
     return None
 
-
-def _v18_quantity(q):
-    q = str(q or "").strip()
+def _v16_quantity(q):
+    q = str(q or "")
 
     patterns = [
-        r"\b(\d+)\s*(?:nos?|numbers?|pcs?|pieces?|qty|quantity)\b",
-        r"\b(?:add|receive|received|increase|put|use|used|consume|consumed|issue|issued|remove|decrease|withdraw|taken)\s+(\d+)\b",
-        r"\b(\d+)\s+(?:spares?|units?)\b",
+        r'\b(\d+)\s*(?:nos?|numbers?|pcs?|pieces?|qty|quantity)\b',
+        r'\b(?:add|receive|received|increase|put|use|used|consume|issue|issued|remove)\s+(\d+)\b'
     ]
 
     for pattern in patterns:
-        m = re.search(pattern, q, re.I)
+        m = _v16_re.search(pattern, q, _v16_re.I)
         if m:
-            value = int(m.group(1))
-            if value > 0:
-                return value
+            n = int(m.group(1))
+            if n > 0:
+                return n
 
     return None
 
 
-def _v18_identifier(q):
-    q = str(q or "").strip().upper()
+def _v16_identifier(q):
+    q = str(q or "")
 
-    # Exact engineering tag such as PT-303, MCV-205, FT-201.
-    for token in re.findall(r"[A-Z][A-Z0-9_]*[-_]\d+", q):
-        return token.replace("_", "-")
+    # Exact equipment tags first: PT-303, MCV-205 etc.
+    m = _v16_re.search(
+        r'\b([A-Z]{2,8}-\d{2,5})\b',
+        q,
+        _v16_re.I
+    )
 
-    # Exact PCI inventory item.
-    pos = q.find("PCI_")
-    if pos >= 0:
-        value = q[pos:]
+    if m:
+        return m.group(1).upper()
 
-        for ending in (
-            " SPARES", " SPARE", " PIECES",
-            " PCS", " NOS", " NUMBERS"
-        ):
-            idx = value.find(ending)
-            if idx >= 0:
-                value = value[:idx]
-
-        value = " ".join(value.split()).strip(
-            ".,;:()[]{}"
-        )
-
-        if value:
-            return value
+    # Untagged category commands such as "receive 5 SOV spares"
+    for family in (
+        "SOV", "FSV", "PCV", "FCV", "MCV",
+        "PT", "LT", "FT", "RTD"
+    ):
+        if family in q.upper():
+            return family
 
     return None
 
 
-def _v18_find_exact(identifier):
+def _v16_find(identifier):
     rows = _v14_load_spares()
-
-    ident = str(identifier or "").upper()
-    ident_compact = ident.replace("-", "").replace("_", "")
+    ident = str(identifier).upper().replace("-", "")
 
     matches = []
 
     for r in rows:
-        tag = str(r.get("tag") or "").strip().upper()
-        instrument = str(r.get("instrument") or "").strip().upper()
+        tag = str(r.get("tag") or "").upper().replace("-", "")
+        instrument = str(r.get("instrument") or "").upper().replace("-", "")
 
-        tag_compact = tag.replace("-", "").replace("_", "")
-        instrument_compact = instrument.replace("-", "").replace("_", "")
-
-        if (
-            ident == tag
-            or ident == instrument
-            or ident_compact == tag_compact
-            or ident_compact == instrument_compact
-        ):
+        if ident == tag or ident == instrument:
             matches.append(r)
 
     return matches
 
 
-def execute_spare_mutation_v18(question):
-    """
-    V1.8 direct conversational inventory mutation.
+def execute_spare_mutation(question, confirmed=False):
 
-    Ordinary add/use commands execute immediately after:
-      1. action validation
-      2. quantity validation
-      3. exact identifier resolution
-      4. unique-record validation
-      5. negative-stock safety validation
-      6. Excel write
-      7. Excel re-read verification
-      8. audit logging
+    # ============================================================
+    # HARD SAFETY GATE
+    # ============================================================
+    if not confirmed:
+        return {
+            "ok": False,
+            "executed": False,
+            "human_decision_required": True,
+            "plc_write": False,
+            "scada_control": False,
+            "message": "Confirmation required. No inventory changed."
+        }
 
-    No PLC or SCADA operation is possible.
-    """
-
-    action = _v18_action(question)
-    quantity = _v18_quantity(question)
-    identifier = _v18_identifier(question)
-
-    base = {
-        "ok": False,
-        "executed": False,
-        "human_decision_required": True,
-        "plc_write": False,
-        "scada_control": False,
-        "read_only": False,
-        "inventory_mutation": True,
-        "version": "V1.8",
-    }
+    action = _v16_action(question)
+    quantity = _v16_quantity(question)
+    identifier = _v16_identifier(question)
 
     if not action:
         return {
-            **base,
-            "inventory_mutation": False,
-            "error": "No supported spare inventory action detected."
+            "ok": False,
+            "executed": False,
+            "error": "No supported spare action detected."
         }
 
-    if quantity is None or quantity <= 0:
+    if not quantity or quantity <= 0:
         return {
-            **base,
-            "action": action,
-            "error": "A positive quantity is required."
+            "ok": False,
+            "executed": False,
+            "error": "Positive quantity required."
         }
 
     if not identifier:
         return {
-            **base,
-            "action": action,
-            "quantity": quantity,
-            "error": "Exact spare tag/item identifier required."
+            "ok": False,
+            "executed": False,
+            "error": "Spare tag/item identifier required."
         }
 
-    matches = _v18_find_exact(identifier)
+    # ============================================================
+    # ONLY EXACT TAG MATCHES MAY BE MUTATED
+    # ============================================================
+    rows = _v14_load_spares()
+
+    identifier_norm = str(identifier).strip().upper()
+
+    matches = []
+
+    for r in rows:
+        tag = str(r.get("tag") or "").strip().upper()
+
+        if tag == identifier_norm:
+            matches.append(r)
 
     if len(matches) == 0:
         return {
-            **base,
-            "action": action,
-            "quantity": quantity,
-            "identifier": identifier,
-            "error": f"No exact critical spare record found for {identifier}."
+            "ok": False,
+            "executed": False,
+            "error": f"No exact spare tag found for {identifier}."
         }
 
     if len(matches) > 1:
         return {
-            **base,
-            "action": action,
-            "quantity": quantity,
-            "identifier": identifier,
+            "ok": False,
+            "executed": False,
+            "ambiguous": True,
             "error": (
-                f"{identifier} matches {len(matches)} inventory records. "
-                "Inventory was not changed; exact unique record required."
-            ),
-            "matches": [
-                {
-                    "sheet": r.get("sheet"),
-                    "row": r.get("row"),
-                    "tag": r.get("tag"),
-                    "instrument": r.get("instrument"),
-                    "qty_available": r.get("qty_available"),
-                }
-                for r in matches
-            ],
+                f"Multiple exact records found for {identifier}. "
+                "No inventory changed."
+            )
         }
 
-    record = matches[0]
+    r = matches[0]
 
-    before = int(record.get("qty_available") or 0)
+    sheet_name = r.get("sheet")
+    row_number = int(r.get("row"))
 
+    before = float(r.get("qty_available") or 0)
+
+    # ============================================================
+    # USE CANNOT CREATE NEGATIVE INVENTORY
+    # ============================================================
     if action == "USE":
-        after = before - quantity
 
-        if after < 0:
+        if quantity > before:
             return {
-                **base,
-                "action": action,
-                "quantity": quantity,
-                "identifier": identifier,
-                "before": before,
-                "after": before,
-                "blocked": True,
+                "ok": False,
                 "executed": False,
                 "error": (
                     f"Insufficient stock for {identifier}. "
-                    f"Available: {before}; requested: {quantity}. "
-                    "Inventory unchanged."
-                ),
+                    f"Available: {before:g}; Requested: {quantity}. "
+                    "No inventory changed."
+                )
             }
+
+        after = before - quantity
 
     else:
         after = before + quantity
 
-    # Resolve the actual worksheet/row/column from the authoritative record.
-    sheet_name = record.get("sheet")
-    row_number = int(record.get("row"))
+    # ============================================================
+    # OPEN EXCEL FOR WRITE
+    # ============================================================
+    wb = _v16_openpyxl.load_workbook(_V16_XLSX)
 
-    # The existing V1.4 loader records the Excel row and raw fields.
-    # Column I is the authoritative Qty Available column in the PCI spare workbook.
-    available_col = 9
-
-    from openpyxl import load_workbook
-
-    wb = load_workbook(_V16_XLSX)
     if sheet_name not in wb.sheetnames:
         wb.close()
         return {
-            **base,
-            "action": action,
-            "quantity": quantity,
-            "identifier": identifier,
-            "error": f"Inventory worksheet not found: {sheet_name}"
+            "ok": False,
+            "executed": False,
+            "error": f"Excel sheet '{sheet_name}' not found."
         }
 
     ws = wb[sheet_name]
 
-    excel_before = ws.cell(row=row_number, column=available_col).value
+    # ============================================================
+    # LOCATE HEADER ROW AND REQUIRED COLUMNS
+    # ============================================================
+    tag_col = None
+    available_col = None
+
+    header_row = None
+
+    for rr in range(1, min(ws.max_row, 20) + 1):
+
+        headers = {}
+
+        for cc in range(1, ws.max_column + 1):
+
+            value = ws.cell(rr, cc).value
+
+            if value is not None:
+                text = str(value).strip().lower()
+                headers[text] = cc
+
+        tag_candidates = (
+            "tag no",
+            "tag no.",
+            "tag",
+            "tag number"
+        )
+
+        available_candidates = (
+            "qty avbl",
+            "qty available",
+            "available",
+            "qty avl",
+            "qty avail"
+        )
+
+        found_tag = next(
+            (headers[x] for x in tag_candidates if x in headers),
+            None
+        )
+
+        found_available = next(
+            (headers[x] for x in available_candidates if x in headers),
+            None
+        )
+
+        if found_tag and found_available:
+            header_row = rr
+            tag_col = found_tag
+            available_col = found_available
+            break
+
+    if not header_row or not tag_col or not available_col:
+        wb.close()
+
+        return {
+            "ok": False,
+            "executed": False,
+            "error": (
+                "Could not safely identify TAG NO and Qty Available "
+                "columns. No inventory changed."
+            )
+        }
+
+    # ============================================================
+    # RE-VERIFY THE TAG IN THE ACTUAL EXCEL ROW
+    # ============================================================
+    excel_tag = ws.cell(row_number, tag_col).value
+
+    if str(excel_tag or "").strip().upper() != identifier_norm:
+        wb.close()
+
+        return {
+            "ok": False,
+            "executed": False,
+            "error": (
+                "Excel tag verification failed. "
+                "No inventory changed."
+            )
+        }
+
+    # ============================================================
+    # RE-READ ACTUAL EXCEL STOCK BEFORE WRITE
+    # ============================================================
+    excel_before_raw = ws.cell(row_number, available_col).value
 
     try:
-        excel_before = int(excel_before or 0)
+        excel_before = float(excel_before_raw or 0)
     except Exception:
         wb.close()
+
         return {
-            **base,
-            "action": action,
-            "quantity": quantity,
-            "identifier": identifier,
+            "ok": False,
+            "executed": False,
             "error": (
-                f"Qty Available at {sheet_name}!I{row_number} "
-                "is not numeric. Inventory unchanged."
-            ),
+                "Excel available-quantity cell is not numeric. "
+                "No inventory changed."
+            )
         }
 
-    # Protect against stale parsed data.
+    # Prevent stale-read mutation.
     if excel_before != before:
         wb.close()
+
         return {
-            **base,
-            "action": action,
-            "quantity": quantity,
-            "identifier": identifier,
+            "ok": False,
+            "executed": False,
             "error": (
-                "Inventory changed since lookup. "
-                "No mutation performed; re-read required."
-            ),
-            "before_lookup": before,
-            "current_excel": excel_before,
+                f"Stock changed since verification "
+                f"({before:g} -> {excel_before:g}). "
+                "No inventory changed."
+            )
         }
 
-    excel_after = (
-        excel_before + quantity
-        if action == "ADD"
-        else excel_before - quantity
-    )
+    # ============================================================
+    # FINAL WRITE — ONLY Qty Available CELL
+    # ============================================================
+    ws.cell(
+        row_number,
+        available_col
+    ).value = int(after) if float(after).is_integer() else after
 
-    if excel_after < 0:
-        wb.close()
-        return {
-            **base,
-            "action": action,
-            "quantity": quantity,
-            "identifier": identifier,
-            "before": excel_before,
-            "after": excel_before,
-            "blocked": True,
-            "error": "Negative inventory prevented. Excel unchanged."
-        }
-
-    ws.cell(row=row_number, column=available_col).value = excel_after
     wb.save(_V16_XLSX)
     wb.close()
 
-    # Independent verification after write.
-    verify_wb = load_workbook(_V16_XLSX, read_only=True, data_only=True)
-    verify_ws = verify_wb[sheet_name]
-    verified_after = verify_ws.cell(
-        row=row_number,
-        column=available_col
-    ).value
-    verify_wb.close()
+    # ============================================================
+    # DISK VERIFICATION
+    # ============================================================
+    check = _v16_openpyxl.load_workbook(
+        _V16_XLSX,
+        data_only=True,
+        read_only=True
+    )
+
+    cws = check[sheet_name]
+
+    verified_tag = cws.cell(row_number, tag_col).value
+    verified_value = cws.cell(row_number, available_col).value
+
+    check.close()
 
     try:
-        verified_after = int(verified_after or 0)
+        verified_number = float(verified_value)
     except Exception:
-        verified_after = None
+        return {
+            "ok": False,
+            "executed": False,
+            "error": "Post-write Excel verification failed."
+        }
 
-    if verified_after != excel_after:
-        raise RuntimeError(
-            f"Excel verification failed for {identifier}: "
-            f"expected {excel_after}, found {verified_after}"
-        )
+    if (
+        str(verified_tag or "").strip().upper() != identifier_norm
+        or verified_number != float(after)
+    ):
+        return {
+            "ok": False,
+            "executed": False,
+            "error": (
+                "Post-write verification failed. "
+                "Inventory result could not be verified."
+            )
+        }
 
-    # Audit trail.
+    # ============================================================
+    # AUDIT LOG
+    # ============================================================
     timestamp = _v16_datetime.now().isoformat(timespec="seconds")
 
-    with _V16_AUDIT.open("a", encoding="utf-8") as f:
+    with open(_V16_AUDIT, "a", encoding="utf-8") as f:
         f.write(
-            f"{timestamp} | V1.8 | {action} | "
-            f"{identifier} | qty={quantity} | "
-            f"before={excel_before} | after={verified_after} | "
-            f"sheet={sheet_name} | row={row_number} | "
-            f"PLC_WRITE=FALSE | SCADA_CONTROL=FALSE\n"
+            f"{timestamp} | {action} | "
+            f"{identifier} | Sheet={sheet_name} | Row={row_number} | "
+            f"AvailableColumn={available_col} | "
+            f"Before={before:g} | Quantity={quantity} | "
+            f"After={after:g} | VERIFIED=YES\n"
         )
 
     return {
-        **base,
         "ok": True,
         "executed": True,
         "action": action,
+        "tag": identifier,
         "quantity": quantity,
-        "identifier": identifier,
-        "before": excel_before,
-        "after": verified_after,
+        "before": before,
+        "after": after,
         "sheet": sheet_name,
         "row": row_number,
-        "available_column": "I",
-        "excel_verified": True,
-        "message": (
-            f"{action} {quantity} spare(s) of {identifier} completed. "
-            f"Available stock: {excel_before} -> {verified_after}."
-        ),
+        "available_column": available_col,
+        "verified": True,
+        "audit_log": str(_V16_AUDIT),
+        "plc_write": False,
+        "scada_control": False,
+        "human_decision_required": True,
+        "answer": (
+            f"ANVIQO inventory updated successfully.\n"
+            f"{identifier}: {before:g} -> {after:g}\n"
+            f"Action: {action}; Quantity: {quantity}\n"
+            f"Sheet: {sheet_name}; Row: {row_number}\n"
+            f"Available column: {available_col}\n"
+            f"Excel verified: YES\n"
+            f"PLC write: FALSE\n"
+            f"SCADA control: FALSE"
+        )
     }
 
 
 def answer_spare_management_v16(question, confirmed=False):
-    # V1.8 keeps the public function name for compatibility with
-    # the existing authoritative routing layer.
-    if _v18_action(question):
-        return execute_spare_mutation_v18(question)
+
+    if _v16_action(question):
+        return execute_spare_mutation(
+            question,
+            confirmed=confirmed
+        )
 
     return answer_spare_query(question)
 

@@ -6,3 +6,9 @@
 2026-09-01T04:56:42 | ADD | PCI_BOKE 4M310-08 | Sheet=SOV | Row=2 | AvailableColumn=7 | Before=8 | Quantity=2 | After=10 | VERIFIED=YES
 2026-09-01T04:56:44 | ADD | MCV-205 | Sheet=MCV | Row=3 | AvailableColumn=7 | Before=7 | Quantity=2 | After=9 | VERIFIED=YES
 2026-09-01T04:56:45 | USE | PT-303 | Sheet=PT | Row=9 | AvailableColumn=9 | Before=6 | Quantity=1 | After=5 | VERIFIED=YES
+2026-09-07T12:27:02 | V1.8 | ADD | PT-303 | qty=3 | before=5 | after=8 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-07T12:27:04 | V1.8 | USE | PT-303 | qty=1 | before=8 | after=7 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-07T12:31:09 | V1.8 | ADD | PT-303 | qty=3 | before=5 | after=8 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-07T12:31:11 | V1.8 | USE | PT-303 | qty=1 | before=8 | after=7 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-07T12:38:10 | V1.8 | ADD | PT-303 | qty=3 | before=7 | after=10 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-07T12:38:12 | V1.8 | USE | PT-303 | qty=1 | before=10 | after=9 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE

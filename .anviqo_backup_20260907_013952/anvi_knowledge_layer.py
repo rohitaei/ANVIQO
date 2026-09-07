@@ -2893,129 +2893,61 @@ def _anvi_troubleshooting_memory_bridge(question, tag="", pci_record=None):
 
 def _anvi_troubleshooting_question(question):
     """
-    Natural technician troubleshooting detector.
+    Detect questions asking ANVI to troubleshoot, diagnose or explain
+    what to check.
 
-    This is routing only. It does not create a new reasoning engine.
-    Existing V5 maintenance/troubleshooting intelligence remains the
-    authoritative reasoning layer.
+    This does NOT create a new reasoning engine.
+    It only changes routing so existing Maintenance/V5 intelligence
+    receives priority for troubleshooting intent.
     """
-    q = str(question or "").strip().lower()
+    ql = str(question or "").lower()
 
-    explicit = (
+    markers = [
         "what should i check",
         "what should we check",
         "what do i check",
         "what do we check",
-        "what can i check",
-        "what can we check",
         "how do i troubleshoot",
         "how should i troubleshoot",
         "how can i troubleshoot",
         "how to troubleshoot",
         "troubleshoot",
-        "troubleshooting",
+        "not working",
+        "is not working",
+        "isn't working",
+        "was not working",
+        "wasn't working",
+        "failed",
+        "failure",
+        "fault",
+        "faulty",
+        "problem with",
+        "issue with",
+        "what could be wrong",
+        "what is wrong",
+        "why is it not working",
+        "why isn't it working",
+        "why did it fail",
+        "abnormal pressure",
+        "abnormal indication",
+        "abnormal signal",
+        "pressure abnormal",
+        "pressure indication abnormal",
+        "signal abnormal",
         "diagnose",
         "diagnosis",
-        "diagnostic",
-        "what could be wrong",
-        "what might be wrong",
-        "what is wrong",
-        "why is it faulty",
-        "why is it failing",
-        "why did it fail",
-        "possible cause",
-        "possible causes",
-        "checks to perform",
-        "checks should i perform",
         "check the instrument",
         "check this instrument",
         "check the transmitter",
         "check this transmitter",
         "repair",
         "fix",
-        "fault",
-        "faulty",
-        "failure",
-        "failed",
-        "not working",
-        "isn't working",
-        "wasn't working",
-        "problem with",
-        "issue with",
-    )
+    ]
 
-    natural_symptoms = (
-        "fluctuating",
-        "fluctuation",
-        "unstable",
-        "erratic",
-        "wrong reading",
-        "wrong indication",
-        "wrong pressure",
-        "wrong value",
-        "giving wrong pressure",
-        "giving wrong reading",
-        "giving wrong indication",
-        "abnormal reading",
-        "abnormal indication",
-        "abnormal signal",
-        "signal problem",
-        "signal issue",
-        "indication problem",
-        "reading problem",
-        "reading high",
-        "reading low",
-        "suddenly went high",
-        "suddenly went low",
-        "intermittent",
-        "intermittently",
-        "not responding",
-        "no response",
-        "showing zero",
-        "shows zero",
-        "stuck",
-        "drift",
-        "drifting",
-        "spike",
-        "spiking",
-        "dropping",
-        "jumping",
-        "keeps changing",
-        "keeps fluctuating",
-        "not showing",
-        "nothing showing",
-        "no indication",
-        "no output",
-        "no signal",
-        "signal lost",
-        "signal loss",
-    )
+    return any(x in ql for x in markers)
 
-    historical = (
-        "what happened previously",
-        "what happened last time",
-        "what happened to",
-        "what did maintenance find",
-        "how was it fixed previously",
-        "how was it repaired previously",
-        "has this problem happened before",
-        "have we seen this before",
-        "seen this before",
-        "previous experience",
-        "previous report",
-        "past experience",
-        "similar report",
-        "similar problem",
-        "previously",
-        "last time",
-        "earlier",
-    )
 
-    return (
-        any(marker in q for marker in explicit)
-        or any(marker in q for marker in natural_symptoms)
-        or any(marker in q for marker in historical)
-    )
+
 
 def _anvi_establish_explicit_pci_context(question):
     """
