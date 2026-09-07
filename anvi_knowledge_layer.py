@@ -2172,6 +2172,14 @@ def _is_memory_question(q):
         # Finding / discovery recall
         "what was the finding",
         "what was the fault",
+        "what problem did",
+        "what problem was",
+        "what action was taken",
+        "what action did",
+        "what did maintenance do",
+        "what did the technician do",
+        "what happened to",
+        "tell me about the previous",
         "what was found",
         "what did we find",
         "what did the technician find",
@@ -2845,50 +2853,276 @@ def _anvi_conversational_maintenance_answer(
 
 
 
-def _anvi_troubleshooting_memory_bridge(question, tag="", pci_record=None):
-    """
-    Resolve Plant Memory relevant to a troubleshooting question.
 
-    This is an evidence bridge only. It does not perform diagnosis,
-    maintenance execution, PLC writes or SCADA control.
-
-    Memory verification state is preserved:
-      VERIFIED            -> verified historical evidence
-      PENDING_VERIFICATION -> reported historical clue
+def _anvi_resolve_memory_subject(question):
     """
+    Resolve a Plant Memory subject from previously stored evidence.
+
+    Priority:
+      1. Existing verified PCI tag resolver.
+      2. Exact/normalized tag already present in Plant Memory.
+      3. Exact/normalized equipment name already present in Plant Memory.
+
+    Never invents a new tag or equipment identity.
+    """
+    q = str(question or "").strip()
+    if not q:
+        return "", ""
+
     try:
-        resolved_tag = str(tag or "").strip()
+        tag, _ = _tag_from_question(q)
+        if tag:
+            return str(tag).strip(), ""
+    except Exception:
+        pass
 
-        if not resolved_tag:
-            try:
-                resolved_tag, resolved_record = _tag_from_question(question)
-                if pci_record is None and isinstance(resolved_record, dict):
-                    pci_record = resolved_record
-            except Exception:
-                resolved_tag = ""
+    try:
+        from plant_memory import search_all_memory
 
-        if not resolved_tag:
-            return []
+        rows = search_all_memory(query="", tag="", equipment="", area="", limit=200)
+        if not isinstance(rows, list):
+            return "", ""
 
-        records = _anvi_search_memory_for_tag(
-            tag=resolved_tag,
-            limit=20
-        )
+        def norm(value):
+            return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
-        return [
-            r for r in records
-            if isinstance(r, dict)
-            and (
-                str(r.get("tag") or "").strip().lower()
-                in {
-                    str(v).strip().lower()
-                    for v in _anvi_memory_tag_variants(resolved_tag)
-                }
-            )
-        ]
+        nq = norm(q)
+        if not nq:
+            return "", ""
+
+        candidates = []
+
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+
+            stored_tag = str(row.get("tag", "") or "").strip()
+            equipment = str(row.get("equipment", "") or "").strip()
+
+            for value, kind in ((stored_tag, "tag"), (equipment, "equipment")):
+                nv = norm(value)
+                if not nv or len(nv) < 2:
+                    continue
+
+                if nv in nq:
+                    candidates.append((len(nv), kind, value))
+
+        if candidates:
+            candidates.sort(key=lambda x: x[0], reverse=True)
+            _, kind, value = candidates[0]
+
+            if kind == "tag":
+                return value, ""
+            return "", value
 
     except Exception:
+        pass
+
+    return "", ""
+
+
+
+def _anvi_general_memory_route(question):
+    """
+    Deterministic Plant Memory recall for equipment/tags that are
+    not present in the PCI registry.
+
+    Reads existing Plant Memory only.
+    Never invents equipment, facts or diagnosis.
+    Pending memories remain PENDING_VERIFICATION.
+    """
+    try:
+        from plant_memory import search_all_memory
+
+        q = str(question or "").strip()
+        if not q:
+            return None
+
+        def norm(value):
+            return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+        nq = norm(q)
+        if not nq:
+            return None
+
+        rows = search_all_memory(
+            query="",
+            tag="",
+            equipment="",
+            area="",
+            limit=200
+        )
+
+        if not isinstance(rows, list):
+            return None
+
+        candidates = []
+
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+
+            tag = str(row.get("tag") or "").strip()
+            equipment = str(row.get("equipment") or "").strip()
+
+            for value, kind in ((tag, "tag"), (equipment, "equipment")):
+                nv = norm(value)
+
+                if nv and len(nv) >= 2 and nv in nq:
+                    candidates.append((len(nv), kind, value))
+
+        if not candidates:
+            return None
+
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        _, kind, subject = candidates[0]
+
+        if kind == "tag":
+            matched = [
+                r for r in rows
+                if norm(r.get("tag")) == norm(subject)
+            ]
+        else:
+            matched = [
+                r for r in rows
+                if norm(r.get("equipment")) == norm(subject)
+            ]
+
+        if not matched:
+            return None
+
+        lines = [
+            f"ANVI found {len(matched)} Plant Memory record(s) for {subject}."
+        ]
+
+        for memory in matched[:5]:
+            status = str(
+                memory.get("verification_status")
+                or (
+                    "VERIFIED"
+                    if memory.get("verified") is True
+                    else "PENDING_VERIFICATION"
+                )
+            ).strip().upper()
+
+            mid = str(memory.get("memory_id") or "record").strip()
+
+            lines.append(f"Plant Memory {mid} status: {status}.")
+
+            event = str(memory.get("event") or "").strip()
+            observation = str(memory.get("observation") or "").strip()
+            finding = str(memory.get("finding") or "").strip()
+            action = str(memory.get("maintenance_action") or "").strip()
+            outcome = str(memory.get("outcome") or "").strip()
+            recovery = str(memory.get("recovery_status") or "").strip()
+            spare = str(memory.get("spare_used") or "").strip()
+
+            if event:
+                lines.append(f"Previous event: {event}.")
+            if observation:
+                lines.append(f"Previous observation: {observation}.")
+            if finding:
+                lines.append(f"Previous finding: {finding}.")
+            if action:
+                lines.append(f"Previous action: {action}.")
+            if outcome:
+                lines.append(f"Previous outcome: {outcome}.")
+            if recovery:
+                lines.append(f"Recovery status: {recovery}.")
+            if spare:
+                lines.append(f"Spare used: {spare}.")
+
+        if any(
+            str(r.get("verification_status") or "").upper()
+            != "VERIFIED"
+            and r.get("verified") is not True
+            for r in matched
+        ):
+            lines.append(
+                "Pending-verification Plant Memory is historical information "
+                "only and is not confirmed failure evidence."
+            )
+
+        lines.append(
+            "This is read-only Plant Memory information. "
+            "Human verification remains required before maintenance action."
+        )
+
+        return {
+            "answer": " ".join(lines),
+            "domain": "plant_memory",
+            "verification": (
+                "VERIFIED"
+                if all(
+                    r.get("verified") is True
+                    for r in matched
+                )
+                else "PENDING_VERIFICATION"
+            ),
+            "reports": matched[:20],
+            "plant_memory_records": matched[:20],
+            "plant_memory_count": len(matched),
+            "read_only": True,
+            "human_decision_required": True,
+            "plc_write": False,
+            "scada_control": False,
+        }
+
+    except Exception:
+        return None
+
+
+def _anvi_troubleshooting_memory_bridge(question, tag="", pci_record=None):
+    """
+    Resolve Plant Memory relevant to troubleshooting questions.
+
+    Supports both:
+      - PCI-known equipment/tags
+      - equipment/tags previously captured by Plant Memory
+
+    Pending memories remain pending and are never promoted automatically.
+    """
+    resolved_tag = str(tag or "").strip()
+    resolved_equipment = ""
+
+    if not resolved_tag:
+        try:
+            resolved_tag, resolved_record = _tag_from_question(question)
+            resolved_tag = str(resolved_tag or "").strip()
+        except Exception:
+            resolved_tag = ""
+
+    if not resolved_tag:
+        resolved_tag, resolved_equipment = _anvi_resolve_memory_subject(question)
+
+    if not resolved_tag and not resolved_equipment:
         return []
+
+    records = _anvi_search_memory_for_tag(
+        tag=resolved_tag,
+        equipment=resolved_equipment,
+        limit=20,
+    )
+
+    if not records:
+        try:
+            from plant_memory import search_all_memory
+
+            records = search_all_memory(
+                query="",
+                tag=resolved_tag,
+                equipment=resolved_equipment,
+                area="",
+                limit=20,
+            )
+        except Exception:
+            records = []
+
+    return [
+        r for r in records
+        if isinstance(r, dict)
+    ]
+
 
 
 def _anvi_troubleshooting_question(question):
@@ -3428,10 +3662,18 @@ def _anviqo_authoritative_core(question):
 
         if _is_memory_question(q):
             try:
+                # First resolve any equipment/tag already present in
+                # Plant Memory, including non-PCI equipment.
+                general_memory = _anvi_general_memory_route(q)
+
+                if isinstance(general_memory, dict):
+                    return _memory_response_contract(general_memory)
+
+                # Preserve the existing authoritative PCI memory route.
                 memory_result = _pci_memory_route(q)
 
                 if isinstance(memory_result, dict):
-                    return memory_result
+                    return _memory_response_contract(memory_result)
 
             except Exception:
                 pass
