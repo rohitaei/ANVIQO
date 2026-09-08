@@ -224,19 +224,52 @@ def search_all_memory(
     """
     Internal/admin retrieval including pending memories.
 
-    Normal verified recall must continue using search_memory().
+    V2:
+    - Uses tag/equipment as the primary identity constraint.
+    - Uses token-overlap matching instead of requiring the complete
+      question to occur verbatim inside the stored report.
+    - Falls back to persistent Neon memory when local filesystem
+      memory is unavailable or incomplete.
+    - Keeps pending memories available for human-review workflows.
     """
-
-    data = _load()
 
     q = _norm(query)
     t = _norm(tag)
     e = _norm(equipment)
     a = _norm(area)
 
-    results = []
+    stop_words = {
+        "what", "when", "where", "which", "who", "why", "how",
+        "did", "does", "do", "is", "was", "were", "are", "the",
+        "this", "that", "last", "time", "about", "tell", "me",
+        "show", "give", "report", "reports", "field", "memory",
+        "maintenance", "find", "found", "happened", "happen",
+        "with", "for", "from", "and", "or", "on", "in", "to",
+        "of", "a", "an", "it", "its", "my", "our", "plant"
+    }
 
-    for record in reversed(data["records"]):
+    def tokens(value):
+        return {
+            x for x in re.findall(r"[a-z0-9]+", _norm(value))
+            if len(x) > 2 and x not in stop_words
+        }
+
+    query_tokens = tokens(q)
+
+    def matches(record):
+        record_tag = _norm(record.get("tag"))
+        record_equipment = _norm(record.get("equipment"))
+        record_area = _norm(record.get("area"))
+
+        if t and t not in record_tag and t not in record_equipment:
+            return False
+
+        if e and e not in record_equipment and e not in record_tag:
+            return False
+
+        if a and a not in record_area:
+            return False
+
         searchable = _norm(" ".join([
             record.get("event", ""),
             record.get("observation", ""),
@@ -244,31 +277,137 @@ def search_all_memory(
             record.get("finding", ""),
             record.get("confirmation_evidence", ""),
             record.get("outcome", ""),
+            record.get("recovery_status", ""),
+            record.get("spare_used", ""),
             record.get("tag", ""),
             record.get("equipment", ""),
             record.get("area", ""),
-            record.get("source", "")
+            record.get("source", ""),
+            record.get("notes", "")
         ]))
 
-        if q and q not in searchable:
-            continue
+        if not q:
+            return True
 
-        if t and t not in _norm(record.get("tag")):
-            continue
+        if q in searchable:
+            return True
 
-        if e and e not in _norm(record.get("equipment")):
-            continue
+        if query_tokens:
+            record_tokens = tokens(searchable)
+            overlap = query_tokens & record_tokens
 
-        if a and a not in _norm(record.get("area")):
-            continue
+            # Identity-constrained queries such as
+            # "what happened to PT-303 last time" should succeed
+            # primarily from the verified equipment tag constraint.
+            if (t or e) and len(overlap) >= 1:
+                return True
 
-        results.append(record)
+            # General memory queries need meaningful overlap.
+            if len(overlap) >= 2:
+                return True
 
-        if len(results) >= limit:
-            break
+        return False
 
-    return results
+    def rank(record):
+        searchable = _norm(" ".join([
+            record.get("event", ""),
+            record.get("observation", ""),
+            record.get("maintenance_action", ""),
+            record.get("finding", ""),
+            record.get("confirmation_evidence", ""),
+            record.get("outcome", ""),
+            record.get("recovery_status", ""),
+            record.get("spare_used", ""),
+            record.get("tag", ""),
+            record.get("equipment", ""),
+            record.get("area", ""),
+            record.get("source", ""),
+            record.get("notes", "")
+        ]))
 
+        score = 0
+
+        if t and t in _norm(record.get("tag")):
+            score += 100
+
+        if e and e in _norm(record.get("equipment")):
+            score += 100
+
+        if a and a in _norm(record.get("area")):
+            score += 25
+
+        if query_tokens:
+            score += len(query_tokens & tokens(searchable)) * 10
+
+        if record.get("source") == "technician field report":
+            score += 5
+
+        return score
+
+    local_results = []
+
+    try:
+        data = _load()
+
+        for record in reversed(data.get("records", [])):
+            if matches(record):
+                local_results.append(record)
+
+            if len(local_results) >= limit:
+                break
+
+    except Exception:
+        local_results = []
+
+    # ------------------------------------------------------------
+    # Persistent Neon fallback
+    # ------------------------------------------------------------
+    try:
+        from anvi_neon_store import get_memory, neon_enabled
+
+        if neon_enabled():
+            neon_records = get_memory(
+                tag=tag or "",
+                equipment=equipment or ""
+            )
+
+            seen = {
+                str(x.get("memory_id", ""))
+                for x in local_results
+            }
+
+            for record in neon_records:
+                if not isinstance(record, dict):
+                    continue
+
+                # Neon may contain the complete memory payload.
+                if not matches(record):
+                    continue
+
+                memory_id = str(record.get("memory_id", ""))
+
+                if memory_id and memory_id in seen:
+                    continue
+
+                local_results.append(record)
+
+                if memory_id:
+                    seen.add(memory_id)
+
+                if len(local_results) >= limit:
+                    break
+
+    except Exception:
+        # Persistent storage must never break ANVI's normal
+        # read-only conversational service.
+        pass
+
+    local_results.sort(
+        key=rank,
+        reverse=True
+    )
+
+    return local_results[:limit]
 
 def search_memory(
     query="",
