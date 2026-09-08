@@ -937,6 +937,7 @@ def _extract_memory_write(question):
 
     # ------------------------------------------------------------
     # Deterministic field extraction
+    # Supports structured Field Reports and conversational history.
     # ------------------------------------------------------------
     observation = ""
     finding = ""
@@ -946,50 +947,130 @@ def _extract_memory_write(question):
     recovery_status = ""
     spare_used = ""
 
-    if re.search(r"pressure indication was abnormal", history, re.I):
-        observation = "Pressure indication abnormal"
-        event = f"{tag} abnormal pressure indication"
-    else:
-        event = f"Maintenance history for {tag}"
-
-    m = re.search(
-        r"(?:transmitter was|transmitter found|found)\s+faulty",
-        history,
+    structured_report = bool(re.search(
+        r"\b(?:field\s+report|finding|maintenance\s+action|"
+        r"outcome|recovery|spare\s+used)\s*:",
+        q,
         re.I
-    )
-    if m:
-        finding = "Transmitter found faulty"
+    ))
 
-    if re.search(
-        r"(?:replaced|replace)\s+(?:the\s+)?transmitter",
-        history,
-        re.I
-    ):
-        maintenance_action = "Replaced transmitter"
-
-    if re.search(
-        r"signal returned healthy|signal was healthy|returned healthy",
-        history,
-        re.I
-    ):
-        confirmation_evidence = "Signal returned healthy"
-        outcome = "Healthy signal restored"
-        recovery_status = "Recovered"
-
-    spare_match = re.search(
-        r"(?:used|use)\s+(\d+)\s+([A-Za-z]{1,8}[-_ ]?\d{1,5})\s+spare",
-        history,
-        re.I
-    )
-
-    if spare_match:
-        qty = int(spare_match.group(1))
-        spare_tag = re.sub(
-            r"[\s_]+",
-            "-",
-            spare_match.group(2).strip().upper()
+    if structured_report:
+        # Observation from the report description before "observed at".
+        m = re.search(
+            r"field\s+report\s*:\s*"
+            r"(?:[A-Za-z]{1,16}[-_ ]?\d{1,8})?\s*"
+            r"(.+?)\s+observed\s+at\s+",
+            q,
+            re.I
         )
-        spare_used = f"{spare_tag} x{qty}"
+        if m:
+            observation = m.group(1).strip(" .;:")
+
+        # Finding
+        m = re.search(
+            r"\bfinding\s*:\s*(.*?)(?=\.\s*"
+            r"(?:maintenance\s+action|outcome|recovery|spare\s+used)\s*:|$)",
+            q,
+            re.I
+        )
+        if m:
+            finding = m.group(1).strip(" .;:")
+
+        # Maintenance action
+        m = re.search(
+            r"\bmaintenance\s+action\s*:\s*(.*?)(?=\.\s*"
+            r"(?:outcome|recovery|spare\s+used)\s*:|$)",
+            q,
+            re.I
+        )
+        if m:
+            maintenance_action = m.group(1).strip(" .;:")
+
+        # Outcome
+        m = re.search(
+            r"\boutcome\s*:\s*(.*?)(?=\.\s*"
+            r"(?:recovery|spare\s+used)\s*:|$)",
+            q,
+            re.I
+        )
+        if m:
+            outcome = m.group(1).strip(" .;:")
+
+        # Recovery
+        m = re.search(
+            r"\brecovery\s*:\s*(.*?)(?=\.\s*"
+            r"(?:spare\s+used)\s*:|$)",
+            q,
+            re.I
+        )
+        if m:
+            recovery_status = m.group(1).strip(" .;:")
+
+        # Spare used
+        m = re.search(
+            r"\bspare\s+used\s*:\s*(.*?)(?:\.|$)",
+            q,
+            re.I
+        )
+        if m:
+            spare_used = m.group(1).strip(" .;:")
+
+        # Explicit healthy/recovered outcome is evidence supplied by
+        # the report, not an automatically invented diagnosis.
+        if re.search(r"\b(?:healthy|restored|returned\s+healthy)\b",
+                     outcome, re.I):
+            confirmation_evidence = outcome
+
+        event = "Technician field report"
+
+    else:
+        # ------------------------------------------------------------
+        # Existing conversational maintenance-history behaviour
+        # ------------------------------------------------------------
+        if re.search(r"pressure indication was abnormal", history, re.I):
+            observation = "Pressure indication abnormal"
+            event = f"{tag} abnormal pressure indication"
+        else:
+            event = f"Maintenance history for {tag}"
+
+        if re.search(
+            r"(?:transmitter was|transmitter found|found)\s+faulty",
+            history,
+            re.I
+        ):
+            finding = "Transmitter found faulty"
+
+        if re.search(
+            r"(?:replaced|replace)\s+(?:the\s+)?transmitter",
+            history,
+            re.I
+        ):
+            maintenance_action = "Replaced transmitter"
+
+        if re.search(
+            r"signal returned healthy|signal was healthy|returned healthy",
+            history,
+            re.I
+        ):
+            confirmation_evidence = "Signal returned healthy"
+            outcome = "Healthy signal restored"
+            recovery_status = "Recovered"
+
+        spare_match = re.search(
+            r"(?:used|use)\s+(\d+)\s+"
+            r"([A-Za-z]{1,8}[-_ ]?\d{1,5})\s+spare",
+            history,
+            re.I
+        )
+
+        if spare_match:
+            qty = int(spare_match.group(1))
+            spare_tag = re.sub(
+                r"[\s_]+",
+                "-",
+                spare_match.group(2).strip().upper()
+            )
+            spare_used = f"{spare_tag} x{qty}"
 
     # ------------------------------------------------------------
     # Engineering context may be included after the history.
