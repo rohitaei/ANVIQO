@@ -112,28 +112,69 @@ def _extract_location(text):
 
     return ""
 
+def _extract_labeled_field(text, label, next_labels):
+    """Extract a structured Field Report value such as:
+       Finding: ...
+       Maintenance action: ...
+       Outcome: ...
+       Recovery: ...
+       Spare used: ...
+    """
+    labels = "|".join(re.escape(x) for x in next_labels)
+    pattern = (
+        rf"\b{re.escape(label)}\s*:\s*(.*?)"
+        rf"(?=\s*(?:{labels})\s*:|$)"
+    )
+    m = re.search(pattern, text, re.I | re.S)
+    if not m:
+        return ""
+    return _clean(m.group(1)).strip(" .;:")
+
+
 def _extract_observation(text):
+    # Structured Field Report format:
+    # "Field report: FT-308 abnormal flow indication observed at PCI Gas Process."
+    m = re.search(
+        r"\bfield\s+report\s*:\s*"
+        r"(?:[A-Z]{1,8}[-_ ]?\d{1,5})?\s*"
+        r"(.+?)\s+observed\s+at\s+(.+?)"
+        r"(?=\.\s*(?:Finding|Maintenance\s+action|Outcome|Recovery|Spare\s+used)\s*:|$)",
+        text,
+        re.I | re.S,
+    )
+    if m:
+        return _clean(m.group(1)).strip(" .;:")
+
     patterns = [
         r"\bnoticed\s+that\s+(.+?)(?=\.\s+I\s+then|\.\s+After|\.\s+However|$)",
         r"\bobserved\s+that\s+(.+?)(?=\.\s+I\s+then|\.\s+After|\.\s+However|$)",
         r"\bproblem\s*[:=-]\s*(.+?)(?:\n|$)",
     ]
-    for p in patterns:
-        m = re.search(p, text, re.I | re.S)
+    for pattern in patterns:
+        m = re.search(pattern, text, re.I | re.S)
         if m:
             return _clean(m.group(1))
     return ""
 
 
 def _extract_finding(text):
+    # Structured field-report label takes priority.
+    value = _extract_labeled_field(
+        text,
+        "Finding",
+        ["Maintenance action", "Outcome", "Recovery", "Spare used"],
+    )
+    if value:
+        return value
+
     patterns = [
         r"\bchecked\s+(.+?)(?=\.|\n|$)",
         r"\bfound\s+(.+?)(?=\.|\n|$)",
         r"\bchecking\s+(.+?)(?=\.|\n|$)",
     ]
     values = []
-    for p in patterns:
-        for m in re.finditer(p, text, re.I):
+    for pattern in patterns:
+        for m in re.finditer(pattern, text, re.I):
             value = _clean(m.group(1))
             if value and value not in values:
                 values.append(value)
@@ -141,11 +182,19 @@ def _extract_finding(text):
 
 
 def _extract_action(text):
+    # Structured field-report label takes priority.
+    value = _extract_labeled_field(
+        text,
+        "Maintenance action",
+        ["Outcome", "Recovery", "Spare used"],
+    )
+    if value:
+        return value
+
     patterns = [
         r"\b(?:action|work done|rectification)\s*[:=-]\s*(.+?)(?:\.|\n|$)",
         r"\b(?:I\s+)?(?:then\s+)?(changed|replaced|tightened|loosened|cleaned|adjusted|repaired|reset|restarted|restored|calibrated|tested|checked|inspected|power[- ]cycled)\s+(?:the\s+)?(.+?)(?=\.|\n|$)",
     ]
-
     values = []
     for pattern in patterns:
         for m in re.finditer(pattern, text, re.I | re.S):
@@ -155,23 +204,41 @@ def _extract_action(text):
 
     return "; ".join(values[:5])
 
+
 def _extract_outcome(text):
+    # Structured field-report label takes priority.
+    value = _extract_labeled_field(
+        text,
+        "Outcome",
+        ["Recovery", "Spare used"],
+    )
+    if value:
+        return value
+
     patterns = [
         r"\b(?:now|currently)\s+(?:it\s+is\s+)?(.+?)(?:\.|$)",
         r"\b(?:returned|return)\s+to\s+(.+?)(?:\.|$)",
         r"\b(?:everything|system|instrument|unit)\s+(?:is|was)\s+(.+?)(?:\.|$)",
     ]
-    for p in patterns:
-        m = re.search(p, text, re.I)
+    for pattern in patterns:
+        m = re.search(pattern, text, re.I)
         if m:
             return _clean(m.group(1))
     return ""
 
 
 def _extract_recovery(text):
+    # Explicit Recovery label is authoritative for the supplied report.
+    value = _extract_labeled_field(
+        text,
+        "Recovery",
+        ["Spare used"],
+    )
+    if value:
+        return value
+
     low = text.lower()
 
-    # Final unresolved/current-condition state has priority.
     unresolved_patterns = [
         "blinking intermittently",
         "still abnormal",
@@ -213,15 +280,27 @@ def _extract_recovery(text):
 
     return ""
 
+
 def _extract_spare(text):
+    # Structured field-report format:
+    # "Spare used: FT-308 x1"
+    value = _extract_labeled_field(
+        text,
+        "Spare used",
+        [],
+    )
+    if value:
+        return value
+
     m = re.search(
         r"\b(?:used|replaced with|replacement)\s+(?:one\s+|a\s+)?"
-        r"([A-Z]{1,8}[-_ ]?\d{1,5})",
+        r"([A-Z]{1,8}[-_ ]?\d{1,5})"
+        r"(?:\s*x\s*\d+|\s+\d+\s*(?:nos?|pcs?|numbers?)?)?",
         text,
         re.I,
     )
     if m:
-        return m.group(1).upper().replace("_", "-").replace(" ", "-")
+        return _clean(m.group(0))
     return ""
 
 
