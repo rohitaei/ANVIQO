@@ -271,6 +271,43 @@ def _equipment_db_lookup(tag):
     except Exception:
         return None
 
+
+
+def _neon_sync_equipment(record):
+    """Best-effort Neon persistence; JSON remains local fallback."""
+    try:
+        from anvi_neon_store import neon_enabled, init_neon, upsert_equipment
+        if neon_enabled():
+            init_neon()
+            return bool(upsert_equipment(record))
+    except Exception:
+        pass
+    return False
+
+
+def _neon_sync_spare(record):
+    """Best-effort Neon persistence; JSON remains local fallback."""
+    try:
+        from anvi_neon_store import neon_enabled, init_neon, upsert_registered_spare
+        if neon_enabled():
+            init_neon()
+            return bool(upsert_registered_spare(record))
+    except Exception:
+        pass
+    return False
+
+
+def _neon_sync_audit(event):
+    """Best-effort Neon audit persistence."""
+    try:
+        from anvi_neon_store import neon_enabled, init_neon, audit
+        if neon_enabled():
+            init_neon()
+            return bool(audit(event))
+    except Exception:
+        pass
+    return False
+
 def register_equipment(question):
     q = _clean(question)
     tag = _equipment_tag(q)

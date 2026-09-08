@@ -1,3 +1,8 @@
+# ANVIQO_NEON_RUNTIME_BOOTSTRAP_V2
+try:
+    import anvi_neon_runtime
+except Exception:
+    pass
 from pci_universal_resolver import resolve as _universal_pci_resolve
 from anvi_registration import answer_registration, registration_answer_text, answer_registered_query
 """

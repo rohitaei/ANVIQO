@@ -1,3 +1,8 @@
+# ANVIQO_NEON_RUNTIME_BOOTSTRAP_V2
+try:
+    import anvi_neon_runtime
+except Exception:
+    pass
 """
 ANVIQO PRODUCT API
 V5 FROZEN INTELLIGENCE -> WEB API

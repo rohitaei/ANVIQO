@@ -131,6 +131,13 @@ def store_memory(record):
 
     _save(data)
 
+    # ANVIQO_NEON_MEMORY_HOOK_V2
+    try:
+        from anvi_neon_store import upsert_memory
+        upsert_memory(record)
+    except Exception:
+        pass
+
     return record
 
 

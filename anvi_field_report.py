@@ -328,6 +328,23 @@ def store_field_report(text, filename=""):
         ),
     )
 
+    # ANVIQO_NEON_FIELD_REPORT_HOOK_V2
+    try:
+        from anvi_neon_store import upsert_field_report
+        upsert_field_report({
+            "report_id": str(memory.get("memory_id","")),
+            "tag": record.get("tag",""),
+            "equipment": record.get("equipment",""),
+            "event": record.get("event",""),
+            "source": record.get("source",""),
+            "raw_report": record.get("raw_report",""),
+            "parsed_report": record,
+            "memory": memory,
+            "verification_status": "PENDING_VERIFICATION",
+        })
+    except Exception:
+        pass
+
     return {
         "status": "PENDING_VERIFICATION",
         "domain": "plant_memory",
