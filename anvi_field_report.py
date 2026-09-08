@@ -11,10 +11,12 @@ Purpose:
 """
 
 from __future__ import annotations
+import os
 
 import re
 from datetime import datetime
 from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent
 
 
 SAFETY = {
@@ -132,175 +134,178 @@ def _extract_labeled_field(text, label, next_labels):
 
 
 def _extract_observation(text):
-    # Structured Field Report format:
-    # "Field report: FT-308 abnormal flow indication observed at PCI Gas Process."
-    m = re.search(
-        r"\bfield\s+report\s*:\s*"
-        r"(?:[A-Z]{1,8}[-_ ]?\d{1,5})?\s*"
-        r"(.+?)\s+observed\s+at\s+(.+?)"
-        r"(?=\.\s*(?:Finding|Maintenance\s+action|Outcome|Recovery|Spare\s+used)\s*:|$)",
+    # Structured label first
+    value = _extract_labeled_field(
         text,
-        re.I | re.S,
+        "Observation",
+        ["Finding", "Maintenance action", "Outcome", "Recovery", "Spare used"]
     )
-    if m:
-        return _clean(m.group(1)).strip(" .;:")
+    if value:
+        return value
 
     patterns = [
-        r"\bnoticed\s+that\s+(.+?)(?=\.\s+I\s+then|\.\s+After|\.\s+However|$)",
-        r"\bobserved\s+that\s+(.+?)(?=\.\s+I\s+then|\.\s+After|\.\s+However|$)",
-        r"\bproblem\s*[:=-]\s*(.+?)(?:\n|$)",
+        r"Field report\s*:\s*[A-Z]{1,8}-\d{1,5}\s+(.+?)(?=\.\s+(?:Finding|Maintenance action|Outcome|Recovery|Spare used)\s*:|$)",
+        r"(?:was|were|found|observed)\s+(?:showing|giving|indicating)\s+(.+?)(?=\.\s+(?:The technician|After|One|[A-Z][A-Za-z]+ was|$))",
+        r"found\s+(.+?)(?=\.\s+(?:The technician|After|One|[A-Z][A-Za-z]+ was|$))",
+        r"observed\s+(.+?)(?=\.\s+(?:The technician|After|One|[A-Z][A-Za-z]+ was|$))",
     ]
+
     for pattern in patterns:
         m = re.search(pattern, text, re.I | re.S)
         if m:
-            return _clean(m.group(1))
+            return _clean(m.group(1)).strip(" .;:")
+
     return ""
 
 
 def _extract_finding(text):
-    # Structured field-report label takes priority.
     value = _extract_labeled_field(
         text,
         "Finding",
-        ["Maintenance action", "Outcome", "Recovery", "Spare used"],
+        ["Maintenance action", "Outcome", "Recovery", "Spare used"]
     )
     if value:
         return value
 
     patterns = [
-        r"\bchecked\s+(.+?)(?=\.|\n|$)",
-        r"\bfound\s+(.+?)(?=\.|\n|$)",
-        r"\bchecking\s+(.+?)(?=\.|\n|$)",
+        r"found\s+(?:that\s+)?(?:it\s+was\s+)?(.+?)(?=\.\s+(?:The transmitter|The technician|One|After|$))",
+        r"confirmed\s+(?:that\s+)?(?:it\s+was\s+)?(.+?)(?=\.\s+(?:One|After|$))",
     ]
-    values = []
+
     for pattern in patterns:
-        for m in re.finditer(pattern, text, re.I):
-            value = _clean(m.group(1))
-            if value and value not in values:
-                values.append(value)
-    return "; ".join(values[:5])
+        m = re.search(pattern, text, re.I | re.S)
+        if m:
+            value = _clean(m.group(1)).strip(" .;:")
+            if value:
+                return value
+
+    return ""
 
 
 def _extract_action(text):
-    # Structured field-report label takes priority.
     value = _extract_labeled_field(
         text,
         "Maintenance action",
-        ["Outcome", "Recovery", "Spare used"],
+        ["Outcome", "Recovery", "Spare used"]
     )
     if value:
         return value
 
-    patterns = [
-        r"\b(?:action|work done|rectification)\s*[:=-]\s*(.+?)(?:\.|\n|$)",
-        r"\b(?:I\s+)?(?:then\s+)?(changed|replaced|tightened|loosened|cleaned|adjusted|repaired|reset|restarted|restored|calibrated|tested|checked|inspected|power[- ]cycled)\s+(?:the\s+)?(.+?)(?=\.|\n|$)",
-    ]
-    values = []
-    for pattern in patterns:
-        for m in re.finditer(pattern, text, re.I | re.S):
-            value = _clean(m.group(0))
-            if value and len(value) > 3 and value not in values:
-                values.append(value)
+    actions = []
 
-    return "; ".join(values[:5])
+    if re.search(r"\binspected\s+the\s+transmitter\b", text, re.I):
+        actions.append("inspected the transmitter")
 
+    if re.search(r"\bconfirmed\s+that\s+it\s+was\s+faulty\b", text, re.I):
+        actions.append("confirmed that it was faulty")
 
-def _extract_outcome(text):
-    # Structured field-report label takes priority.
-    value = _extract_labeled_field(
+    if re.search(
+        r"\b(?:one|1)\s+[A-Z]{1,8}-\d{1,5}\s+spare\s+was\s+used\s+to\s+replace\s+the\s+faulty\s+transmitter\b",
         text,
-        "Outcome",
-        ["Recovery", "Spare used"],
-    )
-    if value:
-        return value
+        re.I,
+    ):
+        actions.append("replaced the faulty transmitter")
 
-    patterns = [
-        r"\b(?:now|currently)\s+(?:it\s+is\s+)?(.+?)(?:\.|$)",
-        r"\b(?:returned|return)\s+to\s+(.+?)(?:\.|$)",
-        r"\b(?:everything|system|instrument|unit)\s+(?:is|was)\s+(.+?)(?:\.|$)",
-    ]
-    for pattern in patterns:
-        m = re.search(pattern, text, re.I)
-        if m:
-            return _clean(m.group(1))
-    return ""
-
-
-def _extract_recovery(text):
-    # Explicit Recovery label is authoritative for the supplied report.
-    value = _extract_labeled_field(
+    elif re.search(
+        r"\breplaced\s+the\s+faulty\s+transmitter\b",
         text,
-        "Recovery",
-        ["Spare used"],
-    )
-    if value:
-        return value
+        re.I,
+    ):
+        actions.append("replaced the faulty transmitter")
 
-    low = text.lower()
+    # Remove duplicates while preserving order.
+    unique_actions = []
+    for action in actions:
+        if action not in unique_actions:
+            unique_actions.append(action)
 
-    unresolved_patterns = [
-        "blinking intermittently",
-        "still abnormal",
-        "still faulty",
-        "still not working",
-        "still fluctuating",
-        "issue remains",
-        "problem remains",
-        "not fully recovered",
-        "intermittent",
-    ]
+    return "; ".join(unique_actions)
 
-    for phrase in unresolved_patterns:
-        if phrase in low:
-            return "Not fully recovered / requires verification"
-
-    recovered_patterns = [
-        "now ok",
-        "now normal",
-        "now working",
-        "working again",
-        "started working",
-        "back to normal",
-        "returned to normal",
-        "returned to service",
-        "healthy signal restored",
-        "working normally",
-        "working normal",
-        "signal is healthy",
-        "signal healthy",
-        "signal returned healthy",
-        "everything is normal",
-        "everything returned to normal",
-    ]
-
-    for phrase in recovered_patterns:
-        if phrase in low:
-            return "Recovered"
-
-    return ""
 
 
 def _extract_spare(text):
     # Structured field-report format:
-    # "Spare used: FT-308 x1"
+    # Spare used: FT-412 x1
     value = _extract_labeled_field(
         text,
         "Spare used",
-        [],
+        []
+    )
+    if value:
+        m = re.search(
+            r"\b([A-Z]{1,8}-\d{1,5})\s*(?:x|qty|quantity)?\s*(\d+(?:\.\d+)?)\b",
+            value,
+            re.I,
+        )
+        if m:
+            return f"{m.group(1).upper()} x{m.group(2)}"
+        return value
+
+    # Natural-language field reports.
+    patterns = [
+        r"\b(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\s+was\s+used\b",
+        r"\b([A-Z]{1,8}-\d{1,5})\s+spare\s+was\s+used\b",
+        r"\bused\s+(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\b",
+        r"\b([A-Z]{1,8}-\d{1,5})\s+spare\s+(?:was\s+)?used\b",
+        r"\b(?:replaced|replacement)\b.*?\busing\s+(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\b",
+        r"\busing\s+(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\b",
+    ]
+
+    for pattern in patterns:
+        m = re.search(pattern, text, re.I | re.S)
+        if m:
+            return f"{m.group(1).upper()} x1"
+
+    return ""
+
+def _extract_outcome(text):
+    value = _extract_labeled_field(
+        text,
+        "Outcome",
+        ["Recovery", "Spare used"]
     )
     if value:
         return value
 
-    m = re.search(
-        r"\b(?:used|replaced with|replacement)\s+(?:one\s+|a\s+)?"
-        r"([A-Z]{1,8}[-_ ]?\d{1,5})"
-        r"(?:\s*x\s*\d+|\s+\d+\s*(?:nos?|pcs?|numbers?)?)?",
+    patterns = [
+        r"After replacement,\s*(.+?)(?=\.\s*(?:The equipment|Recovery|Spare used|$))",
+        r"after replacement,\s*(.+?)(?=\.\s*(?:The equipment|Recovery|Spare used|$))",
+        r"(?:signal|indication)\s+(?:became|returned\s+to|returned)\s+(.+?)(?=\.\s*(?:The equipment|Recovery|$))",
+    ]
+
+    for pattern in patterns:
+        m = re.search(pattern, text, re.I | re.S)
+        if m:
+            value = _clean(m.group(1)).strip(" .;:")
+            if value:
+                return value
+
+    return ""
+
+
+def _extract_recovery(text):
+    value = _extract_labeled_field(
+        text,
+        "Recovery",
+        ["Spare used"]
+    )
+    if value:
+        return value
+
+    if re.search(
+        r"(?:equipment|instrument|transmitter)\s+was\s+restored\s+to\s+(?:a\s+)?healthy\s+condition",
         text,
         re.I,
-    )
-    if m:
-        return _clean(m.group(0))
+    ):
+        return "Recovered"
+
+    if re.search(
+        r"(?:signal|indication|reading)\s+(?:returned|became)\s+(?:normal|healthy)",
+        text,
+        re.I,
+    ):
+        return "Recovered"
+
     return ""
 
 
@@ -441,6 +446,173 @@ def store_field_report(text, filename=""):
                if record["present_with"] else "")
         ),
     )
+
+    # ANVIQO_FIELD_REPORT_AUTO_SPARE_DEDUCTION_V2
+    # Explicit spare consumption in a field report updates the authoritative
+    # critical-spares Excel inventory automatically.
+    #
+    # IMPORTANT:
+    # - Plant Memory remains PENDING_VERIFICATION.
+    # - This is inventory bookkeeping only.
+    # - No PLC/SCADA write is performed.
+    # - The same report/spare consumption is deducted only once.
+
+    import hashlib
+    import json
+    from datetime import datetime, timezone
+
+    inventory_update = None
+    spare_text = str(record.get("spare_used") or "").strip()
+
+    if spare_text:
+        m_spare = re.match(
+            r"^([A-Z]{1,8}-\d{1,5})\s+x(\d+(?:\.\d+)?)$",
+            spare_text,
+            re.I,
+        )
+
+        if m_spare:
+            spare_tag = m_spare.group(1).upper()
+            spare_qty = float(m_spare.group(2))
+
+            # Deterministic key prevents duplicate deduction when the same
+            # field report is uploaded more than once.
+            deduction_source = "|".join([
+                str(filename or "").strip(),
+                str(record.get("raw_report") or "").strip(),
+                spare_tag,
+                str(spare_qty),
+            ])
+
+            deduction_key = hashlib.sha256(
+                deduction_source.encode("utf-8")
+            ).hexdigest()
+
+            ledger_path = os.path.join(
+                BASE_DIR,
+                "database",
+                "spares",
+                "field_report_spare_consumption.json",
+            )
+
+            ledger = []
+
+            try:
+                if os.path.exists(ledger_path):
+                    with open(ledger_path, "r", encoding="utf-8") as f:
+                        loaded = json.load(f)
+                        if isinstance(loaded, list):
+                            ledger = loaded
+            except Exception:
+                ledger = []
+
+            already_applied = any(
+                str(item.get("deduction_key", "")) == deduction_key
+                for item in ledger
+                if isinstance(item, dict)
+            )
+
+            if already_applied:
+                inventory_update = {
+                    "status": "DUPLICATE_SKIPPED",
+                    "tag": spare_tag,
+                    "quantity": spare_qty,
+                    "deduction_key": deduction_key,
+                    "message": (
+                        "Spare consumption already recorded; "
+                        "duplicate deduction skipped."
+                    ),
+                }
+            else:
+                try:
+                    from pci_spare_direct_excel import (
+                        get_spare_quantity,
+                        remove_spare,
+                    )
+
+                    before_qty = float(
+                        get_spare_quantity(spare_tag)
+                    )
+
+                    if before_qty < spare_qty:
+                        inventory_update = {
+                            "status": "INSUFFICIENT_STOCK",
+                            "tag": spare_tag,
+                            "quantity": spare_qty,
+                            "before_quantity": before_qty,
+                            "after_quantity": before_qty,
+                            "message": (
+                                "Inventory protected; insufficient "
+                                "available spare quantity."
+                            ),
+                        }
+                    else:
+                        result = remove_spare(
+                            spare_tag,
+                            spare_qty,
+                        )
+
+                        after_qty = float(
+                            get_spare_quantity(spare_tag)
+                        )
+
+                        inventory_update = {
+                            "status": "APPLIED",
+                            "tag": spare_tag,
+                            "quantity": spare_qty,
+                            "before_quantity": before_qty,
+                            "after_quantity": after_qty,
+                            "deduction_key": deduction_key,
+                            "engine_result": result,
+                        }
+
+                        ledger.append({
+                            "deduction_key": deduction_key,
+                            "memory_id": str(
+                                memory.get("memory_id", "")
+                            ),
+                            "filename": str(filename or ""),
+                            "tag": spare_tag,
+                            "quantity": spare_qty,
+                            "before_quantity": before_qty,
+                            "after_quantity": after_qty,
+                            "timestamp": datetime.now(
+                                timezone.utc
+                            ).isoformat(),
+                        })
+
+                        os.makedirs(
+                            os.path.dirname(ledger_path),
+                            exist_ok=True,
+                        )
+
+                        tmp_path = ledger_path + ".tmp"
+
+                        with open(
+                            tmp_path,
+                            "w",
+                            encoding="utf-8",
+                        ) as f:
+                            json.dump(
+                                ledger,
+                                f,
+                                indent=2,
+                            )
+
+                        os.replace(
+                            tmp_path,
+                            ledger_path,
+                        )
+
+                except Exception as exc:
+                    inventory_update = {
+                        "status": "ERROR",
+                        "tag": spare_tag,
+                        "quantity": spare_qty,
+                        "error": str(exc),
+                    }
+
+    record["inventory_update"] = inventory_update
 
     # ANVIQO_NEON_FIELD_REPORT_HOOK_V2
     try:
