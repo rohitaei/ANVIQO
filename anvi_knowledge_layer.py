@@ -2091,6 +2091,23 @@ def _is_memory_question(q):
     """
     ql = str(q or "").lower()
 
+    # Natural-language historical questions where the equipment tag
+    # appears between the subject and historical keyword.
+    if re.search(r"\bwas\b.{0,100}\bfaulty\b.{0,30}\bbefore\b", ql):
+        return True
+    if re.search(r"\bwas\b.{0,100}\brepaired\b.{0,30}\bbefore\b", ql):
+        return True
+    if re.search(r"\bwas\b.{0,100}\breplaced\b.{0,30}\bbefore\b", ql):
+        return True
+    if re.search(r"\b(did|has)\b.{0,100}\bfail(?:ed)?\b.{0,30}\bbefore\b", ql):
+        return True
+    if re.search(r"\bwas\b.{0,100}\brepaired\b.{0,30}\bsuccessfully\b", ql):
+        return True
+    if re.search(r"\bwas\b.{0,100}\breplaced\b.{0,30}\bsuccessfully\b", ql):
+        return True
+    if re.search(r"\b(did|has)\b.{0,100}\buse\b.{0,30}\ba spare\b", ql):
+        return True
+
     # Semantic recovery questions may contain the equipment tag
     # between the subject and the recovery word.
     # Example: "Was PT-303 recovered?"
@@ -2148,6 +2165,23 @@ def _is_memory_question(q):
         "plant memory",
         "previous maintenance",
         "past maintenance",
+        "what maintenance was done",
+        "what maintenance was performed",
+        "what maintenance did",
+        "was it faulty before",
+        "was it faulty previously",
+        "was it repaired before",
+        "was it repaired previously",
+        "was it replaced before",
+        "was it replaced previously",
+        "did it fail before",
+        "did it fail previously",
+        "has it failed before",
+        "has it failed previously",
+        "what was done to",
+        "what was done on",
+        "what happened earlier",
+        "what happened previously",
 
         # Recovery / outcome recall
         "was recovered",
@@ -2862,12 +2896,17 @@ def _anvi_conversational_maintenance_answer(
 
 def _anvi_resolve_memory_subject(question):
     """
-    Resolve a Plant Memory subject from previously stored evidence.
+    Resolve a Plant Memory subject safely.
 
     Priority:
-      1. Existing verified PCI tag resolver.
+      1. Explicit real instrument/equipment tag in the question.
       2. Exact/normalized tag already present in Plant Memory.
       3. Exact/normalized equipment name already present in Plant Memory.
+      4. Previous conversational PCI subject.
+
+    IMPORTANT:
+      Generic words such as "DI", "DO", "AI", etc. must never be
+      invented as a memory subject from a context-free sentence.
 
     Never invents a new tag or equipment identity.
     """
@@ -2875,51 +2914,141 @@ def _anvi_resolve_memory_subject(question):
     if not q:
         return "", ""
 
+    # --------------------------------------------------------
+    # CONVERSATIONAL FOLLOW-UP FIRST
+    #
+    # If the user asks a context-dependent question such as:
+    # "What did we do last time?"
+    # "Was it repaired successfully?"
+    # "Did we use a spare?"
+    #
+    # inherit the previously established real equipment tag.
+    # NEVER allow a generic PCI type such as DI/AI/DO to become
+    # the Plant Memory subject.
+    # --------------------------------------------------------
     try:
-        tag, _ = _tag_from_question(q)
-        if tag:
-            return str(tag).strip(), ""
+        ql = q.lower()
+        followup = (
+            "last time" in ql
+            or "previously" in ql
+            or "before" in ql
+            or "earlier" in ql
+            or "was it" in ql
+            or "did we" in ql
+            or "has it" in ql
+            or "have we" in ql
+        )
+
+        if followup:
+            previous_tag = _ANVI_CONVERSATION_CONTEXT.get(
+                "last_equipment_tag"
+            )
+
+            if previous_tag:
+                previous_tag = str(previous_tag).strip()
+
+                # Only accept a real equipment-style tag.
+                if re.match(
+                    r"^[A-Z]{1,16}_[A-Z0-9_]+$",
+                    previous_tag,
+                    flags=re.IGNORECASE,
+                ):
+                    return previous_tag, ""
     except Exception:
         pass
+
+    def norm(value):
+        return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+    # --------------------------------------------------------
+    # 1. EXPLICIT REAL TAG IN CURRENT QUESTION
+    #
+    # Accept normal industrial forms such as:
+    # PT-303, PT_303, PT 303, PT303, MCV-204, etc.
+    #
+    # This deliberately happens before the universal PCI resolver.
+    # --------------------------------------------------------
+    explicit = re.findall(
+        r"(?<![A-Za-z0-9])"
+        r"(PT|FT|TT|LT|AT|CV|FV|XV|PV|TV|LV|PCV|FCV|TCV|LCV|"
+        r"PIC|FIC|TIC|LIC|P|M)"
+        r"[\s_-]*(\d{1,6})"
+        r"(?![A-Za-z0-9])",
+        q,
+        flags=re.IGNORECASE,
+    )
+
+    if explicit:
+        tag = f"{explicit[0][0].upper()}_{explicit[0][1]}"
+        return tag, ""
 
     try:
         from plant_memory import search_all_memory
 
-        rows = search_all_memory(query="", tag="", equipment="", area="", limit=200)
-        if not isinstance(rows, list):
-            return "", ""
+        rows = search_all_memory(
+            query="",
+            tag="",
+            equipment="",
+            area="",
+            limit=200
+        )
 
-        def norm(value):
-            return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+        if isinstance(rows, list):
+            nq = norm(q)
 
-        nq = norm(q)
-        if not nq:
-            return "", ""
+            if nq:
+                candidates = []
 
-        candidates = []
+                for row in rows:
+                    if not isinstance(row, dict):
+                        continue
 
-        for row in rows:
-            if not isinstance(row, dict):
-                continue
+                    stored_tag = str(row.get("tag", "") or "").strip()
+                    equipment = str(row.get("equipment", "") or "").strip()
 
-            stored_tag = str(row.get("tag", "") or "").strip()
-            equipment = str(row.get("equipment", "") or "").strip()
+                    for value, kind in (
+                        (stored_tag, "tag"),
+                        (equipment, "equipment"),
+                    ):
+                        nv = norm(value)
 
-            for value, kind in ((stored_tag, "tag"), (equipment, "equipment")):
-                nv = norm(value)
-                if not nv or len(nv) < 2:
-                    continue
+                        if not nv or len(nv) < 2:
+                            continue
 
-                if nv in nq:
-                    candidates.append((len(nv), kind, value))
+                        if nv in nq:
+                            candidates.append((len(nv), kind, value))
 
-        if candidates:
-            candidates.sort(key=lambda x: x[0], reverse=True)
-            _, kind, value = candidates[0]
+                if candidates:
+                    candidates.sort(key=lambda x: x[0], reverse=True)
+                    _, kind, value = candidates[0]
 
-            if kind == "tag":
-                return value, ""
-            return "", value
+                    if kind == "tag":
+                        return value, ""
+
+                    return "", value
+
+    except Exception:
+        pass
+
+    # --------------------------------------------------------
+    # 4. CONVERSATIONAL CONTEXT
+    #
+    # Example:
+    #   User: What happened previously with PT-303?
+    #   User: What did we do last time?
+    #
+    # The second question must inherit PT-303.
+    # --------------------------------------------------------
+    try:
+        previous_tag = _ANVI_CONVERSATION_CONTEXT.get(
+            "last_equipment_tag"
+        )
+
+        if previous_tag:
+            previous_tag = str(previous_tag).strip()
+
+            if previous_tag:
+                return previous_tag, ""
 
     except Exception:
         pass
@@ -2977,25 +3106,85 @@ def _anvi_general_memory_route(question):
                 if nv and len(nv) >= 2 and nv in nq:
                     candidates.append((len(nv), kind, value))
 
+        # ------------------------------------------------------------
+        # CONVERSATIONAL CONTEXT FALLBACK
+        #
+        # For follow-ups such as:
+        #   "What did we do last time?"
+        #   "Was it repaired successfully?"
+        #   "Did we use a spare?"
+        #
+        # the current question may contain no equipment tag.
+        # Use the previously established REAL equipment tag.
+        # Never use generic PCI types such as DI/AI/DO as memory subjects.
+        # ------------------------------------------------------------
         if not candidates:
-            return None
+            try:
+                previous_tag = str(
+                    _ANVI_CONVERSATION_CONTEXT.get("last_equipment_tag") or ""
+                ).strip()
 
-        candidates.sort(key=lambda x: x[0], reverse=True)
-        _, kind, subject = candidates[0]
+                if previous_tag and norm(previous_tag) not in {
+                    "DI", "DO", "AI", "AO", "PT", "FT", "TT", "LT"
+                }:
+                    context_matches = [
+                        r for r in rows
+                        if norm(r.get("tag")) == norm(previous_tag)
+                    ]
 
-        if kind == "tag":
-            matched = [
-                r for r in rows
-                if norm(r.get("tag")) == norm(subject)
-            ]
+                    if context_matches:
+                        subject = previous_tag
+                        kind = "tag"
+                        matched = context_matches
+                    else:
+                        return None
+                else:
+                    return None
+
+            except Exception:
+                return None
         else:
-            matched = [
-                r for r in rows
-                if norm(r.get("equipment")) == norm(subject)
-            ]
+            candidates.sort(key=lambda x: x[0], reverse=True)
+            _, kind, subject = candidates[0]
+
+            if kind == "tag":
+                matched = [
+                    r for r in rows
+                    if norm(r.get("tag")) == norm(subject)
+                ]
+            else:
+                matched = [
+                    r for r in rows
+                    if norm(r.get("equipment")) == norm(subject)
+                ]
 
         if not matched:
             return None
+
+        # SAVE VERIFIED PLANT-MEMORY SUBJECT AS CONVERSATIONAL CONTEXT.
+        # This allows follow-ups such as:
+        # "What did we do last time?"
+        # "Did we use a spare?"
+        # "Was it repaired successfully?"
+        try:
+            context_record = next(
+                (
+                    r for r in matched
+                    if isinstance(r, dict)
+                    and str(r.get("tag") or "").strip()
+                ),
+                matched[0] if matched else None,
+            )
+
+            if isinstance(context_record, dict):
+                _ANVI_CONVERSATION_CONTEXT["last_pci_record"] = context_record
+                _ANVI_CONVERSATION_CONTEXT["last_equipment_tag"] = (
+                    str(context_record.get("tag") or "").strip()
+                )
+                _ANVI_CONVERSATION_CONTEXT["last_domain"] = "plant_memory"
+                _ANVI_CONVERSATION_CONTEXT["last_pci_results"] = list(matched[:20])
+        except Exception:
+            pass
 
         lines = [
             f"ANVI found {len(matched)} Plant Memory record(s) for {subject}."
