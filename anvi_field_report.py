@@ -339,8 +339,33 @@ def _extract_spare(text):
         if m:
             return f"{m.group(1).upper()} x{m.group(2)}"
 
+    numbers = {
+        "one": "1", "two": "2", "three": "3", "four": "4",
+        "five": "5", "six": "6", "seven": "7", "eight": "8",
+        "nine": "9", "ten": "10"
+    }
+
     m = re.search(
-        r"(?i)\b(?:using|used|from)\s+(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\b",
+        r"(?i)\b(?:replaced\s+with|using|used|from|with|by)\s+"
+        r"(one|two|three|four|five|six|seven|eight|nine|ten|\d+(?:\.\d+)?)\s+"
+        r"([A-Z]{1,8}-\d{1,5})\s+spares?\b",
+        str(text or "")
+    )
+    if m:
+        qty = numbers.get(m.group(1).lower(), m.group(1))
+        return f"{m.group(2).upper()} x{qty}"
+
+    m = re.search(
+        r"(?i)\b(?:replaced\s+with|using|used|from|with|by)\s+"
+        r"(?:a|an)\s+([A-Z]{1,8}-\d{1,5})\s+spare\b",
+        str(text or "")
+    )
+    if m:
+        return f"{m.group(1).upper()} x1"
+
+    m = re.search(
+        r"(?i)\b(?:using|used|from)\s+(?:one|1)\s+"
+        r"([A-Z]{1,8}-\d{1,5})\s+spare\b",
         str(text or "")
     )
     if m:
@@ -354,7 +379,6 @@ def _extract_spare(text):
         return f"{m.group(1).upper()} x1"
 
     return ""
-
 
 def parse_field_report(text, filename=""):
     text = str(text or "").strip()
