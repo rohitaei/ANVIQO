@@ -191,6 +191,101 @@ input,select{
  .top-title b{font-size:12px}
 }
 </style>
+
+<style id="ANVI_FIELD_REPORT_UI_V2">
+.anvi-evidence-card{
+  margin-top:16px;
+  padding:20px;
+  border:1px solid rgba(148,163,184,.22);
+  border-radius:18px;
+  background:rgba(15,23,42,.72);
+}
+.anvi-evidence-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.anvi-evidence-title{
+  font-size:20px;
+  font-weight:800;
+}
+.anvi-evidence-sub{
+  margin-top:5px;
+  font-size:12px;
+  opacity:.68;
+}
+.anvi-verification{
+  padding:6px 11px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.5px;
+  background:rgba(245,158,11,.12);
+  color:#fbbf24;
+  border:1px solid rgba(245,158,11,.25);
+}
+.anvi-evidence-meta{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-top:16px;
+}
+.anvi-evidence-meta div,
+.anvi-evidence-step{
+  padding:13px;
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.07);
+}
+.anvi-evidence-label{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+  opacity:.55;
+  margin-bottom:5px;
+}
+.anvi-evidence-value{
+  font-size:14px;
+  font-weight:650;
+  line-height:1.4;
+}
+.anvi-evidence-flow{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+  margin-top:10px;
+}
+.anvi-evidence-step b{
+  display:block;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+  opacity:.55;
+  margin-bottom:6px;
+}
+.anvi-evidence-step span{
+  font-size:13px;
+  line-height:1.4;
+}
+.anvi-evidence-note{
+  margin-top:12px;
+  padding:12px 14px;
+  border-radius:12px;
+  font-size:12px;
+  line-height:1.5;
+  background:rgba(59,130,246,.07);
+  border:1px solid rgba(59,130,246,.16);
+}
+@media(max-width:760px){
+  .anvi-evidence-meta,
+  .anvi-evidence-flow{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+
 </head>
 
 <body>
@@ -1240,6 +1335,102 @@ async function searchSpares(){
 })();
 
 
+
+<script id="ANVI_FIELD_REPORT_RENDER_V2">
+function anviFieldReportEsc(v){
+  return String(v ?? "—")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function anviFieldReportRender(data){
+  const box=document.getElementById("fieldReportResult");
+  if(!box) return;
+
+  const r=(data && data.report) || data || {};
+  const memories=(data && data.plant_memory_records) || [];
+  const m=memories[0] || {};
+
+  const pick=(...keys)=>{
+    for(const k of keys){
+      if(r[k]!==undefined && r[k]!==null && String(r[k]).trim()!=="")
+        return r[k];
+      if(m[k]!==undefined && m[k]!==null && String(m[k]).trim()!=="")
+        return m[k];
+    }
+    return "—";
+  };
+
+  const area=pick("area");
+  const tag=pick("tag");
+  const equipment=pick("equipment");
+  const event=pick("event");
+  const finding=pick("finding");
+  const action=pick("maintenance_action","action");
+  const outcome=pick("outcome","confirmation_evidence");
+  const memoryId=pick("memory_id");
+  const verification=String(
+    pick("verification_status","verification")
+  ).toUpperCase();
+
+  const verified=verification==="VERIFIED";
+
+  box.innerHTML=`
+    <div class="anvi-evidence-card">
+      <div class="anvi-evidence-header">
+        <div>
+          <div class="anvi-evidence-title">Field Report Evidence Intelligence</div>
+          <div class="anvi-evidence-sub">
+            ${anviFieldReportEsc(area)} • ${anviFieldReportEsc(tag)}
+          </div>
+        </div>
+        <div class="anvi-verification">
+          ${verified ? "VERIFIED" : "PENDING VERIFICATION"}
+        </div>
+      </div>
+
+      <div class="anvi-evidence-meta">
+        <div>
+          <div class="anvi-evidence-label">Equipment</div>
+          <div class="anvi-evidence-value">${anviFieldReportEsc(equipment)}</div>
+        </div>
+        <div>
+          <div class="anvi-evidence-label">Plant Memory</div>
+          <div class="anvi-evidence-value">${anviFieldReportEsc(memoryId)}</div>
+        </div>
+      </div>
+
+      <div class="anvi-evidence-flow">
+        <div class="anvi-evidence-step">
+          <b>Event</b>
+          <span>${anviFieldReportEsc(event)}</span>
+        </div>
+        <div class="anvi-evidence-step">
+          <b>Finding</b>
+          <span>${anviFieldReportEsc(finding)}</span>
+        </div>
+        <div class="anvi-evidence-step">
+          <b>Action</b>
+          <span>${anviFieldReportEsc(action)}</span>
+        </div>
+        <div class="anvi-evidence-step">
+          <b>Outcome</b>
+          <span>${anviFieldReportEsc(outcome)}</span>
+        </div>
+      </div>
+
+      <div class="anvi-evidence-note">
+        ${verified
+          ? "Verified historical field evidence is available to ANVI for read-only plant intelligence."
+          : "Report captured successfully. Historical information remains pending human verification and is not treated as confirmed failure evidence."}
+      </div>
+    </div>`;
+}
+</script>
+
 async function submitFieldReport(){
   const text = document.getElementById('fieldReportText').value.trim();
   const fileInput = document.getElementById('fieldReportFile');
@@ -1268,6 +1459,7 @@ async function submitFieldReport(){
     });
 
     const data = await response.json();
+    anviFieldReportRender(data);
 
     if (!response.ok) {
       throw new Error(data.message || 'Field report processing failed');

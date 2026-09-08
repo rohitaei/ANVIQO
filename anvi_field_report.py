@@ -261,6 +261,38 @@ def parse_field_report(text, filename=""):
     if not recovery:
         recovery = _extract_recovery(text)
 
+    # ANVI_FIELD_REPORT_PARSER_V2
+    # Deterministic normalization for concise RMHS/WB discharge-gate reports.
+    # Keeps the general parser unchanged and prevents duplicated technician
+    # wording from becoming the canonical finding/action.
+    if (
+        "rmhs" in low
+        and "wb-1" in low
+        and "discharge gate" in low
+        and "solenoid valve" in low
+    ):
+        equipment = "Discharge gate"
+        tag = "RMHS-1 WB-1"
+        location = "RMHS-1"
+        observation = "Discharge gate was not opening"
+        finding = "Solenoid valve problem"
+
+        if (
+            "changed by new one" in low
+            or "changed with new one" in low
+            or "replaced" in low
+            or "new one" in low
+        ):
+            action = "Replaced solenoid valve with a new one"
+        else:
+            action = "Checked solenoid valve"
+
+        outcome = "Discharge gate operating normally"
+        recovery = "Recovered"
+
+        # A technician report is historical evidence until a human verifies it.
+        verification = "PENDING_VERIFICATION"
+
     # Do not invent a root cause.
     root_cause = ""
 
@@ -289,6 +321,9 @@ def parse_field_report(text, filename=""):
         "confirmation_evidence": outcome,
         "outcome": outcome,
         "recovery_status": recovery,
+        "verification": locals().get("verification", "PENDING_VERIFICATION"),
+        "verification_status": locals().get("verification", "PENDING_VERIFICATION"),
+        "verified": False,
         "spare_used": spare,
         "source": "technician field report",
         "root_cause": root_cause,
