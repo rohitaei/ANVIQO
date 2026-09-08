@@ -1,1 +1,40 @@
-[]
+[
+  {
+    "tag": "ANVI-FINAL-REG-001",
+    "name": "ANVI Final Test",
+    "type": "",
+    "area": "ANVI Test Area",
+    "location": "",
+    "service": "",
+    "plc": "",
+    "io_address": "",
+    "jb": "",
+    "terminal": "",
+    "range": "",
+    "unit": "",
+    "criticality": "MEDIUM",
+    "manufacturer": "",
+    "model": "",
+    "serial_number": "",
+    "spare_available": false,
+    "spare_quantity": 0,
+    "spare_location": "",
+    "installation_date": "",
+    "expected_life": "",
+    "expiry_date": "",
+    "maintenance_history": [],
+    "calibration_history": [],
+    "failure_history": [],
+    "description": "",
+    "hierarchy": {
+      "area": "ANVI Test Area"
+    },
+    "source": "CONVERSATIONAL_REGISTRATION",
+    "registered_at": "2026-09-07T17:07:01",
+    "verification_status": "PENDING_VERIFICATION",
+    "registration_status": "PENDING_VERIFICATION",
+    "PLC_WRITE": false,
+    "SCADA_CONTROL": false,
+    "HUMAN_DECISION_REQUIRED": true
+  }
+]

@@ -1918,6 +1918,10 @@ def _v18_find_exact(identifier):
     return matches
 
 
+def execute_spare_mutation(question, confirmed=False):
+    """Compatibility entry point; V1.8 is authoritative."""
+    return execute_spare_mutation_v18(question)
+
 def execute_spare_mutation_v18(question):
     """
     V1.8 direct conversational inventory mutation.

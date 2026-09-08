@@ -1,4 +1,4 @@
-from pci_spares import answer_spare_query, execute_spare_mutation, _v16_action
+from pci_spares import answer_spare_query, execute_spare_mutation
 from pci_universal_resolver import resolve as _universal_pci_resolve
 import re
 """
@@ -1012,18 +1012,7 @@ def answer(question):
     # V1.6.6 is the authoritative spare mutation engine.
     # Do not allow the legacy V1.2 direct-Excel parser to intercept
     # explicit ADD / RECEIVE / USE / REMOVE spare mutations.
-    if _v16_action(question):
-        # V1.6.6 direct conversational inventory mutation.
-        # Ordinary explicit ADD/RECEIVE/USE commands are authorized
-        # to update the master Excel inventory directly.
-        # Safety gates remain inside execute_spare_mutation().
-        return execute_spare_mutation(question, confirmed=True)
 
-
-    # CRITICAL SPARES ROUTING: instrument spares only; never spare PLC I/O.
-    # Explicit spare intent is resolved before generic PCI tag/family routing.
-    # This is intentionally phrase-based so normal questions such as
-    # "Tell me about PT-303" continue to use PCI intelligence.
     _ql = str(question).lower()
 
     _spare_intent = any(x in _ql for x in (

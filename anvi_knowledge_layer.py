@@ -3685,22 +3685,15 @@ def _anviqo_authoritative_core(question):
                 pass
 
         # ============================================================
-        # SPARE / INVENTORY INTENT PRIORITY
         # ============================================================
         # ============================================================
-        # SPARE / INVENTORY INTENT PRIORITY
+        # SPARE / INVENTORY — FINAL AUTHORITATIVE BOUNDARY
         # ============================================================
-        # Explicit spare/inventory questions must reach the
-        # deterministic spare engine BEFORE verified PCI-tag
-        # identity routing.
+        # Once a question is explicitly about spares/inventory, it
+        # belongs to the spare intelligence layer.
         #
-        # Example:
-        #   Do we have a spare for PT303?
-        # -> PT-303 | qty=0 | indent=1
-        #
-        # Ordinary engineering questions such as:
-        #   Tell me about PT303
-        # continue through the PCI identity route below.
+        # NEVER allow such a question to fall through into PCI
+        # identity, I/O-type, or generic PCI evidence searches.
         # ============================================================
 
         spare_intent_terms = (
@@ -3718,69 +3711,88 @@ def _anviqo_authoritative_core(question):
             "indent",
         )
 
-        if any(term in ql for term in spare_intent_terms):
-            try:
-                import pci_conversation as pc
+        explicit_spare_query = any(
+            term in ql for term in spare_intent_terms
+        )
 
-                spare_result = pc.answer(q)
+        if explicit_spare_query:
+
+            # --------------------------------------------------------
+            # Extract equipment/tag if supplied.
+            # --------------------------------------------------------
+            spare_tag = None
+
+            spare_tag_patterns = (
+                r"\b(?:spare|spares)\s+(?:for|of)\s+"
+                r"([A-Za-z0-9][A-Za-z0-9._/-]*)",
+                r"\b(?:equipment|tag)\s+"
+                r"([A-Za-z0-9][A-Za-z0-9._/-]*)",
+                r"\b(?:for|of)\s+"
+                r"([A-Za-z0-9][A-Za-z0-9._/-]*)\s*\??$",
+            )
+
+            for pattern in spare_tag_patterns:
+                m = re.search(pattern, q, re.I)
+                if m:
+                    spare_tag = m.group(1).strip().rstrip("?,.;:")
+                    break
+
+            # --------------------------------------------------------
+            # 1. Registered spare intelligence
+            # --------------------------------------------------------
+            try:
+                from anvi_registration import answer_registered_query
+
+                registered_result = answer_registered_query(q)
+
+                if isinstance(registered_result, dict):
+                    return registered_result
+            except Exception:
+                pass
+
+            # --------------------------------------------------------
+            # 2. Critical spare Excel intelligence
+            # --------------------------------------------------------
+            try:
+                import pci_spares as ps
+
+                spare_result = ps.answer_spare_management_v16(q)
 
                 if isinstance(spare_result, dict):
-                    spare_domain = str(
+                    domain = str(
                         spare_result.get("domain", "")
                     ).lower()
 
-                    spare_records = spare_result.get("records")
+                    records = spare_result.get("records")
+
+                    # Accept only an actual spare result.
+                    if domain == "critical_spares":
+                        return spare_result
 
                     if (
-                        spare_domain == "critical_spares"
-                        or (
-                            isinstance(spare_records, list)
-                            and len(spare_records) > 0
-                            and any(
-                                "spare" in str(
-                                    spare_result.get("answer", "")
-                                ).lower()
-                                for _ in [0]
-                            )
+                        isinstance(records, list)
+                        and len(records) > 0
+                        and (
+                            "spare" in str(
+                                spare_result.get("answer", "")
+                            ).lower()
+                            or "inventory" in str(
+                                spare_result.get("answer", "")
+                            ).lower()
                         )
                     ):
                         return spare_result
 
-            except Exception:
-                pass
-
-        # ============================================================
-        # CRITICAL SPARES — AUTHORITATIVE ROUTE
-        # ============================================================
-
-        spare_intent_terms = (
-            "spare",
-            "spares",
-            "critical spare",
-            "critical spares",
-            "inventory",
-            "in stock",
-            "stock available",
-            "available as a spare",
-            "available spare",
-            "available spares",
-            "to indent",
-            "indent",
-        )
-
-        if any(term in ql for term in spare_intent_terms):
-            try:
-                import pci_spares as ps
-                spare_result = ps.answer_spare_management_v16(q)
-
-                if isinstance(spare_result, dict):
-                    return spare_result
-
             except Exception as exc:
                 return {
-                    "answer": "Critical Spare system error. Inventory was not changed.",
+                    "answer": (
+                        "Critical Spare system error. "
+                        "Inventory was not changed."
+                    ),
                     "domain": "critical_spares",
                     "error": str(exc),
+                    "records": [],
+                    "count": 0,
                     "executed": False,
                     "inventory_mutation": False,
                     "plc_write": False,
@@ -3788,7 +3800,78 @@ def _anviqo_authoritative_core(question):
                     "human_decision_required": True,
                 }
 
-        # ============================================================
+            # --------------------------------------------------------
+            # 3. Critical-spare conversational resolver
+            # --------------------------------------------------------
+            try:
+                import pci_conversation as pc
+
+                critical_result = pc.answer(q)
+
+                if isinstance(critical_result, dict):
+                    domain = str(
+                        critical_result.get("domain", "")
+                    ).lower()
+
+                    records = critical_result.get("records")
+
+                    if domain == "critical_spares":
+                        return critical_result
+
+                    if (
+                        isinstance(records, list)
+                        and len(records) > 0
+                        and (
+                            "spare" in str(
+                                critical_result.get("answer", "")
+                            ).lower()
+                            or "inventory" in str(
+                                critical_result.get("answer", "")
+                            ).lower()
+                        )
+                    ):
+                        return critical_result
+
+            except Exception:
+                pass
+
+            # --------------------------------------------------------
+            # 4. TERMINAL NO-SPARE RESPONSE
+            # --------------------------------------------------------
+            # This is deliberately AFTER all authoritative spare
+            # sources. There is NO PCI fallback from here.
+            if spare_tag:
+                return {
+                    "answer": (
+                        f"No verified critical or registered spare "
+                        f"was found for {spare_tag}."
+                    ),
+                    "domain": "critical_spares",
+                    "equipment_tag": spare_tag,
+                    "records": [],
+                    "count": 0,
+                    "executed": False,
+                    "inventory_mutation": False,
+                    "plc_write": False,
+                    "scada_control": False,
+                    "human_decision_required": True,
+                }
+
+            return {
+                "answer": (
+                    "No verified critical or registered spare records "
+                    "matched this spare/inventory request."
+                ),
+                "domain": "critical_spares",
+                "records": [],
+                "count": 0,
+                "executed": False,
+                "inventory_mutation": False,
+                "plc_write": False,
+                "scada_control": False,
+                "human_decision_required": True,
+            }
+
         # VERIFIED PCI TAG — RESOLVE CONTEXT, DO NOT RETURN YET
         # ============================================================
 
@@ -4319,7 +4402,9 @@ def ask_anvi(question, *args, **kwargs):
     except Exception:
         pass
 
-    # ANVIQO_REGISTERED_SPARE_RETRIEVAL_V1
+    # ANVIQO_REGISTERED_SPARE_RETRIEVAL_V2
+    # Registered conversational spares are checked exactly once,
+    # before legacy PCI/Critical Spare routing.
     try:
         _registered_query_result = answer_registered_query(question)
         if _registered_query_result is not None:
@@ -4339,69 +4424,6 @@ def ask_anvi(question, *args, **kwargs):
       - automatic PLC/SCADA execution = False
     """
 
-    # ================================================================
-    # ANVIQO_SMART_REGISTERED_SPARE_QUERY_ROUTE_V1
-    # Read registered conversational equipment/spares before legacy
-    # PCI/Critical Spare routing. This is READ ONLY.
-    # ================================================================
-    try:
-        _registered_query_result = answer_registered_query(question)
-        if _registered_query_result is not None:
-            return _registered_query_result
-    except Exception as _registered_query_error:
-        # Never break the existing intelligence stack because of the
-        # registration database. Fall through safely.
-        pass
-
-    # ================================================================
-    # ANVIQO_V16_SPARE_MUTATION_GATE_V1
-    # ================================================================
-    try:
-        from pci_spares import _v16_action, execute_spare_mutation
-
-        _v16_spare_action = _v16_action(question)
-
-        if _v16_spare_action in ("ADD", "USE"):
-            _v16_spare_result = execute_spare_mutation(
-                question,
-                confirmed=True
-            )
-
-            # Direct conversational inventory mutation.
-            # Do NOT send a mutation command through PCI routing.
-            if isinstance(_v16_spare_result, dict):
-                _v16_spare_result["domain"] = "critical_spares"
-                _v16_spare_result["read_only_inventory_query"] = False
-                _v16_spare_result["inventory_mutation"] = True
-                _v16_spare_result["plc_write"] = False
-                _v16_spare_result["scada_control"] = False
-                _v16_spare_result["automatic_execution"] = False
-                _v16_spare_result["human_decision_required"] = True
-
-                if _v16_spare_result.get("ok"):
-                    _v16_spare_result["answer"] = (
-                        _v16_spare_result.get("answer")
-                        or "ANVIQO inventory updated successfully."
-                    )
-
-                return _v16_spare_result
-
-    except Exception as _v16_spare_error:
-        # Mutation commands must never silently fall through to PCI.
-        if "_v16_spare_action" in locals() and _v16_spare_action in ("ADD", "USE"):
-            return {
-                "ok": False,
-                "executed": False,
-                "domain": "critical_spares",
-                "inventory_mutation": True,
-                "error": f"Spare inventory mutation failed safely: {_v16_spare_error}",
-                "plc_write": False,
-                "scada_control": False,
-                "automatic_execution": False,
-                "human_decision_required": True
-            }
-
-    # ================================================================
     # EXISTING AUTHORITATIVE ANVIQO ROUTER
     # ================================================================
     return _anviqo_authoritative_core(question)

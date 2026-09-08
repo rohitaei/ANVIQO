@@ -12,3 +12,13 @@
 2026-09-07T12:31:11 | V1.8 | USE | PT-303 | qty=1 | before=8 | after=7 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
 2026-09-07T12:38:10 | V1.8 | ADD | PT-303 | qty=3 | before=7 | after=10 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
 2026-09-07T12:38:12 | V1.8 | USE | PT-303 | qty=1 | before=10 | after=9 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-07T17:04:57 | V1.8 | ADD | PT-303 | qty=1 | before=9 | after=10 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-07T17:05:56 | V1.8 | USE | PT-303 | qty=1 | before=10 | after=9 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-07T17:06:59 | V1.8 | ADD | PT-303 | qty=1 | before=9 | after=10 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-07T17:07:01 | V1.8 | USE | PT-303 | qty=1 | before=10 | after=9 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-08T08:42:05 | V1.8 | ADD | PT-303 | qty=1 | before=9 | after=10 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-08T08:42:07 | V1.8 | USE | PT-303 | qty=1 | before=10 | after=9 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-08T08:42:10 | V1.8 | ADD | PT-303 | qty=2 | before=9 | after=11 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-08T08:42:12 | V1.8 | USE | PT-303 | qty=2 | before=11 | after=9 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-08T10:47:59 | V1.8 | ADD | PT-303 | qty=1 | before=9 | after=10 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
+2026-09-08T10:48:04 | V1.8 | USE | PT-303 | qty=1 | before=10 | after=9 | sheet=PT | row=9 | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE
