@@ -1431,6 +1431,130 @@ function anviFieldReportRender(data){
 }
 </script>
 
+
+function anviFieldReportRenderV2(data){
+  const box=document.getElementById("fieldReportResult");
+  if(!box) return;
+
+  const p=(data && data.parsed_report) || {};
+  const memories=(data && data.plant_memory_records) || [];
+  const m=memories[0] || {};
+
+  const pick=(a,b)=>{
+    const x=(p[a]!==undefined && p[a]!==null && String(p[a]).trim())
+      ? p[a] : m[b||a];
+    return (x!==undefined && x!==null && String(x).trim()) ? x : "—";
+  };
+
+  const area=pick("area");
+  const tag=pick("tag");
+  const equipment=pick("equipment");
+  const event=pick("event");
+  const finding=pick("finding");
+  const action=pick("maintenance_action");
+  const outcome=pick("outcome");
+  const recovery=pick("recovery_status");
+  const verification=String(
+    p.verification_status || p.verification ||
+    m.verification_status || m.verification ||
+    "PENDING_VERIFICATION"
+  ).toUpperCase();
+
+  const memoryId=data.memory_id || p.memory_id || m.memory_id || "—";
+
+  const esc=(v)=>String(v ?? "—")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+
+  const verified=verification==="VERIFIED";
+
+  box.innerHTML=`
+    <div style="
+      margin-top:16px;padding:20px;border-radius:18px;
+      border:1px solid rgba(148,163,184,.22);
+      background:rgba(15,23,42,.72);
+    ">
+      <div style="
+        display:flex;justify-content:space-between;
+        gap:12px;align-items:flex-start;flex-wrap:wrap;
+      ">
+        <div>
+          <div style="font-size:20px;font-weight:800">
+            Field Report Evidence Intelligence
+          </div>
+          <div style="font-size:12px;opacity:.68;margin-top:5px">
+            ${esc(area)} • ${esc(tag)}
+          </div>
+        </div>
+
+        <div style="
+          padding:6px 11px;border-radius:999px;
+          font-size:11px;font-weight:800;
+          background:${verified
+            ?"rgba(34,197,94,.12)"
+            :"rgba(245,158,11,.12)"};
+          color:${verified?"#4ade80":"#fbbf24"};
+        ">
+          ${verified?"VERIFIED":"PENDING VERIFICATION"}
+        </div>
+      </div>
+
+      <div style="
+        display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:10px;margin-top:16px;
+      ">
+        <div style="padding:13px;border-radius:12px;background:rgba(255,255,255,.035)">
+          <div style="font-size:10px;opacity:.55;text-transform:uppercase">Equipment</div>
+          <div style="font-size:14px;font-weight:650;margin-top:5px">${esc(equipment)}</div>
+        </div>
+        <div style="padding:13px;border-radius:12px;background:rgba(255,255,255,.035)">
+          <div style="font-size:10px;opacity:.55;text-transform:uppercase">Plant Memory</div>
+          <div style="font-size:14px;font-weight:650;margin-top:5px">${esc(memoryId)}</div>
+        </div>
+      </div>
+
+      <div style="
+        display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:9px;margin-top:10px;
+      ">
+        <div style="padding:13px;border-radius:12px;background:rgba(255,255,255,.035)">
+          <div style="font-size:10px;opacity:.55;text-transform:uppercase">Event</div>
+          <div style="font-size:13px;margin-top:6px">${esc(event)}</div>
+        </div>
+        <div style="padding:13px;border-radius:12px;background:rgba(255,255,255,.035)">
+          <div style="font-size:10px;opacity:.55;text-transform:uppercase">Finding</div>
+          <div style="font-size:13px;margin-top:6px">${esc(finding)}</div>
+        </div>
+        <div style="padding:13px;border-radius:12px;background:rgba(255,255,255,.035)">
+          <div style="font-size:10px;opacity:.55;text-transform:uppercase">Action</div>
+          <div style="font-size:13px;margin-top:6px">${esc(action)}</div>
+        </div>
+        <div style="padding:13px;border-radius:12px;background:rgba(255,255,255,.035)">
+          <div style="font-size:10px;opacity:.55;text-transform:uppercase">Outcome</div>
+          <div style="font-size:13px;margin-top:6px">${esc(outcome)}</div>
+        </div>
+      </div>
+
+      <div style="
+        margin-top:12px;padding:12px 14px;border-radius:12px;
+        font-size:12px;line-height:1.5;
+        background:rgba(59,130,246,.07);
+        border:1px solid rgba(59,130,246,.16);
+      ">
+        <b>Recovery:</b> ${esc(recovery)}
+        &nbsp; • &nbsp;
+        <b>Verification:</b> ${esc(verification)}
+        <br>
+        ${verified
+          ?"Verified historical evidence is available to ANVI."
+          :"Report captured successfully. Human verification remains required before treating it as confirmed failure evidence."}
+      </div>
+    </div>`;
+}
+
 async function submitFieldReport(){
   const text = document.getElementById('fieldReportText').value.trim();
   const fileInput = document.getElementById('fieldReportFile');
@@ -1459,6 +1583,7 @@ async function submitFieldReport(){
     });
 
     const data = await response.json();
+    anviFieldReportRenderV2(data);
     anviFieldReportRender(data);
 
     if (!response.ok) {
