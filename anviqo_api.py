@@ -1,3 +1,4 @@
+from pathlib import Path
 # ANVIQO_NEON_RUNTIME_BOOTSTRAP_V2
 try:
     import anvi_neon_runtime
