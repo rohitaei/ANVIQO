@@ -133,178 +133,225 @@ def _extract_labeled_field(text, label, next_labels):
     return _clean(m.group(1)).strip(" .;:")
 
 
-def _extract_observation(text):
-    # Structured label first
-    value = _extract_labeled_field(
-        text,
-        "Observation",
-        ["Finding", "Maintenance action", "Outcome", "Recovery", "Spare used"]
+def _sentence_list(text):
+    """Split technician prose into clean sentences."""
+    text = re.sub(r"\s+", " ", str(text or "")).strip()
+    if not text:
+        return []
+    return [x.strip(" .;:") for x in re.split(r"(?<=[.!?])\s+", text) if x.strip()]
+
+
+def _extract_labeled_field(text, label, next_labels):
+    """Extract an explicitly labelled field without swallowing later fields."""
+    labels = "|".join(re.escape(x) for x in next_labels)
+    pattern = (
+        rf"(?is)\b{re.escape(label)}\s*:\s*(.*?)"
+        rf"(?=\s*(?:{labels})\s*:|$)"
     )
-    if value:
-        return value
+    m = re.search(pattern, str(text or ""))
+    return _clean(m.group(1)).strip(" .;:") if m else ""
 
-    patterns = [
-        r"Field report\s*:\s*[A-Z]{1,8}-\d{1,5}\s+(.+?)(?=\.\s+(?:Finding|Maintenance action|Outcome|Recovery|Spare used)\s*:|$)",
-        r"(?:was|were|found|observed)\s+(?:showing|giving|indicating)\s+(.+?)(?=\.\s+(?:The technician|After|One|[A-Z][A-Za-z]+ was|$))",
-        r"found\s+(.+?)(?=\.\s+(?:The technician|After|One|[A-Z][A-Za-z]+ was|$))",
-        r"observed\s+(.+?)(?=\.\s+(?:The technician|After|One|[A-Z][A-Za-z]+ was|$))",
-    ]
 
-    for pattern in patterns:
-        m = re.search(pattern, text, re.I | re.S)
-        if m:
-            return _clean(m.group(1)).strip(" .;:")
+def _extract_observation(text):
+    labeled = _extract_labeled_field(
+        text, "Observation",
+        ["Finding", "Maintenance action", "Action", "Outcome",
+         "Recovery", "Spare used", "Spare"]
+    )
+    if labeled:
+        return labeled
+
+    sentences = _sentence_list(text)
+
+    for s in sentences:
+        low = s.lower()
+        if any(x in low for x in (
+            "was observed", "were observed", "observed showing",
+            "abnormal indication", "abnormal pressure",
+            "abnormal flow", "not showing", "no indication",
+            "failed to indicate", "indication was abnormal"
+        )):
+            s = re.sub(
+                r"(?i)^(during the shift,?\s*)?",
+                "",
+                s
+            )
+            s = re.sub(
+                r"(?i)^.*?\bwas observed\s+",
+                "",
+                s
+            )
+            return _clean(s).strip(" .;:")
 
     return ""
 
 
 def _extract_finding(text):
-    value = _extract_labeled_field(
-        text,
-        "Finding",
-        ["Maintenance action", "Outcome", "Recovery", "Spare used"]
+    labeled = _extract_labeled_field(
+        text, "Finding",
+        ["Maintenance action", "Action", "Outcome",
+         "Recovery", "Spare used", "Spare"]
     )
-    if value:
-        return value
+    if labeled:
+        return labeled
 
-    patterns = [
-        r"found\s+(?:that\s+)?(?:it\s+was\s+)?(.+?)(?=\.\s+(?:The transmitter|The technician|One|After|$))",
-        r"confirmed\s+(?:that\s+)?(?:it\s+was\s+)?(.+?)(?=\.\s+(?:One|After|$))",
-    ]
+    sentences = _sentence_list(text)
 
-    for pattern in patterns:
-        m = re.search(pattern, text, re.I | re.S)
-        if m:
-            value = _clean(m.group(1)).strip(" .;:")
-            if value:
-                return value
+    for s in sentences:
+        low = s.lower()
+
+        if "found faulty" in low:
+            m = re.search(
+                r"(?i)(?:was|were|is|are)?\s*(?:checked|inspected)?\s*"
+                r"(?:and\s+)?found\s+(.+)$",
+                s
+            )
+            if m:
+                return _clean(m.group(1)).strip(" .;:")
+
+        if "fault was confirmed" in low:
+            return "Fault confirmed"
+
+        if "fuse blown" in low:
+            return "Fuse blown"
+
+        if "no power" in low and "fuse" in low:
+            return "Fuse blown / no power"
 
     return ""
 
 
 def _extract_action(text):
-    value = _extract_labeled_field(
-        text,
-        "Maintenance action",
-        ["Outcome", "Recovery", "Spare used"]
+    labeled = _extract_labeled_field(
+        text, "Maintenance action",
+        ["Outcome", "Recovery", "Spare used", "Spare"]
     )
-    if value:
-        return value
+    if labeled:
+        return labeled
 
+    labeled = _extract_labeled_field(
+        text, "Action",
+        ["Outcome", "Recovery", "Spare used", "Spare"]
+    )
+    if labeled:
+        return labeled
+
+    sentences = _sentence_list(text)
     actions = []
 
-    if re.search(r"\binspected\s+the\s+transmitter\b", text, re.I):
-        actions.append("inspected the transmitter")
+    for s in sentences:
+        low = s.lower()
 
-    if re.search(r"\bconfirmed\s+that\s+it\s+was\s+faulty\b", text, re.I):
-        actions.append("confirmed that it was faulty")
+        if any(x in low for x in (
+            "inspected", "checked", "replaced", "changed",
+            "repaired", "reset", "calibrated", "tightened",
+            "cleaned"
+        )):
+            if (
+                "found faulty" not in low
+                and "found failed" not in low
+                and not low.startswith("after replacement")
+                and "returned to normal" not in low
+                and "restored to healthy" not in low
+                and "restored healthy" not in low
+            ):
+                actions.append(s)
 
-    if re.search(
-        r"\b(?:one|1)\s+[A-Z]{1,8}-\d{1,5}\s+spare\s+was\s+used\s+to\s+replace\s+the\s+faulty\s+transmitter\b",
-        text,
-        re.I,
-    ):
-        actions.append("replaced the faulty transmitter")
+    if actions:
+        return "; ".join(actions)
 
-    elif re.search(
-        r"\breplaced\s+the\s+faulty\s+transmitter\b",
-        text,
-        re.I,
-    ):
-        actions.append("replaced the faulty transmitter")
-
-    # Remove duplicates while preserving order.
-    unique_actions = []
-    for action in actions:
-        if action not in unique_actions:
-            unique_actions.append(action)
-
-    return "; ".join(unique_actions)
-
-
-
-def _extract_spare(text):
-    # Structured field-report format:
-    # Spare used: FT-412 x1
-    value = _extract_labeled_field(
-        text,
-        "Spare used",
-        []
-    )
-    if value:
-        m = re.search(
-            r"\b([A-Z]{1,8}-\d{1,5})\s*(?:x|qty|quantity)?\s*(\d+(?:\.\d+)?)\b",
-            value,
-            re.I,
-        )
-        if m:
-            return f"{m.group(1).upper()} x{m.group(2)}"
-        return value
-
-    # Natural-language field reports.
-    patterns = [
-        r"\b(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\s+was\s+used\b",
-        r"\b([A-Z]{1,8}-\d{1,5})\s+spare\s+was\s+used\b",
-        r"\bused\s+(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\b",
-        r"\b([A-Z]{1,8}-\d{1,5})\s+spare\s+(?:was\s+)?used\b",
-        r"\b(?:replaced|replacement)\b.*?\busing\s+(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\b",
-        r"\busing\s+(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\b",
-    ]
-
-    for pattern in patterns:
-        m = re.search(pattern, text, re.I | re.S)
-        if m:
-            return f"{m.group(1).upper()} x1"
+    low = str(text or "").lower()
+    if "changed fuse" in low or "replaced fuse" in low:
+        return "Fuse replaced"
 
     return ""
 
+
 def _extract_outcome(text):
-    value = _extract_labeled_field(
-        text,
-        "Outcome",
-        ["Recovery", "Spare used"]
+    labeled = _extract_labeled_field(
+        text, "Outcome",
+        ["Recovery", "Spare used", "Spare"]
     )
-    if value:
-        return value
+    if labeled:
+        return labeled
 
-    patterns = [
-        r"After replacement,\s*(.+?)(?=\.\s*(?:The equipment|Recovery|Spare used|$))",
-        r"after replacement,\s*(.+?)(?=\.\s*(?:The equipment|Recovery|Spare used|$))",
-        r"(?:signal|indication)\s+(?:became|returned\s+to|returned)\s+(.+?)(?=\.\s*(?:The equipment|Recovery|$))",
-    ]
+    sentences = _sentence_list(text)
 
-    for pattern in patterns:
-        m = re.search(pattern, text, re.I | re.S)
-        if m:
-            value = _clean(m.group(1)).strip(" .;:")
-            if value:
-                return value
+    for s in sentences:
+        low = s.lower()
+
+        if any(x in low for x in (
+            "returned to normal", "became normal",
+            "restored to healthy", "restored healthy",
+            "operating normally", "working normally",
+            "signal returned", "indication returned",
+            "now ok", "back to normal"
+        )):
+            return s
 
     return ""
 
 
 def _extract_recovery(text):
-    value = _extract_labeled_field(
-        text,
-        "Recovery",
-        ["Spare used"]
+    labeled = _extract_labeled_field(
+        text, "Recovery",
+        ["Spare used", "Spare"]
     )
-    if value:
-        return value
+    if labeled:
+        return labeled
 
-    if re.search(
-        r"(?:equipment|instrument|transmitter)\s+was\s+restored\s+to\s+(?:a\s+)?healthy\s+condition",
-        text,
-        re.I,
-    ):
+    low = str(text or "").lower()
+
+    if any(x in low for x in (
+        "recovered", "recovery confirmed",
+        "condition recovered", "equipment recovered"
+    )):
         return "Recovered"
 
-    if re.search(
-        r"(?:signal|indication|reading)\s+(?:returned|became)\s+(?:normal|healthy)",
-        text,
-        re.I,
-    ):
-        return "Recovered"
+    return ""
+
+
+def _extract_spare(text):
+    labeled = _extract_labeled_field(
+        text, "Spare used",
+        ["Observation", "Finding", "Maintenance action",
+         "Action", "Outcome", "Recovery", "Spare"]
+    )
+    if not labeled:
+        labeled = _extract_labeled_field(
+            text, "Spare",
+            ["Observation", "Finding", "Maintenance action",
+             "Action", "Outcome", "Recovery", "Spare used"]
+        )
+
+    if labeled:
+        m = re.search(
+            r"(?i)\b([A-Z]{1,8}-\d{1,5})\s*x\s*(\d+(?:\.\d+)?)\b",
+            labeled
+        )
+        if m:
+            return f"{m.group(1).upper()} x{m.group(2)}"
+
+        m = re.search(
+            r"(?i)\b([A-Z]{1,8}-\d{1,5})\b.*?\b(\d+(?:\.\d+)?)\s*(?:nos?|pcs?|pieces?)\b",
+            labeled
+        )
+        if m:
+            return f"{m.group(1).upper()} x{m.group(2)}"
+
+    m = re.search(
+        r"(?i)\b(?:using|used|from)\s+(?:one|1)\s+([A-Z]{1,8}-\d{1,5})\s+spare\b",
+        str(text or "")
+    )
+    if m:
+        return f"{m.group(1).upper()} x1"
+
+    m = re.search(
+        r"(?i)\b([A-Z]{1,8}-\d{1,5})\s+spare\s+(?:used|consumed)\b",
+        str(text or "")
+    )
+    if m:
+        return f"{m.group(1).upper()} x1"
 
     return ""
 
