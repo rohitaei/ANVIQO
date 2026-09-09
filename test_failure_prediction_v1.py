@@ -2,7 +2,7 @@ import sys
 import types
 
 
-def _fake_modules(memory=None, events=None, live=None, health=None):
+def _fake_modules(memory=None, events=None, live=None, health=None, history=None):
     pci = types.ModuleType("pci_conversation")
     pci.find_tag = lambda tag: {"tag": "PT-303", "name": "Test PT"} if tag.replace("_", "-").replace(" ", "-") == "PT-303" else None
     pci.get_live_pci_snapshot = lambda: {"points": [live]} if live else {"points": []}
@@ -15,7 +15,10 @@ def _fake_modules(memory=None, events=None, live=None, health=None):
 
     eh = types.ModuleType("equipment_health")
     eh.get_latest_health = lambda tag: health
-    return {"pci_conversation": pci, "plant_memory": pm, "event_timeline": et, "equipment_health": eh}
+
+    ph = types.ModuleType("failure_prediction_history")
+    ph.get_observations = lambda tag, limit=500: history or []
+    return {"pci_conversation": pci, "plant_memory": pm, "event_timeline": et, "equipment_health": eh, "failure_prediction_history": ph}
 
 
 def test_single_live_value_never_becomes_prediction(monkeypatch):
@@ -33,22 +36,31 @@ def test_single_live_value_never_becomes_prediction(monkeypatch):
     assert result["decision_status"] == "HUMAN_DECISION_REQUIRED"
 
 
-def test_two_timestamped_history_points_enable_conditional_prediction(monkeypatch):
+def test_persisted_plant_history_enables_conditional_prediction(monkeypatch):
     from failure_prediction import build_failure_prediction
-    memory = [
-        {"tag":"PT-303", "source":"technician field report", "verified":True, "timestamp":"2026-09-01T10:00:00Z", "value":40},
-        {"tag":"PT-303", "source":"technician field report", "verified":True, "timestamp":"2026-09-08T10:00:00Z", "value":49},
+    history = [
+        {"observation_id":"FPO-1", "tag":"PT-303", "value":40.0, "timestamp":"2026-09-01T10:00:00+00:00", "source":"read-only telemetry", "simulation":False},
+        {"observation_id":"FPO-2", "tag":"PT-303", "value":49.0, "timestamp":"2026-09-08T10:00:00+00:00", "source":"read-only telemetry", "simulation":False},
     ]
-    live = {"tag":"PT-303", "state":"CRITICAL", "value":49, "changed":False, "event_active":True, "mode":"SIMULATION", "source":"PCI_SIMULATION", "timestamp":"2026-09-09T10:00:00Z"}
-    for name, module in _fake_modules(memory=memory, live=live).items():
+    live = {"tag":"PT-303", "state":"CRITICAL", "value":49.0, "changed":False, "event_active":True, "mode":"SIMULATION", "source":"PCI_SIMULATION", "timestamp":"2026-09-09T10:00:00Z"}
+    for name, module in _fake_modules(live=live, history=history).items():
         monkeypatch.setitem(sys.modules, name, module)
     result = build_failure_prediction("Predict PT-303 failure risk")
+    assert result["prediction_version"] == "ANVIQO-FP-V1.1"
     assert result["status"] == "PREDICTION_AVAILABLE"
-    assert result["trend"]["status"] == "AVAILABLE"
     assert result["trend"]["direction"] == "RISING"
-    assert result["risk_signal"] == "TREND_RISING"
+    assert result["evidence_summary"]["persisted_observation_count"] == 2
     assert "probability" not in result["prediction"].lower()
-    assert "future failure" not in result["prediction"].lower() or "not a confirmed future failure" in result["prediction"].lower()
+
+
+def test_single_live_value_and_no_history_remain_unavailable(monkeypatch):
+    from failure_prediction import build_failure_prediction
+    live = {"tag": "PT-303", "state": "CRITICAL", "value": 49.17, "changed": False, "event_active": True, "mode": "SIMULATION", "source": "PCI_SIMULATION"}
+    for name, module in _fake_modules(live=live).items():
+        monkeypatch.setitem(sys.modules, name, module)
+    result = build_failure_prediction("Predict PT-303 failure risk")
+    assert result["status"] == "INSUFFICIENT_EVIDENCE"
+    assert result["trend"]["observations_used"] == 0
 
 
 def test_detector_requires_equipment_tag_and_prediction_intent():
