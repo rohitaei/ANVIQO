@@ -14,13 +14,25 @@ def test_verified_action_retrieval():
     assert result["count"] == 1
     assert result["matches"][0]["maintenance_action"].startswith("Inspected")
     assert result["matches"][0]["confirmation_evidence"] == "Healthy signal restored"
+    assert result["matches"][0]["verified"] is True
 
 
 def test_unverified_or_incomplete_memory_is_excluded():
     records = [
+        {"tag": "PT-303", "maintenance_action": "Replace transmitter", "confirmation_evidence": "Signal healthy", "verified": False},
         {"tag": "PT-303", "maintenance_action": "Replace transmitter"},
-        {"tag": "PT-303", "confirmation_evidence": "Signal healthy"},
+        {"tag": "PT-303", "confirmation_evidence": "Signal healthy", "verified": True},
     ]
+    assert retrieve_actions(records, tag="PT-303") == []
+
+
+def test_mismatched_tag_is_excluded():
+    records = [{
+        "tag": "PT-304",
+        "maintenance_action": "Inspected and replaced transmitter",
+        "confirmation_evidence": "Healthy signal restored",
+        "verified": True,
+    }]
     assert retrieve_actions(records, tag="PT-303") == []
 
 
