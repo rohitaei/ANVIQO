@@ -31,23 +31,39 @@ SAFETY = {
 }
 
 
+_EQUIPMENT_RE = re.compile(
+    r"\b(?:PT|FT|LT|TT|DP|MCV|SOV|FSV|PCV|POSR|TCV|FV|XV|CV)\s*[-_ ]?\s*\d{1,5}\b",
+    re.IGNORECASE,
+)
+
+
 def is_root_cause_query(query: str) -> bool:
     """Detect explicit equipment root-cause/failure investigation intent."""
-    q = str(query or "").strip().lower()
+    q = " ".join(str(query or "").strip().lower().split())
     if not q:
         return False
+
+    equipment = bool(_EQUIPMENT_RE.search(q))
+    if not equipment:
+        return False
+
     cause_terms = (
         "root cause", "cause of", "causing", "reason for", "why is", "why was",
         "why did", "why has", "what caused", "failure cause", "fault cause",
+        "why does", "why are", "why were",
     )
     symptom_terms = (
         "abnormal", "failure", "failed", "fault", "problem", "issue", "trip",
         "unhealthy", "malfunction", "not working", "stopped",
     )
+
     has_cause = any(term in q for term in cause_terms)
-    has_equipment = bool(re.search(r"\b(?:PT|FT|LT|TT|DP|MCV|SOV|FSV|PCV|POSR|TCV|FV|XV|CV)[-_ ]?\d{1,5}\b", q))
     has_symptom = any(term in q for term in symptom_terms)
-    return has_cause and has_equipment and (has_symptom or "why is" in q or "why was" in q or "what caused" in q)
+
+    # A direct "why is/was/did/has..." equipment question is itself an
+    # investigation request even when the symptom word is omitted.
+    direct_why = any(term in q for term in ("why is", "why was", "why did", "why has", "why does", "why are", "why were"))
+    return has_cause and (has_symptom or direct_why or "root cause" in q or "what caused" in q)
 
 
 def _load(name: str):
@@ -74,10 +90,7 @@ def _norm_tag(tag: str) -> str:
 
 
 def extract_tag(text: str) -> Optional[str]:
-    m = re.search(
-        r"\b(?:PT|FT|LT|TT|DP|MCV|SOV|FSV|PCV|POSR|TCV|FV|XV)[-_ ]?\d{1,5}\b",
-        str(text or "").upper(),
-    )
+    m = _EQUIPMENT_RE.search(str(text or ""))
     return _norm_tag(m.group(0)) if m else None
 
 
