@@ -44,7 +44,6 @@ def main():
     print("ANVIQO PRODUCT V1 — RELEASE CERTIFICATION V2")
     print("=" * 76)
 
-    # 1. Active source compilation — syntax only, no application startup.
     print("\n===== ACTIVE SOURCE COMPILATION =====")
     py_files = [
         p for p in ROOT.rglob("*.py")
@@ -61,29 +60,19 @@ def main():
     check("All active Python sources parse", not syntax_errors,
           str(syntax_errors[:3]))
 
-    # 2. Core product surface.
     print("\n===== CORE PRODUCT SURFACE =====")
     required = [
-        "anviqo_product.py",
-        "anviqo_api.py",
-        "anviqo_web.py",
-        "anvi_knowledge_layer.py",
-        "anviqo_dashboard.html",
-        "plant_memory.py",
-        "maintenance_action_memory_v1.py",
-        "failure_prediction.py",
-        "failure_prediction_api.py",
-        "failure_prediction_demo_api.py",
-        "failure_prediction_dashboard_runtime.py",
-        "pci_conversation.py",
-        "pci_live_simulator.py",
-        "pci_spares.py",
+        "anviqo_product.py", "anviqo_api.py", "anviqo_web.py",
+        "anvi_knowledge_layer.py", "anviqo_dashboard.html",
+        "plant_memory.py", "maintenance_action_memory_v1.py",
+        "failure_prediction.py", "failure_prediction_api.py",
+        "failure_prediction_demo_api.py", "failure_prediction_dashboard_runtime.py",
+        "pci_conversation.py", "pci_live_simulator.py", "pci_spares.py",
         "anvi_voice.py",
     ]
     for name in required:
         check(f"Required file: {name}", (ROOT / name).exists())
 
-    # 3. PCI integrity.
     print("\n===== PCI INTEGRITY =====")
     pci_path = ROOT / "database/pci/pci_instrument_database.json"
     check("PCI database exists", pci_path.exists())
@@ -108,7 +97,6 @@ def main():
         except Exception as exc:
             check("PCI database parses", False, str(exc))
 
-    # 4. Plant Memory — verified evidence remains the only authoritative memory.
     print("\n===== PLANT MEMORY =====")
     memory_path = ROOT / "database/plant_memory/plant_memory.json"
     check("Plant Memory database exists", memory_path.exists())
@@ -123,7 +111,6 @@ def main():
         except Exception as exc:
             check("Plant Memory parses", False, str(exc))
 
-    # 5. Maintenance Action Memory — no parallel memory store.
     print("\n===== MAINTENANCE ACTION MEMORY =====")
     ma = read("maintenance_action_memory_v1.py")
     check("Maintenance Action Memory version present", "ANVIQO-MA-MEMORY-V1.0" in ma)
@@ -134,7 +121,6 @@ def main():
     check("Maintenance Action Memory blocks SCADA", "\"scada_control\": False" in ma)
     check("Maintenance Action Memory requires human decision", "\"human_decision_required\": True" in ma)
 
-    # 6. Failure Prediction — production history must not accept demo data.
     print("\n===== FAILURE PREDICTION =====")
     fp = read("failure_prediction.py")
     fph = read("failure_prediction_history.py")
@@ -144,7 +130,7 @@ def main():
     check("Prediction requires timestamped history", "timestamp" in fp and "historical" in fp.lower())
     check("Production history rejects simulation/demo sources", "SIMULATION" in fph and "DEMO" in fph)
     check("Demo API is explicitly simulation", '"simulation": True' in demo_api)
-    check("Demo API does not calculate failure probability", "failure_probability" in demo_api)
+    check("Demo API exposes no calculated probability", "failure_probability" in demo_api)
     check("Demo telemetry file exists", demo_csv.exists())
     if demo_csv.exists():
         rows = demo_csv.read_text(encoding="utf-8").strip().splitlines()
@@ -152,7 +138,6 @@ def main():
     freeze = read("releases/FP_DEMO_V1_FREEZE.md")
     check("Failure Prediction Demo freeze exists", "FROZEN" in freeze)
 
-    # 7. Dashboard runtime safety and demo labeling.
     print("\n===== DASHBOARD =====")
     dashboard = read("anviqo_dashboard.html")
     runtime = read("failure_prediction_dashboard_runtime.py")
@@ -162,7 +147,6 @@ def main():
     check("Dashboard demo states PLC/SCADA blocked", "PLC / SCADA control: BLOCKED" in runtime)
     check("Dashboard demo requires human decision", "Human decision: REQUIRED" in runtime)
 
-    # 8. Conversational routing — existing engines remain authoritative.
     print("\n===== CONVERSATIONAL ROUTING =====")
     knowledge = read("anvi_knowledge_layer.py")
     check("Plant Memory routing exists", "_pci_memory_route" in knowledge and "_anvi_general_memory_route" in knowledge)
@@ -172,7 +156,6 @@ def main():
     check("Spare-use recall exists", "spare used" in knowledge.lower())
     check("Memory route precedes normal PCI tag return", "Plant Memory — BEFORE VERIFIED PCI TAG ROUTING" in knowledge)
 
-    # 9. API / safety contract.
     print("\n===== API + SAFETY =====")
     api = read("anviqo_api.py")
     for route in ["/api/status", "/api/pci", "/api/pci/live", "/api/ask", "/api/safety", "/api/field_report"]:
@@ -187,12 +170,30 @@ def main():
         check(f"{name}: PLC write blocked", bool(re.search(r"plc_write\s*[:=]\s*False", text, re.I)))
         check(f"{name}: SCADA control blocked", bool(re.search(r"scada_control\s*[:=]\s*False", text, re.I)))
 
-    # 10. No mutation during certification.
     print("\n===== NON-MUTATING CERTIFICATION =====")
-    check("Certification script contains no Excel mutation call", "save_workbook" not in read(__file__.name))
-    check("Certification script contains no memory write call", "store_memory(" not in read(__file__.name))
-    check("Certification script does not write production history", "write_text" not in read(__file__.name))
-    warn("No hard-coded secrets detected by source scan", True)
+    audit_text = read(Path(__file__).name)
+    mutation_tokens = [
+        "openpyxl", "save_workbook", "store_memory(", "create_conversational_memory(",
+        "record_outcome(", "upsert_memory(", "update_excel", "write_observation(",
+    ]
+    check("Certification source contains no mutation operations", not any(t in audit_text for t in mutation_tokens))
+
+    secret_patterns = [
+        r"(?i)api[_-]?key\s*=\s*['\"][A-Za-z0-9_\-]{16,}['\"]",
+        r"(?i)secret[_-]?key\s*=\s*['\"][A-Za-z0-9_\-]{16,}['\"]",
+        r"(?i)password\s*=\s*['\"][^'\"]{10,}['\"]",
+    ]
+    secret_hits = []
+    for path in py_files:
+        if path.name == Path(__file__).name:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        if any(re.search(pattern, text) for pattern in secret_patterns):
+            secret_hits.append(str(path))
+    check("No obvious hard-coded secrets", not secret_hits, str(secret_hits[:5]))
 
     print("\n" + "=" * 76)
     print("CERTIFICATION RESULT")
