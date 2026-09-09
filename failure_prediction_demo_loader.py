@@ -61,10 +61,10 @@ def load_demo_telemetry(path: str | Path) -> Dict[str, Any]:
         for line_number, raw in enumerate(reader, start=2):
             source_type = str(raw.get("source_type") or "").strip().upper()
             provenance = str(raw.get("provenance") or "").strip()
-            if source_type != "SIMULATION" or "SIMULATION" not in provenance.upper():
+            if source_type != "SIMULATION" or not provenance:
                 raise ValueError(
                     f"line {line_number}: demo loader requires source_type=SIMULATION "
-                    "and simulation provenance"
+                    "and non-empty provenance"
                 )
             tag = str(raw.get("tag") or "").strip().upper()
             if not tag:
