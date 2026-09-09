@@ -7,8 +7,8 @@ def load_store():
     db = Path(f"phase2_tenant_{uuid.uuid4().hex}.db")
     os.environ["ANVIQO_TENANT_DB_URL"] = f"sqlite:///{db}"
     import importlib
-    import anviqo_tenant_store
-    return importlib.reload(anviqo_tenant_store), db
+    import anvi_tenant_store
+    return importlib.reload(anvi_tenant_store), db
 
 
 def test_organization_plant_user_membership_role_permission_chain():
