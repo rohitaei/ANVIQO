@@ -204,15 +204,15 @@ def build_root_cause_intelligence(query:str,tag:Optional[str]=None)->Dict[str,An
         event_text=correlation["active_event"].get("message") if isinstance(correlation.get("active_event"),dict) else None
         if event_text:
             conclusion=(f"{tag} is currently {state} in the PCI {mode} stream at value {live.get('value')}. "
-                        f"Correlated event evidence: {event_text} Root cause is not confirmed.")
+                        f"Correlated event evidence: {event_text} This establishes the current abnormal condition, but there is not enough explicit failure evidence to confirm a root cause. Root cause is not confirmed.")
         elif correlation["active_event"]:
             conclusion=(f"{tag} is currently {state} in the PCI {mode} stream at value {live.get('value')}. "
-                        "The stream reports an active event, but no event-detail record is available. Root cause is not confirmed.")
+                        "The stream reports an active event, but no event-detail record is available. This establishes the current abnormal condition, but there is not enough explicit failure evidence to confirm a root cause. Root cause is not confirmed.")
         else:
             conclusion=(f"{tag} is currently {state} in the PCI {mode} stream at value {live.get('value')}. "
-                        "No correlated causal evidence is available to confirm a root cause. Root cause is not confirmed.")
+                        "This establishes the current abnormal condition, but there is not enough explicit failure evidence to confirm a root cause. Root cause is not confirmed.")
     elif any_evidence:
-        status="INSUFFICIENT_EVIDENCE"; conclusion="ANVIQO identified equipment evidence, but not enough explicit causal evidence to confirm a root cause."
+        status="INSUFFICIENT_EVIDENCE"; conclusion="ANVIQO identified equipment evidence, but there is not enough explicit failure evidence to confirm a root cause."
     else:
         status="NO_EVIDENCE"; conclusion="No usable equipment evidence was found for a root-cause assessment."
     return {"rci_version":VERSION,"timestamp":datetime.now(timezone.utc).isoformat(),"query":query,"tag":tag,"status":status,"conclusion":conclusion,
