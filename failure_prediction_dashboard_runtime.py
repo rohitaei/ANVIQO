@@ -9,7 +9,7 @@ from flask import request
 
 from anviqo_spare_query_guard import app
 
-VERSION = "ANVIQO-FP-DEMO-DASHBOARD-V1.0"
+VERSION = "ANVIQO-FP-DEMO-DASHBOARD-V1.1"
 
 SAFETY = {
     "mode": "DEMO_SIMULATION_ONLY",
@@ -33,10 +33,7 @@ PANEL_HTML = r'''
 .fp-demo-metric strong{display:block;font-size:18px;margin-top:5px}
 .fp-demo-chart{height:180px;position:relative;margin-top:12px;border:1px solid #193b49;border-radius:8px;background:#06131b;overflow:hidden}
 .fp-demo-chart svg{width:100%;height:100%;display:block}
-.fp-demo-axis{font-size:7px;fill:#668592}
 .fp-demo-legend{font-size:8px;color:#7895a3;margin-top:6px}
-.fp-demo-safe{font-size:9px;line-height:1.7;color:#7895a3}
-.fp-demo-safe b{color:#29dfa8}
 @media(max-width:900px){.fp-demo-grid{grid-template-columns:1fr}.fp-demo-metrics{grid-template-columns:repeat(2,1fr)}}
 </style>
 <div id="anviqoFpDemo" class="card">
@@ -81,8 +78,6 @@ PANEL_HTML = r'''
 SCRIPT = r'''
 <script id="anviqo-fp-demo-script">
 (function(){
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]})}
-  function norm(v){return String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
   function draw(points){
     var box=document.getElementById('fpChart'); if(!box||!points||points.length<2)return;
     var w=700,h=180,p=18, vals=points.map(function(x){return Number(x.value)}).filter(Number.isFinite);
@@ -107,22 +102,13 @@ SCRIPT = r'''
       document.getElementById('fpDirection').textContent=d.direction||'—';
       document.getElementById('fpPrediction').textContent=d.prediction||'Prediction unavailable.';
       document.getElementById('fpLegend').textContent='Synthetic PT-303 telemetry • '+(d.observations||0)+' observations • '+(d.provenance||'ANVIQO DEMO');
-      draw(d.trend_points||d.observation_points||d.points||[]);
+      draw(d.trend_points||[]);
       status.style.display='none';body.style.display='block';
-    }catch(e){status.textContent='Demo prediction unavailable: '+e.message;status.className='empty';}
+    }catch(e){status.textContent='Demo prediction unavailable: '+e.message;}
   }
-  function mount(){
-    var page=document.getElementById('page-prediction'); if(!page||document.getElementById('anviqoFpDemo'))return;
-    page.appendChild(document.createElement('div')).outerHTML='';
-    page.insertAdjacentHTML('beforeend',window.__ANVIQO_FP_DEMO_PANEL_HTML__||'');
-    load();
-  }
-  window.__ANVIQO_FP_DEMO_PANEL_HTML__=window.__ANVIQO_FP_DEMO_PANEL_HTML__||'';
   function start(){
-    var page=document.getElementById('page-prediction'); if(!page)return;
-    if(!document.getElementById('anviqoFpDemo')){
-      var holder=document.createElement('div');holder.innerHTML=window.__ANVIQO_FP_DEMO_PANEL_HTML__;var node=holder.firstElementChild;if(node)page.appendChild(node);
-    }
+    var page=document.getElementById('page-prediction'); if(!page||document.getElementById('anviqoFpDemo'))return;
+    page.insertAdjacentHTML('beforeend',window.__ANVIQO_FP_DEMO_PANEL_HTML__||'');
     load();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
@@ -130,24 +116,22 @@ SCRIPT = r'''
 </script>
 '''
 
-# The runtime script gets the HTML from a safe JSON-ish JS assignment. Avoid a
-# template engine dependency and keep all demo content in this module.
-BOOTSTRAP = '<script>window.__ANVIQO_FP_DEMO_PANEL_HTML__=' + repr(PANEL_HTML).replace('\\n','\\n') + ';</script>'
+BOOTSTRAP = '<script>window.__ANVIQO_FP_DEMO_PANEL_HTML__=' + repr(PANEL_HTML) + ';</script>'
 
 
 def inject_prediction_demo_dashboard(html: str) -> str:
     """Inject the demo panel into the existing Predictive Intelligence page."""
     text = str(html or '')
-    if 'id="page-prediction"' not in text or 'id="predictionData"' not in text:
+    if 'id="page-prediction"' not in text:
         return text
     if 'id="anviqoFpDemo"' in text:
         return text
+    lower = text.lower()
     marker = '</body>'
-    if marker not in text.lower():
+    idx = lower.find(marker)
+    if idx < 0:
         return text
-    # Preserve original casing of the closing body tag by replacing the first
-    # exact common form; dashboard source uses </body>.
-    return text.replace('</body>', BOOTSTRAP + SCRIPT + '\n</body>', 1)
+    return text[:idx] + BOOTSTRAP + SCRIPT + '\n' + text[idx:]
 
 
 @app.after_request
