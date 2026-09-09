@@ -11,6 +11,9 @@ def test_demo_prediction_is_explicitly_simulation_only():
     assert result["last_value"] == 53.7
     assert result["delta"] == 5.5
     assert result["direction"] == "RISING"
+    assert len(result["trend_points"]) == 8
+    assert result["trend_points"][0]["value"] == 48.2
+    assert result["trend_points"][-1]["value"] == 53.7
     assert result["failure_probability"] is None
     assert result["failure_date"] is None
     assert result["production_history_write"] is False
