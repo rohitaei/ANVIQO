@@ -33,6 +33,7 @@ if callable(_original_v18_action):
     pci_spares._v18_action = _guarded_v18_action
 
 from anviqo_api_phase2 import app  # noqa: E402
+import failure_prediction_api  # noqa: E402,F401
 
 
 @app.before_request
