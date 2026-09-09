@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import pytest
@@ -8,7 +7,7 @@ from anvi_field_report import parse_field_report
 
 
 def _make_workbook(path: Path, tag="PT-303", qty=3):
-    openpyxl = pytest.importorskip("openpyxl")
+    pytest.importorskip("openpyxl")
     from openpyxl import Workbook
 
     wb = Workbook()
@@ -92,3 +91,27 @@ def test_negative_inventory_is_blocked(tmp_path, monkeypatch):
     )
     with pytest.raises(ValueError, match="Only 0 available"):
         runtime.sync_field_report_spare(parsed, "PM-TEST-003")
+
+
+def test_later_report_question_returns_persistent_field_evidence(monkeypatch):
+    report = {
+        "memory_id": "PM-TEST-004",
+        "tag": "PT-303",
+        "equipment": "PT-303",
+        "source": "technician field report",
+        "observation": "No indication",
+        "finding": "Fuse blown",
+        "maintenance_action": "Fuse replaced",
+        "outcome": "Instrument returned to normal operation",
+        "spare_used": "none reported",
+        "verification_status": "PENDING_VERIFICATION",
+    }
+
+    import plant_memory
+    monkeypatch.setattr(plant_memory, "search_all_memory", lambda **kwargs: [report])
+
+    answer = runtime.answer_field_report_query("What happened to PT-303 last time?")
+    assert answer is not None
+    assert answer["memory_id"] == "PM-TEST-004"
+    assert "Fuse replaced" in answer["answer"]
+    assert answer["verification_status"] == "PENDING_VERIFICATION"
