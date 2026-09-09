@@ -56,7 +56,7 @@ if not ADMIN_USER or not ADMIN_PASSWORD:
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = False
+app.config["SESSION_COOKIE_SECURE"] = True
 
 
 # ------------------------------------------------------------
@@ -356,6 +356,25 @@ def ask_anvi():
 
     try:
         q=(request.get_json(silent=True) or {}).get("question","").strip()
+
+        # Phase 1: inventory mutations require an authenticated ADMIN session.
+        # Read-only questions remain available to any authenticated session.
+        from pci_spares import _extract_tag
+        mutation_words = (" add ", " added ", " receive ", " received ", " use ", " used ", " remove ", " removed ", " consume ", " consumed ")
+        q_probe = " " + q.lower() + " "
+        if any(word in q_probe for word in mutation_words) and _extract_tag(q):
+            if session.get("role") != "ADMIN":
+                return jsonify({
+                    "status": "FORBIDDEN",
+                    "message": "Inventory mutation requires ADMIN authorization.",
+                    "inventory_mutation": True,
+                    "executed": False,
+                    "blocked": True,
+                    "read_only": True,
+                    "plc_write": False,
+                    "scada_control": False,
+                }), 403
+
         return knowledge_ask(q)
     except Exception as e:
         return {

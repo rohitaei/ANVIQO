@@ -208,3 +208,6 @@ else:
     print("\nANVIQO V5 MASTER REGRESSION: ATTENTION REQUIRED")
 
 print("========================================")
+
+# CI-safe contract: never report a failing regression as a successful process.
+raise SystemExit(1 if failed else 0)
