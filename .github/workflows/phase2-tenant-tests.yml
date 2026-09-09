@@ -1,0 +1,40 @@
+name: Phase 2 tenant foundation tests
+
+on:
+  push:
+    branches:
+      - phase2-tenant-foundation
+      - phase2-field-report-spare-fix
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  tenant-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pytest Flask openpyxl
+
+      - name: Compile Phase 2 and field-report modules
+        run: python -m py_compile anvi_tenant_store.py anviqo_api_phase2.py field_report_runtime.py test_phase2_tenant_foundation.py test_phase2_api_boundary.py test_phase2_v5_freeze.py test_field_report_spare_sync.py
+
+      - name: Run Phase 2 tenant tests
+        run: pytest -q test_phase2_tenant_foundation.py test_phase2_api_boundary.py
+
+      - name: Run field report and spare regression tests
+        run: pytest -q test_field_report_spare_sync.py
+
+      - name: Verify V5 intelligence remains frozen
+        run: pytest -q test_phase2_v5_freeze.py
