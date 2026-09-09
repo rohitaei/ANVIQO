@@ -72,3 +72,29 @@ def test_rci_reports_pci_context_when_other_evidence_is_missing(monkeypatch):
     assert result["evidence_summary"]["pci_live_available"] is True
     assert result["hypotheses"] == []
     assert "not enough explicit failure evidence" in result["conclusion"]
+
+
+def test_rci_explains_current_live_abnormal_condition_without_inventing_root_cause(monkeypatch):
+    monkeypatch.setattr(rci, "_events", lambda tag: [])
+    monkeypatch.setattr(rci, "_verified_memory", lambda tag: [])
+    monkeypatch.setattr(rci, "_health", lambda tag: None)
+    monkeypatch.setattr(rci, "_maintenance", lambda tag, query: (None, []))
+    monkeypatch.setattr(rci, "_pci_evidence", lambda tag, query: {
+        "identity": {"tag": "PT_303", "description": "Pressure transmitter"},
+        "live": {
+            "tag": "PT_303", "state": "CRITICAL", "value": 88.4,
+            "changed": True, "event_active": True, "mode": "SIMULATION",
+            "source": "PCI DEMO STREAM",
+        },
+        "answer": "PCI context available",
+    })
+
+    result = rci.build_root_cause_intelligence("Why is PT-303 abnormal?")
+
+    assert result["status"] == "INSUFFICIENT_EVIDENCE"
+    assert result["observed_condition"]["live_state"] == "CRITICAL"
+    assert result["observed_condition"]["changed"] is True
+    assert result["observed_condition"]["event_active"] is True
+    assert "current abnormal condition" in result["conclusion"]
+    assert "Root cause is not confirmed" in result["conclusion"]
+    assert result["hypotheses"] == []
