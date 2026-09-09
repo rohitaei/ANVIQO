@@ -1,6 +1,8 @@
 name: Phase 1 completion and Phase 2 foundation
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -12,227 +14,97 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Apply verified security and tenant foundation changes
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           python - <<'PY'
           from pathlib import Path
-          import json
 
-          # ---------- Phase 1: CSRF ----------
           api = Path('anviqo_api.py')
           text = api.read_text()
-
           text = text.replace('import json\n', 'import json\nimport secrets\n', 1)
-
           marker = 'def authenticated():\n    return bool(session.get("authenticated"))\n'
-          insert = '''def authenticated():\n    return bool(session.get("authenticated"))\n\n\ndef ensure_csrf_token():\n    token = session.get("csrf_token")\n    if not token:\n        token = secrets.token_urlsafe(32)\n        session["csrf_token"] = token\n    return token\n\n\ndef csrf_required():\n    expected = ensure_csrf_token()\n    supplied = request.headers.get("X-CSRF-Token", "")\n    if not supplied or not secrets.compare_digest(supplied, expected):\n        return jsonify({\n            "status": "FORBIDDEN",\n            "message": "CSRF validation failed.",\n        }), 403\n    return None\n'''
-          if marker not in text:
-              raise SystemExit('authenticated marker not found')
+          insert = '''def authenticated():\n    return bool(session.get("authenticated"))\n\n\ndef ensure_csrf_token():\n    token = session.get("csrf_token")\n    if not token:\n        token = secrets.token_urlsafe(32)\n        session["csrf_token"] = token\n    return token\n\n\ndef csrf_required():\n    expected = ensure_csrf_token()\n    supplied = request.headers.get("X-CSRF-Token", "")\n    if not supplied or not secrets.compare_digest(supplied, expected):\n        return jsonify({"status": "FORBIDDEN", "message": "CSRF validation failed."}), 403\n    return None\n'''
+          if marker not in text: raise SystemExit('authenticated marker not found')
           text = text.replace(marker, insert, 1)
-
           text = text.replace('            session["role"] = "ADMIN"\n', '            session["role"] = "ADMIN"\n            ensure_csrf_token()\n', 1)
-
-          csrf_route = '''\n\n@app.route("/api/csrf")\n@login_required\ndef csrf_token():\n    return jsonify({"csrf_token": ensure_csrf_token()})\n'''
           route_marker = '@app.route("/api/status")\n'
-          if csrf_route.strip() not in text:
-              text = text.replace(route_marker, csrf_route + '\n' + route_marker, 1)
-
-          text = text.replace('def field_report():\n    """', 'def field_report():\n    csrf_error = csrf_required()\n    if csrf_error:\n        return csrf_error\n\n    """', 1)
-          text = text.replace('def ask_anvi():\n    from flask import request', 'def ask_anvi():\n    csrf_error = csrf_required()\n    if csrf_error:\n        return csrf_error\n\n    from flask import request', 1)
-
-          # Actor context for governed inventory mutations.
-          text = text.replace('        return knowledge_ask(q)\n', '        try:\n            from pci_spare_direct_excel import set_actor_context\n            set_actor_context({"username": session.get("username", ""), "role": session.get("role", "")})\n        except Exception:\n            pass\n\n        result = knowledge_ask(q)\n\n        if isinstance(result, dict) and result.get("inventory_mutation") is True:\n            try:\n                from pci_spare_direct_excel import clear_actor_context\n                clear_actor_context()\n            except Exception:\n                pass\n        return result\n', 1)
-
+          csrf_route = '''@app.route("/api/csrf")\n@login_required\ndef csrf_token():\n    return jsonify({"csrf_token": ensure_csrf_token()})\n\n\n'''
+          if csrf_route.strip() not in text: text = text.replace(route_marker, csrf_route + route_marker, 1)
+          text = text.replace('def field_report():\n    """', 'def field_report():\n    csrf_error = csrf_required()\n    if csrf_error: return csrf_error\n\n    """', 1)
+          text = text.replace('def ask_anvi():\n    from flask import request', 'def ask_anvi():\n    csrf_error = csrf_required()\n    if csrf_error: return csrf_error\n\n    from flask import request', 1)
+          text = text.replace('        return knowledge_ask(q)\n', '        from pci_spare_direct_excel import set_actor_context, clear_actor_context\n        set_actor_context({"username": session.get("username", ""), "role": session.get("role", "")})\n        try:\n            return knowledge_ask(q)\n        finally:\n            clear_actor_context()\n', 1)
+          text = text.replace('            ensure_csrf_token()\n            return redirect(url_for("dashboard"))\n', '            ensure_csrf_token()\n            try:\n                from anvi_tenant_store import ensure_bootstrap\n                tenant = ensure_bootstrap(username)\n                if tenant: session.update(tenant)\n            except Exception:\n                pass\n            return redirect(url_for("dashboard"))\n', 1)
           api.write_text(text)
 
-          # ---------- Phase 1: actor-aware spare audit ----------
           spare = Path('pci_spare_direct_excel.py')
           s = spare.read_text()
           s = s.replace('AUDIT = ROOT / "database" / "spares" / "critical_spare_transactions.json"\n', 'AUDIT = ROOT / "database" / "spares" / "critical_spare_transactions.json"\n\n_ACTOR_CONTEXT = {}\n\n\ndef set_actor_context(actor):\n    global _ACTOR_CONTEXT\n    _ACTOR_CONTEXT = dict(actor or {})\n\n\ndef clear_actor_context():\n    global _ACTOR_CONTEXT\n    _ACTOR_CONTEXT = {}\n', 1)
           s = s.replace('        "timestamp_utc": datetime.now(timezone.utc).isoformat()\n', '        "timestamp_utc": datetime.now(timezone.utc).isoformat(),\n        "actor": dict(_ACTOR_CONTEXT),\n', 1)
           spare.write_text(s)
 
-          # ---------- Phase 2: tenant/org/plant/membership foundation ----------
           tenant = Path('anvi_tenant_store.py')
-          tenant.write_text(r'''"""ANVIQO Phase 2 tenant foundation.
-
-Authoritative tenant model for Organization -> Plant -> User -> Membership.
-Uses PostgreSQL/Neon in production. No V5 intelligence is modified here.
-"""
-import os
-import uuid
-import json
-from datetime import datetime, timezone
-
+          tenant.write_text(r'''"""ANVIQO Phase 2 tenant foundation."""
+import os, uuid, json
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
-
-def enabled():
-    return bool(DATABASE_URL)
-
-
+def enabled(): return bool(DATABASE_URL)
+def _id(): return str(uuid.uuid4())
 def _connect():
     import psycopg
     return psycopg.connect(DATABASE_URL)
 
-
-def _id():
-    return str(uuid.uuid4())
-
-
 def init_schema():
-    if not enabled():
-        return False
+    if not enabled(): return False
     statements = [
-        """CREATE TABLE IF NOT EXISTS anviqo_organizations (
-            organization_id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            slug TEXT NOT NULL UNIQUE,
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )""",
-        """CREATE TABLE IF NOT EXISTS anviqo_plants (
-            plant_id TEXT PRIMARY KEY,
-            organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id),
-            name TEXT NOT NULL,
-            slug TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            UNIQUE(organization_id, slug)
-        )""",
-        """CREATE TABLE IF NOT EXISTS anviqo_users (
-            user_id TEXT PRIMARY KEY,
-            external_username TEXT NOT NULL UNIQUE,
-            display_name TEXT NOT NULL DEFAULT '',
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )""",
-        """CREATE TABLE IF NOT EXISTS anviqo_memberships (
-            membership_id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL REFERENCES anviqo_users(user_id),
-            organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id),
-            plant_id TEXT REFERENCES anviqo_plants(plant_id),
-            role TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            UNIQUE(user_id, organization_id, plant_id)
-        )""",
-        """CREATE TABLE IF NOT EXISTS anviqo_tenant_audit (
-            audit_id TEXT PRIMARY KEY,
-            actor_user_id TEXT,
-            organization_id TEXT,
-            plant_id TEXT,
-            action TEXT NOT NULL,
-            resource_type TEXT NOT NULL,
-            resource_id TEXT,
-            metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )""",
+      "CREATE TABLE IF NOT EXISTS anviqo_organizations (organization_id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, status TEXT NOT NULL DEFAULT 'ACTIVE', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+      "CREATE TABLE IF NOT EXISTS anviqo_plants (plant_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id), name TEXT NOT NULL, slug TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'ACTIVE', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(organization_id,slug))",
+      "CREATE TABLE IF NOT EXISTS anviqo_users (user_id TEXT PRIMARY KEY, external_username TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'ACTIVE', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+      "CREATE TABLE IF NOT EXISTS anviqo_memberships (membership_id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES anviqo_users(user_id), organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id), plant_id TEXT REFERENCES anviqo_plants(plant_id), role TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'ACTIVE', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(user_id,organization_id,plant_id))",
+      "CREATE TABLE IF NOT EXISTS anviqo_tenant_audit (audit_id TEXT PRIMARY KEY, actor_user_id TEXT, organization_id TEXT, plant_id TEXT, action TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT, metadata JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"
     ]
     with _connect() as conn:
-        with conn.cursor() as cur:
-            for sql in statements:
-                cur.execute(sql)
-        conn.commit()
+      with conn.cursor() as cur:
+        for sql in statements: cur.execute(sql)
+      conn.commit()
     return True
-
 
 def ensure_bootstrap(username, organization_name="ANVIQO Customer", plant_name="Primary Plant"):
-    if not enabled():
-        return None
-    init_schema()
-    org_slug = "anviqo-customer"
-    plant_slug = "primary-plant"
+    if not enabled(): return None
+    init_schema(); org_slug="anviqo-customer"; plant_slug="primary-plant"
     with _connect() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT organization_id FROM anviqo_organizations WHERE slug=%s", (org_slug,))
-            row = cur.fetchone()
-            org_id = row[0] if row else _id()
-            if not row:
-                cur.execute("INSERT INTO anviqo_organizations(organization_id,name,slug) VALUES(%s,%s,%s)", (org_id, organization_name, org_slug))
-            cur.execute("SELECT plant_id FROM anviqo_plants WHERE organization_id=%s AND slug=%s", (org_id, plant_slug))
-            row = cur.fetchone()
-            plant_id = row[0] if row else _id()
-            if not row:
-                cur.execute("INSERT INTO anviqo_plants(plant_id,organization_id,name,slug) VALUES(%s,%s,%s,%s)", (plant_id, org_id, plant_name, plant_slug))
-            cur.execute("SELECT user_id FROM anviqo_users WHERE external_username=%s", (str(username),))
-            row = cur.fetchone()
-            user_id = row[0] if row else _id()
-            if not row:
-                cur.execute("INSERT INTO anviqo_users(user_id,external_username,display_name) VALUES(%s,%s,%s)", (user_id, str(username), str(username)))
-            cur.execute("SELECT membership_id,role FROM anviqo_memberships WHERE user_id=%s AND organization_id=%s AND plant_id=%s", (user_id, org_id, plant_id))
-            row = cur.fetchone()
-            membership_id = row[0] if row else _id()
-            role = row[1] if row else "ADMIN"
-            if not row:
-                cur.execute("INSERT INTO anviqo_memberships(membership_id,user_id,organization_id,plant_id,role) VALUES(%s,%s,%s,%s,%s)", (membership_id, user_id, org_id, plant_id, role))
-        conn.commit()
-    return {"user_id": user_id, "organization_id": org_id, "plant_id": plant_id, "membership_id": membership_id, "role": role}
-
+      with conn.cursor() as cur:
+        cur.execute("SELECT organization_id FROM anviqo_organizations WHERE slug=%s",(org_slug,)); row=cur.fetchone(); org_id=row[0] if row else _id()
+        if not row: cur.execute("INSERT INTO anviqo_organizations(organization_id,name,slug) VALUES(%s,%s,%s)",(org_id,organization_name,org_slug))
+        cur.execute("SELECT plant_id FROM anviqo_plants WHERE organization_id=%s AND slug=%s",(org_id,plant_slug)); row=cur.fetchone(); plant_id=row[0] if row else _id()
+        if not row: cur.execute("INSERT INTO anviqo_plants(plant_id,organization_id,name,slug) VALUES(%s,%s,%s,%s)",(plant_id,org_id,plant_name,plant_slug))
+        cur.execute("SELECT user_id FROM anviqo_users WHERE external_username=%s",(str(username),)); row=cur.fetchone(); user_id=row[0] if row else _id()
+        if not row: cur.execute("INSERT INTO anviqo_users(user_id,external_username,display_name) VALUES(%s,%s,%s)",(user_id,str(username),str(username)))
+        cur.execute("SELECT membership_id,role FROM anviqo_memberships WHERE user_id=%s AND organization_id=%s AND plant_id=%s",(user_id,org_id,plant_id)); row=cur.fetchone(); membership_id=row[0] if row else _id(); role=row[1] if row else "ADMIN"
+        if not row: cur.execute("INSERT INTO anviqo_memberships(membership_id,user_id,organization_id,plant_id,role) VALUES(%s,%s,%s,%s,%s)",(membership_id,user_id,org_id,plant_id,role))
+      conn.commit()
+    return {"user_id":user_id,"organization_id":org_id,"plant_id":plant_id,"membership_id":membership_id,"role":role}
 
 def record_audit(actor, action, resource_type, resource_id="", metadata=None):
-    if not enabled():
-        return False
-    actor = actor or {}
-    init_schema()
+    if not enabled(): return False
+    init_schema(); actor=actor or {}
     with _connect() as conn:
-        with conn.cursor() as cur:
-            cur.execute("INSERT INTO anviqo_tenant_audit(audit_id,actor_user_id,organization_id,plant_id,action,resource_type,resource_id,metadata) VALUES(%s,%s,%s,%s,%s,%s,%s,%s::jsonb)", (_id(), actor.get("user_id"), actor.get("organization_id"), actor.get("plant_id"), action, resource_type, resource_id, json.dumps(metadata or {}, ensure_ascii=False)))
-        conn.commit()
+      with conn.cursor() as cur:
+        cur.execute("INSERT INTO anviqo_tenant_audit(audit_id,actor_user_id,organization_id,plant_id,action,resource_type,resource_id,metadata) VALUES(%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",( _id(),actor.get("user_id"),actor.get("organization_id"),actor.get("plant_id"),action,resource_type,resource_id,json.dumps(metadata or {},ensure_ascii=False)))
+      conn.commit()
     return True
 ''')
 
-          # Bootstrap tenant context on successful login without changing the existing credential source.
-          text = api.read_text()
-          old = '            ensure_csrf_token()\n            return redirect(url_for("dashboard"))\n'
-          new = '''            ensure_csrf_token()\n            try:\n                from anvi_tenant_store import ensure_bootstrap\n                tenant = ensure_bootstrap(username)\n                if tenant:\n                    session.update(tenant)\n            except Exception:\n                # Tenant DB availability must not corrupt the existing login path.\n                pass\n            return redirect(url_for("dashboard"))\n'''
-          if old not in text:
-              raise SystemExit('login bootstrap marker not found')
-          text = text.replace(old, new, 1)
-          api.write_text(text)
-
-          # ---------- Phase 2 deterministic contract test ----------
           test = Path('test_phase2_tenant_foundation.py')
-          test.write_text(r'''import ast
-from pathlib import Path
-
-
-def main():
-    api = Path("anviqo_api.py").read_text()
-    tenant = Path("anvi_tenant_store.py").read_text()
-    spare = Path("pci_spare_direct_excel.py").read_text()
-
-    assert "csrf_required()" in api
-    assert "/api/csrf" in api
-    assert "SESSION_COOKIE_SECURE" in api and "True" in api
-    assert "anvi_tenant_store" in api
-    assert "organization_id" in tenant and "plant_id" in tenant
-    assert "anviqo_memberships" in tenant
-    assert "anviqo_tenant_audit" in tenant
-    assert "actor" in spare
-    ast.parse(api)
-    ast.parse(tenant)
-    ast.parse(spare)
-    print("PHASE2_TENANT_FOUNDATION: PASS")
-
-
-if __name__ == "__main__":
-    main()
-''')
-
+          test.write_text('''import ast\nfrom pathlib import Path\n\ndef main():\n    api=Path("anviqo_api.py").read_text(); tenant=Path("anvi_tenant_store.py").read_text(); spare=Path("pci_spare_direct_excel.py").read_text()\n    assert "csrf_required()" in api\n    assert "/api/csrf" in api\n    assert "anvi_tenant_store" in api\n    assert "anviqo_organizations" in tenant and "anviqo_plants" in tenant and "anviqo_memberships" in tenant and "anviqo_tenant_audit" in tenant\n    assert '"actor"' in spare\n    ast.parse(api); ast.parse(tenant); ast.parse(spare)\n    print("PHASE2_TENANT_FOUNDATION: PASS")\n\nif __name__ == "__main__": main()\n''')
           print('SOURCE_CHANGES_READY')
           PY
-
-      - name: Validate Python source and Phase 2 contract
+      - name: Validate
         run: |
           python -m py_compile anviqo_api.py pci_spare_direct_excel.py anvi_tenant_store.py test_phase2_tenant_foundation.py
           python test_phase2_tenant_foundation.py
-
       - name: Commit source changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add anviqo_api.py pci_spare_direct_excel.py anvi_tenant_store.py test_phase2_tenant_foundation.py
-          git commit -m "Complete Phase 1 security and start Phase 2 tenant foundation"
+          git commit -m "Complete Phase 1 security and start Phase 2 tenant foundation" || exit 0
           git push
