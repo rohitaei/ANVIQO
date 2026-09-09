@@ -96,6 +96,49 @@ def tenant_audit():
     return jsonify({"status": "OK", "organization_id": actor["organization_id"], "plant_id": actor["plant_id"], "records": rows})
 
 
+@app.route("/api/field_report/reconcile_spares", methods=["POST"])
+def reconcile_field_report_spares_api():
+    """One-time repair for historical reports stored before spare auto-sync.
+
+    This endpoint is explicitly authorized and never runs from a read-only
+    question or application startup.
+    """
+    if not session.get("authenticated"):
+        return jsonify({"status": "UNAUTHORIZED", "message": "ANVIQO authentication required"}), 401
+
+    actor = _actor()
+    if not authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"]):
+        return jsonify({
+            "status": "FORBIDDEN",
+            "message": "inventory:write permission is required for spare reconciliation.",
+            "inventory_changed": False,
+        }), 403
+
+    payload = request.get_json(silent=True) or {}
+    tag = str(payload.get("tag", "")).strip()
+    report_id = str(payload.get("report_id", "")).strip()
+
+    try:
+        from field_report_spare_reconcile import reconcile_field_report_spares
+        result = reconcile_field_report_spares(tag=tag, report_id=report_id)
+        result["message"] = (
+            f"Historical field-report spare reconciliation complete: "
+            f"{result['applied_count']} applied, "
+            f"{result['already_applied_count']} already applied, "
+            f"{result['error_count']} errors."
+        )
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({
+            "status": "ERROR",
+            "inventory_changed": False,
+            "message": str(exc),
+            "plc_write": False,
+            "scada_control": False,
+            "human_decision_required": True,
+        }), 500
+
+
 @app.after_request
 def phase2_field_report_spare_sync(response):
     """Apply explicit spare usage captured by a field report exactly once."""
