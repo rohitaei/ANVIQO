@@ -1,5 +1,5 @@
-"""ANVIQO Failure Prediction Intelligence V1.
-Evidence-gated conditional prediction over existing plant signals and history.
+"""ANVIQO Failure Prediction Intelligence V1.1.
+Evidence-gated prediction using explicitly persisted plant observations.
 No invented trends, thresholds, probabilities, causation, PLC writes, or SCADA control.
 """
 from __future__ import annotations
@@ -9,7 +9,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-VERSION = "ANVIQO-FP-V1.0"
+VERSION = "ANVIQO-FP-V1.1"
 SAFETY = {
     "control_mode": "READ_ONLY",
     "plc_write": False,
@@ -135,9 +135,19 @@ def _health(tag: str):
     return None
 
 
-def _numeric_history(memory: List[Dict[str, Any]], events: List[Dict[str, Any]], live: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Return only explicitly timestamped numeric observations; never synthesize points."""
+def _history(tag: str) -> List[Dict[str, Any]]:
+    rows = _call(_load("failure_prediction_history"), "get_observations", tag, limit=500)
+    return rows if isinstance(rows, list) else []
+
+
+def _numeric_history(history: List[Dict[str, Any]], memory: List[Dict[str, Any]], events: List[Dict[str, Any]], live: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Return only explicitly timestamped observations; never synthesize historical points."""
     observations: List[Dict[str, Any]] = []
+    for row in history:
+        try:
+            observations.append({"source": str(row.get("source") or row.get("source_type") or "PERSISTED_PLANT_HISTORY"), "timestamp": row["timestamp"], "value": float(row["value"]), "field": "value", "observation_id": row.get("observation_id")})
+        except (KeyError, TypeError, ValueError):
+            continue
     for source, rows in (("VERIFIED_PLANT_MEMORY", memory), ("EVENT_TIMELINE", events)):
         for row in rows:
             timestamp = row.get("timestamp")
@@ -154,12 +164,10 @@ def _numeric_history(memory: List[Dict[str, Any]], events: List[Dict[str, Any]],
                         candidates.append((key, data.get(key)))
             for key, raw in candidates:
                 try:
-                    number = float(raw)
+                    observations.append({"source": source, "timestamp": timestamp, "value": float(raw), "field": key})
                 except (TypeError, ValueError):
                     continue
-                observations.append({"source": source, "timestamp": timestamp, "value": number, "field": key})
     if isinstance(live, dict) and live.get("value") is not None:
-        # The live point is a current observation only. It is not treated as historical trend data.
         observations.append({"source": str(live.get("source") or "PCI_LIVE"), "timestamp": live.get("timestamp"), "value": float(live.get("value")), "field": "value", "current": True})
     observations.sort(key=lambda x: str(x.get("timestamp") or ""))
     return observations
@@ -179,10 +187,11 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
     query = str(query or "").strip()
     tag = extract_tag(tag or query) or str(tag or "").strip().upper()
     identity, live = _pci(tag) if tag else (None, None)
+    history = _history(tag) if tag else []
     memory = _memory(tag) if tag else []
     events = _events(tag) if tag else []
     health = _health(tag) if tag else None
-    observations = _numeric_history(memory, events, live)
+    observations = _numeric_history(history, memory, events, live)
     trend = _trend(observations)
 
     evidence_basis: List[str] = []
@@ -190,6 +199,8 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
         evidence_basis.append("Current PCI live observation is available.")
     if identity is not None:
         evidence_basis.append("Authoritative PCI equipment identity is available.")
+    if history:
+        evidence_basis.append(f"{len(history)} persisted non-simulation plant observation(s) are available.")
     if memory:
         evidence_basis.append(f"{len(memory)} verified field-report record(s) are available.")
     if events:
@@ -211,19 +222,19 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
             risk_signal = "TREND_RISING"
             prediction = "A continued rise in the observed parameter is possible if the documented trend persists. This is a conditional prediction, not a confirmed future failure."
             confidence = "EVIDENCE_BACKED"
-            reasoning = "The prediction is based only on the direction calculated from timestamped historical numeric observations; no probability or failure date is invented."
+            reasoning = "The prediction is based only on explicitly persisted, non-simulation observations and their timestamped direction; no probability or failure date is invented."
             status = "PREDICTION_AVAILABLE"
         elif direction == "FALLING":
             risk_signal = "TREND_FALLING"
             prediction = "A continued fall in the observed parameter is possible if the documented trend persists. This is a conditional prediction, not a confirmed future failure."
             confidence = "EVIDENCE_BACKED"
-            reasoning = "The prediction is based only on the direction calculated from timestamped historical numeric observations; no probability or failure date is invented."
+            reasoning = "The prediction is based only on explicitly persisted, non-simulation observations and their timestamped direction; no probability or failure date is invented."
             status = "PREDICTION_AVAILABLE"
         else:
             risk_signal = "TREND_STABLE"
             prediction = "No deterioration direction is established by the available timestamped observations."
             confidence = "EVIDENCE_BACKED"
-            reasoning = "The available historical observations do not show a numeric change between the earliest and latest stored points."
+            reasoning = "The available timestamped observations do not show a numeric change between the earliest and latest stored points."
             status = "NO_DETERIORATION_SIGNAL"
 
     return {
@@ -248,6 +259,7 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
         "evidence_summary": {
             "pci_identity_available": identity is not None,
             "live_available": live is not None,
+            "persisted_observation_count": len(history),
             "verified_memory_count": len(memory),
             "event_count": len(events),
             "health_available": health is not None,
@@ -257,6 +269,7 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
         "evidence": {
             "pci_identity": identity,
             "pci_live": live,
+            "persisted_observations": history,
             "verified_plant_memory": memory,
             "event_timeline": events,
             "equipment_health": health,
