@@ -9,7 +9,7 @@ from flask import request
 
 from anviqo_spare_query_guard import app
 
-VERSION = "ANVIQO-FP-DEMO-DASHBOARD-V1.1"
+VERSION = "ANVIQO-FP-DEMO-DASHBOARD-V1.2"
 
 SAFETY = {
     "mode": "DEMO_SIMULATION_ONLY",
@@ -119,6 +119,14 @@ SCRIPT = r'''
 BOOTSTRAP = '<script>window.__ANVIQO_FP_DEMO_PANEL_HTML__=' + repr(PANEL_HTML) + ';</script>'
 
 
+@app.before_request
+def disable_dashboard_conditional_cache():
+    """Force a fresh dashboard response so runtime injection cannot be bypassed by 304."""
+    if request.method == 'GET' and request.path == '/':
+        request.environ.pop('HTTP_IF_NONE_MATCH', None)
+        request.environ.pop('HTTP_IF_MODIFIED_SINCE', None)
+
+
 def inject_prediction_demo_dashboard(html: str) -> str:
     """Inject the demo panel into the existing Predictive Intelligence page."""
     text = str(html or '')
@@ -147,6 +155,10 @@ def inject_failure_prediction_demo_dashboard(response):
         if updated != html:
             response.set_data(updated)
             response.headers.pop('Content-Length', None)
+        if request.path == '/':
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            response.headers.pop('ETag', None)
+            response.headers.pop('Last-Modified', None)
     except Exception:
         pass
     return response
