@@ -1,7 +1,7 @@
 """
-ANVIQO Root Cause Intelligence V1
+ANVIQO Root Cause Intelligence V1.2
 
-Evidence-backed diagnostic hypothesis generation over existing ANVIQO engines.
+Evidence-backed diagnostic assessment over existing ANVIQO engines.
 This module does not replace frozen V5 intelligence and never claims causation
 when the evidence does not establish it.
 
@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
-VERSION = "ANVIQO-RCI-V1.1"
+VERSION = "ANVIQO-RCI-V1.2"
 SAFETY = {
     "control_mode": "READ_ONLY",
     "plc_write": False,
@@ -40,12 +40,8 @@ _EQUIPMENT_RE = re.compile(
 def is_root_cause_query(query: str) -> bool:
     """Detect explicit equipment root-cause/failure investigation intent."""
     q = " ".join(str(query or "").strip().lower().split())
-    if not q:
+    if not q or not _EQUIPMENT_RE.search(q):
         return False
-
-    if not _EQUIPMENT_RE.search(q):
-        return False
-
     cause_terms = (
         "root cause", "cause of", "causing", "reason for", "why is", "why was",
         "why did", "why has", "what caused", "failure cause", "fault cause",
@@ -83,7 +79,6 @@ def _call(module, function: str, *args, **kwargs):
 
 
 def _norm_tag(tag: str) -> str:
-    """Normalize PT-303/PT_303/PT 303/PT303 to the same identity."""
     value = str(tag or "").strip().upper()
     match = _EQUIPMENT_RE.search(value)
     if match:
@@ -92,7 +87,6 @@ def _norm_tag(tag: str) -> str:
 
 
 def _tag_variants(tag: str) -> List[str]:
-    """Generate compatible tag spellings used by legacy ANVIQO stores."""
     canonical = str(tag or "").strip().upper().replace("_", "-").replace(" ", "-")
     m = re.match(r"^([A-Z]+)-?(\d{1,5})$", canonical)
     if not m:
@@ -106,18 +100,14 @@ def extract_tag(text: str) -> Optional[str]:
     if not m:
         return None
     raw = m.group(0).upper()
-    raw = re.sub(r"\s*[-_ ]\s*", "-", raw)
-    return raw
+    return re.sub(r"\s*[-_ ]\s*", "-", raw)
 
 
 def _verified_memory(tag: str) -> List[Dict[str, Any]]:
     module = _load("plant_memory")
-    # Do not rely on the underlying searcher's punctuation-sensitive tag
-    # filter. Retrieve the records and normalize identity locally.
     records = _call(module, "search_all_memory", query="", limit=1000)
     if not isinstance(records, list):
         return []
-
     wanted = _norm_tag(tag)
     result = []
     for record in records:
@@ -139,8 +129,7 @@ def _events(tag: str) -> List[Dict[str, Any]]:
     module = _load("event_timeline")
     if module is None:
         return []
-    merged = []
-    seen = set()
+    merged, seen = [], set()
     for variant in _tag_variants(tag):
         events = _call(module, "get_events", variant)
         if not isinstance(events, list):
@@ -170,23 +159,20 @@ def _pci_evidence(tag: str, query: str) -> Dict[str, Any]:
     module = _load("pci_conversation")
     if module is None:
         return {"identity": None, "live": None, "answer": None}
-
     identity = None
-    live = None
     for variant in _tag_variants(tag):
         identity = _call(module, "find_tag", variant)
         if identity is not None:
             break
-
+    live = None
     snapshot = _call(module, "get_live_pci_snapshot")
     if isinstance(snapshot, dict):
-        points = snapshot.get("points", [])
         wanted = _norm_tag(tag)
+        points = snapshot.get("points", [])
         for point in points if isinstance(points, list) else []:
             if isinstance(point, dict) and _norm_tag(point.get("tag")) == wanted:
                 live = point
                 break
-
     answer = _call(module, "answer", query)
     return {"identity": identity, "live": live, "answer": answer}
 
@@ -202,21 +188,29 @@ def _maintenance(tag: str, query: str):
 def _text(records: List[Dict[str, Any]]) -> str:
     parts = []
     for record in records:
-        for key in ("message", "event", "observation", "finding", "maintenance_action", "outcome", "confirmation_evidence", "notes"):
+        for key in (
+            "message", "event", "observation", "finding", "maintenance_action",
+            "outcome", "confirmation_evidence", "notes",
+        ):
             value = record.get(key)
             if value:
                 parts.append(str(value))
     return " ".join(parts).lower()
 
 
-def _hypotheses(events: List[Dict[str, Any]], memory: List[Dict[str, Any]], health: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Return ranked hypotheses only when explicit evidence supports them."""
+def _hypotheses(
+    events: List[Dict[str, Any]],
+    memory: List[Dict[str, Any]],
+    health: Dict[str, Any],
+    pci_live: Optional[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Return ranked hypotheses only when explicit causal evidence supports them."""
     combined = f"{_text(events)} {_text(memory)}"
     rules = [
         (
             "instrument-air / positioner issue",
             "air pressure" in combined and ("valve position" in combined or "positioner" in combined),
-            "Explicit evidence links instrument-air/valve-position information in the available history.",
+            "Explicit evidence links instrument-air/valve-position information in available history.",
         ),
         (
             "sensor / transmitter signal issue",
@@ -239,7 +233,6 @@ def _hypotheses(events: List[Dict[str, Any]], memory: List[Dict[str, Any]], heal
             "The available evidence contains an explicit process-condition abnormality that may contribute to the observed symptom.",
         ),
     ]
-
     candidates = []
     for name, matched, rationale in rules:
         if not matched:
@@ -250,14 +243,13 @@ def _hypotheses(events: List[Dict[str, Any]], memory: List[Dict[str, Any]], heal
                 raw = " ".join(str(record.get(k) or "") for k in (
                     "message", "event", "observation", "finding", "maintenance_action", "outcome", "confirmation_evidence", "notes"
                 )).strip()
-                if not raw:
-                    continue
-                evidence.append({
-                    "source": source,
-                    "memory_id": record.get("memory_id"),
-                    "timestamp": record.get("timestamp"),
-                    "text": raw,
-                })
+                if raw:
+                    evidence.append({
+                        "source": source,
+                        "memory_id": record.get("memory_id"),
+                        "timestamp": record.get("timestamp"),
+                        "text": raw,
+                    })
         candidates.append({
             "hypothesis": name,
             "status": "INVESTIGATE",
@@ -267,27 +259,76 @@ def _hypotheses(events: List[Dict[str, Any]], memory: List[Dict[str, Any]], heal
     return candidates
 
 
+def _observed_condition(tag: str, query: str, pci: Dict[str, Any], health: Any, events: List[Dict[str, Any]], memory: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Explain the currently observed condition without inventing engineering limits."""
+    live = pci.get("live") if isinstance(pci, dict) else None
+    result = {
+        "reported_symptom": any(x in str(query).lower() for x in ("abnormal", "fault", "failure", "issue", "problem", "unhealthy", "malfunction", "stopped")),
+        "live_state": None,
+        "live_value": None,
+        "changed": None,
+        "event_active": None,
+        "mode": None,
+        "source": None,
+        "evidence_basis": [],
+    }
+    if isinstance(live, dict):
+        result.update({
+            "live_state": live.get("state"),
+            "live_value": live.get("value"),
+            "changed": live.get("changed"),
+            "event_active": live.get("event_active"),
+            "mode": live.get("mode"),
+            "source": live.get("source"),
+        })
+        if live.get("state") in ("WARNING", "CRITICAL"):
+            result["evidence_basis"].append(f"PCI stream currently reports state {live.get('state')}.")
+        if live.get("changed") is True:
+            result["evidence_basis"].append("PCI stream currently marks the point as changed.")
+        if live.get("event_active") is True:
+            result["evidence_basis"].append("PCI stream currently marks an active event.")
+    if isinstance(health, dict):
+        result["evidence_basis"].append("Equipment health context is available.")
+    if events:
+        result["evidence_basis"].append(f"{len(events)} event-timeline record(s) are available.")
+    if memory:
+        result["evidence_basis"].append(f"{len(memory)} verified field-report record(s) are available.")
+    return result
+
+
 def build_root_cause_intelligence(query: str, tag: Optional[str] = None) -> Dict[str, Any]:
     query = str(query or "").strip()
     tag = extract_tag(tag or query) or _norm_tag(tag or "")
-
     events = _events(tag) if tag else []
     memory = _verified_memory(tag) if tag else []
     health = _health(tag) if tag else None
     pci = _pci_evidence(tag, query) if tag else {"identity": None, "live": None, "answer": None}
     experience, matching = _maintenance(tag, query) if tag else (None, [])
-    hypotheses = _hypotheses(events, memory, health if isinstance(health, dict) else {})
+    observed = _observed_condition(tag, query, pci, health, events, memory)
+    hypotheses = _hypotheses(events, memory, health if isinstance(health, dict) else {}, pci.get("live"))
 
     identity_available = pci.get("identity") is not None
     live_available = pci.get("live") is not None
     any_evidence = bool(events or memory or health or identity_available or live_available or experience or matching)
+    live = pci.get("live") if isinstance(pci, dict) else None
 
     if hypotheses:
         status = "HYPOTHESES_AVAILABLE"
         conclusion = "ANVIQO found evidence-supported hypotheses to investigate. These are not confirmed root causes."
+    elif isinstance(live, dict) and live.get("state") in ("WARNING", "CRITICAL"):
+        status = "INSUFFICIENT_EVIDENCE"
+        conclusion = (
+            f"PT-303 is currently reported as {live.get('state')} by the PCI {live.get('mode', 'SIMULATION')} stream"
+            f" (value {live.get('value')}, changed={live.get('changed')}, event_active={live.get('event_active')}). "
+            "This establishes the current abnormal condition in the available stream, but no explicit causal evidence "
+            "is strong enough to rank a root-cause hypothesis. Root cause is not confirmed."
+        )
     elif any_evidence:
         status = "INSUFFICIENT_EVIDENCE"
-        conclusion = "ANVIQO identified equipment context/evidence, but not enough explicit failure evidence to rank a root-cause hypothesis."
+        conclusion = (
+            "ANVIQO identified equipment context/evidence, but not enough explicit failure evidence to rank a root-cause hypothesis. "
+            "The available evidence should be checked for a correlated event, verified field finding, maintenance observation, or confirmed process abnormality."
+        )
     else:
         status = "NO_EVIDENCE"
         conclusion = "No usable equipment evidence was found for a root-cause assessment."
@@ -299,6 +340,7 @@ def build_root_cause_intelligence(query: str, tag: Optional[str] = None) -> Dict
         "tag": tag,
         "status": status,
         "conclusion": conclusion,
+        "observed_condition": observed,
         "hypotheses": hypotheses,
         "evidence": {
             "pci_identity": pci.get("identity"),
@@ -318,6 +360,9 @@ def build_root_cause_intelligence(query: str, tag: Optional[str] = None) -> Dict
             "pci_live_available": live_available,
             "maintenance_experience_available": experience is not None or bool(matching),
             "matching_experience_count": len(matching),
+            "current_live_state": live.get("state") if isinstance(live, dict) else None,
+            "current_live_changed": live.get("changed") if isinstance(live, dict) else None,
+            "current_live_event_active": live.get("event_active") if isinstance(live, dict) else None,
         },
         "safety": dict(SAFETY),
         "decision_status": "HUMAN_DECISION_REQUIRED",
