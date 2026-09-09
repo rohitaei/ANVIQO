@@ -115,11 +115,7 @@ def tenant_audit():
 
 @app.route("/api/field_report/reconcile_spares", methods=["POST"])
 def reconcile_field_report_spares_api():
-    """One-time repair for historical reports stored before spare auto-sync.
-
-    This endpoint is explicitly authorized and never runs from a read-only
-    question or application startup.
-    """
+    """One-time repair for historical reports stored before spare auto-sync."""
     if not session.get("authenticated"):
         return jsonify({"status": "UNAUTHORIZED", "message": "ANVIQO authentication required"}), 401
 
@@ -152,6 +148,42 @@ def reconcile_field_report_spares_api():
             "message": str(exc),
             "plc_write": False,
             "scada_control": False,
+            "human_decision_required": True,
+        }), 500
+
+
+@app.route("/api/root_cause", methods=["POST"])
+def root_cause_intelligence_api():
+    """Return evidence-backed diagnostic hypotheses without claiming causation."""
+    if not session.get("authenticated"):
+        return jsonify({"status": "UNAUTHORIZED", "message": "ANVIQO authentication required"}), 401
+
+    actor = _actor()
+    if not authorize(actor, "plant:read", actor["organization_id"], actor["plant_id"]):
+        return jsonify({
+            "status": "FORBIDDEN",
+            "message": "plant:read permission is required for Root Cause Intelligence.",
+            "plc_write": False,
+            "scada_control": False,
+        }), 403
+
+    payload = request.get_json(silent=True) or {}
+    query = str(payload.get("query") or payload.get("question") or payload.get("message") or "").strip()
+    tag = str(payload.get("tag") or "").strip()
+    if not query and not tag:
+        return jsonify({"status": "BAD_REQUEST", "message": "query or equipment tag is required."}), 400
+
+    try:
+        from root_cause_intelligence import build_root_cause_intelligence
+        result = build_root_cause_intelligence(query, tag or None)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({
+            "status": "ERROR",
+            "message": str(exc),
+            "plc_write": False,
+            "scada_control": False,
+            "automatic_execution": False,
             "human_decision_required": True,
         }), 500
 
