@@ -31,6 +31,25 @@ SAFETY = {
 }
 
 
+def is_root_cause_query(query: str) -> bool:
+    """Detect explicit equipment root-cause/failure investigation intent."""
+    q = str(query or "").strip().lower()
+    if not q:
+        return False
+    cause_terms = (
+        "root cause", "cause of", "causing", "reason for", "why is", "why was",
+        "why did", "why has", "what caused", "failure cause", "fault cause",
+    )
+    symptom_terms = (
+        "abnormal", "failure", "failed", "fault", "problem", "issue", "trip",
+        "unhealthy", "malfunction", "not working", "stopped",
+    )
+    has_cause = any(term in q for term in cause_terms)
+    has_equipment = bool(re.search(r"\b(?:PT|FT|LT|TT|DP|MCV|SOV|FSV|PCV|POSR|TCV|FV|XV|CV)[-_ ]?\d{1,5}\b", q))
+    has_symptom = any(term in q for term in symptom_terms)
+    return has_cause and has_equipment and (has_symptom or "why is" in q or "why was" in q or "what caused" in q)
+
+
 def _load(name: str):
     try:
         return importlib.import_module(name)
