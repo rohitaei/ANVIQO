@@ -1,8 +1,9 @@
 """ANVIQO Phase 2 API boundary.
 
 Wraps the existing V1/V5 API without editing the frozen intelligence modules.
-Adds tenant context validation, role/permission enforcement, and tenant audit
-for API activity. The underlying V5 plant intelligence remains unchanged.
+Adds tenant context validation, role/permission enforcement, tenant audit,
+and the field-report runtime bridge. The underlying V5 plant intelligence
+remains unchanged.
 """
 from flask import jsonify, request, session
 
@@ -67,6 +68,36 @@ def phase2_authorization():
     return None
 
 
+@app.before_request
+def phase2_field_report_query_bridge():
+    """Answer report-history questions from persistent Plant Memory first.
+
+    This is an integration-layer bridge, not a replacement for V5 reasoning.
+    It fixes the case where a captured report exists but the normal knowledge
+    router does not return the stored human evidence on a later question.
+    """
+    if not _api_authenticated():
+        return None
+    if request.path != "/api/ask" or request.method != "POST":
+        return None
+
+    payload = request.get_json(silent=True) or {}
+    question = str(payload.get("question", "")).strip()
+    if not question:
+        return None
+
+    try:
+        from field_report_runtime import answer_field_report_query
+        answer = answer_field_report_query(question)
+        if answer:
+            return jsonify(answer)
+    except Exception:
+        # Never break the normal ANVI knowledge path because the optional
+        # field-report bridge cannot answer a query.
+        pass
+    return None
+
+
 @app.route("/api/tenant/context")
 def tenant_context():
     if not session.get("authenticated"):
@@ -102,6 +133,44 @@ def tenant_audit():
         "plant_id": actor["plant_id"],
         "records": rows,
     })
+
+
+@app.after_request
+def phase2_field_report_spare_sync(response):
+    """Apply explicit spare usage captured by a field report exactly once."""
+    if not _api_authenticated() or request.path != "/api/field_report" or request.method != "POST":
+        return response
+    if response.status_code >= 400:
+        return response
+
+    try:
+        payload = response.get_json(silent=True) or {}
+        parsed = payload.get("parsed_report") or {}
+        memory = payload.get("memory") or {}
+        report_id = str(memory.get("memory_id", "")).strip()
+        if report_id and parsed:
+            from field_report_runtime import sync_field_report_spare
+            inventory_update = sync_field_report_spare(parsed, report_id)
+            payload["inventory_update"] = inventory_update
+            payload["message"] = (
+                "Field report captured and stored in Plant Memory. "
+                + inventory_update.get("message", "")
+            ).strip()
+            response.set_data(response.json.dumps(payload) if hasattr(response, "json") else __import__("json").dumps(payload))
+            response.content_type = "application/json"
+    except Exception as exc:
+        try:
+            payload = response.get_json(silent=True) or {}
+            payload["inventory_update"] = {
+                "status": "ERROR",
+                "inventory_changed": False,
+                "message": str(exc),
+            }
+            response.set_data(__import__("json").dumps(payload))
+            response.content_type = "application/json"
+        except Exception:
+            pass
+    return response
 
 
 @app.after_request
