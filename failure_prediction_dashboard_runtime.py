@@ -1,15 +1,22 @@
-"""ANVIQO Command Centre Failure Prediction Demo dashboard runtime injection.
+"""ANVIQO Command Centre Failure Prediction Demo dashboard runtime.
 
-Keeps the existing dashboard HTML intact while adding the explicitly simulated
-Failure Prediction Demo panel at runtime. This is UI-only decision support.
+The deployed Render service currently starts this module directly. The dashboard
+route is therefore wrapped here so the Failure Prediction Demo panel is placed
+into the actual HTML response, rather than relying on a response middleware
+that can be bypassed by the existing route stack.
+
+UI-only decision support. V5/PCI intelligence and plant-control boundaries are
+not modified.
 """
 from __future__ import annotations
 
-from flask import request
+from pathlib import Path
+
+from flask import make_response, redirect, request, session, url_for
 
 from anviqo_spare_query_guard import app
 
-VERSION = "ANVIQO-FP-DEMO-DASHBOARD-V1.2"
+VERSION = "ANVIQO-FP-DEMO-DASHBOARD-V1.3-DIRECT"
 
 SAFETY = {
     "mode": "DEMO_SIMULATION_ONLY",
@@ -89,8 +96,8 @@ SCRIPT = r'''
     box.innerHTML='<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-label="PT-303 simulated trend"><line x1="18" y1="162" x2="682" y2="162" stroke="#193b49"/><line x1="18" y1="18" x2="18" y2="162" stroke="#193b49"/><path d="'+path+'" fill="none" stroke="#31d8f5" stroke-width="3"/>'+circles+'</svg>';
   }
   async function load(){
-    var root=document.getElementById('anviqoFpDemo'); if(!root)return;
     var status=document.getElementById('fpDemoStatus'),body=document.getElementById('fpDemoBody');
+    if(!status||!body)return;
     try{
       var r=await fetch('/api/failure_prediction/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tag:'PT-303'})});
       var d=await r.json(); if(!r.ok)throw Error(d.message||'Demo API error');
@@ -106,59 +113,60 @@ SCRIPT = r'''
       status.style.display='none';body.style.display='block';
     }catch(e){status.textContent='Demo prediction unavailable: '+e.message;}
   }
-  function start(){
-    var page=document.getElementById('page-prediction'); if(!page||document.getElementById('anviqoFpDemo'))return;
-    page.insertAdjacentHTML('beforeend',window.__ANVIQO_FP_DEMO_PANEL_HTML__||'');
-    load();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load);else load();
 })();
 </script>
 '''
 
-BOOTSTRAP = '<script>window.__ANVIQO_FP_DEMO_PANEL_HTML__=' + repr(PANEL_HTML) + ';</script>'
+DASHBOARD = Path("anviqo_dashboard.html")
+MARKER = 'id="anviqoFpDemo"'
+
+
+def inject_prediction_demo_dashboard(html: str) -> str:
+    """Insert the demo panel directly into the dashboard HTML response."""
+    text = str(html or '')
+    if 'id="page-prediction"' not in text:
+        return text
+    if MARKER in text:
+        return text
+    marker = '</body>'
+    idx = text.lower().rfind(marker)
+    if idx < 0:
+        return text
+    return text[:idx] + "\n" + PANEL_HTML + "\n" + SCRIPT + "\n" + text[idx:]
+
+
+def _dashboard_direct():
+    """Serve the dashboard and inject the panel in the actual response body."""
+    if not session.get("authenticated"):
+        return redirect(url_for("login"))
+    html = DASHBOARD.read_text(encoding="utf-8")
+    html = inject_prediction_demo_dashboard(html)
+    response = make_response(html, 200)
+    response.headers["Content-Type"] = "text/html; charset=utf-8"
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers.pop("ETag", None)
+    response.headers.pop("Last-Modified", None)
+    return response
+
+
+# The Render service is configured to start this module directly. Replace the
+# existing dashboard view function so the panel cannot be lost in middleware.
+if "dashboard" in app.view_functions:
+    app.view_functions["dashboard"] = _dashboard_direct
 
 
 @app.before_request
 def disable_dashboard_conditional_cache():
-    """Force a fresh dashboard response so runtime injection cannot be bypassed by 304."""
     if request.method == 'GET' and request.path == '/':
         request.environ.pop('HTTP_IF_NONE_MATCH', None)
         request.environ.pop('HTTP_IF_MODIFIED_SINCE', None)
 
 
-def inject_prediction_demo_dashboard(html: str) -> str:
-    """Inject the demo panel into the existing Predictive Intelligence page."""
-    text = str(html or '')
-    if 'id="page-prediction"' not in text:
-        return text
-    if 'id="anviqoFpDemo"' in text:
-        return text
-    lower = text.lower()
-    marker = '</body>'
-    idx = lower.find(marker)
-    if idx < 0:
-        return text
-    return text[:idx] + BOOTSTRAP + SCRIPT + '\n' + text[idx:]
-
-
 @app.after_request
-def inject_failure_prediction_demo_dashboard(response):
-    if request.method != 'GET' or response.status_code != 200:
-        return response
-    content_type = str(response.headers.get('Content-Type', '')).lower()
-    if 'text/html' not in content_type:
-        return response
-    try:
-        html = response.get_data(as_text=True)
-        updated = inject_prediction_demo_dashboard(html)
-        if updated != html:
-            response.set_data(updated)
-            response.headers.pop('Content-Length', None)
-        if request.path == '/':
-            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-            response.headers.pop('ETag', None)
-            response.headers.pop('Last-Modified', None)
-    except Exception:
-        pass
+def dashboard_response_safety_headers(response):
+    if request.path == '/' and request.method == 'GET':
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers.pop('ETag', None)
+        response.headers.pop('Last-Modified', None)
     return response
