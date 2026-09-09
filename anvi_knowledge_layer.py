@@ -4029,6 +4029,13 @@ def _anviqo_authoritative_core(question):
                 spare_result = ps.answer_spare_management_v16(q)
 
                 if isinstance(spare_result, dict):
+                    # Phase 1: direct inventory mutations are authenticated
+                    # at /api/ask and must return their governed result
+                    # immediately. Never let a mutation fall through into
+                    # read-only PCI/LLM routing.
+                    if spare_result.get("inventory_mutation") is True:
+                        return spare_result
+
                     domain = str(
                         spare_result.get("domain", "")
                     ).lower()

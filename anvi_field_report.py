@@ -518,170 +518,27 @@ def store_field_report(text, filename=""):
         ),
     )
 
-    # ANVIQO_FIELD_REPORT_AUTO_SPARE_DEDUCTION_V2
-    # Explicit spare consumption in a field report updates the authoritative
-    # critical-spares Excel inventory automatically.
-    #
-    # IMPORTANT:
-    # - Plant Memory remains PENDING_VERIFICATION.
-    # - This is inventory bookkeeping only.
-    # - No PLC/SCADA write is performed.
-    # - The same report/spare consumption is deducted only once.
-
-    import hashlib
-    import json
-    from datetime import datetime, timezone
-
-    inventory_update = None
+    # Phase 1 safety boundary:
+    # A field report is PENDING_VERIFICATION and therefore cannot mutate
+    # authoritative critical-spare inventory. Spare usage is captured in
+    # Plant Memory/report evidence only until a governed inventory command
+    # is explicitly executed.
     spare_text = str(record.get("spare_used") or "").strip()
-
     if spare_text:
-        m_spare = re.match(
-            r"^([A-Z]{1,8}-\d{1,5})\s+x(\d+(?:\.\d+)?)$",
-            spare_text,
-            re.I,
-        )
-
-        if m_spare:
-            spare_tag = m_spare.group(1).upper()
-            spare_qty = float(m_spare.group(2))
-
-            # Deterministic key prevents duplicate deduction when the same
-            # field report is uploaded more than once.
-            deduction_source = "|".join([
-                str(filename or "").strip(),
-                str(record.get("raw_report") or "").strip(),
-                spare_tag,
-                str(spare_qty),
-            ])
-
-            deduction_key = hashlib.sha256(
-                deduction_source.encode("utf-8")
-            ).hexdigest()
-
-            ledger_path = os.path.join(
-                BASE_DIR,
-                "database",
-                "spares",
-                "field_report_spare_consumption.json",
-            )
-
-            ledger = []
-
-            try:
-                if os.path.exists(ledger_path):
-                    with open(ledger_path, "r", encoding="utf-8") as f:
-                        loaded = json.load(f)
-                        if isinstance(loaded, list):
-                            ledger = loaded
-            except Exception:
-                ledger = []
-
-            already_applied = any(
-                str(item.get("deduction_key", "")) == deduction_key
-                for item in ledger
-                if isinstance(item, dict)
-            )
-
-            if already_applied:
-                inventory_update = {
-                    "status": "DUPLICATE_SKIPPED",
-                    "tag": spare_tag,
-                    "quantity": spare_qty,
-                    "deduction_key": deduction_key,
-                    "message": (
-                        "Spare consumption already recorded; "
-                        "duplicate deduction skipped."
-                    ),
-                }
-            else:
-                try:
-                    from pci_spare_direct_excel import (
-                        get_spare_quantity,
-                        remove_spare,
-                    )
-
-                    before_qty = float(
-                        get_spare_quantity(spare_tag)
-                    )
-
-                    if before_qty < spare_qty:
-                        inventory_update = {
-                            "status": "INSUFFICIENT_STOCK",
-                            "tag": spare_tag,
-                            "quantity": spare_qty,
-                            "before_quantity": before_qty,
-                            "after_quantity": before_qty,
-                            "message": (
-                                "Inventory protected; insufficient "
-                                "available spare quantity."
-                            ),
-                        }
-                    else:
-                        result = remove_spare(
-                            spare_tag,
-                            spare_qty,
-                        )
-
-                        after_qty = float(
-                            get_spare_quantity(spare_tag)
-                        )
-
-                        inventory_update = {
-                            "status": "APPLIED",
-                            "tag": spare_tag,
-                            "quantity": spare_qty,
-                            "before_quantity": before_qty,
-                            "after_quantity": after_qty,
-                            "deduction_key": deduction_key,
-                            "engine_result": result,
-                        }
-
-                        ledger.append({
-                            "deduction_key": deduction_key,
-                            "memory_id": str(
-                                memory.get("memory_id", "")
-                            ),
-                            "filename": str(filename or ""),
-                            "tag": spare_tag,
-                            "quantity": spare_qty,
-                            "before_quantity": before_qty,
-                            "after_quantity": after_qty,
-                            "timestamp": datetime.now(
-                                timezone.utc
-                            ).isoformat(),
-                        })
-
-                        os.makedirs(
-                            os.path.dirname(ledger_path),
-                            exist_ok=True,
-                        )
-
-                        tmp_path = ledger_path + ".tmp"
-
-                        with open(
-                            tmp_path,
-                            "w",
-                            encoding="utf-8",
-                        ) as f:
-                            json.dump(
-                                ledger,
-                                f,
-                                indent=2,
-                            )
-
-                        os.replace(
-                            tmp_path,
-                            ledger_path,
-                        )
-
-                except Exception as exc:
-                    inventory_update = {
-                        "status": "ERROR",
-                        "tag": spare_tag,
-                        "quantity": spare_qty,
-                        "error": str(exc),
-                    }
+        inventory_update = {
+            "status": "PENDING_VERIFICATION",
+            "spare_claim": spare_text,
+            "inventory_changed": False,
+            "message": (
+                "Reported spare usage captured for verification; "
+                "authoritative inventory was not changed."
+            ),
+        }
+    else:
+        inventory_update = {
+            "status": "NOT_APPLICABLE",
+            "inventory_changed": False,
+        }
 
     record["inventory_update"] = inventory_update
 
