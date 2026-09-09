@@ -1,12 +1,18 @@
 # ANVIQO Failure Prediction Demo V1 Freeze
 
 Status: FROZEN
-Version: ANVIQO-FP-DEMO-DASHBOARD-V1.0
+Version: ANVIQO-FP-DEMO-DASHBOARD-V1.1
 Date: 2026-09-09
 
 ## Scope
 
-The Command Centre Predictive Intelligence page now exposes a dedicated PT-303 Failure Prediction Demo panel at runtime. The existing `anviqo_dashboard.html` source is not modified; the panel is injected by `failure_prediction_dashboard_runtime.py` through the production entrypoint.
+The Command Centre Predictive Intelligence page exposes a dedicated PT-303 Failure Prediction Demo panel at runtime. The existing `anviqo_dashboard.html` source remains untouched; the panel is injected by `failure_prediction_dashboard_runtime.py` through the production entrypoint.
+
+## Fix applied
+
+V1.0 had a DOM mounting defect: the browser created a temporary container and appended only its first element (the `<style>` node), so the visible demo card was never mounted. V1.1 mounts the complete panel HTML directly into `#page-prediction` and then loads the demo API.
+
+The injector no longer depends on the `predictionData` element; it only requires the authoritative `page-prediction` page and a real closing body tag.
 
 ## Demo data boundary
 
