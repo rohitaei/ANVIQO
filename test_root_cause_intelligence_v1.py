@@ -5,6 +5,7 @@ def test_rci_no_evidence_is_honest(monkeypatch):
     monkeypatch.setattr(rci, "_events", lambda tag: [])
     monkeypatch.setattr(rci, "_verified_memory", lambda tag: [])
     monkeypatch.setattr(rci, "_health", lambda tag: None)
+    monkeypatch.setattr(rci, "_pci_evidence", lambda tag, query: {"identity": None, "live": None, "answer": None})
     monkeypatch.setattr(rci, "_maintenance", lambda tag, query: (None, []))
 
     result = rci.build_root_cause_intelligence("Why is PT-303 abnormal?", "PT-303")
@@ -34,6 +35,7 @@ def test_rci_uses_explicit_verified_evidence(monkeypatch):
     monkeypatch.setattr(rci, "_events", lambda tag: events)
     monkeypatch.setattr(rci, "_verified_memory", lambda tag: memory)
     monkeypatch.setattr(rci, "_health", lambda tag: {"risk_score": 40, "status": "WATCH"})
+    monkeypatch.setattr(rci, "_pci_evidence", lambda tag, query: {"identity": None, "live": None, "answer": None})
     monkeypatch.setattr(rci, "_maintenance", lambda tag, query: (None, []))
 
     result = rci.build_root_cause_intelligence("Why is PT-303 abnormal?", "PT-303")
@@ -42,3 +44,31 @@ def test_rci_uses_explicit_verified_evidence(monkeypatch):
     assert any(h["hypothesis"] == "power-supply issue" for h in result["hypotheses"])
     assert all(h["status"] == "INVESTIGATE" for h in result["hypotheses"])
     assert "not confirmed root causes" in result["conclusion"]
+
+
+def test_rci_normalizes_legacy_tag_spellings():
+    assert rci._norm_tag("PT-303") == "PT303"
+    assert rci._norm_tag("PT_303") == "PT303"
+    assert rci._norm_tag("PT 303") == "PT303"
+    assert rci._norm_tag("PT303") == "PT303"
+
+
+def test_rci_reports_pci_context_when_other_evidence_is_missing(monkeypatch):
+    monkeypatch.setattr(rci, "_events", lambda tag: [])
+    monkeypatch.setattr(rci, "_verified_memory", lambda tag: [])
+    monkeypatch.setattr(rci, "_health", lambda tag: None)
+    monkeypatch.setattr(rci, "_maintenance", lambda tag, query: (None, []))
+    monkeypatch.setattr(rci, "_pci_evidence", lambda tag, query: {
+        "identity": {"tag": "PT_303", "description": "Pressure transmitter"},
+        "live": {"tag": "PT_303", "state": "NORMAL", "value": 1.2},
+        "answer": "PCI context available",
+    })
+
+    result = rci.build_root_cause_intelligence("Why is PT-303 abnormal?")
+
+    assert result["tag"] == "PT-303"
+    assert result["status"] == "INSUFFICIENT_EVIDENCE"
+    assert result["evidence_summary"]["pci_identity_available"] is True
+    assert result["evidence_summary"]["pci_live_available"] is True
+    assert result["hypotheses"] == []
+    assert "not enough explicit failure evidence" in result["conclusion"]
