@@ -7,6 +7,7 @@ remains unchanged.
 """
 from flask import jsonify, request, session
 import json
+import re
 
 from anviqo_api import app
 from anvi_tenant_store import authorize, ensure_bootstrap, list_audit, record_audit
@@ -24,6 +25,11 @@ def _actor():
 
 def _api_authenticated():
     return request.path.startswith("/api/") and bool(session.get("authenticated"))
+
+
+def _is_reconcile_command(question: str) -> bool:
+    q = re.sub(r"[^a-z0-9-]+", " ", str(question or "").strip().lower())
+    return "reconcile" in q and "spare" in q and ("field report" in q or "report" in q)
 
 
 @app.before_request
@@ -53,12 +59,23 @@ def phase2_authorization():
 
 @app.before_request
 def phase2_field_report_query_bridge():
-    """Answer report-history questions from persistent Plant Memory first."""
+    """Answer report-history questions from persistent Plant Memory first.
+
+    Reconciliation commands are explicitly excluded so the production guard's
+    authorized repair bridge can handle them instead of creating/returning a
+    normal field-report query response.
+    """
     if not _api_authenticated() or request.path != "/api/ask" or request.method != "POST":
         return None
     payload = request.get_json(silent=True) or {}
-    question = str(payload.get("question", "")).strip()
-    if not question:
+    question = str(
+        payload.get("question")
+        or payload.get("query")
+        or payload.get("message")
+        or payload.get("text")
+        or ""
+    ).strip()
+    if not question or _is_reconcile_command(question):
         return None
     try:
         from field_report_runtime import answer_field_report_query
