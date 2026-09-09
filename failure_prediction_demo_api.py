@@ -45,6 +45,15 @@ def build_demo_failure_prediction(tag: str = "PT-303") -> Dict[str, Any]:
         }
 
     trend = summarize_demo_trend(observations)
+    points = [
+        {
+            "timestamp": row["timestamp"],
+            "value": row["value"],
+            "unit": row.get("unit"),
+            "quality": row.get("quality"),
+        }
+        for row in sorted(observations, key=lambda item: item["timestamp"])
+    ]
     return {
         "version": VERSION,
         "status": "DEMO_PREDICTION_AVAILABLE" if trend["status"] == "DEMO_TREND_AVAILABLE" else trend["status"],
@@ -64,6 +73,7 @@ def build_demo_failure_prediction(tag: str = "PT-303") -> Dict[str, Any]:
         "production_history_write": False,
         "safety": dict(SAFETY),
         "decision_status": "HUMAN_DECISION_REQUIRED",
+        "trend_points": points,
         "evidence": {
             "dataset": str(DEMO_CSV.relative_to(Path(__file__).resolve().parent)),
             "rows_loaded": loaded["rows_loaded"],
