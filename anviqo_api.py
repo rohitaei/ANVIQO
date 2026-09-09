@@ -27,6 +27,7 @@ from flask import (
 )
 from datetime import datetime
 from functools import wraps
+from pathlib import Path
 import os
 import json
 
@@ -169,6 +170,7 @@ def dashboard():
 
 
 @app.route("/api/pci")
+@login_required
 def pci_data():
     try:
         from pci_live_simulator import get_live_pci_snapshot
@@ -201,6 +203,7 @@ def pci_data():
 
 
 @app.route("/api/pci/live")
+@login_required
 def pci_live_data():
     """
     ANVIQO DEMO LIVE PCI STREAM
@@ -346,6 +349,7 @@ def field_report():
 
 
 @app.route("/api/ask", methods=["POST"])
+@login_required
 def ask_anvi():
     from flask import request
     from anvi_knowledge_layer import ask_anvi as knowledge_ask
