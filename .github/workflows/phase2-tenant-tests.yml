@@ -6,6 +6,7 @@ on:
       - main
       - phase2-tenant-foundation
       - phase2-field-report-spare-fix
+      - feature/failure-prediction-v1
   pull_request:
     branches:
       - main
