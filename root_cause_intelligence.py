@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
-VERSION = "ANVIQO-RCI-V1.0"
+VERSION = "ANVIQO-RCI-V1.1"
 SAFETY = {
     "control_mode": "READ_ONLY",
     "plc_write": False,
@@ -43,8 +43,7 @@ def is_root_cause_query(query: str) -> bool:
     if not q:
         return False
 
-    equipment = bool(_EQUIPMENT_RE.search(q))
-    if not equipment:
+    if not _EQUIPMENT_RE.search(q):
         return False
 
     cause_terms = (
@@ -56,13 +55,11 @@ def is_root_cause_query(query: str) -> bool:
         "abnormal", "failure", "failed", "fault", "problem", "issue", "trip",
         "unhealthy", "malfunction", "not working", "stopped",
     )
-
     has_cause = any(term in q for term in cause_terms)
     has_symptom = any(term in q for term in symptom_terms)
-
-    # A direct "why is/was/did/has..." equipment question is itself an
-    # investigation request even when the symptom word is omitted.
-    direct_why = any(term in q for term in ("why is", "why was", "why did", "why has", "why does", "why are", "why were"))
+    direct_why = any(term in q for term in (
+        "why is", "why was", "why did", "why has", "why does", "why are", "why were"
+    ))
     return has_cause and (has_symptom or direct_why or "root cause" in q or "what caused" in q)
 
 
@@ -86,24 +83,45 @@ def _call(module, function: str, *args, **kwargs):
 
 
 def _norm_tag(tag: str) -> str:
-    return str(tag or "").upper().replace("_", "-").replace(" ", "-")
+    """Normalize PT-303/PT_303/PT 303/PT303 to the same identity."""
+    value = str(tag or "").strip().upper()
+    match = _EQUIPMENT_RE.search(value)
+    if match:
+        value = match.group(0)
+    return re.sub(r"[^A-Z0-9]", "", value)
+
+
+def _tag_variants(tag: str) -> List[str]:
+    """Generate compatible tag spellings used by legacy ANVIQO stores."""
+    canonical = str(tag or "").strip().upper().replace("_", "-").replace(" ", "-")
+    m = re.match(r"^([A-Z]+)-?(\d{1,5})$", canonical)
+    if not m:
+        return [canonical] if canonical else []
+    prefix, number = m.groups()
+    return [f"{prefix}-{number}", f"{prefix}_{number}", f"{prefix} {number}", f"{prefix}{number}"]
 
 
 def extract_tag(text: str) -> Optional[str]:
     m = _EQUIPMENT_RE.search(str(text or ""))
-    return _norm_tag(m.group(0)) if m else None
+    if not m:
+        return None
+    raw = m.group(0).upper()
+    raw = re.sub(r"\s*[-_ ]\s*", "-", raw)
+    return raw
 
 
 def _verified_memory(tag: str) -> List[Dict[str, Any]]:
     module = _load("plant_memory")
-    records = _call(module, "search_all_memory", query="", tag=tag, limit=50)
+    # Do not rely on the underlying searcher's punctuation-sensitive tag
+    # filter. Retrieve the records and normalize identity locally.
+    records = _call(module, "search_all_memory", query="", limit=1000)
     if not isinstance(records, list):
         return []
+
+    wanted = _norm_tag(tag)
     result = []
     for record in records:
-        if not isinstance(record, dict):
-            continue
-        if _norm_tag(record.get("tag")) != tag:
+        if not isinstance(record, dict) or _norm_tag(record.get("tag")) != wanted:
             continue
         if record.get("source") != "technician field report":
             continue
@@ -119,13 +137,58 @@ def _verified_memory(tag: str) -> List[Dict[str, Any]]:
 
 def _events(tag: str) -> List[Dict[str, Any]]:
     module = _load("event_timeline")
-    events = _call(module, "get_events", tag)
-    return events if isinstance(events, list) else []
+    if module is None:
+        return []
+    merged = []
+    seen = set()
+    for variant in _tag_variants(tag):
+        events = _call(module, "get_events", variant)
+        if not isinstance(events, list):
+            continue
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            key = (event.get("timestamp"), event.get("event_type"), event.get("message"))
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(event)
+    return merged
 
 
 def _health(tag: str):
     module = _load("equipment_health")
-    return _call(module, "get_latest_health", tag)
+    for variant in _tag_variants(tag):
+        result = _call(module, "get_latest_health", variant)
+        if result is not None:
+            return result
+    return None
+
+
+def _pci_evidence(tag: str, query: str) -> Dict[str, Any]:
+    """Use the authoritative PCI registry/simulator as equipment evidence."""
+    module = _load("pci_conversation")
+    if module is None:
+        return {"identity": None, "live": None, "answer": None}
+
+    identity = None
+    live = None
+    for variant in _tag_variants(tag):
+        identity = _call(module, "find_tag", variant)
+        if identity is not None:
+            break
+
+    snapshot = _call(module, "get_live_pci_snapshot")
+    if isinstance(snapshot, dict):
+        points = snapshot.get("points", [])
+        wanted = _norm_tag(tag)
+        for point in points if isinstance(points, list) else []:
+            if isinstance(point, dict) and _norm_tag(point.get("tag")) == wanted:
+                live = point
+                break
+
+    answer = _call(module, "answer", query)
+    return {"identity": identity, "live": live, "answer": answer}
 
 
 def _maintenance(tag: str, query: str):
@@ -139,7 +202,7 @@ def _maintenance(tag: str, query: str):
 def _text(records: List[Dict[str, Any]]) -> str:
     parts = []
     for record in records:
-        for key in ("message", "event", "observation", "finding", "maintenance_action", "outcome"):
+        for key in ("message", "event", "observation", "finding", "maintenance_action", "outcome", "confirmation_evidence", "notes"):
             value = record.get(key)
             if value:
                 parts.append(str(value))
@@ -148,15 +211,11 @@ def _text(records: List[Dict[str, Any]]) -> str:
 
 def _hypotheses(events: List[Dict[str, Any]], memory: List[Dict[str, Any]], health: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Return ranked hypotheses only when explicit evidence supports them."""
-    event_text = _text(events)
-    memory_text = _text(memory)
-    combined = f"{event_text} {memory_text}"
-    candidates = []
-
+    combined = f"{_text(events)} {_text(memory)}"
     rules = [
         (
             "instrument-air / positioner issue",
-            ("air pressure" in combined and ("valve position" in combined or "positioner" in combined)),
+            "air pressure" in combined and ("valve position" in combined or "positioner" in combined),
             "Explicit evidence links instrument-air/valve-position information in the available history.",
         ),
         (
@@ -181,45 +240,54 @@ def _hypotheses(events: List[Dict[str, Any]], memory: List[Dict[str, Any]], heal
         ),
     ]
 
+    candidates = []
     for name, matched, rationale in rules:
         if not matched:
             continue
         evidence = []
         for source, records in (("EVENT_TIMELINE", events), ("VERIFIED_PLANT_MEMORY", memory)):
             for record in records:
-                raw = " ".join(str(record.get(k) or "") for k in ("message", "event", "observation", "finding", "maintenance_action", "outcome"))
-                if any(token in raw.lower() for token in name.split(" / ")) or name.startswith("process-condition"):
-                    evidence.append({
-                        "source": source,
-                        "memory_id": record.get("memory_id"),
-                        "timestamp": record.get("timestamp"),
-                        "text": raw.strip(),
-                    })
+                raw = " ".join(str(record.get(k) or "") for k in (
+                    "message", "event", "observation", "finding", "maintenance_action", "outcome", "confirmation_evidence", "notes"
+                )).strip()
+                if not raw:
+                    continue
+                evidence.append({
+                    "source": source,
+                    "memory_id": record.get("memory_id"),
+                    "timestamp": record.get("timestamp"),
+                    "text": raw,
+                })
         candidates.append({
             "hypothesis": name,
             "status": "INVESTIGATE",
             "support": rationale,
             "evidence": evidence,
         })
-
     return candidates
 
 
 def build_root_cause_intelligence(query: str, tag: Optional[str] = None) -> Dict[str, Any]:
     query = str(query or "").strip()
-    tag = _norm_tag(tag or extract_tag(query))
+    tag = extract_tag(tag or query) or _norm_tag(tag or "")
+
     events = _events(tag) if tag else []
     memory = _verified_memory(tag) if tag else []
     health = _health(tag) if tag else None
+    pci = _pci_evidence(tag, query) if tag else {"identity": None, "live": None, "answer": None}
     experience, matching = _maintenance(tag, query) if tag else (None, [])
     hypotheses = _hypotheses(events, memory, health if isinstance(health, dict) else {})
+
+    identity_available = pci.get("identity") is not None
+    live_available = pci.get("live") is not None
+    any_evidence = bool(events or memory or health or identity_available or live_available or experience or matching)
 
     if hypotheses:
         status = "HYPOTHESES_AVAILABLE"
         conclusion = "ANVIQO found evidence-supported hypotheses to investigate. These are not confirmed root causes."
-    elif events or memory or health:
+    elif any_evidence:
         status = "INSUFFICIENT_EVIDENCE"
-        conclusion = "ANVIQO has relevant evidence but not enough explicit evidence to rank a root-cause hypothesis."
+        conclusion = "ANVIQO identified equipment context/evidence, but not enough explicit failure evidence to rank a root-cause hypothesis."
     else:
         status = "NO_EVIDENCE"
         conclusion = "No usable equipment evidence was found for a root-cause assessment."
@@ -232,10 +300,22 @@ def build_root_cause_intelligence(query: str, tag: Optional[str] = None) -> Dict
         "status": status,
         "conclusion": conclusion,
         "hypotheses": hypotheses,
+        "evidence": {
+            "pci_identity": pci.get("identity"),
+            "pci_live": pci.get("live"),
+            "pci_answer": pci.get("answer"),
+            "events": events,
+            "verified_plant_memory": memory,
+            "health": health,
+            "maintenance_experience": experience,
+            "matching_experience": matching,
+        },
         "evidence_summary": {
             "event_count": len(events),
             "verified_memory_count": len(memory),
             "health_available": health is not None,
+            "pci_identity_available": identity_available,
+            "pci_live_available": live_available,
             "maintenance_experience_available": experience is not None or bool(matching),
             "matching_experience_count": len(matching),
         },
