@@ -20,6 +20,25 @@ def _can_read(actor):
 
 
 @app.before_request
+def failure_prediction_demo_query_bridge():
+    if request.path != "/api/ask" or request.method != "POST" or not session.get("authenticated"):
+        return None
+    payload = request.get_json(silent=True) or {}
+    question = _question(payload)
+    try:
+        from failure_prediction_demo_api import demo_answer
+        result = demo_answer(question)
+        if result is None:
+            return None
+        actor = _actor()
+        if not _can_read(actor):
+            return jsonify({"status":"FORBIDDEN","message":"plant:read permission is required for Failure Prediction Demo.","read_only":True,"plc_write":False,"scada_control":False}), 403
+        return jsonify(result)
+    except Exception:
+        return None
+
+
+@app.before_request
 def failure_prediction_query_bridge():
     if request.path != "/api/ask" or request.method != "POST" or not session.get("authenticated"):
         return None
@@ -36,6 +55,22 @@ def failure_prediction_query_bridge():
         return jsonify({"answer": result["prediction"], "domain":"failure_prediction", "failure_prediction":result, "read_only":True, "plc_write":False, "scada_control":False, "human_decision_required":True})
     except Exception:
         return None
+
+
+@app.route("/api/failure_prediction/demo", methods=["POST"])
+def failure_prediction_demo_api():
+    if not session.get("authenticated"):
+        return jsonify({"status":"UNAUTHORIZED","message":"ANVIQO authentication required"}), 401
+    actor = _actor()
+    if not _can_read(actor):
+        return jsonify({"status":"FORBIDDEN","message":"plant:read permission is required for Failure Prediction Demo.","plc_write":False,"scada_control":False}), 403
+    payload = request.get_json(silent=True) or {}
+    tag = str(payload.get("tag") or "PT-303").strip()
+    try:
+        from failure_prediction_demo_api import build_demo_failure_prediction
+        return jsonify(build_demo_failure_prediction(tag))
+    except Exception as exc:
+        return jsonify({"status":"ERROR","message":str(exc),"simulation":True,"production_history_write":False,"plc_write":False,"scada_control":False,"automatic_execution":False,"human_decision_required":True}), 500
 
 
 @app.route("/api/failure_prediction", methods=["POST"])
@@ -76,11 +111,7 @@ def failure_prediction_observation_api():
         return jsonify({"status":"BAD_REQUEST","message":"Missing required fields: " + ", ".join(missing)}), 400
     try:
         from failure_prediction_history import record_observation
-        record = record_observation(
-            tag=payload.get("tag"), value=payload.get("value"), timestamp=payload.get("timestamp"),
-            source_type=payload.get("source_type"), source=payload.get("source"), unit=payload.get("unit"),
-            state=payload.get("state"), area=payload.get("area"), provenance=payload.get("provenance")
-        )
+        record = record_observation(tag=payload.get("tag"), value=payload.get("value"), timestamp=payload.get("timestamp"), source_type=payload.get("source_type"), source=payload.get("source"), unit=payload.get("unit"), state=payload.get("state"), area=payload.get("area"), provenance=payload.get("provenance"))
         return jsonify({"status":"RECORDED","observation":record,"prediction_history_changed":True,"plc_write":False,"scada_control":False,"automatic_execution":False,"human_decision_required":True})
     except ValueError as exc:
         return jsonify({"status":"BAD_REQUEST","message":str(exc),"prediction_history_changed":False,"plc_write":False,"scada_control":False}), 400
