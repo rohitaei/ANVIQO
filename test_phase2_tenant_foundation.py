@@ -1,15 +1,14 @@
 import os
-import tempfile
+import uuid
 from pathlib import Path
 
 
 def load_store():
-    db = tempfile.NamedTemporaryFile(prefix="anviqo_phase2_", suffix=".db", delete=False)
-    db.close()
-    os.environ["ANVIQO_TENANT_DB_URL"] = f"sqlite:///{db.name}"
+    db = Path(f"phase2_tenant_{uuid.uuid4().hex}.db")
+    os.environ["ANVIQO_TENANT_DB_URL"] = f"sqlite:///{db}"
     import importlib
-    import anvi_tenant_store
-    return importlib.reload(anvi_tenant_store), Path(db.name)
+    import anviqo_tenant_store
+    return importlib.reload(anviqo_tenant_store), db
 
 
 def test_organization_plant_user_membership_role_permission_chain():
