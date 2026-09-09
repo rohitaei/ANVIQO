@@ -2,8 +2,8 @@
 
 Wraps the existing V1/V5 API without editing the frozen intelligence modules.
 Adds tenant context validation, role/permission enforcement, tenant audit,
-and the field-report runtime bridge. The underlying V5 plant intelligence
-remains unchanged.
+field-report and conversational Root Cause Intelligence bridges.
+The underlying V5 plant intelligence remains unchanged.
 """
 from flask import jsonify, request, session
 import json
@@ -58,13 +58,44 @@ def phase2_authorization():
 
 
 @app.before_request
-def phase2_field_report_query_bridge():
-    """Answer report-history questions from persistent Plant Memory first.
+def phase2_root_cause_query_bridge():
+    """Route explicit equipment root-cause questions before generic V5 routing."""
+    if not _api_authenticated() or request.path != "/api/ask" or request.method != "POST":
+        return None
+    payload = request.get_json(silent=True) or {}
+    question = str(
+        payload.get("question")
+        or payload.get("query")
+        or payload.get("message")
+        or payload.get("text")
+        or ""
+    ).strip()
+    if not question:
+        return None
+    try:
+        from root_cause_intelligence import is_root_cause_query, build_root_cause_intelligence
+        if is_root_cause_query(question):
+            actor = _actor()
+            if not authorize(actor, "plant:read", actor["organization_id"], actor["plant_id"]):
+                return jsonify({"status": "FORBIDDEN", "message": "plant:read permission is required for Root Cause Intelligence.", "read_only": True, "plc_write": False, "scada_control": False}) , 403
+            result = build_root_cause_intelligence(question)
+            return jsonify({
+                "answer": result["conclusion"],
+                "domain": "root_cause_intelligence",
+                "rci": result,
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "human_decision_required": True,
+            })
+    except Exception:
+        pass
+    return None
 
-    Reconciliation commands are explicitly excluded so the production guard's
-    authorized repair bridge can handle them instead of creating/returning a
-    normal field-report query response.
-    """
+
+@app.before_request
+def phase2_field_report_query_bridge():
+    """Answer report-history questions from persistent Plant Memory first."""
     if not _api_authenticated() or request.path != "/api/ask" or request.method != "POST":
         return None
     payload = request.get_json(silent=True) or {}
@@ -118,38 +149,19 @@ def reconcile_field_report_spares_api():
     """One-time repair for historical reports stored before spare auto-sync."""
     if not session.get("authenticated"):
         return jsonify({"status": "UNAUTHORIZED", "message": "ANVIQO authentication required"}), 401
-
     actor = _actor()
     if not authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"]):
-        return jsonify({
-            "status": "FORBIDDEN",
-            "message": "inventory:write permission is required for spare reconciliation.",
-            "inventory_changed": False,
-        }), 403
-
+        return jsonify({"status": "FORBIDDEN", "message": "inventory:write permission is required for spare reconciliation.", "inventory_changed": False}), 403
     payload = request.get_json(silent=True) or {}
     tag = str(payload.get("tag", "")).strip()
     report_id = str(payload.get("report_id", "")).strip()
-
     try:
         from field_report_spare_reconcile import reconcile_field_report_spares
         result = reconcile_field_report_spares(tag=tag, report_id=report_id)
-        result["message"] = (
-            f"Historical field-report spare reconciliation complete: "
-            f"{result['applied_count']} applied, "
-            f"{result['already_applied_count']} already applied, "
-            f"{result['error_count']} errors."
-        )
+        result["message"] = f"Historical field-report spare reconciliation complete: {result['applied_count']} applied, {result['already_applied_count']} already applied, {result['error_count']} errors."
         return jsonify(result)
     except Exception as exc:
-        return jsonify({
-            "status": "ERROR",
-            "inventory_changed": False,
-            "message": str(exc),
-            "plc_write": False,
-            "scada_control": False,
-            "human_decision_required": True,
-        }), 500
+        return jsonify({"status": "ERROR", "inventory_changed": False, "message": str(exc), "plc_write": False, "scada_control": False, "human_decision_required": True}), 500
 
 
 @app.route("/api/root_cause", methods=["POST"])
@@ -157,43 +169,25 @@ def root_cause_intelligence_api():
     """Return evidence-backed diagnostic hypotheses without claiming causation."""
     if not session.get("authenticated"):
         return jsonify({"status": "UNAUTHORIZED", "message": "ANVIQO authentication required"}), 401
-
     actor = _actor()
     if not authorize(actor, "plant:read", actor["organization_id"], actor["plant_id"]):
-        return jsonify({
-            "status": "FORBIDDEN",
-            "message": "plant:read permission is required for Root Cause Intelligence.",
-            "plc_write": False,
-            "scada_control": False,
-        }), 403
-
+        return jsonify({"status": "FORBIDDEN", "message": "plant:read permission is required for Root Cause Intelligence.", "plc_write": False, "scada_control": False}), 403
     payload = request.get_json(silent=True) or {}
     query = str(payload.get("query") or payload.get("question") or payload.get("message") or "").strip()
     tag = str(payload.get("tag") or "").strip()
     if not query and not tag:
         return jsonify({"status": "BAD_REQUEST", "message": "query or equipment tag is required."}), 400
-
     try:
         from root_cause_intelligence import build_root_cause_intelligence
-        result = build_root_cause_intelligence(query, tag or None)
-        return jsonify(result)
+        return jsonify(build_root_cause_intelligence(query, tag or None))
     except Exception as exc:
-        return jsonify({
-            "status": "ERROR",
-            "message": str(exc),
-            "plc_write": False,
-            "scada_control": False,
-            "automatic_execution": False,
-            "human_decision_required": True,
-        }), 500
+        return jsonify({"status": "ERROR", "message": str(exc), "plc_write": False, "scada_control": False, "automatic_execution": False, "human_decision_required": True}), 500
 
 
 @app.after_request
 def phase2_field_report_spare_sync(response):
     """Apply explicit spare usage captured by a field report exactly once."""
-    if not _api_authenticated() or request.path != "/api/field_report" or request.method != "POST":
-        return response
-    if response.status_code >= 400:
+    if not _api_authenticated() or request.path != "/api/field_report" or request.method != "POST" or response.status_code >= 400:
         return response
     try:
         payload = response.get_json(silent=True) or {}
