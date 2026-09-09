@@ -71,12 +71,7 @@ def phase2_authorization():
 
 @app.before_request
 def phase2_field_report_query_bridge():
-    """Answer report-history questions from persistent Plant Memory first.
-
-    This is an integration-layer bridge, not a replacement for V5 reasoning.
-    It fixes the case where a captured report exists but the normal knowledge
-    router does not return the stored human evidence on a later question.
-    """
+    """Answer report-history questions from persistent Plant Memory first."""
     if not _api_authenticated():
         return None
     if request.path != "/api/ask" or request.method != "POST":
@@ -147,16 +142,36 @@ def phase2_field_report_spare_sync(response):
         parsed = payload.get("parsed_report") or {}
         memory = payload.get("memory") or {}
         report_id = str(memory.get("memory_id", "")).strip()
-        if report_id and parsed:
-            from field_report_runtime import sync_field_report_spare
-            inventory_update = sync_field_report_spare(parsed, report_id)
-            payload["inventory_update"] = inventory_update
-            payload["message"] = (
-                "Field report captured and stored in Plant Memory. "
-                + inventory_update.get("message", "")
-            ).strip()
-            response.set_data(json.dumps(payload))
-            response.content_type = "application/json"
+        if not report_id or not parsed:
+            return response
+
+        from field_report_runtime import extract_spare_usage, sync_field_report_spare
+        usage = extract_spare_usage(parsed)
+        if not usage:
+            payload["inventory_update"] = {
+                "status": "NOT_APPLICABLE",
+                "inventory_changed": False,
+                "message": "No explicit spare-used/consumed statement was found.",
+            }
+        else:
+            actor = _actor()
+            if not authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"]):
+                payload["inventory_update"] = {
+                    "status": "FORBIDDEN",
+                    "inventory_changed": False,
+                    "tag": usage[0],
+                    "quantity": usage[1],
+                    "message": "Report captured, but spare inventory was not changed because inventory:write permission is required.",
+                }
+            else:
+                payload["inventory_update"] = sync_field_report_spare(parsed, report_id)
+
+        payload["message"] = (
+            "Field report captured and stored in Plant Memory. "
+            + payload["inventory_update"].get("message", "")
+        ).strip()
+        response.set_data(json.dumps(payload))
+        response.content_type = "application/json"
     except Exception as exc:
         try:
             payload = response.get_json(silent=True) or {}
