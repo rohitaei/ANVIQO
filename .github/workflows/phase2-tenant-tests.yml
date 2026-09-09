@@ -3,6 +3,7 @@ name: Phase 2 tenant foundation tests
 on:
   push:
     branches:
+      - main
       - phase2-tenant-foundation
       - phase2-field-report-spare-fix
   pull_request:
