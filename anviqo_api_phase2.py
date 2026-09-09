@@ -6,6 +6,7 @@ and the field-report runtime bridge. The underlying V5 plant intelligence
 remains unchanged.
 """
 from flask import jsonify, request, session
+import json
 
 from anviqo_api import app
 from anvi_tenant_store import authorize, ensure_bootstrap, list_audit, record_audit
@@ -92,8 +93,6 @@ def phase2_field_report_query_bridge():
         if answer:
             return jsonify(answer)
     except Exception:
-        # Never break the normal ANVI knowledge path because the optional
-        # field-report bridge cannot answer a query.
         pass
     return None
 
@@ -156,7 +155,7 @@ def phase2_field_report_spare_sync(response):
                 "Field report captured and stored in Plant Memory. "
                 + inventory_update.get("message", "")
             ).strip()
-            response.set_data(response.json.dumps(payload) if hasattr(response, "json") else __import__("json").dumps(payload))
+            response.set_data(json.dumps(payload))
             response.content_type = "application/json"
     except Exception as exc:
         try:
@@ -166,7 +165,7 @@ def phase2_field_report_spare_sync(response):
                 "inventory_changed": False,
                 "message": str(exc),
             }
-            response.set_data(__import__("json").dumps(payload))
+            response.set_data(json.dumps(payload))
             response.content_type = "application/json"
         except Exception:
             pass
@@ -187,6 +186,5 @@ def phase2_audit_api_activity(response):
                     {"method": request.method, "status": response.status_code},
                 )
             except Exception:
-                # Audit must not take down the operational read path.
                 pass
     return response
