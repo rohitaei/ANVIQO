@@ -1,6 +1,7 @@
 """ANVIQO Maintenance Action Memory V1.
 
-Read-only retrieval over verified Plant Memory. No PLC/SCADA writes.
+Thin, evidence-gated retrieval over the existing verified Plant Memory.
+This module does not create a second memory or reasoning engine.
 """
 
 VERSION = "ANVIQO-MA-MEMORY-V1.0"
@@ -18,12 +19,25 @@ def _text(value):
     return str(value or "").strip()
 
 
+def _norm_tag(value):
+    return _text(value).upper().replace("_", "-").replace(" ", "-")
+
+
 def _matches(record, tag=None, symptom=None):
     if not isinstance(record, dict):
         return False
-    wanted_tag = _text(tag).upper()
+
+    # Maintenance Action Memory is strictly verified-only.
+    if record.get("verified") is not True:
+        return False
+
+    wanted_tag = _norm_tag(tag)
     wanted_symptom = _text(symptom).lower()
-    record_tag = _text(record.get("tag") or record.get("equipment_tag")).upper()
+    record_tag = _norm_tag(record.get("tag") or record.get("equipment_tag"))
+
+    if wanted_tag and record_tag != wanted_tag:
+        return False
+
     haystack = " ".join(
         _text(record.get(k))
         for k in (
@@ -31,8 +45,7 @@ def _matches(record, tag=None, symptom=None):
             "maintenance_action", "action", "confirmation_evidence",
         )
     ).lower()
-    if wanted_tag and record_tag and wanted_tag != record_tag:
-        return False
+
     return not wanted_symptom or wanted_symptom in haystack
 
 
@@ -42,19 +55,22 @@ def retrieve_actions(records, tag=None, symptom=None):
     for record in records or []:
         if not _matches(record, tag=tag, symptom=symptom):
             continue
+
         action = _text(record.get("maintenance_action") or record.get("action"))
         evidence = _text(record.get("confirmation_evidence"))
         if not action or not evidence:
             continue
+
         results.append({
             "memory_id": _text(record.get("memory_id") or record.get("id")),
             "tag": _text(record.get("tag") or record.get("equipment_tag")),
             "finding": _text(record.get("finding")),
             "maintenance_action": action,
             "confirmation_evidence": evidence,
-            "verified": bool(record.get("verified", True)),
+            "verified": True,
             "source": _text(record.get("source") or "VERIFIED_PLANT_MEMORY"),
         })
+
     return results
 
 
