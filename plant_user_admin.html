@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ANVIQO — Plant User Management</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#071018;color:#e8f6fa;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px}.wrap{max-width:760px;margin:auto}.brand{letter-spacing:2px;font-weight:800;font-size:24px}.sub{color:#7895a3;margin:5px 0 24px}.card{background:#0b1922;border:1px solid #193b49;border-radius:14px;padding:22px;margin-bottom:18px}h2{margin-top:0;font-size:18px}label{display:block;color:#9bb3bd;font-size:13px;margin:14px 0 6px}input,select{width:100%;padding:12px;border-radius:8px;border:1px solid #28505f;background:#071820;color:#e8f6fa}button{margin-top:18px;padding:12px 18px;border:0;border-radius:8px;background:#31d8f5;color:#031017;font-weight:800;cursor:pointer}.msg{margin-top:14px;padding:12px;border-radius:8px;display:none}.ok{display:block;background:#103b32;color:#9ff1d2}.err{display:block;background:#451c26;color:#ffb2bd}.ctx{color:#9bb3bd;font-size:13px}.back{display:inline-block;margin-bottom:18px;color:#31d8f5;text-decoration:none}
+</style>
+</head>
+<body><div class="wrap">
+<a class="back" href="/">← Back to ANVIQO</a>
+<div class="brand">ANVIQO</div><div class="sub">PLANT USER MANAGEMENT · SAFE PROVISIONING</div>
+<div class="card"><div id="context" class="ctx">Checking authorization…</div></div>
+<div class="card"><h2>Create Plant Account</h2>
+<label>Plant</label><select id="plant"></select>
+<label>Username</label><input id="username" autocomplete="off" placeholder="e.g. operator01">
+<label>Display name</label><input id="display" autocomplete="off" placeholder="Optional">
+<label>Role</label><select id="role"><option value="OPERATOR">OPERATOR</option><option value="VIEWER">VIEWER</option><option value="ENGINEER">ENGINEER</option><option value="ADMIN">ADMIN</option><option value="OWNER">OWNER</option></select>
+<label>Password (minimum 8 characters)</label><input id="password" type="password" autocomplete="new-password" placeholder="Set a password">
+<button onclick="createUser()">Create Account</button><div id="msg" class="msg"></div>
+</div>
+<div class="card"><h2>Reset User Password</h2><label>Username</label><input id="resetUser" autocomplete="off"><label>New password</label><input id="resetPass" type="password" autocomplete="new-password"><button onclick="resetPassword()">Change Password</button><div id="resetMsg" class="msg"></div></div>
+</div>
+<script>
+async function api(url,opts={}){const r=await fetch(url,opts);let d={};try{d=await r.json()}catch(e){};if(!r.ok)throw new Error(d.message||('Request failed: '+r.status));return d}
+function show(id,text,ok){const e=document.getElementById(id);e.textContent=text;e.className='msg '+(ok?'ok':'err')}
+async function load(){try{const c=await api('/api/session/context');if(!['ADMIN','OWNER'].includes(c.role))throw new Error('Organization ADMIN/OWNER access required');document.getElementById('context').textContent=`Signed in as ${c.username} · ${c.role} · Organization ${c.organization_id}`;const d=await api('/api/admin/plants');const s=document.getElementById('plant');s.innerHTML='';d.plants.filter(p=>p.status==='ACTIVE').forEach(p=>{const o=document.createElement('option');o.value=p.plant_id;o.textContent=`${p.name} (${p.slug})`;s.appendChild(o)});if(!s.options.length)show('msg','No active plants are available in your organization.',false)}catch(e){show('msg',e.message,false);document.getElementById('context').textContent='Access check failed.'}}
+async function createUser(){try{const password=document.getElementById('password').value;if(password.length<8)throw new Error('Password must contain at least 8 characters');const d=await api('/api/admin/plant-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:document.getElementById('username').value,display_name:document.getElementById('display').value,password,plant_id:document.getElementById('plant').value,role:document.getElementById('role').value})});show('msg',`Account created: ${d.username} · ${d.role}`,true);document.getElementById('password').value=''}catch(e){show('msg',e.message,false)}}
+async function resetPassword(){try{const password=document.getElementById('resetPass').value;if(password.length<8)throw new Error('Password must contain at least 8 characters');await api('/api/admin/plant-user-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:document.getElementById('resetUser').value,password})});show('resetMsg','Password changed successfully.',true);document.getElementById('resetPass').value=''}catch(e){show('resetMsg',e.message,false)}}
+load();
+</script></body></html>
