@@ -19,7 +19,15 @@ jobs:
       - name: Install dependencies
         run: pip install pytest flask openpyxl
       - name: V5 context tests
-        run: pytest -q test_phase6_enterprise_context_v5.py test_phase6_enterprise_command_centre_v4.py test_phase6_enterprise_command_centre_v3.py test_phase6_enterprise_command_centre_v2.py test_phase6_enterprise_foundation_v1.py test_phase2_tenant_foundation.py
+        run: pytest -q test_phase6_enterprise_context_v5.py
+      - name: V4 context switching tests
+        run: pytest -q test_phase6_enterprise_command_centre_v4.py
+      - name: V3 portfolio tests
+        run: pytest -q test_phase6_enterprise_command_centre_v3.py
+      - name: V2 command centre tests
+        run: pytest -q test_phase6_enterprise_command_centre_v2.py
+      - name: Foundation tenant tests
+        run: pytest -q test_phase6_enterprise_foundation_v1.py test_phase2_tenant_foundation.py
       - name: Compile changed runtime
         run: python -m py_compile phase6_enterprise_runtime.py phase6_enterprise_runtime_v4.py phase6_enterprise_command_centre_v4.py phase6_enterprise_context_v5.py
       - name: Safety gate
