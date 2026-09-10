@@ -1,6 +1,3 @@
-import os
-import sqlite3
-
 import pytest
 
 
@@ -12,15 +9,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "phase6-password")
     monkeypatch.setenv("ANVIQO_SECRET_KEY", "phase6-secret")
 
-    import importlib
-    import anvi_tenant_store
-    import anviqo_api_phase2
-    import phase6_enterprise_runtime
-    importlib.reload(anvi_tenant_store)
-    importlib.reload(anviqo_api_phase2)
-    importlib.reload(phase6_enterprise_runtime)
-
-    from anviqo_api_phase2 import app
+    import phase6_enterprise_runtime  # noqa: F401
+    from phase5_command_centre_runtime import app
     app.config.update(TESTING=True, SECRET_KEY="phase6-secret")
     with app.test_client() as c:
         yield c
