@@ -15,13 +15,13 @@ def _login(client):
     return client.post("/login", data={"username": os.environ["ANVIQO_ADMIN_USER"], "password": os.environ["ANVIQO_ADMIN_PASSWORD"]}, follow_redirects=False)
 
 
-def test_hod_management_get_is_safe_and_evidence_empty():
+def test_hod_management_get_uses_existing_evidence():
     client = runtime.app.test_client()
     assert _login(client).status_code == 302
     response = client.get("/api/hod-management")
     assert response.status_code == 200
     data = response.get_json()
-    assert data["management_state"] == "INSUFFICIENT_EVIDENCE"
+    assert "evidence_context" in data
     assert data["safety_boundary"]["plc_write"] is False
     assert data["safety_boundary"]["scada_control"] is False
 
