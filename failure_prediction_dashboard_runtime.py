@@ -16,7 +16,7 @@ from flask import make_response, redirect, request, session, url_for, jsonify
 
 from anviqo_spare_query_guard import app
 
-VERSION = "ANVIQO-FP-DEMO-DASHBOARD-V1.3-DIRECT"
+VERSION = "ANVIQO-FP-DEMO-DASHBOARD-V1.4-PREDICTION-PAGE"
 
 SAFETY = {
     "mode": "DEMO_SIMULATION_ONLY",
@@ -123,21 +123,40 @@ MARKER = 'id="anviqoFpDemo"'
 
 
 def inject_prediction_demo_dashboard(html: str) -> str:
-    """Insert the demo panel directly into the dashboard HTML response."""
+    """Insert the demo panel inside the Predictive Intelligence page only."""
     text = str(html or '')
-    if 'id="page-prediction"' not in text:
+    page_marker = '<div class="page" id="page-prediction">'
+    if page_marker not in text or MARKER in text:
         return text
-    if MARKER in text:
-        return text
-    marker = '</body>'
-    idx = text.lower().rfind(marker)
-    if idx < 0:
-        return text
-    return text[:idx] + "\n" + PANEL_HTML + "\n" + SCRIPT + "\n" + text[idx:]
+
+    start = text.find(page_marker)
+    depth = 0
+    i = start
+    lower = text.lower()
+    while i < len(text):
+        open_i = lower.find('<div', i)
+        close_i = lower.find('</div', i)
+        if close_i < 0:
+            return text
+        if open_i >= 0 and open_i < close_i:
+            depth += 1
+            end_tag = lower.find('>', open_i)
+            if end_tag < 0:
+                return text
+            i = end_tag + 1
+        else:
+            depth -= 1
+            end_tag = lower.find('>', close_i)
+            if end_tag < 0:
+                return text
+            if depth == 0:
+                return text[:close_i] + "\n" + PANEL_HTML + "\n" + SCRIPT + "\n" + text[close_i:]
+            i = end_tag + 1
+    return text
 
 
 def _dashboard_direct():
-    """Serve the dashboard and inject the panel in the actual response body."""
+    """Serve the dashboard and inject the panel in the actual HTML response."""
     if not session.get("authenticated"):
         return redirect(url_for("login"))
     html = DASHBOARD.read_text(encoding="utf-8")
