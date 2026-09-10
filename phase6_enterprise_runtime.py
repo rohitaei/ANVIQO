@@ -33,9 +33,7 @@ def _actor():
 
 
 def _admin(actor):
-    return bool(actor["organization_id"] and authorize(
-        actor, "tenant:admin", actor["organization_id"], actor["plant_id"]
-    ))
+    return bool(actor["organization_id"] and authorize(actor, "tenant:admin", actor["organization_id"], actor["plant_id"]))
 
 
 def _require_auth():
@@ -60,14 +58,7 @@ def enterprise_context():
         org = cur.fetchone()
         cur.execute(f"SELECT plant_id,name,slug,status,created_at FROM anviqo_plants WHERE organization_id={p} ORDER BY name", (actor["organization_id"],))
         plants = [dict(r) for r in cur.fetchall()]
-    return jsonify({
-        "status": "OK",
-        "organization": dict(org) if org else None,
-        "active_plant_id": actor["plant_id"],
-        "role": actor["role"],
-        "plants": plants,
-        "governance": dict(ENTERPRISE_SAFETY),
-    })
+    return jsonify({"status": "OK", "organization": dict(org) if org else None, "active_plant_id": actor["plant_id"], "role": actor["role"], "plants": plants, "governance": dict(ENTERPRISE_SAFETY)})
 
 
 @app.route("/api/enterprise/plants", methods=["POST"])
@@ -96,13 +87,17 @@ def enterprise_plant(plant_id: str):
     if denied:
         return denied
     actor = _actor()
-    if not authorize(actor, "plant:read", actor["organization_id"], plant_id):
-        return jsonify({"status": "FORBIDDEN", "message": "plant:read permission is required for this plant", "governance": dict(ENTERPRISE_SAFETY)}), 403
+    same_org = False
     p = _placeholder()
     with _connect() as conn:
         cur = conn.cursor()
         cur.execute(f"SELECT plant_id,organization_id,name,slug,status,created_at FROM anviqo_plants WHERE organization_id={p} AND plant_id={p}", (actor["organization_id"], plant_id))
         row = cur.fetchone()
-    if not row:
-        return jsonify({"status": "NOT_FOUND", "message": "Plant not found in active organization"}), 404
+        same_org = row is not None
+    if not same_org:
+        return jsonify({"status": "FORBIDDEN", "message": "Plant is outside the active organization", "governance": dict(ENTERPRISE_SAFETY)}), 403
+    # Tenant admins manage the organization plant directory; other users need
+    # an explicit membership on the requested plant.
+    if not _admin(actor) and not authorize(actor, "plant:read", actor["organization_id"], plant_id):
+        return jsonify({"status": "FORBIDDEN", "message": "plant:read permission is required for this plant", "governance": dict(ENTERPRISE_SAFETY)}), 403
     return jsonify({"status": "OK", "plant": dict(row), "governance": dict(ENTERPRISE_SAFETY)})
