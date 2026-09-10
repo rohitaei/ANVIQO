@@ -11,7 +11,6 @@ from flask import jsonify, request, session
 from phase5_command_centre_runtime import app
 from anvi_tenant_store import authorize, create_plant, _connect, _placeholder
 
-
 ENTERPRISE_SAFETY = {
     "read_only_intelligence": True,
     "plc_write": False,
@@ -33,7 +32,17 @@ def _actor():
 
 
 def _admin(actor):
-    return bool(actor["organization_id"] and authorize(actor, "tenant:admin", actor["organization_id"], actor["plant_id"]))
+    """Tenant admin is organization-scoped, not tied to the selected plant."""
+    if not actor["organization_id"] or not actor["user_id"]:
+        return False
+    p = _placeholder()
+    with _connect() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT 1 FROM anviqo_memberships m JOIN anviqo_roles r ON r.role_id=m.role_id WHERE m.user_id={p} AND m.organization_id={p} AND m.status='ACTIVE' AND r.name IN ('OWNER','ADMIN') LIMIT 1",
+            (actor["user_id"], actor["organization_id"]),
+        )
+        return cur.fetchone() is not None
 
 
 def _require_auth():
@@ -99,6 +108,5 @@ def enterprise_plant(plant_id: str):
     return jsonify({"status": "OK", "plant": dict(row), "governance": dict(ENTERPRISE_SAFETY)})
 
 
-# Load the presentation adapters after the base enterprise app is fully defined.
 import phase6_enterprise_command_centre_v2  # noqa: E402,F401
 import phase6_enterprise_command_centre_v3  # noqa: E402,F401
