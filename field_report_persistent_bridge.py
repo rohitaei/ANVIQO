@@ -82,14 +82,7 @@ def _field_reports_from_neon(tag="", limit=20):
 
 
 def _report_view(report):
-    """Flatten the stored report payload without changing stored data.
-
-    Field-report persistence stores the parsed fields under ``parsed_report``.
-    Older retrieval code looked only at the outer envelope, which produced
-    misleading "not stated" values even when the original parsed report was
-    present. The nested parsed report is preferred while the envelope remains
-    available as evidence.
-    """
+    """Flatten the stored report payload without changing stored data."""
     if not isinstance(report, dict):
         return {}
     parsed = report.get("parsed_report")
@@ -132,7 +125,9 @@ def _best_report(question, reports, tag=""):
 @app.before_request
 def persistent_field_report_query_bridge():
     """Fallback for /api/ask when local Plant Memory has no report."""
-    if not session.get("authenticated") or request.path != "/api/ask" or request.method != "POST":
+    # Phase 2 establishes authenticated tenant context using user_id. Keep
+    # this bridge aligned with that boundary; do not invent a second auth flag.
+    if not session.get("user_id") or request.path != "/api/ask" or request.method != "POST":
         return None
 
     payload = request.get_json(silent=True) or {}
