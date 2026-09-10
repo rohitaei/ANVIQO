@@ -1,7 +1,5 @@
-
 import os
 import json
-from contextlib import closing
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
@@ -190,6 +188,23 @@ def get_memory(tag="",equipment=""):
 def upsert_field_report(record):
     if not neon_enabled(): return False
     init_neon()
+
+    # Persist the active Phase 2 tenant context inside the report payload so
+    # durable retrieval can enforce organization + plant isolation after a
+    # Render restart. This is metadata only; it does not alter report content
+    # or inventory behavior.
+    record = dict(record or {})
+    try:
+        from flask import session
+        org_id = str(session.get("organization_id", "")).strip()
+        plant_id = str(session.get("plant_id", "")).strip()
+        if org_id:
+            record.setdefault("organization_id", org_id)
+        if plant_id:
+            record.setdefault("plant_id", plant_id)
+    except Exception:
+        pass
+
     rid=str(record.get("report_id","")).strip()
     if not rid:
         rid="FR-"+str(abs(hash(_json(record))))

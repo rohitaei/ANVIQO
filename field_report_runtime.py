@@ -60,7 +60,6 @@ def extract_spare_usage(parsed_report: dict) -> tuple[str, float] | None:
     raw = str(parsed_report.get("raw_report") or "").strip()
     combined = " ".join(x for x in (text, raw) if x)
 
-    # Prefer an explicit parser result such as PT-303 x1.
     m = re.search(r"\b([A-Z]{1,8}[-_ ]?\d{1,5})\s*x\s*(\d+(?:\.\d+)?)\b", text, re.I)
     if m:
         return _normalise_tag(m.group(1)), float(m.group(2))
@@ -77,7 +76,6 @@ def extract_spare_usage(parsed_report: dict) -> tuple[str, float] | None:
             qty = _NUM_WORDS.get(qty.lower(), qty)
             return _normalise_tag(m.group("tag")), float(qty)
 
-    # A labelled field is authoritative only when it actually says used/consumed.
     if text and re.search(r"\b(?:used|consumed|removed)\b", text, re.I):
         tag_match = _TAG_RE.search(text)
         if tag_match:
@@ -169,6 +167,17 @@ def _report_query(q: str) -> bool:
     return any(x in low for x in triggers)
 
 
+def _has_report_details(report: dict) -> bool:
+    """Reject empty placeholder records so they cannot hide real persistence."""
+    if not isinstance(report, dict):
+        return False
+    fields = (
+        "observation", "finding", "maintenance_action", "outcome",
+        "recovery_status", "spare_used", "raw_report", "notes",
+    )
+    return any(str(report.get(key) or "").strip() for key in fields)
+
+
 def answer_field_report_query(question: str):
     """Return a grounded field-report answer or None when not a report query."""
     if not _report_query(question):
@@ -179,7 +188,10 @@ def answer_field_report_query(question: str):
     tag_match = _TAG_RE.search(str(question or ""))
     tag = _normalise_tag(tag_match.group(1)) if tag_match else ""
     results = plant_memory.search_all_memory(query=question, tag=tag, limit=10)
-    reports = [r for r in results if r.get("source") == "technician field report"]
+    reports = [
+        r for r in results
+        if r.get("source") == "technician field report" and _has_report_details(r)
+    ]
 
     if not reports:
         return None
