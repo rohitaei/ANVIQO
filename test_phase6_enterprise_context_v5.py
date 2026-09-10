@@ -1,21 +1,24 @@
 import os
-import sqlite3
-import importlib
+
+_APP = None
 
 
 def _load_app(tmp_path):
+    global _APP
+    if _APP is not None:
+        return _APP
     db = tmp_path / "tenant_v5.sqlite"
     os.environ["ANVIQO_TENANT_DB"] = str(db)
     os.environ["ANVIQO_SECRET_KEY"] = "test-secret-v5"
     os.environ["ANVIQO_ADMIN_USER"] = "admin"
     os.environ["ANVIQO_ADMIN_PASSWORD"] = "password"
     import phase6_enterprise_runtime
-    importlib.reload(phase6_enterprise_runtime)
-    import phase6_enterprise_command_centre_v2
-    import phase6_enterprise_command_centre_v3
-    import phase6_enterprise_command_centre_v4
-    import phase6_enterprise_context_v5
-    return phase6_enterprise_runtime.app
+    import phase6_enterprise_command_centre_v2  # noqa: F401
+    import phase6_enterprise_command_centre_v3  # noqa: F401
+    import phase6_enterprise_command_centre_v4  # noqa: F401
+    import phase6_enterprise_context_v5  # noqa: F401
+    _APP = phase6_enterprise_runtime.app
+    return _APP
 
 
 def _session(client, org="org-1", plant="plant-1", role="ADMIN"):
@@ -65,6 +68,8 @@ def test_context_check_accepts_active_plant(tmp_path):
 def test_unauthenticated_context_blocked(tmp_path):
     app = _load_app(tmp_path)
     client = app.test_client()
+    with client.session_transaction() as s:
+        s.clear()
     r = client.get("/api/enterprise/context-envelope?surface=reports")
     assert r.status_code == 401
 
