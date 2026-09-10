@@ -1,15 +1,14 @@
 """ANVIQO Phase 6 enterprise control-plane adapter.
 
 Adds organization/plant visibility and plant administration on top of the
-existing Phase 2 tenant store. Frozen V5 intelligence is not modified.
-This is governance/context only; it does not create plant intelligence or
-control PLC/SCADA systems.
+existing Command Centre runtime and Phase 2 tenant store. Frozen V5
+intelligence is not modified. This is governance/context only.
 """
 from __future__ import annotations
 
 from flask import jsonify, request, session
 
-from anviqo_api_phase2 import app
+from phase5_command_centre_runtime import app
 from anvi_tenant_store import authorize, create_plant, _connect, _placeholder
 
 
@@ -57,15 +56,9 @@ def enterprise_context():
     p = _placeholder()
     with _connect() as conn:
         cur = conn.cursor()
-        cur.execute(
-            f"SELECT organization_id,name,slug,status,created_at FROM anviqo_organizations WHERE organization_id={p}",
-            (actor["organization_id"],),
-        )
+        cur.execute(f"SELECT organization_id,name,slug,status,created_at FROM anviqo_organizations WHERE organization_id={p}", (actor["organization_id"],))
         org = cur.fetchone()
-        cur.execute(
-            f"SELECT plant_id,name,slug,status,created_at FROM anviqo_plants WHERE organization_id={p} ORDER BY name",
-            (actor["organization_id"],),
-        )
+        cur.execute(f"SELECT plant_id,name,slug,status,created_at FROM anviqo_plants WHERE organization_id={p} ORDER BY name", (actor["organization_id"],))
         plants = [dict(r) for r in cur.fetchall()]
     return jsonify({
         "status": "OK",
@@ -108,10 +101,7 @@ def enterprise_plant(plant_id: str):
     p = _placeholder()
     with _connect() as conn:
         cur = conn.cursor()
-        cur.execute(
-            f"SELECT plant_id,organization_id,name,slug,status,created_at FROM anviqo_plants WHERE organization_id={p} AND plant_id={p}",
-            (actor["organization_id"], plant_id),
-        )
+        cur.execute(f"SELECT plant_id,organization_id,name,slug,status,created_at FROM anviqo_plants WHERE organization_id={p} AND plant_id={p}", (actor["organization_id"], plant_id))
         row = cur.fetchone()
     if not row:
         return jsonify({"status": "NOT_FOUND", "message": "Plant not found in active organization"}), 404
