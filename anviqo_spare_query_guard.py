@@ -68,3 +68,8 @@ def _reconcile_command_bridge():
         })
     except Exception as exc:
         return jsonify({"status": "ERROR", "domain": "critical_spares", "message": str(exc), "inventory_changed": False, "plc_write": False, "scada_control": False, "human_decision_required": True}), 500
+
+
+# Plant login, tenant-scoped account provisioning and plant-user management
+# are registered on this same production Flask app.
+import anvi_plant_runtime_bridge  # noqa: E402,F401
