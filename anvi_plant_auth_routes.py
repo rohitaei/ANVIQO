@@ -60,10 +60,16 @@ def session_context():
     if not session.get("authenticated"): return jsonify({"status": "UNAUTHORIZED"}), 401
     return jsonify({"status": "OK", "username": session.get("username", ""), "role": session.get("role", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "plant_name": session.get("plant_name", ""), "plant_slug": session.get("plant_slug", "")})
 
-@app.get("/admin/users")
-def admin_users_page():
+
+def _serve_admin_page():
     if not _admin(): return redirect(url_for("plant_login_interceptor"))
     return send_from_directory(".", "plant_user_admin.html")
+
+@app.get("/admin/users")
+@app.get("/admin/plant-users")
+@app.get("/account/create")
+def admin_users_page():
+    return _serve_admin_page()
 
 @app.get("/api/admin/plants")
 def admin_plants():
