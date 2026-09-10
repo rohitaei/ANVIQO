@@ -1,4 +1,5 @@
 import field_report_persistent_bridge as bridge
+import field_report_runtime as runtime
 
 
 def test_best_report_prefers_exact_tag_and_field_report():
@@ -55,3 +56,8 @@ def test_best_report_uses_nested_parsed_report_payload():
     assert view["finding"] == "Fuse blown / no power"
     assert view["maintenance_action"] == "Fuse replaced"
     assert view["outcome"] == "Instrument returned to normal operation"
+
+
+def test_empty_field_report_placeholder_is_not_usable():
+    assert runtime._has_report_details({"source": "technician field report", "tag": "PT-303"}) is False
+    assert runtime._has_report_details({"source": "technician field report", "tag": "PT-303", "finding": "Fuse blown"}) is True
