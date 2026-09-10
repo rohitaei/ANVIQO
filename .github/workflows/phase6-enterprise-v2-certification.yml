@@ -30,9 +30,9 @@ jobs:
       - name: Phase 5 command centre regression
         run: pytest -q test_phase5_command_centre_v1.py
       - name: Phase 5 live evidence regression
-        run: pytest -q test_phase5_live_evidence_adapter.py
+        run: pytest -q test_phase5_live_evidence_hod_v1.py
       - name: Phase 5 human management regression
-        run: pytest -q test_phase5_human_management_intelligence.py
+        run: pytest -q test_phase5_human_management_intelligence_v1.py
       - name: Failure prediction regression
         run: pytest -q test_failure_prediction_dashboard.py
       - name: Compile
