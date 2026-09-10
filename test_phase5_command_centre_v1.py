@@ -12,16 +12,13 @@ import phase5_command_centre_runtime as runtime
 
 
 def _login(client):
-    return client.post("/login", data={
-        "username": os.environ["ANVIQO_ADMIN_USER"],
-        "password": os.environ["ANVIQO_ADMIN_PASSWORD"],
-    }, follow_redirects=False)
+    return client.post("/login", data={"username": os.environ["ANVIQO_ADMIN_USER"], "password": os.environ["ANVIQO_ADMIN_PASSWORD"]}, follow_redirects=False)
 
 
-def test_management_get_is_safe_and_evidence_empty():
+def test_hod_management_get_is_safe_and_evidence_empty():
     client = runtime.app.test_client()
     assert _login(client).status_code == 302
-    response = client.get("/api/management")
+    response = client.get("/api/hod-management")
     assert response.status_code == 200
     data = response.get_json()
     assert data["management_state"] == "INSUFFICIENT_EVIDENCE"
@@ -29,11 +26,11 @@ def test_management_get_is_safe_and_evidence_empty():
     assert data["safety_boundary"]["scada_control"] is False
 
 
-def test_management_post_reuses_supplied_existing_evidence():
+def test_hod_management_post_reuses_supplied_existing_evidence():
     client = runtime.app.test_client()
     _login(client)
     payload = {"executive": {"plant_situation": "ATTENTION", "plant_health": {"status": "DEGRADED", "score": 72}, "top_equipment_risks": [{"equipment": "PT-303", "priority": 84, "status": "URGENT", "reason": "Verified evidence requires review."}]}}
-    response = client.post("/api/management", json=payload)
+    response = client.post("/api/hod-management", json=payload)
     assert response.status_code == 200
     data = response.get_json()
     assert data["top_priorities"][0]["equipment"] == "PT-303"
@@ -43,7 +40,7 @@ def test_management_post_reuses_supplied_existing_evidence():
 def test_human_decision_never_executes():
     client = runtime.app.test_client()
     _login(client)
-    response = client.post("/api/management/decision", json={"action": {"action_id": "A-1", "equipment": "PT-303", "action": "INSPECT"}, "decision": "APPROVE", "reviewer": "HOD"})
+    response = client.post("/api/hod-management/decision", json={"action": {"action_id": "A-1", "equipment": "PT-303", "action": "INSPECT"}, "decision": "APPROVE", "reviewer": "HOD"})
     assert response.status_code == 200
     data = response.get_json()
     assert data["approved"] is True
