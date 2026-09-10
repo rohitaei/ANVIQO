@@ -198,13 +198,24 @@ def answer_field_report_query(question: str):
 
     report = reports[0]
     pending = report.get("verification_status") != "VERIFIED"
+
+    # Normalize spare usage at read time as well as at ingest time. This is
+    # important for older human reports whose parser stored the raw sentence
+    # but left the structured spare_used field empty. Never change inventory
+    # here; this path is strictly read-only.
+    usage = extract_spare_usage(report)
+    display_spare = report.get("spare_used") or ""
+    if usage:
+        spare_tag, spare_qty = usage
+        display_spare = f"{spare_tag} x {spare_qty:g}"
+
     answer = (
         f"I found a technician field report for {report.get('tag') or report.get('equipment') or 'the equipment'}. "
         f"Observation: {report.get('observation') or 'not stated'}. "
         f"Finding: {report.get('finding') or 'not stated'}. "
         f"Maintenance action: {report.get('maintenance_action') or 'not stated'}. "
         f"Outcome: {report.get('outcome') or 'not stated'}. "
-        f"Spare used: {report.get('spare_used') or 'none reported'}."
+        f"Spare used: {display_spare or 'none reported'}."
     )
     if pending:
         answer += " This is a human field report and remains PENDING_VERIFICATION."
