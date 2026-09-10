@@ -17,7 +17,7 @@ def test_durable_record_round_trip(monkeypatch):
 
     assert sync.record_applied("PM-1", "pt_303", 1, 3, 2, "TX-1") is True
     assert calls
-    assert calls[-1][1] == ("PM-1", "PT_303", 1.0, 3.0, 2.0, "TX-1")
+    assert calls[-1][1] == ("PM-1", "PT-303", 1.0, 3.0, 2.0, "TX-1")
 
     rows[:] = [(3, 2, "TX-1")]
     result = sync.get_applied("PM-1", "PT_303", 1)
@@ -41,6 +41,6 @@ def test_durable_guard_is_scoped_to_report_tag_and_quantity(monkeypatch):
     monkeypatch.setattr(sync, "_neon_ready", lambda: True)
     monkeypatch.setattr(anvi_neon_store, "_exec", fake_exec)
 
-    assert sync.get_applied("PM-2", "PT-303", 1)["transaction_id"] == "TX-2"
+    assert sync.get_applied("PM-2", "PT_303", 1)["transaction_id"] == "TX-2"
     assert sync.get_applied("PM-2", "PT-303", 2) is None
     assert sync.get_applied("PM-OTHER", "PT-303", 1) is None
