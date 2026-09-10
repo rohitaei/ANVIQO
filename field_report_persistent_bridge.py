@@ -6,7 +6,7 @@ remains queryable after a Render instance restart even if the local JSON memory
 file is empty or incomplete.
 
 This is retrieval only. It does not create new plant reasoning, write PLC/SCADA,
-or change inventory.
+or change inventory. Tenant filtering is mandatory for the durable fallback.
 """
 from __future__ import annotations
 
@@ -22,6 +22,10 @@ _TAG_RE = re.compile(r"\b([A-Z]{1,8}[-_ ]?\d{1,5})\b", re.I)
 
 def _norm(value):
     return re.sub(r"\s+", " ", str(value or "").strip()).lower()
+
+
+def _tag_norm(value):
+    return re.sub(r"[^a-z0-9]", "", _norm(value))
 
 
 def _tokens(value):
@@ -46,16 +50,30 @@ def _field_reports_from_neon(tag="", limit=20):
         if not neon_enabled():
             return []
         init_neon()
+        org_id = str(session.get("organization_id", "")).strip()
+        plant_id = str(session.get("plant_id", "")).strip()
+        if not org_id or not plant_id:
+            return []
+
+        # Field-report payloads are tenant-scoped. Legacy reports without
+        # tenant metadata are intentionally excluded from this fallback.
         if tag:
             rows = _exec(
-                "SELECT payload FROM anviqo_field_reports WHERE tag=%s ORDER BY created_at DESC LIMIT %s",
-                (str(tag).strip(), int(limit)),
+                """SELECT payload FROM anviqo_field_reports
+                   WHERE payload->>'organization_id'=%s
+                     AND payload->>'plant_id'=%s
+                     AND regexp_replace(lower(COALESCE(tag,'')), '[^a-z0-9]', '', 'g') = regexp_replace(lower(%s), '[^a-z0-9]', '', 'g')
+                   ORDER BY created_at DESC LIMIT %s""",
+                (org_id, plant_id, str(tag).strip(), int(limit)),
                 True,
             )
         else:
             rows = _exec(
-                "SELECT payload FROM anviqo_field_reports ORDER BY created_at DESC LIMIT %s",
-                (int(limit),),
+                """SELECT payload FROM anviqo_field_reports
+                   WHERE payload->>'organization_id'=%s
+                     AND payload->>'plant_id'=%s
+                   ORDER BY created_at DESC LIMIT %s""",
+                (org_id, plant_id, int(limit)),
                 True,
             )
         return [row[0] for row in rows if row and isinstance(row[0], dict)]
@@ -65,7 +83,7 @@ def _field_reports_from_neon(tag="", limit=20):
 
 def _best_report(question, reports, tag=""):
     q_tokens = _tokens(question)
-    wanted = _norm(tag)
+    wanted = _tag_norm(tag)
 
     def score(report):
         text = _norm(" ".join(
@@ -77,7 +95,7 @@ def _best_report(question, reports, tag=""):
             )
         ))
         s = len(q_tokens & _tokens(text)) * 10
-        if wanted and wanted == _norm(report.get("tag")):
+        if wanted and wanted == _tag_norm(report.get("tag")):
             s += 100
         if report.get("source") == "technician field report":
             s += 5
@@ -96,7 +114,13 @@ def persistent_field_report_query_bridge():
         return None
 
     payload = request.get_json(silent=True) or {}
-    question = str(payload.get("question", "")).strip()
+    question = str(
+        payload.get("question")
+        or payload.get("query")
+        or payload.get("message")
+        or payload.get("text")
+        or ""
+    ).strip()
     if not question:
         return None
 
