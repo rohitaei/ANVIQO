@@ -22,7 +22,13 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install pytest flask openpyxl
       - name: Enterprise V3 tests
-        run: pytest -q test_phase6_enterprise_command_centre_v3.py test_phase6_enterprise_command_centre_v2.py test_phase6_enterprise_foundation_v1.py test_phase2_tenant_foundation.py
+        run: pytest -q test_phase6_enterprise_command_centre_v3.py
+      - name: Enterprise V2 tests
+        run: pytest -q test_phase6_enterprise_command_centre_v2.py
+      - name: Enterprise foundation tests
+        run: pytest -q test_phase6_enterprise_foundation_v1.py
+      - name: Tenant foundation tests
+        run: pytest -q test_phase2_tenant_foundation.py
       - name: Compile
         run: python -m py_compile phase6_enterprise_runtime.py phase6_enterprise_command_centre_v2.py phase6_enterprise_command_centre_v3.py
       - name: Safety boundary scan
