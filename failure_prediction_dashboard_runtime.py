@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import make_response, redirect, request, session, url_for
+from flask import make_response, redirect, request, session, url_for, jsonify
 
 from anviqo_spare_query_guard import app
 
@@ -154,6 +154,15 @@ def _dashboard_direct():
 # existing dashboard view function so the panel cannot be lost in middleware.
 if "dashboard" in app.view_functions:
     app.view_functions["dashboard"] = _dashboard_direct
+
+
+# Render was saved with a trailing space in the health-check path. Keep a
+# compatibility endpoint so the running service can become healthy immediately
+# while the dashboard setting is corrected to /health. This endpoint is
+# operational only and does not touch V5/PCI intelligence or plant controls.
+@app.route("/health ")
+def health_compat_with_trailing_space():
+    return jsonify({"status": "ok", "service": "ANVIQO", "health_check": True}), 200
 
 
 @app.before_request
