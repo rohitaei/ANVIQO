@@ -2,7 +2,7 @@ name: Phase 4 Runtime Certification
 
 on:
   push:
-    branches: [phase4-command-centre-integration-v1]
+    branches: [phase4-command-centre-integration-v1, release-certification-v2]
   pull_request:
     branches: [release-certification-v2]
 
