@@ -1,0 +1,30 @@
+name: ANVIQO Phase 5 Live Evidence HOD Certification
+
+on:
+  push:
+    branches: [phase5-live-evidence-hod-v1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  phase5-live-evidence:
+    runs-on: ubuntu-latest
+    env:
+      ANVIQO_SECRET_KEY: phase5-live-ci-secret
+      ANVIQO_ADMIN_USER: phase5-live-ci-admin
+      ANVIQO_ADMIN_PASSWORD: phase5-live-ci-password
+      ANVIQO_TENANT_DB_URL: sqlite:////tmp/anviqo_phase5_live_ci.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: python -m pip install pytest flask openpyxl
+      - name: Live evidence HOD tests
+        run: pytest -q test_phase5_live_evidence_hod_v1.py test_phase5_command_centre_v1.py test_phase5_human_management_intelligence_v1.py
+      - name: Compile integration
+        run: python -m py_compile phase5_live_evidence_adapter.py phase5_command_centre_runtime.py
+      - name: Safety boundary scan
+        run: |
+          ! grep -RniE 'plc_write[^a-zA-Z]*(true|1)|scada_control[^a-zA-Z]*(true|1)' phase5_live_evidence_adapter.py phase5_command_centre_runtime.py
