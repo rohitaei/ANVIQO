@@ -24,9 +24,6 @@ def deployed_session_context():
 def deployed_admin_users_page():
     if not auth._admin():
         return redirect("/login")
-    # Serve the HTML as the response body instead of relying on Flask's
-    # send_file path handling. This is deliberately simple and deterministic
-    # for the production runtime.
     if not _PAGE.is_file():
         return Response("ANVIQO Plant User Management page unavailable.", status=500, mimetype="text/plain")
     html = _PAGE.read_text(encoding="utf-8")
@@ -56,8 +53,8 @@ def deployed_my_plants():
     return auth.my_plants()
 
 
-# Add a direct entry to the existing Command Centre navigation.
-# The destination remains server-authorized; non-admin users do not see it.
+# Add a real navigation link to the existing Command Centre SYSTEM section.
+# The destination remains server-authorized; non-admin users are redirected.
 @app.after_request
 def add_plant_user_management_nav(response):
     content_type = (response.headers.get("Content-Type") or "").lower()
@@ -66,9 +63,9 @@ def add_plant_user_management_nav(response):
     try:
         html = response.get_data(as_text=True)
         marker = '<div class="nav-title">SYSTEM</div>'
-        button = '''<button type="button" id="plantUserManagementNav" onclick="window.location.href='/account/create'">🏭 Plant & User Management</button>'''
+        link = '<a id="plantUserManagementNav" href="/account/create" style="display:block;padding:10px 14px;color:inherit;text-decoration:none;cursor:pointer;">🏭 Plant &amp; User Management</a>'
         if marker in html and 'id="plantUserManagementNav"' not in html:
-            html = html.replace(marker, marker + "\n" + button, 1)
+            html = html.replace(marker, marker + "\n" + link, 1)
             response.set_data(html)
     except Exception:
         pass
