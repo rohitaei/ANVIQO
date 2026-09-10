@@ -16,4 +16,9 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install --upgrade pip pytest flask openpyxl
       - run: python -m py_compile failure_prediction_dashboard_runtime.py failure_prediction_demo_api.py failure_prediction_api.py
-      - run: pytest -q test_failure_prediction_demo_loader.py test_failure_prediction_demo_api.py test_failure_prediction_dashboard_v1.py
+      - name: Run dashboard tests
+        env:
+          ANVIQO_SECRET_KEY: dashboard-test-secret
+          ANVIQO_ADMIN_USER: dashboard-test-admin
+          ANVIQO_ADMIN_PASSWORD: dashboard-test-password
+        run: pytest -q test_failure_prediction_demo_loader.py test_failure_prediction_demo_api.py test_failure_prediction_dashboard_v1.py
