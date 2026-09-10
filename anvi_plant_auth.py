@@ -73,7 +73,7 @@ def _verify(password: str, password_hash: str, password_salt: str) -> bool:
 
 
 def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any] | None:
-    """Authenticate a user and require an ACTIVE membership for plant_slug."""
+    """Authenticate a user and require an ACTIVE membership for a plant name or slug."""
     if not username or not password or not plant_slug:
         return None
     init_auth_schema()
@@ -90,13 +90,15 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
         if not _verify(password, user[3], user[4]):
             return None
         cur.execute(
-            f"""SELECT m.organization_id,m.plant_id,r.name,o.name,p.name
+            f"""SELECT m.organization_id,m.plant_id,r.name,o.name,p.name,p.slug
                 FROM anviqo_memberships m
                 JOIN anviqo_roles r ON r.role_id=m.role_id
                 JOIN anviqo_organizations o ON o.organization_id=m.organization_id
                 JOIN anviqo_plants p ON p.plant_id=m.plant_id
-                WHERE m.user_id={p} AND p.slug={p} AND m.status='ACTIVE' AND p.status='ACTIVE'""",
-            (user[0], plant_slug),
+                WHERE m.user_id={p}
+                  AND (LOWER(p.slug)=LOWER({p}) OR LOWER(p.name)=LOWER({p}))
+                  AND m.status='ACTIVE' AND p.status='ACTIVE'""",
+            (user[0], plant_slug, plant_slug),
         )
         membership = cur.fetchone()
     if not membership:
@@ -110,7 +112,7 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
         "role": membership[2],
         "organization_name": membership[3],
         "plant_name": membership[4],
-        "plant_slug": plant_slug,
+        "plant_slug": membership[5],
         "auth_version": AUTH_VERSION,
     }
 
