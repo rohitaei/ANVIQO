@@ -17,16 +17,11 @@ def client(tmp_path, monkeypatch):
 
 
 def _login(c):
-    return c.post(
-        "/login",
-        data={"username": "phase6-v4-admin", "password": "phase6-v4-password"},
-        follow_redirects=True,
-    )
+    return c.post("/login", data={"username": "phase6-v4-admin", "password": "phase6-v4-password"}, follow_redirects=True)
 
 
 def test_unauthenticated_context_switch_is_blocked(client):
-    r = client.post("/api/enterprise/select-plant", json={"plant_id": "plant_missing"})
-    assert r.status_code == 401
+    assert client.post("/api/enterprise/select-plant", json={"plant_id": "plant_missing"}).status_code == 401
 
 
 def test_admin_can_switch_only_within_active_organization(client):
@@ -60,7 +55,7 @@ def test_cross_organization_selection_is_forbidden(client):
     assert r.get_json()["switched"] is False
 
 
-def test_non_admin_can_switch_to_a_plant_they_can_read(client):
+def test_non_admin_can_switch_between_plants_they_can_read(client):
     assert _login(client).status_code < 500
     import anvi_tenant_store as store
     context = client.get("/api/enterprise/context").get_json()
@@ -68,6 +63,7 @@ def test_non_admin_can_switch_to_a_plant_they_can_read(client):
     first = context["active_plant_id"]
     second = store.create_plant(org_id, "Operator Plant", "operator-plant-v4")
     user_id = store.create_user("phase6-v4-operator", "Phase 6 V4 Operator")
+    store.create_membership(user_id, org_id, first, "OPERATOR")
     store.create_membership(user_id, org_id, second, "OPERATOR")
     with client.session_transaction() as sess:
         sess["authenticated"] = True
@@ -79,6 +75,7 @@ def test_non_admin_can_switch_to_a_plant_they_can_read(client):
     r = client.post("/api/enterprise/select-plant", json={"plant_id": second})
     assert r.status_code == 200
     assert r.get_json()["active_plant_id"] == second
+    assert client.get("/api/enterprise/active-context").get_json()["active_plant_id"] == second
 
 
 def test_portfolio_follows_selected_context_without_fabricating_other_plants(client):
