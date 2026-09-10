@@ -81,13 +81,35 @@ def _field_reports_from_neon(tag="", limit=20):
         return []
 
 
+def _report_view(report):
+    """Flatten the stored report payload without changing stored data.
+
+    Field-report persistence stores the parsed fields under ``parsed_report``.
+    Older retrieval code looked only at the outer envelope, which produced
+    misleading "not stated" values even when the original parsed report was
+    present. The nested parsed report is preferred while the envelope remains
+    available as evidence.
+    """
+    if not isinstance(report, dict):
+        return {}
+    parsed = report.get("parsed_report")
+    if isinstance(parsed, dict):
+        merged = dict(report)
+        for key, value in parsed.items():
+            if value not in (None, ""):
+                merged[key] = value
+        return merged
+    return report
+
+
 def _best_report(question, reports, tag=""):
     q_tokens = _tokens(question)
     wanted = _tag_norm(tag)
 
     def score(report):
+        view = _report_view(report)
         text = _norm(" ".join(
-            str(report.get(k, "") or "")
+            str(view.get(k, "") or "")
             for k in (
                 "event", "observation", "finding", "maintenance_action",
                 "outcome", "recovery_status", "spare_used", "notes",
@@ -95,13 +117,13 @@ def _best_report(question, reports, tag=""):
             )
         ))
         s = len(q_tokens & _tokens(text)) * 10
-        if wanted and wanted == _tag_norm(report.get("tag")):
+        if wanted and wanted == _tag_norm(view.get("tag")):
             s += 100
-        if report.get("source") == "technician field report":
+        if view.get("source") == "technician field report":
             s += 5
         return s
 
-    candidates = [r for r in reports if r.get("source") == "technician field report"]
+    candidates = [r for r in reports if _report_view(r).get("source") == "technician field report"]
     if not candidates:
         return None
     return max(candidates, key=score)
@@ -124,7 +146,6 @@ def persistent_field_report_query_bridge():
     if not question:
         return None
 
-    # Let the existing Plant Memory bridge handle normal successful lookups.
     from field_report_runtime import _report_query
     if not _report_query(question):
         return None
@@ -136,15 +157,16 @@ def persistent_field_report_query_bridge():
     if not report:
         return None
 
+    view = _report_view(report)
     answer = (
-        f"I found a technician field report for {report.get('tag') or report.get('equipment') or 'the equipment'}. "
-        f"Observation: {report.get('observation') or 'not stated'}. "
-        f"Finding: {report.get('finding') or 'not stated'}. "
-        f"Maintenance action: {report.get('maintenance_action') or 'not stated'}. "
-        f"Outcome: {report.get('outcome') or 'not stated'}. "
-        f"Spare used: {report.get('spare_used') or 'none reported'}."
+        f"I found a technician field report for {view.get('tag') or view.get('equipment') or 'the equipment'}. "
+        f"Observation: {view.get('observation') or 'not stated'}. "
+        f"Finding: {view.get('finding') or 'not stated'}. "
+        f"Maintenance action: {view.get('maintenance_action') or 'not stated'}. "
+        f"Outcome: {view.get('outcome') or 'not stated'}. "
+        f"Spare used: {view.get('spare_used') or 'none reported'}."
     )
-    if report.get("verification_status") != "VERIFIED":
+    if view.get("verification_status") != "VERIFIED":
         answer += " This is a human field report and remains PENDING_VERIFICATION."
 
     return jsonify({
@@ -152,8 +174,8 @@ def persistent_field_report_query_bridge():
         "status": "OK",
         "domain": "plant_memory",
         "source": "technician field report",
-        "memory_id": report.get("memory_id") or report.get("report_id", ""),
-        "verification_status": report.get("verification_status", "PENDING_VERIFICATION"),
+        "memory_id": view.get("memory_id") or view.get("report_id", ""),
+        "verification_status": view.get("verification_status", "PENDING_VERIFICATION"),
         "evidence": report,
         "read_only": True,
         "plc_write": False,
