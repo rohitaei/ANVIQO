@@ -5,18 +5,16 @@ os.environ.setdefault("ANVIQO_ADMIN_USER", "phase5-test-admin")
 os.environ.setdefault("ANVIQO_ADMIN_PASSWORD", "phase5-test-password")
 os.environ.setdefault("ANVIQO_TENANT_DB_URL", "sqlite:////tmp/anviqo_phase5_test.db")
 
-from phase5_command_centre_runtime import app
+import phase5_command_centre_runtime as runtime
+
+
+def _login(client):
+    return client.post("/login", data={"username": "phase5-test-admin", "password": "phase5-test-password"}, follow_redirects=False)
 
 
 def test_management_get_is_safe_and_evidence_empty():
-    client = app.test_client()
-    with client.session_transaction() as session:
-        session["authenticated"] = True
-        session["username"] = "phase5-test-admin"
-        session["user_id"] = "u1"
-        session["organization_id"] = "org1"
-        session["plant_id"] = "plant1"
-        session["role"] = "ADMIN"
+    client = runtime.app.test_client()
+    assert _login(client).status_code == 302
     response = client.get("/api/management")
     assert response.status_code == 200
     data = response.get_json()
@@ -26,9 +24,8 @@ def test_management_get_is_safe_and_evidence_empty():
 
 
 def test_management_post_reuses_supplied_existing_evidence():
-    client = app.test_client()
-    with client.session_transaction() as session:
-        session.update({"authenticated": True, "username": "phase5-test-admin", "user_id": "u1", "organization_id": "org1", "plant_id": "plant1", "role": "ADMIN"})
+    client = runtime.app.test_client()
+    _login(client)
     payload = {"executive": {"plant_situation": "ATTENTION", "plant_health": {"status": "DEGRADED", "score": 72}, "top_equipment_risks": [{"equipment": "PT-303", "priority": 84, "status": "URGENT", "reason": "Verified evidence requires review."}]}}
     response = client.post("/api/management", json=payload)
     assert response.status_code == 200
@@ -38,9 +35,8 @@ def test_management_post_reuses_supplied_existing_evidence():
 
 
 def test_human_decision_never_executes():
-    client = app.test_client()
-    with client.session_transaction() as session:
-        session.update({"authenticated": True, "username": "phase5-test-admin", "user_id": "u1", "organization_id": "org1", "plant_id": "plant1", "role": "ADMIN"})
+    client = runtime.app.test_client()
+    _login(client)
     response = client.post("/api/management/decision", json={"action": {"action_id": "A-1", "equipment": "PT-303", "action": "INSPECT"}, "decision": "APPROVE", "reviewer": "HOD"})
     assert response.status_code == 200
     data = response.get_json()
@@ -50,9 +46,8 @@ def test_human_decision_never_executes():
 
 
 def test_management_page_exists():
-    client = app.test_client()
-    with client.session_transaction() as session:
-        session.update({"authenticated": True, "username": "phase5-test-admin", "user_id": "u1", "organization_id": "org1", "plant_id": "plant1", "role": "ADMIN"})
+    client = runtime.app.test_client()
+    _login(client)
     response = client.get("/management")
     assert response.status_code == 200
     assert b"HUMAN & MANAGEMENT INTELLIGENCE" in response.data
