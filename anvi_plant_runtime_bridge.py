@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from flask import redirect, send_file
+from flask import redirect, Response
 
 from anviqo_spare_query_guard import app
 import anvi_plant_auth_routes as auth
@@ -24,7 +24,16 @@ def deployed_session_context():
 def deployed_admin_users_page():
     if not auth._admin():
         return redirect("/login")
-    return send_file(_PAGE)
+    # Serve the HTML as the response body instead of relying on Flask's
+    # send_file path handling. This is deliberately simple and deterministic
+    # for the production runtime.
+    if not _PAGE.is_file():
+        return Response("ANVIQO Plant User Management page unavailable.", status=500, mimetype="text/plain")
+    html = _PAGE.read_text(encoding="utf-8")
+    response = Response(html, status=200, mimetype="text/html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    return response
 
 
 @app.get("/api/admin/plants")
