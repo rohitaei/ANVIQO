@@ -1,13 +1,26 @@
 """Bridge plant authentication/provisioning onto the actual Render app."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from flask import redirect, Response
 
 from anviqo_spare_query_guard import app
 import anvi_plant_auth_routes as auth
+import anvi_tenant_store as tenant_store
 
 _PAGE = Path(__file__).resolve().with_name("plant_user_admin.html")
+
+# Safe production diagnostic: never logs DATABASE_URL itself.
+print(
+    "ANVIQO_AUTH_STORAGE",
+    {
+        "database_url_configured": bool(os.getenv("DATABASE_URL", "").strip()),
+        "tenant_db_url_configured": bool(os.getenv("ANVIQO_TENANT_DB_URL", "").strip()),
+        "tenant_store_enabled": tenant_store.enabled(),
+    },
+    flush=True,
+)
 
 # Reuse the hardened authentication logic on the actual production Flask app.
 app.before_request(auth.plant_login_interceptor)
