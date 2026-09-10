@@ -52,6 +52,27 @@ def deployed_my_plants():
     return auth.my_plants()
 
 
+# Add a direct entry to the existing Command Centre navigation.
+# This is presentation-only; the destination remains server-authorized.
+@app.after_request
+def add_plant_user_management_nav(response):
+    content_type = (response.headers.get("Content-Type") or "").lower()
+    if "text/html" not in content_type:
+        return response
+
+    try:
+        html = response.get_data(as_text=True)
+        marker = '<div class="nav-title">SYSTEM</div>'
+        button = '''<button type="button" id="plantUserManagementNav" onclick="window.location.href='/account/create'">🏭 Plant & User Management</button>'''
+        if marker in html and 'id="plantUserManagementNav"' not in html:
+            html = html.replace(marker, marker + "\n" + button, 1)
+            response.set_data(html)
+    except Exception:
+        # Never break the production page because of a presentation enhancement.
+        pass
+    return response
+
+
 __all__ = [
     "deployed_session_context",
     "deployed_admin_users_page",
@@ -59,4 +80,5 @@ __all__ = [
     "deployed_create_plant_user",
     "deployed_change_plant_user_password",
     "deployed_my_plants",
+    "add_plant_user_management_nav",
 ]
