@@ -68,6 +68,9 @@ def extract_spare_usage(parsed_report: dict) -> tuple[str, float] | None:
         r"\b(?:used|consumed|removed)\s+(?P<qty>one|two|three|four|five|six|seven|eight|nine|ten|\d+(?:\.\d+)?)\s+(?P<tag>[A-Z]{1,8}[-_ ]?\d{1,5})\s+spares?\b",
         r"\b(?P<qty>one|two|three|four|five|six|seven|eight|nine|ten|\d+(?:\.\d+)?)\s+(?P<tag>[A-Z]{1,8}[-_ ]?\d{1,5})\s+spares?\s+(?:used|consumed|removed)\b",
         r"\b(?P<tag>[A-Z]{1,8}[-_ ]?\d{1,5})\s+spare\s+(?:used|consumed|removed)\b",
+        # Common technician wording: "replaced by new PT-303 1 no spare used".
+        # This explicitly identifies the replacement spare and its quantity.
+        r"\breplaced\s+by\s+(?:a|an|new\s+)?(?P<tag>[A-Z]{1,8}[-_ ]?\d{1,5})\s+(?P<qty>one|two|three|four|five|six|seven|eight|nine|ten|\d+(?:\.\d+)?)\s+nos?\s+spare\s+used\b",
     ]
     for pattern in patterns:
         m = re.search(pattern, combined, re.I)
