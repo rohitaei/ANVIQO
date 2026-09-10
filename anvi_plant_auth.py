@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import os
 import secrets
 from typing import Any
 
@@ -22,21 +21,22 @@ def _placeholder() -> str:
 
 
 def init_auth_schema() -> bool:
+    """Ensure password columns exist without aborting PostgreSQL transactions."""
     if not store.enabled():
         return False
     store.init_schema()
-    p = _placeholder()
     with store._connect() as conn:
         cur = conn.cursor()
-        # Safe additive migration for existing tenant databases.
-        try:
-            cur.execute("ALTER TABLE anviqo_users ADD COLUMN password_hash TEXT")
-        except Exception:
-            pass
-        try:
-            cur.execute("ALTER TABLE anviqo_users ADD COLUMN password_salt TEXT")
-        except Exception:
-            pass
+        if store._is_sqlite():
+            cur.execute("PRAGMA table_info(anviqo_users)")
+            columns = {row[1] for row in cur.fetchall()}
+            if "password_hash" not in columns:
+                cur.execute("ALTER TABLE anviqo_users ADD COLUMN password_hash TEXT")
+            if "password_salt" not in columns:
+                cur.execute("ALTER TABLE anviqo_users ADD COLUMN password_salt TEXT")
+        else:
+            cur.execute("ALTER TABLE anviqo_users ADD COLUMN IF NOT EXISTS password_hash TEXT")
+            cur.execute("ALTER TABLE anviqo_users ADD COLUMN IF NOT EXISTS password_salt TEXT")
     return True
 
 
@@ -55,8 +55,8 @@ def set_password(username: str, password: str) -> None:
     with store._connect() as conn:
         cur = conn.cursor()
         cur.execute(
-            f"UPDATE anviqo_users SET password_hash={p}, password_salt={p} WHERE external_username={p}",
-            (password_hash, password_salt, username),
+            f"UPDATE anviqo_users SET password_hash={p}, password_salt={p} WHERE LOWER(external_username)=LOWER({p})",
+            (password_hash, password_salt, username.strip()),
         )
         if cur.rowcount != 1:
             raise ValueError("User not found")
@@ -74,6 +74,8 @@ def _verify(password: str, password_hash: str, password_salt: str) -> bool:
 
 def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any] | None:
     """Authenticate a user and require an ACTIVE membership for a plant name or slug."""
+    username = str(username or "").strip()
+    plant_slug = str(plant_slug or "").strip()
     if not username or not password or not plant_slug:
         return None
     init_auth_schema()
@@ -81,7 +83,7 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
     with store._connect() as conn:
         cur = conn.cursor()
         cur.execute(
-            f"SELECT user_id,display_name,status,password_hash,password_salt FROM anviqo_users WHERE external_username={p}",
+            f"SELECT user_id,display_name,status,password_hash,password_salt FROM anviqo_users WHERE LOWER(external_username)=LOWER({p})",
             (username,),
         )
         user = cur.fetchone()
@@ -121,7 +123,8 @@ def list_user_plants(username: str) -> list[dict[str, Any]]:
     """Return only active plants to which the user has an active membership."""
     if not store.enabled():
         return []
-    init_auth_schema(); p = _placeholder()
+    init_auth_schema()
+    p = _placeholder()
     with store._connect() as conn:
         cur = conn.cursor()
         cur.execute(
@@ -131,7 +134,7 @@ def list_user_plants(username: str) -> list[dict[str, Any]]:
                 JOIN anviqo_organizations o ON o.organization_id=m.organization_id
                 JOIN anviqo_plants p ON p.plant_id=m.plant_id
                 JOIN anviqo_roles r ON r.role_id=m.role_id
-                WHERE u.external_username={p} AND m.status='ACTIVE' AND p.status='ACTIVE'
+                WHERE LOWER(u.external_username)=LOWER({p}) AND m.status='ACTIVE' AND p.status='ACTIVE'
                 ORDER BY p.name""",
             (username,),
         )
