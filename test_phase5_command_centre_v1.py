@@ -12,7 +12,10 @@ import phase5_command_centre_runtime as runtime
 
 
 def _login(client):
-    return client.post("/login", data={"username": "phase5-test-admin", "password": "phase5-test-password"}, follow_redirects=False)
+    return client.post("/login", data={
+        "username": os.environ["ANVIQO_ADMIN_USER"],
+        "password": os.environ["ANVIQO_ADMIN_PASSWORD"],
+    }, follow_redirects=False)
 
 
 def test_management_get_is_safe_and_evidence_empty():
