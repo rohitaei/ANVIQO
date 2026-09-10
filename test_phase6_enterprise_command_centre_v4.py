@@ -11,8 +11,8 @@ def client(tmp_path, monkeypatch):
 
     import phase6_enterprise_runtime_v4  # noqa: F401
     from phase6_enterprise_runtime_v4 import app
-    app.config.update(TESTING=True, SECRET_KEY="phase6-v4-secret")
-    with app.test_client(base_url="https://localhost") as c:
+    app.config.update(TESTING=True, SECRET_KEY="phase6-v4-secret", SESSION_COOKIE_SECURE=False)
+    with app.test_client() as c:
         yield c
 
 
