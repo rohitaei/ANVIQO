@@ -205,7 +205,23 @@ def phase2_field_report_spare_sync(response):
             if not authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"]):
                 payload["inventory_update"] = {"status": "FORBIDDEN", "inventory_changed": False, "tag": usage[0], "quantity": usage[1], "message": "Report captured, but spare inventory was not changed because inventory:write permission is required."}
             else:
-                payload["inventory_update"] = sync_field_report_spare(parsed, report_id)
+                tag, quantity = usage
+                from field_report_persistent_sync import get_applied, record_applied
+                existing = get_applied(report_id, tag, quantity)
+                if existing:
+                    payload["inventory_update"] = existing
+                else:
+                    result = sync_field_report_spare(parsed, report_id)
+                    payload["inventory_update"] = result
+                    if result.get("status") == "APPLIED":
+                        record_applied(
+                            report_id,
+                            result.get("tag", tag),
+                            result.get("quantity", quantity),
+                            result.get("before"),
+                            result.get("after"),
+                            result.get("transaction_id", ""),
+                        )
         payload["message"] = ("Field report captured and stored in Plant Memory. " + payload["inventory_update"].get("message", "")).strip()
         response.set_data(json.dumps(payload))
         response.content_type = "application/json"
