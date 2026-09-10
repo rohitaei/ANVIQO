@@ -21,8 +21,20 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: python -m pip install pytest flask openpyxl
-      - name: Enterprise V2 tests and regressions
-        run: pytest -q test_phase6_enterprise_command_centre_v2.py test_phase6_enterprise_foundation_v1.py test_phase2_tenant_foundation.py test_phase5_command_centre_v1.py test_phase5_live_evidence_adapter.py test_phase5_human_management_intelligence.py test_failure_prediction_dashboard.py
+      - name: Enterprise V2 tests
+        run: pytest -q test_phase6_enterprise_command_centre_v2.py
+      - name: Enterprise foundation tests
+        run: pytest -q test_phase6_enterprise_foundation_v1.py
+      - name: Tenant foundation tests
+        run: pytest -q test_phase2_tenant_foundation.py
+      - name: Phase 5 command centre regression
+        run: pytest -q test_phase5_command_centre_v1.py
+      - name: Phase 5 live evidence regression
+        run: pytest -q test_phase5_live_evidence_adapter.py
+      - name: Phase 5 human management regression
+        run: pytest -q test_phase5_human_management_intelligence.py
+      - name: Failure prediction regression
+        run: pytest -q test_failure_prediction_dashboard.py
       - name: Compile
         run: python -m py_compile phase6_enterprise_command_centre_v2.py phase6_enterprise_runtime.py phase5_command_centre_runtime.py
       - name: Safety boundary scan
