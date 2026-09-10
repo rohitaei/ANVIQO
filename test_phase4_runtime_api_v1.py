@@ -3,6 +3,7 @@ import os
 os.environ.setdefault("ANVIQO_SECRET_KEY", "phase4-test-secret")
 os.environ.setdefault("ANVIQO_ADMIN_USER", "phase4-test-admin")
 os.environ.setdefault("ANVIQO_ADMIN_PASSWORD", "phase4-test-password")
+os.environ.setdefault("ANVIQO_TENANT_DB_URL", "sqlite:////tmp/anviqo_phase4_tenant.db")
 
 import anviqo_phase4_runtime as runtime
 
