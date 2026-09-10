@@ -9,13 +9,17 @@ on:
 jobs:
   certify:
     runs-on: ubuntu-latest
+    env:
+      ANVIQO_TENANT_DB_URL: sqlite:///:memory:
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install test dependencies
-        run: python -m pip install --upgrade pip pytest flask
+        run: python -m pip install --upgrade pip pytest flask openpyxl
       - name: Runtime tests
         env:
           ANVIQO_SECRET_KEY: phase4-test-secret
