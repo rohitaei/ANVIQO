@@ -1,9 +1,12 @@
 import os
+from pathlib import Path
 
 os.environ.setdefault("ANVIQO_SECRET_KEY", "phase5-test-secret")
 os.environ.setdefault("ANVIQO_ADMIN_USER", "phase5-test-admin")
 os.environ.setdefault("ANVIQO_ADMIN_PASSWORD", "phase5-test-password")
-os.environ.setdefault("ANVIQO_TENANT_DB_URL", "sqlite:////tmp/anviqo_phase5_test.db")
+_TEST_DB = Path("/tmp/anviqo_phase5_test.db")
+_TEST_DB.unlink(missing_ok=True)
+os.environ["ANVIQO_TENANT_DB_URL"] = f"sqlite://{_TEST_DB}"
 
 import phase5_command_centre_runtime as runtime
 
