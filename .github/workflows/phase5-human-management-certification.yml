@@ -1,0 +1,35 @@
+name: ANVIQO Phase 5 Human Management Certification
+
+on:
+  push:
+    branches:
+      - phase5-human-management-intelligence-v1
+  pull_request:
+    branches:
+      - main
+      - phase5-human-management-intelligence-v1
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest
+      - name: Compile Phase 5 module
+        run: python -m py_compile phase5_human_management_intelligence.py test_phase5_human_management_intelligence_v1.py
+      - name: Run Phase 5 tests
+        run: pytest -q test_phase5_human_management_intelligence_v1.py
+      - name: Confirm frozen V5 and Phase 4 files remain present
+        run: |
+          test -f v57_executive_intelligence.py
+          test -f phase4_advanced_intelligence.py
+          test -f PHASE4_ADVANCED_INTELLIGENCE_V1.md
+      - name: Safety boundary scan
+        run: |
+          ! grep -nE 'plc_write[[:space:]]*=[[:space:]]*True|scada_control[[:space:]]*=[[:space:]]*True|automatic_execution[[:space:]]*=[[:space:]]*True' phase5_human_management_intelligence.py
