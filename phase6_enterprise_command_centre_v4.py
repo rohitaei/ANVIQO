@@ -9,7 +9,7 @@ from __future__ import annotations
 from flask import jsonify, request, session
 
 from phase6_enterprise_runtime import app, _actor, _connect, _placeholder, _require_auth, _admin
-from anvi_tenant_store import authorize, record_audit
+from anvi_tenant_store import authorize, create_membership, get_membership, record_audit
 
 ENTERPRISE_V4_GOVERNANCE = {
     "read_only_intelligence": True,
@@ -31,6 +31,13 @@ def _plant(actor, plant_id):
         )
         row = cur.fetchone()
     return dict(row) if row else None
+
+
+def _ensure_admin_membership(actor, plant_id):
+    if not _admin(actor):
+        return
+    if get_membership(actor["user_id"], actor["organization_id"], plant_id) is None:
+        create_membership(actor["user_id"], actor["organization_id"], plant_id, "ADMIN")
 
 
 def _can_read_plant(actor, plant_id):
@@ -59,6 +66,7 @@ def enterprise_select_plant():
         return jsonify({"status": "FORBIDDEN", "message": "plant:read permission is required for the selected plant", "switched": False, "governance": dict(ENTERPRISE_V4_GOVERNANCE)}), 403
 
     previous_plant_id = actor["plant_id"]
+    _ensure_admin_membership(actor, plant_id)
     session["plant_id"] = plant_id
     session.modified = True
     try:
@@ -66,7 +74,6 @@ def enterprise_select_plant():
         audit_actor["plant_id"] = plant_id
         record_audit(audit_actor, "SELECT_PLANT_CONTEXT", "plant", plant_id, {"previous_plant_id": previous_plant_id})
     except Exception:
-        # Context switching remains valid even if optional audit persistence is unavailable.
         pass
 
     return jsonify({
