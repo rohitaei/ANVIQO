@@ -58,7 +58,11 @@ def extract_spare_usage(parsed_report: dict) -> tuple[str, float] | None:
     """Return (tag, quantity) only for explicit spare-used language."""
     text = str(parsed_report.get("spare_used") or "").strip()
     raw = str(parsed_report.get("raw_report") or "").strip()
-    combined = " ".join(x for x in (text, raw) if x)
+    action = str(parsed_report.get("maintenance_action") or "").strip()
+    # Older reports may have stored the technician sentence in
+    # maintenance_action rather than raw_report/spare_used. Include all three
+    # fields so the same explicit language is interpreted consistently.
+    combined = " ".join(x for x in (text, raw, action) if x)
 
     m = re.search(r"\b([A-Z]{1,8}[-_ ]?\d{1,5})\s*x\s*(\d+(?:\.\d+)?)\b", text, re.I)
     if m:
@@ -69,7 +73,6 @@ def extract_spare_usage(parsed_report: dict) -> tuple[str, float] | None:
         r"\b(?P<qty>one|two|three|four|five|six|seven|eight|nine|ten|\d+(?:\.\d+)?)\s+(?P<tag>[A-Z]{1,8}[-_ ]?\d{1,5})\s+spares?\s+(?:used|consumed|removed)\b",
         r"\b(?P<tag>[A-Z]{1,8}[-_ ]?\d{1,5})\s+spare\s+(?:used|consumed|removed)\b",
         # Common technician wording: "replaced by new PT-303 1 no spare used".
-        # This explicitly identifies the replacement spare and its quantity.
         r"\breplaced\s+by\s+(?:a|an|new\s+)?(?P<tag>[A-Z]{1,8}[-_ ]?\d{1,5})\s+(?P<qty>one|two|three|four|five|six|seven|eight|nine|ten|\d+(?:\.\d+)?)\s+nos?\s+spare\s+used\b",
     ]
     for pattern in patterns:
