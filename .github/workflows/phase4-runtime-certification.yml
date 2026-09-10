@@ -10,7 +10,7 @@ jobs:
   certify:
     runs-on: ubuntu-latest
     env:
-      ANVIQO_TENANT_DB_URL: sqlite:///:memory:
+      ANVIQO_TENANT_DB_URL: sqlite:////tmp/anviqo_phase4_tenant.db
     steps:
       - uses: actions/checkout@v4
         with:
