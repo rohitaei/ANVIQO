@@ -87,17 +87,18 @@ def enterprise_plant(plant_id: str):
     if denied:
         return denied
     actor = _actor()
-    same_org = False
     p = _placeholder()
     with _connect() as conn:
         cur = conn.cursor()
         cur.execute(f"SELECT plant_id,organization_id,name,slug,status,created_at FROM anviqo_plants WHERE organization_id={p} AND plant_id={p}", (actor["organization_id"], plant_id))
         row = cur.fetchone()
-        same_org = row is not None
-    if not same_org:
+    if row is None:
         return jsonify({"status": "FORBIDDEN", "message": "Plant is outside the active organization", "governance": dict(ENTERPRISE_SAFETY)}), 403
-    # Tenant admins manage the organization plant directory; other users need
-    # an explicit membership on the requested plant.
     if not _admin(actor) and not authorize(actor, "plant:read", actor["organization_id"], plant_id):
         return jsonify({"status": "FORBIDDEN", "message": "plant:read permission is required for this plant", "governance": dict(ENTERPRISE_SAFETY)}), 403
     return jsonify({"status": "OK", "plant": dict(row), "governance": dict(ENTERPRISE_SAFETY)})
+
+
+# Load the presentation adapters after the base enterprise app is fully defined.
+import phase6_enterprise_command_centre_v2  # noqa: E402,F401
+import phase6_enterprise_command_centre_v3  # noqa: E402,F401
