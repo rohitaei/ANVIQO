@@ -12,7 +12,7 @@ def client(tmp_path, monkeypatch):
     import phase6_enterprise_runtime_v4  # noqa: F401
     from phase6_enterprise_runtime_v4 import app
     app.config.update(TESTING=True, SECRET_KEY="phase6-v4-secret")
-    with app.test_client() as c:
+    with app.test_client(base_url="https://localhost") as c:
         yield c
 
 
@@ -32,12 +32,10 @@ def test_unauthenticated_context_switch_is_blocked(client):
 def test_admin_can_switch_only_within_active_organization(client):
     assert _login(client).status_code < 500
     import anvi_tenant_store as store
-
     context = client.get("/api/enterprise/context").get_json()
     org_id = context["organization"]["organization_id"]
     current = context["active_plant_id"]
     second = store.create_plant(org_id, "PCI Demonstration Plant", "pci-demo-v4")
-
     r = client.post("/api/enterprise/select-plant", json={"plant_id": second})
     assert r.status_code == 200
     data = r.get_json()
@@ -47,15 +45,14 @@ def test_admin_can_switch_only_within_active_organization(client):
     assert data["governance"]["plc_write"] is False
     assert data["governance"]["scada_control"] is False
     assert data["governance"]["automatic_execution"] is False
-
-    active = client.get("/api/enterprise/active-context").get_json()
-    assert active["active_plant_id"] == second
+    active = client.get("/api/enterprise/active-context")
+    assert active.status_code == 200
+    assert active.get_json()["active_plant_id"] == second
 
 
 def test_cross_organization_selection_is_forbidden(client):
     assert _login(client).status_code < 500
     import anvi_tenant_store as store
-
     other_org = store.create_organization("Other Org", "other-org-v4")
     other_plant = store.create_plant(other_org, "Other Plant", "other-plant-v4")
     r = client.post("/api/enterprise/select-plant", json={"plant_id": other_plant})
@@ -66,14 +63,12 @@ def test_cross_organization_selection_is_forbidden(client):
 def test_non_admin_can_switch_to_a_plant_they_can_read(client):
     assert _login(client).status_code < 500
     import anvi_tenant_store as store
-
     context = client.get("/api/enterprise/context").get_json()
     org_id = context["organization"]["organization_id"]
     first = context["active_plant_id"]
     second = store.create_plant(org_id, "Operator Plant", "operator-plant-v4")
     user_id = store.create_user("phase6-v4-operator", "Phase 6 V4 Operator")
     store.create_membership(user_id, org_id, second, "OPERATOR")
-
     with client.session_transaction() as sess:
         sess["authenticated"] = True
         sess["user_id"] = user_id
@@ -81,7 +76,6 @@ def test_non_admin_can_switch_to_a_plant_they_can_read(client):
         sess["organization_id"] = org_id
         sess["plant_id"] = first
         sess["role"] = "OPERATOR"
-
     r = client.post("/api/enterprise/select-plant", json={"plant_id": second})
     assert r.status_code == 200
     assert r.get_json()["active_plant_id"] == second
@@ -90,12 +84,10 @@ def test_non_admin_can_switch_to_a_plant_they_can_read(client):
 def test_portfolio_follows_selected_context_without_fabricating_other_plants(client):
     assert _login(client).status_code < 500
     import anvi_tenant_store as store
-
     context = client.get("/api/enterprise/context").get_json()
     org_id = context["organization"]["organization_id"]
     second = store.create_plant(org_id, "Portfolio Plant", "portfolio-plant-v4")
     assert client.post("/api/enterprise/select-plant", json={"plant_id": second}).status_code == 200
-
     data = client.get("/api/enterprise/portfolio").get_json()
     assert data["active_plant_id"] == second
     selected = next(p for p in data["plants"] if p["plant_id"] == second)
