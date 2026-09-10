@@ -1,0 +1,39 @@
+name: Phase 4 Advanced Plant Intelligence Certification
+
+on:
+  push:
+    branches: [phase4-advanced-intelligence-v1]
+  pull_request:
+    branches: [release-certification-v2]
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest flask openpyxl
+      - name: Compile Phase 4
+        run: python -m py_compile phase4_advanced_intelligence.py
+      - name: Phase 4 tests
+        env:
+          ANVIQO_SECRET_KEY: phase4-test-secret
+          ANVIQO_ADMIN_USER: phase4-test-admin
+          ANVIQO_ADMIN_PASSWORD: phase4-test-password
+        run: pytest -q test_phase4_advanced_intelligence_v1.py test_phase4_runtime_api_v1.py
+      - name: V5 freeze regression
+        run: pytest -q test_phase2_v5_freeze.py
+      - name: Phase 3 regression
+        env:
+          ANVIQO_SECRET_KEY: phase3-test-only-secret
+          ANVIQO_ADMIN_USER: phase3-test-admin
+          ANVIQO_ADMIN_PASSWORD: phase3-test-password
+        run: pytest -q test_failure_prediction_v1.py test_failure_prediction_history_v1_1.py test_failure_prediction_demo_api.py test_failure_prediction_demo_loader.py test_failure_prediction_dashboard_v1.py test_root_cause_intelligence_v1.py test_root_cause_correlation_v1_3.py test_root_cause_conversational_v1.py
+      - name: Safety guard
+        run: |
+          ! grep -RniE 'plc_write\s*=\s*True|scada_control\s*=\s*True|PLC_WRITE\s*=\s*True|SCADA_CONTROL\s*=\s*True' phase4_advanced_intelligence.py
