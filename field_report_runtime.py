@@ -72,8 +72,42 @@ def sync_field_report_spare(parsed_report: dict, report_id: str) -> dict:
     return {"status":"APPLIED","inventory_changed":True,"tag":tag,"quantity":quantity,"before":result["before"],"after":result["after"],"transaction_id":result["transaction_id"],"report_id":report_id,"message":f"Field report recorded {quantity:g} used {tag}; critical-spare Excel quantity reduced from {result['before']:g} to {result['after']:g}."}
 
 def _report_query(q):
-    low=str(q or "").lower()
-    return any(x in low for x in ("field report","field reports","technician report","operator report","maintenance history","what happened","last time","previous report","reported","replaced","replacement","spare used","spare consumed"))
+    """Detect report-history questions without stealing ordinary spare commands.
+
+    The Phase-2 bridge runs before /api/ask. Therefore terms such as
+    "replaced" or "spare used" alone are not sufficient to classify a request
+    as a field-report query: those phrases are also valid live inventory or
+    maintenance commands. A report/history marker is required unless the
+    wording is explicitly historical.
+    """
+    low=str(q or "").strip().lower()
+    if not low:
+        return False
+
+    explicit_report = (
+        "field report" in low
+        or "field reports" in low
+        or "technician report" in low
+        or "technician reports" in low
+        or "operator report" in low
+        or "operator reports" in low
+        or "maintenance history" in low
+        or "previous report" in low
+        or "previous reports" in low
+    )
+
+    historical = (
+        "what happened" in low
+        or "last time" in low
+        or "previously" in low
+        or "earlier" in low
+        or "reported" in low
+        or "what was done before" in low
+        or "what did maintenance find" in low
+        or "what did the technician find" in low
+    )
+
+    return explicit_report or historical
 
 def _has_report_details(report):
     if not isinstance(report,dict): return False
