@@ -48,9 +48,28 @@ def _xlsx(raw):
   wb=load_workbook(io.BytesIO(raw),read_only=True,data_only=True); out=[]
   try:
    for ws in wb.worksheets:
-    for row in ws.iter_rows(values_only=True):
-     vals=[str(v).strip() for v in row if v is not None and str(v).strip()]
-     if vals: out.append((ws.title,vals))
+    rows=list(ws.iter_rows(values_only=True))
+    if not rows: continue
+    headers=[]
+    for i,v in enumerate(rows[0]):
+     h=str(v).strip() if v is not None else ""
+     headers.append(h or f"column_{i+1}")
+    # Treat a worksheet with a usable header row as structured plant data.
+    # This preserves tags, areas, I/O addresses and other supplied fields
+    # instead of flattening each row into an opaque text record.
+    for idx,row in enumerate(rows[1:], start=2):
+     vals=[v for v in row]
+     if not any(v is not None and str(v).strip() for v in vals): continue
+     rec={headers[i]: vals[i] for i in range(min(len(headers),len(vals)))}
+     rec={str(k).strip(): v for k,v in rec.items() if str(k).strip()}
+     rec["external_id"]=str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or hashlib.sha256((ws.title+str(idx)+json.dumps(rec,sort_keys=True,default=str)).encode()).hexdigest()[:20])
+     rec["source"]=ws.title
+     rec["record_type"]=str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
+     out.append(rec)
+    # If there was no usable data-row structure, retain the worksheet as a
+    # document-like record rather than silently dropping the source.
+    if len(out)==0 and any(v is not None and str(v).strip() for v in rows[0]):
+     out.append({'external_id':hashlib.sha256((ws.title+"|"+"|".join(str(v) for v in rows[0] if v is not None)).encode()).hexdigest()[:20],'name':' | '.join(str(v).strip() for v in rows[0] if v is not None),'area':ws.title,'record_type':'TABULAR','source':ws.title})
   finally: wb.close()
   return out
  except Exception: return []
@@ -69,7 +88,7 @@ def _records(filename,raw):
    if not isinstance(row,dict): continue
    row=dict(row); row['external_id']=str(row.get('external_id') or row.get('id') or row.get('tag') or row.get('asset_id') or hashlib.sha256((filename+str(i)+json.dumps(row,sort_keys=True)).encode()).hexdigest()[:20]); row['source']=filename; out.append(row)
   return out
- if ext in {'xlsx','xls'}: return [{'external_id':hashlib.sha256((filename+s+'|'.join(v)).encode()).hexdigest()[:20],'name':' | '.join(v),'area':s,'record_type':'TABULAR','source':filename} for s,v in _xlsx(raw)]
+ if ext in {'xlsx','xls'}: return _xlsx(raw)
  text=_docx(raw) if ext=='docx' else _pdf(raw) if ext=='pdf' else raw.decode('utf-8',errors='replace') if ext in {'txt','log'} else ''
  if not text.strip(): return []
  return [{'external_id':hashlib.sha256((filename+str(i)).encode()).hexdigest()[:20],'name':filename,'record_type':'DOCUMENT','source':filename,'metadata':{'content':chunk}} for i,chunk in enumerate(text[i:i+6000] for i in range(0,len(text),6000))]
@@ -77,7 +96,6 @@ def ingest_plant(plant_id, actor=None):
  a=actor or _actor()
  if not _plant_ok(plant_id,a): raise PermissionError('OWNER/ADMIN access to this plant is required')
  init_schema(); p=_p()
- # Parse outside the write transaction; only the final batch touches knowledge storage.
  with store._connect() as conn:
   cur=conn.cursor(); cur.execute(f"SELECT p.name,o.industry FROM anviqo_plants p LEFT JOIN anviqo_plant_onboarding o ON o.plant_id=p.plant_id WHERE p.plant_id={p} AND p.organization_id={p}",(plant_id,a['organization_id'])); plant=cur.fetchone(); cur.execute(f"SELECT document_id,filename,content,sha256 FROM anviqo_plant_documents WHERE plant_id={p} AND organization_id={p} ORDER BY created_at",(plant_id,a['organization_id'])); docs=cur.fetchall()
  if not plant: raise ValueError('Plant not found')
