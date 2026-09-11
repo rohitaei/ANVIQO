@@ -44,10 +44,13 @@ def _xlsx(raw):
  try:
   from openpyxl import load_workbook
   wb=load_workbook(io.BytesIO(raw),read_only=True,data_only=True); out=[]
-  for ws in wb.worksheets:
-   for row in ws.iter_rows(values_only=True):
-    vals=[str(v).strip() for v in row if v is not None and str(v).strip()]
-    if vals: out.append((ws.title,vals))
+  try:
+   for ws in wb.worksheets:
+    for row in ws.iter_rows(values_only=True):
+     vals=[str(v).strip() for v in row if v is not None and str(v).strip()]
+     if vals: out.append((ws.title,vals))
+  finally:
+   wb.close()
   return out
  except Exception: return []
 def _records(filename,raw):
@@ -72,24 +75,29 @@ def _records(filename,raw):
 def ingest_plant(plant_id):
  if not _plant_ok(plant_id): raise PermissionError('OWNER/ADMIN access to this plant is required')
  init_schema(); a=_actor(); p=_p()
+ # Read and normalize all documents before opening the write transaction. This keeps
+ # database locks short and prevents one slow parser from consuming the web timeout.
  with store._connect() as conn:
   cur=conn.cursor(); cur.execute(f"SELECT p.name,o.industry FROM anviqo_plants p LEFT JOIN anviqo_plant_onboarding o ON o.plant_id=p.plant_id WHERE p.plant_id={p} AND p.organization_id={p}",(plant_id,a['organization_id'])); plant=cur.fetchone(); cur.execute(f"SELECT document_id,filename,content,sha256 FROM anviqo_plant_documents WHERE plant_id={p} AND organization_id={p} ORDER BY created_at",(plant_id,a['organization_id'])); docs=cur.fetchall()
  if not plant: raise ValueError('Plant not found')
- total=documents=0; errors=[]
+ total=documents=0; errors=[]; rows=[]
+ for document_id,filename,raw,digest in docs:
+  try:
+   records=_records(filename,bytes(raw)); identity={'organization_id':a['organization_id'],'plant_id':plant_id,'name':plant[0],'industry':plant[1] or ''}; package=build_onboarding_package(identity,records) if records else {'records':[]}
+   for rec in package.get('records',[]):
+    kid='know_'+hashlib.sha256((plant_id+document_id+rec['external_id']+rec.get('source','')).encode()).hexdigest()[:24]; meta=dict(rec.get('metadata') or {}); meta.update({'ingestion_version':INGESTION_VERSION,'document_sha256':digest}); content=str(meta.pop('content','') or '')
+    rows.append((kid,a['organization_id'],plant_id,document_id,rec['record_type'],rec['external_id'],rec.get('name',''),rec.get('area',''),rec.get('service',''),rec.get('asset_type',''),rec.get('tag',''),rec.get('parent_id',''),rec.get('source',filename),json.dumps(meta),content)); total+=1
+   documents+=1
+  except Exception as exc: errors.append({'filename':filename,'error':str(exc)})
+ # One batched PostgreSQL/SQLite write instead of one network round-trip per record.
+ if rows:
+  with store._connect() as conn:
+   cur=conn.cursor()
+   if store._is_sqlite(): cur.executemany(f"INSERT OR REPLACE INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content,created_at) VALUES({','.join([p]*15)},{p})",[r+(_now(),) for r in rows])
+   else: cur.executemany(f"INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES({','.join([p]*15)}) ON CONFLICT(plant_id,external_id,source) DO UPDATE SET name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,metadata=EXCLUDED.metadata,content=EXCLUDED.content",rows)
+ status='READY' if documents and not errors else 'BLOCKED' if errors and not total else 'DATA_UPLOADED'
  with store._connect() as conn:
-  cur=conn.cursor()
-  for document_id,filename,raw,digest in docs:
-   try:
-    records=_records(filename,bytes(raw)); identity={'organization_id':a['organization_id'],'plant_id':plant_id,'name':plant[0],'industry':plant[1] or ''}; package=build_onboarding_package(identity,records) if records else {'records':[]}
-    for rec in package.get('records',[]):
-     kid='know_'+hashlib.sha256((plant_id+document_id+rec['external_id']+rec.get('source','')).encode()).hexdigest()[:24]; meta=dict(rec.get('metadata') or {}); meta.update({'ingestion_version':INGESTION_VERSION,'document_sha256':digest}); content=str(meta.pop('content','') or '')
-     vals=(kid,a['organization_id'],plant_id,document_id,rec['record_type'],rec['external_id'],rec.get('name',''),rec.get('area',''),rec.get('service',''),rec.get('asset_type',''),rec.get('tag',''),rec.get('parent_id',''),rec.get('source',filename),json.dumps(meta),content)
-     if store._is_sqlite(): cur.execute(f"INSERT OR REPLACE INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content,created_at) VALUES({','.join([p]*15)},{p})",vals+(_now(),))
-     else: cur.execute(f"INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES({','.join([p]*15)}) ON CONFLICT(plant_id,external_id,source) DO UPDATE SET name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,metadata=EXCLUDED.metadata,content=EXCLUDED.content",vals)
-     total+=1
-    documents+=1
-   except Exception as exc: errors.append({'filename':filename,'error':str(exc)})
-  status='READY' if documents and not errors else 'BLOCKED' if errors and not total else 'DATA_UPLOADED'; cur.execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p}",(status,_now(),plant_id))
+  cur=conn.cursor(); cur.execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p}",(status,_now(),plant_id))
  try: store.record_audit(a,'INGEST_PLANT_DATA','PLANT',plant_id,{'documents':documents,'records':total,'errors':len(errors)})
  except Exception: pass
  return {'status':'OK','plant_id':plant_id,'documents_processed':documents,'records_indexed':total,'errors':errors,'ingestion_version':INGESTION_VERSION,'safety':dict(SAFETY)}
