@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import os
 import secrets
 from typing import Any
 
@@ -20,9 +21,15 @@ def _placeholder() -> str:
     return "?" if store._is_sqlite() else "%s"
 
 
+def _debug(message: str) -> None:
+    if os.getenv("ANVIQO_AUTH_DEBUG", "").strip() == "1":
+        print(f"ANVIQO_AUTH_DEBUG {message}", flush=True)
+
+
 def init_auth_schema() -> bool:
     """Ensure password columns exist without aborting PostgreSQL transactions."""
     if not store.enabled():
+        _debug("storage=DISABLED")
         return False
     store.init_schema()
     with store._connect() as conn:
@@ -77,6 +84,7 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
     username = str(username or "").strip()
     plant_slug = str(plant_slug or "").strip()
     if not username or not password or not plant_slug:
+        _debug(f"input_missing username={bool(username)} password={bool(password)} plant={bool(plant_slug)}")
         return None
     init_auth_schema()
     p = _placeholder()
@@ -87,9 +95,18 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
             (username,),
         )
         user = cur.fetchone()
-        if not user or user[2] != "ACTIVE" or not user[3] or not user[4]:
+        if not user:
+            _debug("user_found=False")
             return None
-        if not _verify(password, user[3], user[4]):
+        if user[2] != "ACTIVE":
+            _debug(f"user_found=True user_status={user[2]}")
+            return None
+        if not user[3] or not user[4]:
+            _debug("user_found=True password_material=False")
+            return None
+        password_ok = _verify(password, user[3], user[4])
+        _debug(f"user_found=True user_status=ACTIVE password_material=True password_ok={password_ok}")
+        if not password_ok:
             return None
         cur.execute(
             f"""SELECT m.organization_id,m.plant_id,r.name,o.name,p.name,p.slug
@@ -103,6 +120,7 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
             (user[0], plant_slug, plant_slug, plant_slug),
         )
         membership = cur.fetchone()
+        _debug(f"membership_found={bool(membership)}")
     if not membership:
         return None
     return {
