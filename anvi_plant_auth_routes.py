@@ -13,6 +13,7 @@ from phase6_enterprise_runtime import app
 import anvi_tenant_store as store
 import anvi_plant_auth as plant_auth
 import anvi_cleanup_test_accounts as cleanup_test_accounts
+import anvi_universal_onboarding as universal_onboarding
 
 # Explicitly opt-in, one-time cleanup. The Render environment flag is removed
 # after the deployment has completed so this cannot run again accidentally.
