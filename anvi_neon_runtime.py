@@ -1,4 +1,3 @@
-
 """
 ANVIQO Neon runtime bootstrap.
 
@@ -17,3 +16,10 @@ def bootstrap():
     return False
 
 BOOTSTRAP_RESULT=bootstrap()
+
+# Install the tenant-aware Command Centre data adapter after persistence
+# bootstrap and before the API's legacy snapshot routes are exercised.
+try:
+    import anvi_universal_command_centre
+except Exception:
+    pass
