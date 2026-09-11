@@ -80,11 +80,16 @@ def _verify(password: str, password_hash: str, password_salt: str) -> bool:
 
 
 def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any] | None:
-    """Authenticate a user and require an ACTIVE membership for a plant ID, name, or slug."""
+    """Authenticate a user and require an ACTIVE membership for a plant ID, name, or slug.
+
+    If the user has exactly one active plant membership, that membership may be
+    selected without relying on the plant text matching. This remains tenant-safe
+    because the fallback only succeeds when an active membership already exists.
+    """
     username = str(username or "").strip()
     plant_slug = str(plant_slug or "").strip()
-    if not username or not password or not plant_slug:
-        _debug(f"input_missing username={bool(username)} password={bool(password)} plant={bool(plant_slug)}")
+    if not username or not password:
+        _debug(f"input_missing username={bool(username)} password={bool(password)}")
         return None
     init_auth_schema()
     p = _placeholder()
@@ -108,22 +113,43 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
         _debug(f"user_found=True user_status=ACTIVE password_material=True password_ok={password_ok}")
         if not password_ok:
             return None
-        cur.execute(
-            f"""SELECT m.organization_id,m.plant_id,r.name,o.name,p.name,p.slug
-                FROM anviqo_memberships m
-                JOIN anviqo_roles r ON r.role_id=m.role_id
-                JOIN anviqo_organizations o ON o.organization_id=m.organization_id
-                JOIN anviqo_plants p ON p.plant_id=m.plant_id
-                WHERE m.user_id={p}
-                  AND (
-                      LOWER(TRIM(p.slug))=LOWER(TRIM({p}))
-                      OR LOWER(TRIM(p.name))=LOWER(TRIM({p}))
-                      OR TRIM(p.plant_id)=TRIM({p})
-                  )
-                  AND m.status='ACTIVE' AND p.status='ACTIVE'""",
-            (user[0], plant_slug, plant_slug, plant_slug),
-        )
-        membership = cur.fetchone()
+
+        membership = None
+        if plant_slug:
+            cur.execute(
+                f"""SELECT m.organization_id,m.plant_id,r.name,o.name,p.name,p.slug
+                    FROM anviqo_memberships m
+                    JOIN anviqo_roles r ON r.role_id=m.role_id
+                    JOIN anviqo_organizations o ON o.organization_id=m.organization_id
+                    JOIN anviqo_plants p ON p.plant_id=m.plant_id
+                    WHERE m.user_id={p}
+                      AND (
+                          LOWER(TRIM(p.slug))=LOWER(TRIM({p}))
+                          OR LOWER(TRIM(p.name))=LOWER(TRIM({p}))
+                          OR TRIM(p.plant_id)=TRIM({p})
+                      )
+                      AND m.status='ACTIVE' AND p.status='ACTIVE'""",
+                (user[0], plant_slug, plant_slug, plant_slug),
+            )
+            membership = cur.fetchone()
+
+        if not membership:
+            cur.execute(
+                f"""SELECT m.organization_id,m.plant_id,r.name,o.name,p.name,p.slug
+                    FROM anviqo_memberships m
+                    JOIN anviqo_roles r ON r.role_id=m.role_id
+                    JOIN anviqo_organizations o ON o.organization_id=m.organization_id
+                    JOIN anviqo_plants p ON p.plant_id=m.plant_id
+                    WHERE m.user_id={p} AND m.status='ACTIVE' AND p.status='ACTIVE'
+                    ORDER BY p.name""",
+                (user[0],),
+            )
+            active_memberships = cur.fetchall()
+            _debug(f"active_memberships={len(active_memberships)}")
+            if len(active_memberships) == 1:
+                membership = active_memberships[0]
+                _debug("membership_fallback=single_active_membership")
+
         _debug(f"membership_found={bool(membership)}")
     if not membership:
         return None
