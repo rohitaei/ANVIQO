@@ -8,7 +8,6 @@ creating plant-specific reasoning code.
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import uuid
 from datetime import datetime, timezone
@@ -52,7 +51,6 @@ def _plant_ok(plant_id: str) -> bool:
 
 def init_schema() -> None:
     if not store.enabled(): return
-    p = _placeholder()
     with store._connect() as conn:
         cur = conn.cursor()
         if store._is_sqlite():
@@ -134,7 +132,10 @@ def upload_onboarding_document(plant_id: str):
                     cur.execute(f"INSERT INTO anviqo_plant_documents(document_id,organization_id,plant_id,filename,content_type,size_bytes,sha256,content,uploaded_by) VALUES({p},{p},{p},{p},{p},{p},{p},{p},{p}) ON CONFLICT(plant_id,sha256) DO NOTHING", (document_id,a["organization_id"],plant_id,filename,f.content_type or "application/octet-stream",len(content),digest,content,a["username"]))
             results.append({"filename": filename, "size_bytes": len(content), "sha256": digest})
         except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 400
-    update_onboarding_profile(plant_id)
+    # Mark the plant as having source data; actual indexing remains a separate step.
+    with store._connect() as conn:
+        cur = conn.cursor()
+        cur.execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={p} WHERE plant_id={p}", (_now(), plant_id))
     try: store.record_audit(a, "UPLOAD_PLANT_DOCUMENT", "PLANT", plant_id, {"documents": [r["filename"] for r in results]})
     except Exception: pass
     return jsonify({"status": "OK", "plant_id": plant_id, "documents": results, "message": "Source documents stored for plant-scoped onboarding."}), 201
