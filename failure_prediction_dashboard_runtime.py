@@ -123,15 +123,32 @@ MARKER = 'id="anviqoFpDemo"'
 
 
 def inject_prediction_demo_dashboard(html: str) -> str:
-    """Insert the demo panel inside the Predictive Intelligence page only."""
+    """Insert the demo panel inside the Predictive Intelligence page only.
+
+    The page is identified by its stable ID, not by a particular class
+    ordering. This keeps the injector compatible with the real dashboard and
+    minimal regression fixtures while still refusing unrelated HTML.
+    """
     text = str(html or '')
-    page_marker = '<div class="page" id="page-prediction">'
-    if page_marker not in text or MARKER in text:
+    if MARKER in text:
         return text
 
-    start = text.find(page_marker)
-    depth = 0
-    i = start
+    id_marker = 'id="page-prediction"'
+    id_pos = text.find(id_marker)
+    if id_pos < 0:
+        return text
+
+    # Find the opening div containing the authoritative page ID. Attribute
+    # ordering/classes may change without changing the page identity.
+    start = text.rfind('<div', 0, id_pos + len(id_marker))
+    if start < 0:
+        return text
+    open_end = text.find('>', start)
+    if open_end < 0:
+        return text
+
+    depth = 1
+    i = open_end + 1
     lower = text.lower()
     while i < len(text):
         open_i = lower.find('<div', i)
