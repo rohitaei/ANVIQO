@@ -1,13 +1,11 @@
 """ANVIQO runtime compatibility hooks.
 
-Loaded automatically by Python's site initialization. Keeps the proven field-report
-compatibility behavior and installs the tenant chat boundary after the knowledge
-layer is available. No V5 reasoning or PLC/SCADA control is modified.
+Loaded automatically by Python's site initialization. This narrowly normalizes
+one natural-language field-report pattern that the existing parser previously
+missed. It does not alter V5, PCI, PLC/SCADA controls, or spare inventory rules.
 """
 from __future__ import annotations
-
 import re
-
 
 def _install_field_report_spare_compat():
     try:
@@ -17,11 +15,7 @@ def _install_field_report_spare_compat():
     original = getattr(anvi_field_report, "parse_field_report", None)
     if not callable(original) or getattr(original, "_anviqo_spare_compat", False):
         return
-    pattern = re.compile(
-        r"\breplaced\s+by\s+(?:a|an|new\s+)?"
-        r"(?P<tag>[A-Z]{1,8}[-_ ]?\d{1,5})\s+"
-        r"(?P<qty>one|two|three|four|five|six|seven|eight|nine|ten|\d+(?:\.\d+)?)\s+"
-        r"nos?\s+spare\s+used\b", re.I)
+    pattern = re.compile(r"\breplaced\s+by\s+(?:a|an|new\s+)?(?P<tag>[A-Z]{1,8}[-_ ]?\d{1,5})\s+(?P<qty>one|two|three|four|five|six|seven|eight|nine|ten|\d+(?:\.\d+)?)\s+nos?\s+spare\s+used\b", re.I)
     number_words = {"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10}
     def patched_parse_field_report(text, filename=""):
         report = original(text, filename)
@@ -35,16 +29,4 @@ def _install_field_report_spare_compat():
     patched_parse_field_report._anviqo_spare_compat = True
     anvi_field_report.parse_field_report = patched_parse_field_report
 
-
 _install_field_report_spare_compat()
-
-
-def _install_tenant_chat_boundary():
-    try:
-        import anvi_tenant_chat_guard_v2
-        anvi_tenant_chat_guard_v2.install()
-    except Exception:
-        pass
-
-
-_install_tenant_chat_boundary()
