@@ -50,7 +50,7 @@ _install_field_report_spare_compat()
 # Tenant chat isolation is installed separately from the frozen knowledge
 # layer. This keeps the boundary in an adapter/governance layer.
 try:
-    import anvi_tenant_chat_guard_v3
-    anvi_tenant_chat_guard_v3.install()
+    import anvi_tenant_chat_guard_v2
+    anvi_tenant_chat_guard_v2.install()
 except Exception:
     pass
