@@ -73,7 +73,7 @@ def _verify(password: str, password_hash: str, password_salt: str) -> bool:
 
 
 def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any] | None:
-    """Authenticate a user and require an ACTIVE membership for a plant name or slug."""
+    """Authenticate a user and require an ACTIVE membership for a plant ID, name, or slug."""
     username = str(username or "").strip()
     plant_slug = str(plant_slug or "").strip()
     if not username or not password or not plant_slug:
@@ -98,9 +98,9 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
                 JOIN anviqo_organizations o ON o.organization_id=m.organization_id
                 JOIN anviqo_plants p ON p.plant_id=m.plant_id
                 WHERE m.user_id={p}
-                  AND (LOWER(p.slug)=LOWER({p}) OR LOWER(p.name)=LOWER({p}))
+                  AND (LOWER(p.slug)=LOWER({p}) OR LOWER(p.name)=LOWER({p}) OR p.plant_id={p})
                   AND m.status='ACTIVE' AND p.status='ACTIVE'""",
-            (user[0], plant_slug, plant_slug),
+            (user[0], plant_slug, plant_slug, plant_slug),
         )
         membership = cur.fetchone()
     if not membership:
