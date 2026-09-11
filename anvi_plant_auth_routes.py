@@ -12,6 +12,11 @@ from flask import jsonify, request, session, Response, redirect
 from phase6_enterprise_runtime import app
 import anvi_tenant_store as store
 import anvi_plant_auth as plant_auth
+import anvi_cleanup_test_accounts as cleanup_test_accounts
+
+# Explicitly opt-in, one-time cleanup. The Render environment flag is removed
+# after the deployment has completed so this cannot run again accidentally.
+_CLEANUP_RESULT = cleanup_test_accounts.run_once()
 
 _BASE = Path(__file__).resolve().parent
 _LOGIN_PAGE = _BASE / "plant_login.html"
