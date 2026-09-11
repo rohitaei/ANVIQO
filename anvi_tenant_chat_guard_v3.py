@@ -39,7 +39,8 @@ def blocked(message):
 
 def answer(q,rs):
     pid=active_plant()
-    if not pid:return None
+    if not pid:
+        return blocked("No plant is selected. ANVI will not use global or another plant's knowledge as a fallback.")
     if not rs:
         return blocked("The currently selected plant has no available tenant-scoped knowledge. I will not use another plant's data as a fallback.")
     tags=[norm(x) for x in TAG_RE.findall(str(q or ""))]
@@ -60,10 +61,7 @@ def install():
         original=getattr(layer,"ask_anvi",None)
         if not callable(original) or getattr(original,"_anviqo_strict_tenant_v3",False):return False
         def wrapped(q,*a,**kw):
-            pid=active_plant()
-            if pid:
-                return answer(q,rows(pid))
-            return original(q,*a,**kw)
+            return answer(q,rows(active_plant()))
         wrapped._anviqo_strict_tenant_v3=True
         layer.ask_anvi=wrapped
         return True
