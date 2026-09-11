@@ -29,13 +29,13 @@ jobs:
         run: python -m pip install --upgrade pytest Flask openpyxl
 
       - name: Compile Phase 2, field-report and prediction modules
-        run: python -m py_compile anvi_tenant_store.py anviqo_api_phase2.py field_report_runtime.py failure_prediction.py failure_prediction_api.py failure_prediction_history.py failure_prediction_demo_loader.py failure_prediction_demo_api.py test_phase2_tenant_foundation.py test_phase2_api_boundary.py test_phase2_v5_freeze.py test_field_report_spare_sync.py test_failure_prediction_v1.py test_failure_prediction_history_v1_1.py test_failure_prediction_demo_loader.py test_failure_prediction_demo_api.py
+        run: python -m py_compile anvi_tenant_store.py anviqo_api_phase2.py field_report_runtime.py failure_prediction.py failure_prediction_api.py failure_prediction_history.py failure_prediction_demo_loader.py failure_prediction_demo_api.py test_phase2_tenant_foundation.py test_phase2_api_boundary.py test_phase2_v5_freeze.py test_field_report_spare_sync.py test_field_report_query_routing.py test_failure_prediction_v1.py test_failure_prediction_history_v1_1.py test_failure_prediction_demo_loader.py test_failure_prediction_demo_api.py
 
       - name: Run Phase 2 tenant tests
         run: pytest -q test_phase2_tenant_foundation.py test_phase2_api_boundary.py
 
       - name: Run field report and spare regression tests
-        run: pytest -q test_field_report_spare_sync.py
+        run: pytest -q test_field_report_spare_sync.py test_field_report_query_routing.py
 
       - name: Run Failure Prediction regression tests
         run: pytest -q test_failure_prediction_v1.py test_failure_prediction_history_v1_1.py test_failure_prediction_demo_loader.py test_failure_prediction_demo_api.py
