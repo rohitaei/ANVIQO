@@ -62,7 +62,7 @@ def set_password(username: str, password: str) -> None:
     with store._connect() as conn:
         cur = conn.cursor()
         cur.execute(
-            f"UPDATE anviqo_users SET password_hash={p}, password_salt={p} WHERE LOWER(external_username)=LOWER({p})",
+            f"UPDATE anviqo_users SET password_hash={p}, password_salt={p} WHERE LOWER(TRIM(external_username))=LOWER(TRIM({p}))",
             (password_hash, password_salt, username.strip()),
         )
         if cur.rowcount != 1:
@@ -91,7 +91,7 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
     with store._connect() as conn:
         cur = conn.cursor()
         cur.execute(
-            f"SELECT user_id,display_name,status,password_hash,password_salt FROM anviqo_users WHERE LOWER(external_username)=LOWER({p})",
+            f"SELECT user_id,display_name,status,password_hash,password_salt FROM anviqo_users WHERE LOWER(TRIM(external_username))=LOWER(TRIM({p}))",
             (username,),
         )
         user = cur.fetchone()
@@ -115,7 +115,11 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
                 JOIN anviqo_organizations o ON o.organization_id=m.organization_id
                 JOIN anviqo_plants p ON p.plant_id=m.plant_id
                 WHERE m.user_id={p}
-                  AND (LOWER(p.slug)=LOWER({p}) OR LOWER(p.name)=LOWER({p}) OR p.plant_id={p})
+                  AND (
+                      LOWER(TRIM(p.slug))=LOWER(TRIM({p}))
+                      OR LOWER(TRIM(p.name))=LOWER(TRIM({p}))
+                      OR TRIM(p.plant_id)=TRIM({p})
+                  )
                   AND m.status='ACTIVE' AND p.status='ACTIVE'""",
             (user[0], plant_slug, plant_slug, plant_slug),
         )
@@ -152,7 +156,7 @@ def list_user_plants(username: str) -> list[dict[str, Any]]:
                 JOIN anviqo_organizations o ON o.organization_id=m.organization_id
                 JOIN anviqo_plants p ON p.plant_id=m.plant_id
                 JOIN anviqo_roles r ON r.role_id=m.role_id
-                WHERE LOWER(u.external_username)=LOWER({p}) AND m.status='ACTIVE' AND p.status='ACTIVE'
+                WHERE LOWER(TRIM(u.external_username))=LOWER(TRIM({p})) AND m.status='ACTIVE' AND p.status='ACTIVE'
                 ORDER BY p.name""",
             (username,),
         )
