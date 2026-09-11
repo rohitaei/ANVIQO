@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from flask import jsonify, request, session, Response, redirect, url_for
+from flask import jsonify, request, session, Response, redirect
 
 from phase6_enterprise_runtime import app
 import anvi_tenant_store as store
@@ -66,13 +66,13 @@ def plant_login_interceptor():
     username = request.form.get("username", "").strip(); password = request.form.get("password", ""); plant_slug = request.form.get("plant_slug", "").strip().lower()
     admin_user = os.environ.get("ANVIQO_ADMIN_USER", ""); admin_password = os.environ.get("ANVIQO_ADMIN_PASSWORD", "")
     if username == admin_user and password == admin_password:
-        context = store.ensure_bootstrap(username); session.clear(); session.update({"authenticated": True, "username": username, "role": "ADMIN", **(context or {})}); return redirect(url_for("dashboard"))
+        context = store.ensure_bootstrap(username); session.clear(); session.update({"authenticated": True, "username": username, "role": "ADMIN", **(context or {})}); return redirect("/enterprise")
     identity = plant_auth.authenticate(username, password, plant_slug)
     if not identity: return _html_page(_LOGIN_PAGE)
     session.clear(); session.update({"authenticated": True, **identity})
     try: store.record_audit(identity, "LOGIN", "PLANT", identity["plant_id"], {"auth_version": plant_auth.AUTH_VERSION})
     except Exception: pass
-    return redirect(url_for("dashboard"))
+    return redirect("/enterprise")
 
 
 @app.get("/api/session/context")
@@ -100,6 +100,23 @@ def admin_plants():
     with store._connect() as conn:
         cur = conn.cursor(); cur.execute(f"SELECT plant_id,name,slug,status FROM anviqo_plants WHERE organization_id={p} ORDER BY name", (actor["organization_id"],)); rows = cur.fetchall()
     return jsonify({"status": "OK", "plants": [{"plant_id": r[0], "name": r[1], "slug": r[2], "status": r[3]} for r in rows]})
+
+
+@app.post("/api/admin/plants")
+def admin_create_plant():
+    if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", "")).strip()
+    slug = str(body.get("slug", "")).strip().lower()
+    if not name or not slug:
+        return jsonify({"status": "INVALID", "message": "Plant name and plant slug are required"}), 400
+    try:
+        plant_id = store.create_plant(_actor()["organization_id"], name, slug)
+        try: store.record_audit(_actor(), "CREATE_PLANT", "PLANT", plant_id, {"name": name, "slug": slug})
+        except Exception: pass
+        return jsonify({"status": "OK", "plant_id": plant_id, "name": name, "slug": slug}), 201
+    except Exception as exc:
+        return jsonify({"status": "ERROR", "message": str(exc)}), 400
 
 
 @app.post("/api/admin/plant-users")
@@ -141,4 +158,4 @@ def my_plants():
     return jsonify({"status": "OK", "plants": plant_auth.list_user_plants(session.get("username", ""))})
 
 
-__all__ = ["plant_login_interceptor", "session_context", "admin_users_page", "admin_plants", "create_plant_user", "change_plant_user_password", "my_plants"]
+__all__ = ["plant_login_interceptor", "session_context", "admin_users_page", "admin_plants", "admin_create_plant", "create_plant_user", "change_plant_user_password", "my_plants"]
