@@ -1,6 +1,5 @@
 import sys
 import types
-from contextlib import contextmanager
 
 import pytest
 from flask import Flask, session
@@ -51,6 +50,53 @@ def test_active_tenant_uses_tenant_scoped_knowledge(monkeypatch):
     assert {p["tag"] for p in snapshot["points"]} == {"PT-901", ""}
     assert snapshot["safety"]["plc_write"] is False
     assert snapshot["safety"]["scada_control"] is False
+
+
+def test_two_plants_never_leak_command_centre_data(monkeypatch):
+    datasets = {
+        "plant_a": [("INSTRUMENT", "PT-A01", "Plant A Pressure", "AREA-A", "Pressure", "TRANSMITTER", "PT-A01", "", "a.xlsx", {}, "")],
+        "plant_b": [("INSTRUMENT", "PT-B01", "Plant B Pressure", "AREA-B", "Pressure", "TRANSMITTER", "PT-B01", "", "b.xlsx", {}, "")],
+    }
+
+    class Cursor:
+        def execute(self, sql, args):
+            self.args = args
+
+        def fetchall(self):
+            return datasets[self.args[0]]
+
+    class Conn:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def cursor(self):
+            return Cursor()
+
+    fake_store = types.ModuleType("anvi_tenant_store")
+    fake_store._placeholder = lambda: "%s"
+    fake_store._connect = lambda: Conn()
+    fake_ingestion = types.ModuleType("anvi_plant_ingestion_runtime")
+    fake_ingestion.init_schema = lambda: None
+    monkeypatch.setitem(sys.modules, "anvi_tenant_store", fake_store)
+    monkeypatch.setitem(sys.modules, "anvi_plant_ingestion_runtime", fake_ingestion)
+
+    app = Flask(__name__)
+    app.secret_key = "test"
+    with app.test_request_context("/"):
+        session["plant_id"] = "plant_a"
+        a = adapter.get_live_pci_snapshot(lambda: {"source": "legacy"})
+        session["plant_id"] = "plant_b"
+        b = adapter.get_live_pci_snapshot(lambda: {"source": "legacy"})
+
+    assert a["plant_id"] == "plant_a"
+    assert b["plant_id"] == "plant_b"
+    assert {p["tag"] for p in a["points"]} == {"PT-A01"}
+    assert {p["tag"] for p in b["points"]} == {"PT-B01"}
+    assert "PT-B01" not in {p["tag"] for p in a["points"]}
+    assert "PT-A01" not in {p["tag"] for p in b["points"]}
 
 
 def test_no_tenant_data_falls_back_to_original_getter():
