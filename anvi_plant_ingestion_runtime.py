@@ -4,11 +4,13 @@ Adapter/indexing layer only. Frozen V5 intelligence and PLC/SCADA boundaries
 are not modified. Principle: CHANGE DATA, NOT CODE.
 """
 from __future__ import annotations
-import csv, hashlib, io, json, re, zipfile
+import csv, hashlib, io, json, re, threading, zipfile
 from datetime import datetime, timezone
 import anvi_tenant_store as store
 from universal_onboarding import build_onboarding_package, SAFETY
 INGESTION_VERSION="ANVIQO-PLANT-INGESTION-V1"
+_JOB_LOCK=threading.Lock()
+_JOBS={}
 def _now(): return datetime.now(timezone.utc).isoformat()
 def _p(): return store._placeholder()
 def _actor():
@@ -16,9 +18,9 @@ def _actor():
  return {"user_id":session.get("user_id",""),"organization_id":session.get("organization_id",""),"plant_id":session.get("plant_id",""),"role":session.get("role",""),"username":session.get("username","")}
 def _admin():
  a=_actor(); return bool(a["user_id"] and a["organization_id"] and a["role"] in {"OWNER","ADMIN"})
-def _plant_ok(plant_id):
- a=_actor()
- if not _admin() or not plant_id: return False
+def _plant_ok(plant_id, actor=None):
+ a=actor or _actor()
+ if not a["user_id"] or not a["organization_id"] or a["role"] not in {"OWNER","ADMIN"} or not plant_id: return False
  with store._connect() as conn:
   cur=conn.cursor(); cur.execute(f"SELECT 1 FROM anviqo_plants WHERE plant_id={_p()} AND organization_id={_p()} AND status='ACTIVE' LIMIT 1",(plant_id,a["organization_id"]))
   return cur.fetchone() is not None
@@ -49,8 +51,7 @@ def _xlsx(raw):
     for row in ws.iter_rows(values_only=True):
      vals=[str(v).strip() for v in row if v is not None and str(v).strip()]
      if vals: out.append((ws.title,vals))
-  finally:
-   wb.close()
+  finally: wb.close()
   return out
  except Exception: return []
 def _records(filename,raw):
@@ -72,11 +73,11 @@ def _records(filename,raw):
  text=_docx(raw) if ext=='docx' else _pdf(raw) if ext=='pdf' else raw.decode('utf-8',errors='replace') if ext in {'txt','log'} else ''
  if not text.strip(): return []
  return [{'external_id':hashlib.sha256((filename+str(i)).encode()).hexdigest()[:20],'name':filename,'record_type':'DOCUMENT','source':filename,'metadata':{'content':chunk}} for i,chunk in enumerate(text[i:i+6000] for i in range(0,len(text),6000))]
-def ingest_plant(plant_id):
- if not _plant_ok(plant_id): raise PermissionError('OWNER/ADMIN access to this plant is required')
- init_schema(); a=_actor(); p=_p()
- # Read and normalize all documents before opening the write transaction. This keeps
- # database locks short and prevents one slow parser from consuming the web timeout.
+def ingest_plant(plant_id, actor=None):
+ a=actor or _actor()
+ if not _plant_ok(plant_id,a): raise PermissionError('OWNER/ADMIN access to this plant is required')
+ init_schema(); p=_p()
+ # Parse outside the write transaction; only the final batch touches knowledge storage.
  with store._connect() as conn:
   cur=conn.cursor(); cur.execute(f"SELECT p.name,o.industry FROM anviqo_plants p LEFT JOIN anviqo_plant_onboarding o ON o.plant_id=p.plant_id WHERE p.plant_id={p} AND p.organization_id={p}",(plant_id,a['organization_id'])); plant=cur.fetchone(); cur.execute(f"SELECT document_id,filename,content,sha256 FROM anviqo_plant_documents WHERE plant_id={p} AND organization_id={p} ORDER BY created_at",(plant_id,a['organization_id'])); docs=cur.fetchall()
  if not plant: raise ValueError('Plant not found')
@@ -89,7 +90,6 @@ def ingest_plant(plant_id):
     rows.append((kid,a['organization_id'],plant_id,document_id,rec['record_type'],rec['external_id'],rec.get('name',''),rec.get('area',''),rec.get('service',''),rec.get('asset_type',''),rec.get('tag',''),rec.get('parent_id',''),rec.get('source',filename),json.dumps(meta),content)); total+=1
    documents+=1
   except Exception as exc: errors.append({'filename':filename,'error':str(exc)})
- # One batched PostgreSQL/SQLite write instead of one network round-trip per record.
  if rows:
   with store._connect() as conn:
    cur=conn.cursor()
@@ -101,13 +101,40 @@ def ingest_plant(plant_id):
  try: store.record_audit(a,'INGEST_PLANT_DATA','PLANT',plant_id,{'documents':documents,'records':total,'errors':len(errors)})
  except Exception: pass
  return {'status':'OK','plant_id':plant_id,'documents_processed':documents,'records_indexed':total,'errors':errors,'ingestion_version':INGESTION_VERSION,'safety':dict(SAFETY)}
+def _run_job(plant_id, actor):
+ try:
+  result=ingest_plant(plant_id,actor); result['job_status']='COMPLETED'
+ except Exception as exc:
+  result={'status':'ERROR','plant_id':plant_id,'message':str(exc),'job_status':'FAILED','safety':dict(SAFETY)}
+ with _JOB_LOCK: _JOBS[plant_id]=result
+ try:
+  p=_p(); status='READY' if result.get('status')=='OK' and not result.get('errors') else 'BLOCKED'
+  with store._connect() as conn:
+   cur=conn.cursor(); cur.execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p}",(status,_now(),plant_id))
+ except Exception: pass
 def register(app):
  from flask import jsonify,request
  @app.post('/api/admin/onboarding/plant/<plant_id>/ingest')
  def ingest_route(plant_id):
-  if not _plant_ok(plant_id): return jsonify({'status':'FORBIDDEN','message':'OWNER/ADMIN access to this plant is required'}),403
-  try: return jsonify(ingest_plant(plant_id))
-  except Exception as exc: return jsonify({'status':'ERROR','message':str(exc),'safety':dict(SAFETY)}),400
+  actor=_actor()
+  if not _plant_ok(plant_id,actor): return jsonify({'status':'FORBIDDEN','message':'OWNER/ADMIN access to this plant is required'}),403
+  with _JOB_LOCK:
+   existing=_JOBS.get(plant_id)
+   if existing and existing.get('job_status')=='RUNNING': return jsonify({'status':'RUNNING','plant_id':plant_id,'message':'Universal ingestion is already running'}),202
+   _JOBS[plant_id]={'status':'STARTED','plant_id':plant_id,'job_status':'RUNNING','message':'Universal ingestion started'}
+  p=_p()
+  try:
+   with store._connect() as conn:
+    cur=conn.cursor(); cur.execute(f"UPDATE anviqo_plant_onboarding SET status='INDEXING',updated_at={p} WHERE plant_id={p}",(_now(),plant_id))
+  except Exception: pass
+  threading.Thread(target=_run_job,args=(plant_id,actor),daemon=True,name=f'anvi-ingest-{plant_id}').start()
+  return jsonify({'status':'STARTED','job_status':'RUNNING','plant_id':plant_id,'message':'Universal ingestion started. Monitor Onboarding Readiness for completion.','safety':dict(SAFETY)}),202
+ @app.get('/api/admin/onboarding/plant/<plant_id>/ingest-status')
+ def ingest_status_route(plant_id):
+  actor=_actor()
+  if not _plant_ok(plant_id,actor): return jsonify({'status':'FORBIDDEN'}),403
+  with _JOB_LOCK: job=dict(_JOBS.get(plant_id) or {})
+  return jsonify(job or {'status':'IDLE','job_status':'IDLE','plant_id':plant_id,'safety':dict(SAFETY)})
  @app.get('/api/plant/knowledge')
  def plant_knowledge_route():
   init_schema(); a=_actor(); plant_id=a.get('plant_id')
