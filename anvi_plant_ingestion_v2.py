@@ -1,11 +1,11 @@
 """Durable universal plant-ingestion queue.
 
-Web requests enqueue durable jobs. Status polling also claims a queued job directly,
-so free Render does not depend on daemon-thread scheduling; durable state still
-supports restart recovery. CHANGE DATA, NOT CODE.
+Web requests enqueue durable jobs. A separate worker can claim queued jobs through
+a protected dispatch endpoint, while durable state still supports restart recovery.
+CHANGE DATA, NOT CODE.
 """
 from __future__ import annotations
-import json, threading, time
+import json, os, threading, time
 from datetime import datetime, timezone, timedelta
 import anvi_tenant_store as store
 from universal_onboarding import SAFETY
@@ -124,8 +124,14 @@ def _latest_job(plant_id,organization_id):
   cur=conn.cursor();cur.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM anviqo_plant_ingestion_jobs WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC LIMIT 1",(plant_id,organization_id));return cur.fetchone()
 
 def register(app):
- from flask import jsonify
+ from flask import jsonify, request
  init_schema();_start_recovery_worker()
+ @app.post('/api/internal/ingestion/dispatch')
+ def ingestion_internal_dispatch():
+  expected=os.environ.get('ANVI_INGESTION_DISPATCH_TOKEN','').strip()
+  supplied=request.headers.get('X-ANVI-INGESTION-TOKEN','').strip()
+  if not expected or supplied != expected:return jsonify({'status':'FORBIDDEN'}),403
+  return jsonify(run_pending_jobs(1))
  @app.post('/api/admin/onboarding/plant/<plant_id>/ingest')
  def ingestion_start_v2(plant_id):
   actor=_actor()
