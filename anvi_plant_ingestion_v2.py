@@ -92,7 +92,7 @@ def run_pending_jobs(limit=1):
   with store._connect() as conn:
    cur=conn.cursor();cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},result_json={p},finished_at={p},updated_at={p} WHERE job_id={p}",(status,msg,json.dumps(r,default=str),_iso(_now()),jid))
    try:
-    if status in {"COMPLETED","COMPLETED_WITH_ERRORS"}: cur.execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p} AND organization_id={p}",(status,_iso(_now()),plant,org))
+    if status in {"COMPLETED","COMPLETED_WITH_ERRORS"}: cur.execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p} AND organization_id={p}",("DATA_UPLOADED",_iso(_now()),plant,org))
     elif status=="FAILED": cur.execute(f"UPDATE anviqo_plant_onboarding SET status='ERROR',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(_iso(_now()),plant,org))
    except Exception: pass
   processed+=1
@@ -131,8 +131,7 @@ def register(app):
   expected=os.environ.get('ANVI_INGESTION_DISPATCH_TOKEN','').strip()
   supplied=request.headers.get('X-ANVI-INGESTION-TOKEN','').strip()
   worker_marker=request.headers.get('X-ANVI-INGESTION-WORKER','').strip()
-  user_agent=request.headers.get('User-Agent','')
-  if not ((expected and supplied == expected) or worker_marker == '1' or user_agent.startswith('Python-urllib')):
+  if not ((expected and supplied == expected) or worker_marker == '1'):
    return jsonify({'status':'FORBIDDEN'}),403
   return jsonify(run_pending_jobs(1))
  @app.post('/api/admin/onboarding/plant/<plant_id>/ingest')
@@ -154,6 +153,16 @@ def register(app):
    row=_latest_job(plant_id,actor['organization_id'])
   if not row:return jsonify({'status':'IDLE','job_status':'IDLE','plant_id':plant_id,'safety':dict(SAFETY)})
   result=row[3] if isinstance(row[3],dict) else json.loads(row[3] or '{}')
+  if row[1] in {'COMPLETED','COMPLETED_WITH_ERRORS'}:
+   try:
+    with store._connect() as conn:
+     conn.cursor().execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={_p()} WHERE plant_id={_p()} AND organization_id={_p()}",(_iso(_now()),plant_id,actor['organization_id']))
+   except Exception: pass
+  elif row[1]=='FAILED':
+   try:
+    with store._connect() as conn:
+     conn.cursor().execute(f"UPDATE anviqo_plant_onboarding SET status='ERROR',updated_at={_p()} WHERE plant_id={_p()} AND organization_id={_p()}",(_iso(_now()),plant_id,actor['organization_id']))
+   except Exception: pass
   return jsonify({'status':'OK','job_id':row[0],'job_status':row[1],'message':row[2],'result':result,'created_at':str(row[4]),'started_at':str(row[5]) if row[5] else None,'finished_at':str(row[6]) if row[6] else None,'updated_at':str(row[7]),'plant_id':plant_id,'safety':dict(SAFETY)})
  return app
 
