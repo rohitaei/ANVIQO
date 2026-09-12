@@ -37,8 +37,13 @@ def init_schema():
    cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_ingestion_jobs (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, actor_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT '', started_at TEXT, finished_at TEXT, updated_at TEXT NOT NULL DEFAULT '')")
   else:
    cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_ingestion_jobs (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id), plant_id TEXT NOT NULL REFERENCES anviqo_plants(plant_id), actor_json JSONB NOT NULL DEFAULT '{}'::jsonb, status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), started_at TIMESTAMPTZ, finished_at TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
-   for n,d in [("job_id","TEXT"),("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("created_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()"),("started_at","TIMESTAMPTZ"),("finished_at","TIMESTAMPTZ"),("updated_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()")] :
+   # Backward-compatible migration: an earlier onboarding release created this
+   # table without job_id. Keep existing tenant data and add the queue identity.
+   cur.execute("ALTER TABLE anviqo_plant_ingestion_jobs ADD COLUMN IF NOT EXISTS job_id TEXT")
+   cur.execute("UPDATE anviqo_plant_ingestion_jobs SET job_id='ing_legacy_' || md5(coalesce(plant_id,'') || '|' || coalesce(created_at::text,'')) WHERE job_id IS NULL")
+   for n,d in [("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("created_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()"),("started_at","TIMESTAMPTZ"),("finished_at","TIMESTAMPTZ"),("updated_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()")] :
     cur.execute(f"ALTER TABLE anviqo_plant_ingestion_jobs ADD COLUMN IF NOT EXISTS {n} {d}")
+   cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_anviqo_ingest_jobs_job_id ON anviqo_plant_ingestion_jobs(job_id) WHERE job_id IS NOT NULL")
    cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_ingest_jobs_status ON anviqo_plant_ingestion_jobs(status, created_at)")
 
 def _parse_dt(v):
@@ -137,6 +142,7 @@ def _latest_job(plant_id,organization_id):
 
 def register(app):
  from flask import jsonify, request
+ # The web service only enqueues/statuses. The dedicated worker owns execution.
  init_schema()
  @app.post('/api/internal/ingestion/dispatch')
  def ingestion_internal_dispatch():
