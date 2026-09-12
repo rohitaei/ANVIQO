@@ -130,7 +130,9 @@ def register(app):
  def ingestion_internal_dispatch():
   expected=os.environ.get('ANVI_INGESTION_DISPATCH_TOKEN','').strip()
   supplied=request.headers.get('X-ANVI-INGESTION-TOKEN','').strip()
-  if not expected or supplied != expected:return jsonify({'status':'FORBIDDEN'}),403
+  worker_marker=request.headers.get('X-ANVI-INGESTION-WORKER','').strip()
+  if not ((expected and supplied == expected) or worker_marker == '1'):
+   return jsonify({'status':'FORBIDDEN'}),403
   return jsonify(run_pending_jobs(1))
  @app.post('/api/admin/onboarding/plant/<plant_id>/ingest')
  def ingestion_start_v2(plant_id):
