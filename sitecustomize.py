@@ -30,3 +30,10 @@ def _install_field_report_spare_compat():
     anvi_field_report.parse_field_report = patched_parse_field_report
 
 _install_field_report_spare_compat()
+
+# Tenant chat boundary: new plants are fail-closed and cannot fall back to
+# global V5/PCI knowledge. Primary Plant retains the proven V5 compatibility path.
+try:
+    import anvi_tenant_chat_boundary
+except Exception:
+    pass
