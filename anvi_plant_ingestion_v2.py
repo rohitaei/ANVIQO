@@ -10,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 import anvi_tenant_store as store
 from universal_onboarding import SAFETY
 INGESTION_VERSION="ANVIQO-PLANT-INGESTION-V2"
-STALE_AFTER_MINUTES=60
+STALE_AFTER_MINUTES=5
 _WORKER_STARTED=False
 _WORKER_LOCK=threading.Lock()
 
@@ -54,8 +54,8 @@ def _stale_jobs():
   for jid,plant_id,organization_id,started in cur.fetchall():
    dt=_parse_dt(started)
    if dt is None or dt<cutoff:
-    cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},updated_at={p} WHERE job_id={p}",( "STALE","Worker interruption detected; job is retryable.",_iso(_now()),jid))
-    try: cur.execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(_iso(_now()),plant_id,organization_id))
+    cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},started_at=NULL,finished_at=NULL,updated_at={p} WHERE job_id={p} AND status='RUNNING'",("QUEUED","Recovered orphaned ingestion job; retrying with the dedicated worker.",_iso(_now()),jid))
+    try: cur.execute(f"UPDATE anviqo_plant_onboarding SET status='INDEXING',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(_iso(_now()),plant_id,organization_id))
     except Exception: pass
 
 def _new_job_id(plant_id):
@@ -111,9 +111,6 @@ def run_pending_jobs(limit=1):
  return {"processed":processed,"safety":dict(SAFETY)}
 
 def _dispatch_once():
- # The web service only claims the durable job and starts the actual ingestion
- # in a daemon thread. This keeps the worker HTTP request short and lets the
- # onboarding page continue polling while XLSX processing runs.
  claimed=_claim_job()
  if not claimed:return {"processed":0,"queued_only":True,"safety":dict(SAFETY)}
  jid,plant,org,actor=claimed
@@ -140,8 +137,6 @@ def _latest_job(plant_id,organization_id):
 
 def register(app):
  from flask import jsonify, request
- # Do not start a second in-process recovery consumer in the web service.
- # The dedicated ingestion worker is the sole queue consumer.
  init_schema()
  @app.post('/api/internal/ingestion/dispatch')
  def ingestion_internal_dispatch():
