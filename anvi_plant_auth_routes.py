@@ -14,7 +14,7 @@ import anvi_tenant_store as store
 import anvi_plant_auth as plant_auth
 import anvi_cleanup_test_accounts as cleanup_test_accounts
 import anvi_universal_onboarding as universal_onboarding
-import anvi_plant_ingestion_runtime as plant_ingestion
+import anvi_plant_ingestion_v2 as plant_ingestion
 
 _CLEANUP_RESULT = cleanup_test_accounts.run_once()
 
@@ -120,21 +120,16 @@ def create_plant_user():
 @app.post("/api/admin/plant-user-password")
 def change_plant_user_password():
     if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
-    body = request.get_json(silent=True) or {}; username = str(body.get("username", "")).strip(); password = str(body.get("password", ""))
-    if not username or not password: return jsonify({"status": "INVALID", "message": "username and password are required"}), 400
-    if len(password) < 8: return jsonify({"status": "INVALID", "message": "Password must contain at least 8 characters"}), 400
-    if not _user_in_actor_org(username): return jsonify({"status": "FORBIDDEN", "message": "User is not active in your organization"}), 403
-    try:
-        plant_auth.set_password(username, password)
-        try: store.record_audit(_actor(), "CHANGE_PASSWORD", "USER", username, {})
-        except Exception: pass
-        return jsonify({"status": "OK", "username": username})
-    except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 400
+    body=request.get_json(silent=True) or {}; username=str(body.get("username","")).strip(); password=str(body.get("password",""))
+    if not username or len(password)<8: return jsonify({"status":"INVALID","message":"username and password (minimum 8 characters) are required"}),400
+    if not _user_in_actor_org(username): return jsonify({"status":"NOT_FOUND","message":"User is not active in your organization"}),404
+    try: plant_auth.set_password(username,password); return jsonify({"status":"OK","username":username})
+    except Exception as exc: return jsonify({"status":"ERROR","message":str(exc)}),400
 
 @app.get("/api/my-plants")
 def my_plants():
-    if not session.get("authenticated"): return jsonify({"status": "UNAUTHORIZED"}), 401
-    return jsonify({"status": "OK", "plants": plant_auth.list_user_plants(session.get("username", ""))})
+    if not session.get("authenticated"): return jsonify({"status":"UNAUTHORIZED"}),401
+    return jsonify({"status":"OK","plants":plant_auth.list_user_plants(session.get("username",""))})
 
 # Register tenant-scoped ingestion without modifying V5 intelligence.
 plant_ingestion.register(app)
