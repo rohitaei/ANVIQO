@@ -14,7 +14,7 @@ import anvi_tenant_store as store
 import anvi_plant_auth as plant_auth
 import anvi_cleanup_test_accounts as cleanup_test_accounts
 import anvi_universal_onboarding as universal_onboarding
-import anvi_plant_ingestion_runtime as plant_ingestion
+import anvi_plant_ingestion_v2 as plant_ingestion
 
 _CLEANUP_RESULT = cleanup_test_accounts.run_once()
 
