@@ -35,14 +35,19 @@ def init_schema():
   cur=conn.cursor()
   if store._is_sqlite():
    cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_ingestion_jobs (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, actor_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT '', started_at TEXT, finished_at TEXT, updated_at TEXT NOT NULL DEFAULT '')")
-   for n,d in [("actor_json","TEXT NOT NULL DEFAULT '{}'"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","TEXT NOT NULL DEFAULT '{}'"),("created_at","TEXT NOT NULL DEFAULT ''"),("started_at","TEXT"),("finished_at","TEXT"),("updated_at","TEXT NOT NULL DEFAULT ''")]:
+   for n,d in [("job_id","TEXT"),("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","TEXT NOT NULL DEFAULT '{}'"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","TEXT NOT NULL DEFAULT '{}'"),("created_at","TEXT NOT NULL DEFAULT ''"),("started_at","TEXT"),("finished_at","TEXT"),("updated_at","TEXT NOT NULL DEFAULT ''")]:
     try: cur.execute(f"ALTER TABLE anviqo_plant_ingestion_jobs ADD COLUMN {n} {d}")
     except Exception: pass
   else:
    cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_ingestion_jobs (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id), plant_id TEXT NOT NULL REFERENCES anviqo_plants(plant_id), actor_json JSONB NOT NULL DEFAULT '{}'::jsonb, status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), started_at TIMESTAMPTZ, finished_at TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
-   for n,d in [("actor_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("created_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()"),("started_at","TIMESTAMPTZ"),("finished_at","TIMESTAMPTZ"),("updated_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()")]:
+   # Legacy installations may already have this queue table with an older
+   # schema. Every column used by the durable worker must be repaired before
+   # any SELECT/INSERT touches it. Nullable additions are intentional so old
+   # rows remain valid and new jobs can use the complete schema.
+   for n,d in [("job_id","TEXT"),("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("created_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()"),("started_at","TIMESTAMPTZ"),("finished_at","TIMESTAMPTZ"),("updated_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()")]:
     cur.execute(f"ALTER TABLE anviqo_plant_ingestion_jobs ADD COLUMN IF NOT EXISTS {n} {d}")
    cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_ingest_jobs_status ON anviqo_plant_ingestion_jobs(status, created_at)")
+   cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_anviqo_ingest_jobs_job_id ON anviqo_plant_ingestion_jobs(job_id) WHERE job_id IS NOT NULL")
 
 def _parse_dt(v):
  if not v:return None
