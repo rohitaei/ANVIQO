@@ -7,6 +7,7 @@ knowledge and never falls back to the global V5/PCI database.
 from __future__ import annotations
 
 import json
+import os
 import re
 
 
@@ -22,7 +23,20 @@ def _session_context():
         return None, None
 
 
+def _prepare_tenant_db_url():
+    """Render PostgreSQL requires TLS; make the tenant store explicit about it."""
+    url = os.getenv("ANVIQO_TENANT_DB_URL", "").strip() or os.getenv("DATABASE_URL", "").strip()
+    if not url or url.startswith("sqlite:"):
+        return
+    lower = url.lower()
+    if "sslmode=" in lower:
+        return
+    separator = "&" if "?" in url else "?"
+    os.environ["ANVIQO_TENANT_DB_URL"] = url + separator + "sslmode=require"
+
+
 def _tenant_store():
+    _prepare_tenant_db_url()
     import anvi_tenant_store as store
     if not store.enabled():
         return None
@@ -109,7 +123,6 @@ def _tenant_answer(q: str, rows: list[dict], plant: dict):
     low = text.lower()
     normalized_tags = {_normalize(r.get("tag")): r for r in rows if r.get("tag")}
 
-    # Plant/context question must never be answered by the global V5 layer.
     if any(x in low for x in ("what plant", "which plant", "connected to", "current plant", "selected plant")):
         return _safe_response(
             f"ANVI is connected to {plant['name']} (selected plant).",
@@ -169,8 +182,6 @@ def _tenant_answer(q: str, rows: list[dict], plant: dict):
             count=len(distinct),
         )
 
-    # Explicit plant-B/new-plant operational questions are intentionally blocked
-    # unless they can be answered from tenant rows. Do not leak global V5 data.
     if rows:
         return None
     return _safe_response(
@@ -185,6 +196,7 @@ def _tenant_answer(q: str, rows: list[dict], plant: dict):
 
 def install():
     try:
+        _prepare_tenant_db_url()
         import anvi_knowledge_layer as knowledge
     except Exception:
         return
@@ -195,7 +207,6 @@ def install():
     def wrapped(q, *args, **kwargs):
         plant_id, organization_id = _session_context()
         if not plant_id:
-            # No selected plant: fail closed instead of exposing global V5 data.
             return _safe_response(
                 "No plant is selected. Select a plant before asking plant-specific questions.",
                 blocked=True,
@@ -214,8 +225,6 @@ def install():
         result = _tenant_answer(q, rows, plant)
         if result is not None:
             return result
-        # A new plant with tenant rows may answer only through this tenant layer.
-        # Returning a safe block is preferable to calling the global V5 layer.
         return _safe_response(
             "I can only answer from the currently selected plant's onboarded knowledge. "
             "That information is not available in this plant yet, so I will not use another plant's data as a fallback.",
