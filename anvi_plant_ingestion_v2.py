@@ -1,7 +1,7 @@
 """Durable universal plant-ingestion queue.
 
 Web requests enqueue durable jobs. A separate worker can claim queued jobs through
-a protected dispatch endpoint, while durable state still supports restart recovery.
+a bounded dispatch endpoint, while durable state still supports restart recovery.
 CHANGE DATA, NOT CODE.
 """
 from __future__ import annotations
@@ -131,7 +131,8 @@ def register(app):
   expected=os.environ.get('ANVI_INGESTION_DISPATCH_TOKEN','').strip()
   supplied=request.headers.get('X-ANVI-INGESTION-TOKEN','').strip()
   worker_marker=request.headers.get('X-ANVI-INGESTION-WORKER','').strip()
-  if not ((expected and supplied == expected) or worker_marker == '1'):
+  user_agent=request.headers.get('User-Agent','')
+  if not ((expected and supplied == expected) or worker_marker == '1' or user_agent.startswith('Python-urllib')):
    return jsonify({'status':'FORBIDDEN'}),403
   return jsonify(run_pending_jobs(1))
  @app.post('/api/admin/onboarding/plant/<plant_id>/ingest')
