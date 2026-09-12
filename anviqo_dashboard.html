@@ -241,7 +241,7 @@ input,select{
 
  <div class="safe">
   <b>SIMULATION MODE</b><br>
-  1,064 PCI I/O simulated<br>
+  MBF-2 I/O<br>
   PLC WRITE: BLOCKED<br>
   SCADA CONTROL: BLOCKED<br>
   HUMAN DECISION REQUIRED
@@ -290,7 +290,7 @@ input,select{
   <div class="card metric"><label>ACTIVE ALARMS</label><strong id="alarms" class="red">—</strong><small>LIVE</small></div>
   <div class="card metric"><label>EQUIPMENT RISK</label><strong id="critical" class="amber">—</strong><small>PRIORITY</small></div>
   <div class="card metric"><label>EVENT CHAINS</label><strong id="events" class="cyan">—</strong><small>CORRELATED</small></div>
-  <div class="card metric"><label>PCI I/O</label><strong>1,064</strong><small>SIMULATION</small></div>
+  <div class="card metric"><label id="ioLabel">I/O</label><strong id="ioCount">—</strong><small id="ioMode">PLANT DATA</small></div>
  </div>
 
  <div class="grid3">
@@ -547,7 +547,7 @@ input,select{
   <div id="messages" class="messages">
    <div class="msg anvi">Hello. I am ANVI.
 
-Ask me about plant health, alarms, instruments, PCI I/O, equipment, maintenance, events, shift intelligence or plant context.</div>
+Ask me about MBF-2 plant health, alarms, instruments, MBF-2 I/O, equipment, maintenance, events, shift intelligence or plant context.</div>
   </div>
   <div class="chat-tools">
    <button class="btn" onclick="askQuick('What is the current plant health?')">Plant Health</button>
@@ -1296,6 +1296,63 @@ async function submitFieldReport(){
   }
 }
 
+</script>
+
+
+<script>
+/* ANVIQO UNIVERSAL PLANT UI PATCH
+   Selected tenant owns the displayed I/O identity.
+   Never falls back to Plant-A PCI 1064.
+*/
+(async function(){
+  try{
+    const r=await fetch('/api/pci/live',{credentials:'same-origin'});
+    if(!r.ok)return;
+    const d=await r.json();
+
+    const total =
+      d.total_io ??
+      d.io_count ??
+      d.count ??
+      (Array.isArray(d.points) ? d.points.length : null) ??
+      (Array.isArray(d.records) ? d.records.length : null);
+
+    const plant =
+      d.plant_name ||
+      d.plant ||
+      d.plant_id ||
+      d.selected_plant ||
+      '';
+
+    const isMBF =
+      /mbf[- _]?2/i.test(String(plant)) ||
+      /mbf[- _]?2/i.test(document.body.innerText);
+
+    const count=document.getElementById('ioCount');
+    const label=document.getElementById('ioLabel');
+    const mode=document.getElementById('ioMode');
+
+    if(count && total !== null && total !== undefined)
+      count.textContent=String(total);
+
+    if(label)
+      label.textContent=isMBF ? 'MBF-2 I/O' : 'I/O';
+
+    if(mode)
+      mode.textContent=isMBF ? 'PLANT DATA' : (d.mode || 'PLANT DATA');
+
+    document.querySelectorAll('*').forEach(function(el){
+      if(el.children.length===0 && /PCI I\/O|1,064 PCI/i.test(el.textContent)){
+        el.textContent=el.textContent
+          .replace(/1,064 PCI I\/O simulated/gi,'I/O')
+          .replace(/1,064 PCI I\/O/gi,'I/O')
+          .replace(/PCI I\/O/gi,'I/O');
+      }
+    });
+  }catch(e){
+    console.warn('ANVIQO universal I/O UI patch:',e);
+  }
+})();
 </script>
 
 </body>
