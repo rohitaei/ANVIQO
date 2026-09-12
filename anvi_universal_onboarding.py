@@ -70,6 +70,30 @@ def ensure_plant(plant_id: str) -> None:
         cur.execute(f"INSERT INTO anviqo_plant_onboarding(plant_id,organization_id,created_at,updated_at) VALUES({p},{p},{p},{p})", (plant_id, a["organization_id"], _now(), _now()))
 
 
+def _reconcile_ingestion_state(plant_id: str) -> None:
+    """Never let a historical INDEXING flag outlive its durable ingestion job.
+
+    The onboarding page reads this endpoint. The durable V2 queue is therefore
+    the source of truth for whether ingestion is actually active. This also
+    heals legacy INDEXING rows left by the pre-V2 daemon-thread path.
+    """
+    a = _actor(); p = _placeholder(); active = {"QUEUED", "RUNNING"}
+    try:
+        with store._connect() as conn:
+            cur = conn.cursor()
+            cur.execute(f"SELECT status FROM anviqo_plant_ingestion_jobs WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC LIMIT 1", (plant_id, a["organization_id"]))
+            row = cur.fetchone()
+            if row and str(row[0]).upper() in active:
+                return
+            cur.execute(f"SELECT status FROM anviqo_plant_onboarding WHERE plant_id={p} AND organization_id={p}", (plant_id, a["organization_id"]))
+            current = cur.fetchone()
+            if current and str(current[0]).upper() == "INDEXING":
+                cur.execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={p} WHERE plant_id={p} AND organization_id={p}", (_now(), plant_id, a["organization_id"]))
+    except Exception:
+        # Status reconciliation must never break onboarding reads.
+        pass
+
+
 @app.get("/admin/onboarding")
 def onboarding_page():
     if not _admin(): return Response("ANVIQO onboarding requires OWNER/ADMIN access", status=403, mimetype="text/plain")
@@ -81,7 +105,9 @@ def onboarding_page():
 @app.get("/api/admin/onboarding/plant/<plant_id>")
 def onboarding_status(plant_id: str):
     if not _plant_ok(plant_id): return jsonify({"status": "FORBIDDEN"}), 403
-    ensure_plant(plant_id); p = _placeholder()
+    ensure_plant(plant_id)
+    _reconcile_ingestion_state(plant_id)
+    p = _placeholder()
     with store._connect() as conn:
         cur = conn.cursor()
         cur.execute(f"SELECT p.name,p.slug,o.industry,o.location,o.description,o.status,o.updated_at FROM anviqo_plants p LEFT JOIN anviqo_plant_onboarding o ON o.plant_id=p.plant_id WHERE p.plant_id={p}", (plant_id,))
@@ -132,7 +158,6 @@ def upload_onboarding_document(plant_id: str):
                     cur.execute(f"INSERT INTO anviqo_plant_documents(document_id,organization_id,plant_id,filename,content_type,size_bytes,sha256,content,uploaded_by) VALUES({p},{p},{p},{p},{p},{p},{p},{p},{p}) ON CONFLICT(plant_id,sha256) DO NOTHING", (document_id,a["organization_id"],plant_id,filename,f.content_type or "application/octet-stream",len(content),digest,content,a["username"]))
             results.append({"filename": filename, "size_bytes": len(content), "sha256": digest})
         except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 400
-    # Mark the plant as having source data; actual indexing remains a separate step.
     with store._connect() as conn:
         cur = conn.cursor()
         cur.execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={p} WHERE plant_id={p}", (_now(), plant_id))
@@ -141,5 +166,4 @@ def upload_onboarding_document(plant_id: str):
     return jsonify({"status": "OK", "plant_id": plant_id, "documents": results, "message": "Source documents stored for plant-scoped onboarding."}), 201
 
 
-# Import side effect is intentional: this module registers the isolated routes.
 init_schema()
