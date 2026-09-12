@@ -40,10 +40,6 @@ def init_schema():
     except Exception: pass
   else:
    cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_ingestion_jobs (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id), plant_id TEXT NOT NULL REFERENCES anviqo_plants(plant_id), actor_json JSONB NOT NULL DEFAULT '{}'::jsonb, status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), started_at TIMESTAMPTZ, finished_at TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
-   # Legacy installations may already have this queue table with an older
-   # schema. Every column used by the durable worker must be repaired before
-   # any SELECT/INSERT touches it. Nullable additions are intentional so old
-   # rows remain valid and new jobs can use the complete schema.
    for n,d in [("job_id","TEXT"),("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("created_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()"),("started_at","TIMESTAMPTZ"),("finished_at","TIMESTAMPTZ"),("updated_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()")]:
     cur.execute(f"ALTER TABLE anviqo_plant_ingestion_jobs ADD COLUMN IF NOT EXISTS {n} {d}")
    cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_ingest_jobs_status ON anviqo_plant_ingestion_jobs(status, created_at)")
@@ -58,10 +54,16 @@ def _parse_dt(v):
 def _stale_jobs():
  init_schema(); cutoff=_now()-timedelta(minutes=STALE_AFTER_MINUTES); p=_p()
  with store._connect() as conn:
-  cur=conn.cursor();cur.execute("SELECT job_id,started_at FROM anviqo_plant_ingestion_jobs WHERE status='RUNNING'")
-  for jid,started in cur.fetchall():
+  cur=conn.cursor();cur.execute("SELECT job_id,plant_id,organization_id,started_at FROM anviqo_plant_ingestion_jobs WHERE status='RUNNING'")
+  for jid,plant_id,organization_id,started in cur.fetchall():
    dt=_parse_dt(started)
-   if dt and dt<cutoff:cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},updated_at={p} WHERE job_id={p}",("STALE","Worker interruption detected; job is retryable.",_iso(_now()),jid))
+   # A RUNNING row without a start timestamp is legacy/stale state. It must
+   # never keep the plant UI stuck on INDEXING after a restart/deploy.
+   if dt is None or dt<cutoff:
+    cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},updated_at={p} WHERE job_id={p}",("STALE","Worker interruption detected; job is retryable.",_iso(_now()),jid))
+    try:
+     cur.execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(_iso(_now()),plant_id,organization_id))
+    except Exception: pass
 
 def _new_job_id(plant_id):
  import hashlib
@@ -74,7 +76,7 @@ def enqueue_job(plant_id,actor):
   old=cur.fetchone()
   if old:return {"job_id":old[0],"job_status":old[1],"created_at":str(old[2]),"updated_at":str(old[3]),"existing":True}
   jid=_new_job_id(plant_id);cur.execute(f"INSERT INTO anviqo_plant_ingestion_jobs(job_id,organization_id,plant_id,actor_json,status,message,created_at,updated_at) VALUES({','.join([p]*8)})",(jid,actor["organization_id"],plant_id,json.dumps(actor,separators=(",",":")),"QUEUED","Queued for universal ingestion worker.",now,now))
-  try:cur.execute(f"UPDATE anviqo_plant_onboarding SET status='INDEXING',updated_at={p} WHERE plant_id={p}",(now,plant_id))
+  try:cur.execute(f"UPDATE anviqo_plant_onboarding SET status='INDEXING',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(now,plant_id,actor["organization_id"]))
   except Exception:pass
  return {"job_id":jid,"job_status":"QUEUED","created_at":now,"updated_at":now,"existing":False}
 
