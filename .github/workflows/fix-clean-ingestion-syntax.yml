@@ -1,0 +1,31 @@
+name: Fix clean ingestion syntax
+on:
+  push:
+    branches: [main]
+jobs:
+  fix:
+    if: github.event.head_commit.message != 'Fix clean ingestion f-string syntax'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix f-string SQL defaults
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('anvi_plant_ingestion_v2.py')
+          s = p.read_text()
+          old = "DEFAULT '{}'"
+          new = "DEFAULT '{{}}'"
+          if old not in s:
+              raise SystemExit('target syntax not found')
+          p.write_text(s.replace(old, new))
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add anvi_plant_ingestion_v2.py
+          git commit -m 'Fix clean ingestion f-string syntax'
+          git push
