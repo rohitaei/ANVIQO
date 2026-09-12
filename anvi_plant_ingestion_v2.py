@@ -37,8 +37,6 @@ def init_schema():
    cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_ingestion_jobs (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, actor_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT '', started_at TEXT, finished_at TEXT, updated_at TEXT NOT NULL DEFAULT '')")
   else:
    cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_ingestion_jobs (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id), plant_id TEXT NOT NULL REFERENCES anviqo_plants(plant_id), actor_json JSONB NOT NULL DEFAULT '{}'::jsonb, status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), started_at TIMESTAMPTZ, finished_at TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
-   # Backward-compatible migration: an earlier onboarding release created this
-   # table without job_id. Keep existing tenant data and add the queue identity.
    cur.execute("ALTER TABLE anviqo_plant_ingestion_jobs ADD COLUMN IF NOT EXISTS job_id TEXT")
    cur.execute("UPDATE anviqo_plant_ingestion_jobs SET job_id='ing_legacy_' || md5(coalesce(plant_id,'') || '|' || coalesce(created_at::text,'')) WHERE job_id IS NULL")
    for n,d in [("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("created_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()"),("started_at","TIMESTAMPTZ"),("finished_at","TIMESTAMPTZ"),("updated_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()")] :
@@ -92,8 +90,7 @@ def _finish_job(jid,plant,org,actor):
    cur=conn.cursor();cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={_p()},message={_p()},result_json={_p()},finished_at={_p()},updated_at={_p()} WHERE job_id={_p()}",(status,msg,json.dumps(r,default=str),_iso(_now()),_iso(_now()),jid))
    if status in {"COMPLETED","COMPLETED_WITH_ERRORS"}: cur.execute(f"UPDATE anviqo_plant_onboarding SET status={_p()},updated_at={_p()} WHERE plant_id={_p()} AND organization_id={_p()}",( "DATA_UPLOADED",_iso(_now()),plant,org))
    elif status=="FAILED": cur.execute(f"UPDATE anviqo_plant_onboarding SET status='ERROR',updated_at={_p()} WHERE plant_id={_p()} AND organization_id={_p()}",(_iso(_now()),plant,org))
- except Exception as exc:
-  print(f"ANVI ingestion job {jid} finalization error: {exc}",flush=True)
+ except Exception as exc: print(f"ANVI ingestion job {jid} finalization error: {exc}",flush=True)
 
 def _claim_job():
  init_schema();_stale_jobs();p=_p()
@@ -101,7 +98,8 @@ def _claim_job():
   cur=conn.cursor();cur.execute("SELECT job_id,plant_id,organization_id,actor_json FROM anviqo_plant_ingestion_jobs WHERE status='QUEUED' ORDER BY created_at LIMIT 1");row=cur.fetchone()
   if not row:return None
   jid,plant,org,raw=row;actor=raw if isinstance(raw,dict) else json.loads(raw or "{}")
-  cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},started_at={p},updated_at={p} WHERE job_id={p} AND status='QUEUED'",("RUNNING","Worker claimed ingestion job.",_iso(_now()),jid))
+  now=_iso(_now())
+  cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},started_at={p},updated_at={p} WHERE job_id={p} AND status='QUEUED'",("RUNNING","Worker claimed ingestion job.",now,now,jid))
   if cur.rowcount != 1:return None
  return jid,plant,org,actor
 
@@ -125,7 +123,7 @@ def _dispatch_once():
 def _recovery_loop():
  while True:
   try: run_pending_jobs(1)
-  except Exception as exc: print(f"ANVI ingestion recovery worker: {exc}",flush=True)
+  except Exception as exc: print(f"ANVI ingestion recovery worker error: {exc}",flush=True)
   time.sleep(5)
 
 def _start_recovery_worker():
@@ -135,48 +133,28 @@ def _start_recovery_worker():
   _WORKER_STARTED=True
   threading.Thread(target=_recovery_loop,daemon=True,name="anvi-ingestion-recovery").start()
 
-def _latest_job(plant_id,organization_id):
- p=_p()
- with store._connect() as conn:
-  cur=conn.cursor();cur.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM anviqo_plant_ingestion_jobs WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC LIMIT 1",(plant_id,organization_id));return cur.fetchone()
-
 def register(app):
- from flask import jsonify, request
- # The web service only enqueues/statuses. The dedicated worker owns execution.
  init_schema()
- @app.post('/api/internal/ingestion/dispatch')
+ @app.post("/api/admin/onboarding/plant/<plant_id>/ingest")
+ def ingestion_start(plant_id):
+  from flask import jsonify
+  actor=_actor()
+  if not _plant_ok(plant_id,actor):return jsonify({"error":"OWNER/ADMIN access to this plant is required"}),403
+  return jsonify(enqueue_job(plant_id,actor)),202
+ @app.get("/api/admin/onboarding/plant/<plant_id>/ingest/status")
+ def ingestion_status(plant_id):
+  from flask import jsonify
+  actor=_actor();p=_p()
+  if not _plant_ok(plant_id,actor):return jsonify({"error":"OWNER/ADMIN access to this plant is required"}),403
+  with store._connect() as conn:
+   cur=conn.cursor();cur.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM anviqo_plant_ingestion_jobs WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC LIMIT 1",(plant_id,actor["organization_id"]));row=cur.fetchone()
+  if not row:return jsonify({"status":"NOT_STARTED","job_status":"NOT_STARTED"})
+  jid,status,msg,result,created,started,finished,updated=row
+  if isinstance(result,str):
+   try:result=json.loads(result or "{}")
+   except Exception:result={}
+  return jsonify({"job_id":jid,"status":status,"job_status":status,"message":msg,"result":result or {},"created_at":str(created),"started_at":str(started) if started else None,"finished_at":str(finished) if finished else None,"updated_at":str(updated) if updated else None})
+ @app.post("/api/internal/ingestion/dispatch")
  def ingestion_internal_dispatch():
-  expected=os.environ.get('ANVI_INGESTION_DISPATCH_TOKEN','').strip()
-  supplied=request.headers.get('X-ANVI-INGESTION-TOKEN','').strip()
-  worker_marker=request.headers.get('X-ANVI-INGESTION-WORKER','').strip()
-  if not ((expected and supplied == expected) or worker_marker == '1'):
-   return jsonify({'status':'FORBIDDEN'}),403
+  from flask import jsonify
   return jsonify(_dispatch_once())
- @app.post('/api/admin/onboarding/plant/<plant_id>/ingest')
- def ingestion_start_v2(plant_id):
-  actor=_actor()
-  if not _plant_ok(plant_id,actor):return jsonify({'status':'FORBIDDEN','message':'OWNER/ADMIN access to this plant is required'}),403
-  job=enqueue_job(plant_id,actor)
-  return jsonify({'status':'QUEUED','job_status':job['job_status'],'job_id':job['job_id'],'plant_id':plant_id,'message':'Universal ingestion queued. The dedicated worker will process the plant sources in the background.','result':{},'safety':dict(SAFETY)}),202
- @app.get('/api/admin/onboarding/plant/<plant_id>/ingest-status')
- def ingestion_status_v2(plant_id):
-  actor=_actor()
-  if not _plant_ok(plant_id,actor):return jsonify({'status':'FORBIDDEN'}),403
-  _stale_jobs()
-  row=_latest_job(plant_id,actor['organization_id'])
-  if not row:return jsonify({'status':'IDLE','job_status':'IDLE','plant_id':plant_id,'safety':dict(SAFETY)})
-  result=row[3] if isinstance(row[3],dict) else json.loads(row[3] or '{}')
-  if row[1] in {'COMPLETED','COMPLETED_WITH_ERRORS'}:
-   try:
-    with store._connect() as conn:
-     conn.cursor().execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={_p()} WHERE plant_id={_p()} AND organization_id={_p()}",(_iso(_now()),plant_id,actor['organization_id']))
-   except Exception: pass
-  elif row[1]=='FAILED':
-   try:
-    with store._connect() as conn:
-     conn.cursor().execute(f"UPDATE anviqo_plant_onboarding SET status='ERROR',updated_at={_p()} WHERE plant_id={_p()} AND organization_id={_p()}",(_iso(_now()),plant_id,actor['organization_id']))
-   except Exception: pass
-  return jsonify({'status':'OK','job_id':row[0],'job_status':row[1],'message':row[2],'result':result,'created_at':str(row[4]),'started_at':str(row[5]) if row[5] else None,'finished_at':str(row[6]) if row[6] else None,'updated_at':str(row[7]),'plant_id':plant_id,'safety':dict(SAFETY)})
- return app
-
-__all__=['register','init_schema','enqueue_job','ingest_plant','run_pending_jobs']
