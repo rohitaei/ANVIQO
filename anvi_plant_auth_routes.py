@@ -14,7 +14,7 @@ import anvi_tenant_store as store
 import anvi_plant_auth as plant_auth
 import anvi_cleanup_test_accounts as cleanup_test_accounts
 import anvi_universal_onboarding as universal_onboarding
-import anvi_plant_ingestion_v2 as plant_ingestion
+import anvi_plant_ingestion_runtime as plant_ingestion
 
 _CLEANUP_RESULT = cleanup_test_accounts.run_once()
 
@@ -131,7 +131,6 @@ def my_plants():
     if not session.get("authenticated"): return jsonify({"status":"UNAUTHORIZED"}),401
     return jsonify({"status":"OK","plants":plant_auth.list_user_plants(session.get("username",""))})
 
-# Register tenant-scoped ingestion without modifying V5 intelligence.
 plant_ingestion.register(app)
 
 __all__ = ["plant_login_interceptor", "session_context", "admin_users_page", "admin_plants", "admin_create_plant", "create_plant_user", "change_plant_user_password", "my_plants"]
