@@ -78,30 +78,47 @@ def ingest_plant(plant_id,actor=None):
  import anvi_plant_ingestion_runtime as runtime
  r=runtime.ingest_plant(plant_id,actor);r["ingestion_version"]=INGESTION_VERSION;r["safety"]=dict(SAFETY);return r
 
+def _finish_job(jid,plant,org,actor):
+ try:
+  r=ingest_plant(plant,actor);status="COMPLETED" if r.get("status")=="OK" and not r.get("errors") else "COMPLETED_WITH_ERRORS";msg=f"Processed {r.get('documents_processed',0)} documents and indexed {r.get('records_indexed',0)} records."
+ except Exception as exc:r={"status":"ERROR","plant_id":plant,"message":str(exc),"safety":dict(SAFETY)};status="FAILED";msg=str(exc)
+ try:
+  with store._connect() as conn:
+   cur=conn.cursor();cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={_p()},message={_p()},result_json={_p()},finished_at={_p()},updated_at={_p()} WHERE job_id={_p()}",(status,msg,json.dumps(r,default=str),_iso(_now()),_iso(_now()),jid))
+   if status in {"COMPLETED","COMPLETED_WITH_ERRORS"}: cur.execute(f"UPDATE anviqo_plant_onboarding SET status={_p()},updated_at={_p()} WHERE plant_id={_p()} AND organization_id={_p()}",( "DATA_UPLOADED",_iso(_now()),plant,org))
+   elif status=="FAILED": cur.execute(f"UPDATE anviqo_plant_onboarding SET status='ERROR',updated_at={_p()} WHERE plant_id={_p()} AND organization_id={_p()}",(_iso(_now()),plant,org))
+ except Exception as exc:
+  print(f"ANVI ingestion job {jid} finalization error: {exc}",flush=True)
+
+def _claim_job():
+ init_schema();_stale_jobs();p=_p()
+ with store._connect() as conn:
+  cur=conn.cursor();cur.execute("SELECT job_id,plant_id,organization_id,actor_json FROM anviqo_plant_ingestion_jobs WHERE status='QUEUED' ORDER BY created_at LIMIT 1");row=cur.fetchone()
+  if not row:return None
+  jid,plant,org,raw=row;actor=raw if isinstance(raw,dict) else json.loads(raw or "{}")
+  cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},started_at={p},updated_at={p} WHERE job_id={p} AND status='QUEUED'",("RUNNING","Worker claimed ingestion job.",_iso(_now()),jid))
+  if cur.rowcount != 1:return None
+ return jid,plant,org,actor
+
 def run_pending_jobs(limit=1):
- init_schema();_stale_jobs();p=_p();processed=0
+ processed=0
  while processed<max(1,int(limit)):
-  with store._connect() as conn:
-   cur=conn.cursor();cur.execute("SELECT job_id,plant_id,organization_id,actor_json FROM anviqo_plant_ingestion_jobs WHERE status='QUEUED' ORDER BY created_at LIMIT 1");row=cur.fetchone()
-   if not row:break
-   jid,plant,org,raw=row;actor=raw if isinstance(raw,dict) else json.loads(raw or "{}")
-   cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},started_at={p},updated_at={p} WHERE job_id={p} AND status='QUEUED'",("RUNNING","Worker claimed ingestion job.",_iso(_now()),jid))
-  try:
-   r=ingest_plant(plant,actor);status="COMPLETED" if r.get("status")=="OK" and not r.get("errors") else "COMPLETED_WITH_ERRORS";msg=f"Processed {r.get('documents_processed',0)} documents and indexed {r.get('records_indexed',0)} records."
-  except Exception as exc:r={"status":"ERROR","plant_id":plant,"message":str(exc),"safety":dict(SAFETY)};status="FAILED";msg=str(exc)
-  with store._connect() as conn:
-   cur=conn.cursor();cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},result_json={p},finished_at={p},updated_at={p} WHERE job_id={p}",(status,msg,json.dumps(r,default=str),_iso(_now()),jid))
-   try:
-    if status in {"COMPLETED","COMPLETED_WITH_ERRORS"}: cur.execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p} AND organization_id={p}",( "DATA_UPLOADED",_iso(_now()),plant,org))
-    elif status=="FAILED": cur.execute(f"UPDATE anviqo_plant_onboarding SET status='ERROR',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(_iso(_now()),plant,org))
-   except Exception: pass
+  claimed=_claim_job()
+  if not claimed:break
+  jid,plant,org,actor=claimed
+  _finish_job(jid,plant,org,actor)
   processed+=1
  return {"processed":processed,"safety":dict(SAFETY)}
 
 def _dispatch_once():
- # Web requests must never execute the ingestion pipeline synchronously.
- # The dedicated worker polls the durable queue and claims jobs independently.
- return {"processed":0,"queued_only":True,"safety":dict(SAFETY)}
+ # The web service only claims the durable job and starts the actual ingestion
+ # in a daemon thread. This keeps the worker HTTP request short and lets the
+ # onboarding page continue polling while XLSX processing runs.
+ claimed=_claim_job()
+ if not claimed:return {"processed":0,"queued_only":True,"safety":dict(SAFETY)}
+ jid,plant,org,actor=claimed
+ threading.Thread(target=_finish_job,args=(jid,plant,org,actor),daemon=True,name=f"anvi-ingest-{jid}").start()
+ return {"processed":1,"job_id":jid,"status":"RUNNING","safety":dict(SAFETY)}
 
 def _recovery_loop():
  while True:
@@ -123,7 +140,9 @@ def _latest_job(plant_id,organization_id):
 
 def register(app):
  from flask import jsonify, request
- init_schema();_start_recovery_worker()
+ # Do not start a second in-process recovery consumer in the web service.
+ # The dedicated ingestion worker is the sole queue consumer.
+ init_schema()
  @app.post('/api/internal/ingestion/dispatch')
  def ingestion_internal_dispatch():
   expected=os.environ.get('ANVI_INGESTION_DISPATCH_TOKEN','').strip()
@@ -131,7 +150,7 @@ def register(app):
   worker_marker=request.headers.get('X-ANVI-INGESTION-WORKER','').strip()
   if not ((expected and supplied == expected) or worker_marker == '1'):
    return jsonify({'status':'FORBIDDEN'}),403
-  return jsonify(run_pending_jobs(1))
+  return jsonify(_dispatch_once())
  @app.post('/api/admin/onboarding/plant/<plant_id>/ingest')
  def ingestion_start_v2(plant_id):
   actor=_actor()
