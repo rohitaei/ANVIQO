@@ -1,6 +1,6 @@
 """Durable universal plant-ingestion queue.
 
-Web requests enqueue durable jobs. The request executes one queued job directly
+Web requests enqueue durable jobs. Status polling also claims a queued job directly,
 so free Render does not depend on daemon-thread scheduling; durable state still
 supports restart recovery. CHANGE DATA, NOT CODE.
 """
@@ -91,6 +91,10 @@ def run_pending_jobs(limit=1):
   except Exception as exc:r={"status":"ERROR","plant_id":plant,"message":str(exc),"safety":dict(SAFETY)};status="FAILED";msg=str(exc)
   with store._connect() as conn:
    cur=conn.cursor();cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},result_json={p},finished_at={p},updated_at={p} WHERE job_id={p}",(status,msg,json.dumps(r,default=str),_iso(_now()),jid))
+   try:
+    if status in {"COMPLETED","COMPLETED_WITH_ERRORS"}: cur.execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p} AND organization_id={p}",(status,_iso(_now()),plant,org))
+    elif status=="FAILED": cur.execute(f"UPDATE anviqo_plant_onboarding SET status='ERROR',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(_iso(_now()),plant,org))
+   except Exception: pass
   processed+=1
  return {"processed":processed,"safety":dict(SAFETY)}
 
@@ -114,6 +118,11 @@ def _start_recovery_worker():
   _WORKER_STARTED=True
   threading.Thread(target=_recovery_loop,daemon=True,name="anvi-ingestion-recovery").start()
 
+def _latest_job(plant_id,organization_id):
+ p=_p()
+ with store._connect() as conn:
+  cur=conn.cursor();cur.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM anviqo_plant_ingestion_jobs WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC LIMIT 1",(plant_id,organization_id));return cur.fetchone()
+
 def register(app):
  from flask import jsonify
  init_schema();_start_recovery_worker()
@@ -122,18 +131,18 @@ def register(app):
   actor=_actor()
   if not _plant_ok(plant_id,actor):return jsonify({'status':'FORBIDDEN','message':'OWNER/ADMIN access to this plant is required'}),403
   job=enqueue_job(plant_id,actor)
-  if not job.get('existing'):
-   _dispatch_once()
-  else:
-   _dispatch_once()
-  return jsonify({'status':'QUEUED','job_status':job['job_status'],'job_id':job['job_id'],'plant_id':plant_id,'message':'Universal ingestion executed through the durable queue.','safety':dict(SAFETY)}),202
+  _dispatch_once()
+  row=_latest_job(plant_id,actor['organization_id'])
+  return jsonify({'status':'OK' if row and row[1] in {'COMPLETED','COMPLETED_WITH_ERRORS'} else 'QUEUED','job_status':row[1] if row else job['job_status'],'job_id':row[0] if row else job['job_id'],'plant_id':plant_id,'message':row[2] if row else 'Universal ingestion queued.','result':(row[3] if isinstance(row[3],dict) else json.loads(row[3] or '{}')) if row else {},'safety':dict(SAFETY)}),200 if row and row[1] in {'COMPLETED','COMPLETED_WITH_ERRORS'} else 202
  @app.get('/api/admin/onboarding/plant/<plant_id>/ingest-status')
  def ingestion_status_v2(plant_id):
   actor=_actor()
   if not _plant_ok(plant_id,actor):return jsonify({'status':'FORBIDDEN'}),403
-  _stale_jobs();p=_p()
-  with store._connect() as conn:
-   cur=conn.cursor();cur.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM anviqo_plant_ingestion_jobs WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC LIMIT 1",(plant_id,actor['organization_id']));row=cur.fetchone()
+  _stale_jobs()
+  row=_latest_job(plant_id,actor['organization_id'])
+  if row and row[1]=='QUEUED':
+   _dispatch_once()
+   row=_latest_job(plant_id,actor['organization_id'])
   if not row:return jsonify({'status':'IDLE','job_status':'IDLE','plant_id':plant_id,'safety':dict(SAFETY)})
   result=row[3] if isinstance(row[3],dict) else json.loads(row[3] or '{}')
   return jsonify({'status':'OK','job_id':row[0],'job_status':row[1],'message':row[2],'result':result,'created_at':str(row[4]),'started_at':str(row[5]) if row[5] else None,'finished_at':str(row[6]) if row[6] else None,'updated_at':str(row[7]),'plant_id':plant_id,'safety':dict(SAFETY)})
