@@ -1,8 +1,8 @@
 """Durable universal plant-ingestion queue.
 
-Web requests enqueue durable jobs. A small recovery worker runs inside the
-web process as a safety net on free Render; queued jobs survive web restarts
-because state lives in tenant Postgres. CHANGE DATA, NOT CODE.
+Web requests enqueue durable jobs. The request executes one queued job directly
+so free Render does not depend on daemon-thread scheduling; durable state still
+supports restart recovery. CHANGE DATA, NOT CODE.
 """
 from __future__ import annotations
 import json, threading, time
@@ -54,7 +54,7 @@ def _stale_jobs():
   for jid,plant_id,organization_id,started in cur.fetchall():
    dt=_parse_dt(started)
    if dt is None or dt<cutoff:
-    cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},updated_at={p} WHERE job_id={p}",("STALE","Worker interruption detected; job is retryable.",_iso(_now()),jid))
+    cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},updated_at={p} WHERE job_id={p}",( "STALE","Worker interruption detected; job is retryable.",_iso(_now()),jid))
     try: cur.execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(_iso(_now()),plant_id,organization_id))
     except Exception: pass
 
@@ -123,8 +123,10 @@ def register(app):
   if not _plant_ok(plant_id,actor):return jsonify({'status':'FORBIDDEN','message':'OWNER/ADMIN access to this plant is required'}),403
   job=enqueue_job(plant_id,actor)
   if not job.get('existing'):
-   threading.Thread(target=_dispatch_once,daemon=True,name="anvi-ingestion-dispatch").start()
-  return jsonify({'status':'QUEUED','job_status':job['job_status'],'job_id':job['job_id'],'plant_id':plant_id,'message':'Universal ingestion queued. It is durable and restart-recoverable.','safety':dict(SAFETY)}),202
+   _dispatch_once()
+  else:
+   _dispatch_once()
+  return jsonify({'status':'QUEUED','job_status':job['job_status'],'job_id':job['job_id'],'plant_id':plant_id,'message':'Universal ingestion executed through the durable queue.','safety':dict(SAFETY)}),202
  @app.get('/api/admin/onboarding/plant/<plant_id>/ingest-status')
  def ingestion_status_v2(plant_id):
   actor=_actor()
