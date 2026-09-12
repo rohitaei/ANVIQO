@@ -42,6 +42,10 @@ def init_schema():
    for n,d in [("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("created_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()"),("started_at","TIMESTAMPTZ"),("finished_at","TIMESTAMPTZ"),("updated_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()")] :
     cur.execute(f"ALTER TABLE anviqo_plant_ingestion_jobs ADD COLUMN IF NOT EXISTS {n} {d}")
    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_anviqo_ingest_jobs_job_id ON anviqo_plant_ingestion_jobs(job_id) WHERE job_id IS NOT NULL")
+   # Older deployments used plant_id as the table primary key. The queue now
+   # supports multiple durable jobs per plant, so the primary key must be job_id.
+   cur.execute("ALTER TABLE anviqo_plant_ingestion_jobs DROP CONSTRAINT IF EXISTS anviqo_plant_ingestion_jobs_pkey")
+   cur.execute("ALTER TABLE anviqo_plant_ingestion_jobs ADD CONSTRAINT anviqo_plant_ingestion_jobs_pkey PRIMARY KEY (job_id)")
    cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_ingest_jobs_status ON anviqo_plant_ingestion_jobs(status, created_at)")
 
 def _parse_dt(v):
@@ -62,8 +66,8 @@ def _stale_jobs():
     except Exception: pass
 
 def _new_job_id(plant_id):
- import hashlib
- return "ing_"+hashlib.sha256(f"{plant_id}|{_iso(_now())}".encode()).hexdigest()[:24]
+ import uuid
+ return "ing_"+uuid.uuid4().hex
 
 def enqueue_job(plant_id,actor):
  init_schema();_stale_jobs();p=_p();now=_iso(_now())
