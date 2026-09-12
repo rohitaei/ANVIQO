@@ -35,15 +35,11 @@ def init_schema():
   cur=conn.cursor()
   if store._is_sqlite():
    cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_ingestion_jobs (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, actor_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT '', started_at TEXT, finished_at TEXT, updated_at TEXT NOT NULL DEFAULT '')")
-   for n,d in [("job_id","TEXT"),("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","TEXT NOT NULL DEFAULT '{}'"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","TEXT NOT NULL DEFAULT '{}'"),("created_at","TEXT NOT NULL DEFAULT ''"),("started_at","TEXT"),("finished_at","TEXT"),("updated_at","TEXT NOT NULL DEFAULT ''")]:
-    try: cur.execute(f"ALTER TABLE anviqo_plant_ingestion_jobs ADD COLUMN {n} {d}")
-    except Exception: pass
   else:
    cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_ingestion_jobs (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id), plant_id TEXT NOT NULL REFERENCES anviqo_plants(plant_id), actor_json JSONB NOT NULL DEFAULT '{}'::jsonb, status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), started_at TIMESTAMPTZ, finished_at TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
-   for n,d in [("job_id","TEXT"),("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("created_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()"),("started_at","TIMESTAMPTZ"),("finished_at","TIMESTAMPTZ"),("updated_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()")]:
+   for n,d in [("job_id","TEXT"),("organization_id","TEXT"),("plant_id","TEXT"),("actor_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("status","TEXT NOT NULL DEFAULT 'QUEUED'"),("message","TEXT NOT NULL DEFAULT ''"),("result_json","JSONB NOT NULL DEFAULT '{}'::jsonb"),("created_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()"),("started_at","TIMESTAMPTZ"),("finished_at","TIMESTAMPTZ"),("updated_at","TIMESTAMPTZ NOT NULL DEFAULT NOW()")] :
     cur.execute(f"ALTER TABLE anviqo_plant_ingestion_jobs ADD COLUMN IF NOT EXISTS {n} {d}")
    cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_ingest_jobs_status ON anviqo_plant_ingestion_jobs(status, created_at)")
-   cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_anviqo_ingest_jobs_job_id ON anviqo_plant_ingestion_jobs(job_id) WHERE job_id IS NOT NULL")
 
 def _parse_dt(v):
  if not v:return None
@@ -52,17 +48,14 @@ def _parse_dt(v):
  except Exception:return None
 
 def _stale_jobs():
- init_schema(); cutoff=_now()-timedelta(minutes=STALE_AFTER_MINUTES); p=_p()
+ init_schema();cutoff=_now()-timedelta(minutes=STALE_AFTER_MINUTES);p=_p()
  with store._connect() as conn:
   cur=conn.cursor();cur.execute("SELECT job_id,plant_id,organization_id,started_at FROM anviqo_plant_ingestion_jobs WHERE status='RUNNING'")
   for jid,plant_id,organization_id,started in cur.fetchall():
    dt=_parse_dt(started)
-   # A RUNNING row without a start timestamp is legacy/stale state. It must
-   # never keep the plant UI stuck on INDEXING after a restart/deploy.
    if dt is None or dt<cutoff:
     cur.execute(f"UPDATE anviqo_plant_ingestion_jobs SET status={p},message={p},updated_at={p} WHERE job_id={p}",("STALE","Worker interruption detected; job is retryable.",_iso(_now()),jid))
-    try:
-     cur.execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(_iso(_now()),plant_id,organization_id))
+    try: cur.execute(f"UPDATE anviqo_plant_onboarding SET status='DATA_UPLOADED',updated_at={p} WHERE plant_id={p} AND organization_id={p}",(_iso(_now()),plant_id,organization_id))
     except Exception: pass
 
 def _new_job_id(plant_id):
@@ -101,6 +94,13 @@ def run_pending_jobs(limit=1):
   processed+=1
  return {"processed":processed,"safety":dict(SAFETY)}
 
+def _dispatch_once():
+ try:
+  result=run_pending_jobs(1)
+  print(f"ANVI ingestion dispatcher: processed={result.get('processed',0)}",flush=True)
+ except Exception as exc:
+  print(f"ANVI ingestion dispatcher error: {exc}",flush=True)
+
 def _recovery_loop():
  while True:
   try: run_pending_jobs(1)
@@ -122,6 +122,8 @@ def register(app):
   actor=_actor()
   if not _plant_ok(plant_id,actor):return jsonify({'status':'FORBIDDEN','message':'OWNER/ADMIN access to this plant is required'}),403
   job=enqueue_job(plant_id,actor)
+  if not job.get('existing'):
+   threading.Thread(target=_dispatch_once,daemon=True,name="anvi-ingestion-dispatch").start()
   return jsonify({'status':'QUEUED','job_status':job['job_status'],'job_id':job['job_id'],'plant_id':plant_id,'message':'Universal ingestion queued. It is durable and restart-recoverable.','safety':dict(SAFETY)}),202
  @app.get('/api/admin/onboarding/plant/<plant_id>/ingest-status')
  def ingestion_status_v2(plant_id):
