@@ -151,7 +151,7 @@ def register(app):
         threading.Thread(target=_worker,args=(plant_id,a),daemon=True,name=f'anvi-ingest-{plant_id}').start()
         return jsonify({"status":"STARTED","job_status":"RUNNING","plant_id":plant_id,"message":"Universal ingestion started. Monitor Onboarding Readiness for completion.","safety":dict(SAFETY)}),202
     @app.get('/api/admin/onboarding/plant/<plant_id>/ingest-status')
-    def status(plant_id):
+    def ingestion_status_v2(plant_id):
         a=_actor()
         if not _allowed(plant_id,a): return jsonify({"status":"FORBIDDEN"}),403
         return jsonify(_job(plant_id,a["organization_id"]) or {"status":"IDLE","job_status":"IDLE","plant_id":plant_id,"safety":dict(SAFETY)})
