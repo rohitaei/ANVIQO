@@ -79,17 +79,17 @@ def ingest_plant(pid, actor=None):
 def _finish(jid, pid, org, actor):
     try:
         r = ingest_plant(pid, actor)
-        status = "COMPLETED" if r.get("status") == "OK" and not r.get("errors") else "COMPLETED_WITH_ERRORS"
+        status_value = "COMPLETED" if r.get("status") == "OK" and not r.get("errors") else "COMPLETED_WITH_ERRORS"
         msg = f"Processed {r.get('documents_processed', 0)} documents and indexed {r.get('records_indexed', 0)} records."
     except Exception as e:
         r = {"status": "ERROR", "plant_id": pid, "message": str(e), "safety": dict(SAFETY)}
-        status = "FAILED"
+        status_value = "FAILED"
         msg = str(e)
     now = _now()
     p = _p()
     with store._connect() as conn:
         q = conn.cursor()
-        q.execute(f"UPDATE {TABLE} SET status={p},message={p},result_json={p},finished_at={p},updated_at={p} WHERE job_id={p}", (status, msg, json.dumps(r, default=str), now, now, jid))
+        q.execute(f"UPDATE {TABLE} SET status={p},message={p},result_json={p},finished_at={p},updated_at={p} WHERE job_id={p}", (status_value, msg, json.dumps(r, default=str), now, now, jid))
 
 
 def _claim_job():
@@ -122,7 +122,7 @@ def _dispatch_once():
 def register(app):
     init_schema()
 
-    @app.post("/api/admin/onboarding/plant/<plant_id>/ingest")
+    @app.post("/api/admin/onboarding/plant/<plant_id>/ingest", endpoint="anvi_clean_ingest_start")
     def start(plant_id):
         from flask import jsonify
         actor = _actor()
@@ -130,8 +130,8 @@ def register(app):
             return jsonify({"error": "OWNER/ADMIN access to this plant is required"}), 403
         return jsonify(enqueue_job(plant_id, actor)), 202
 
-    @app.get("/api/admin/onboarding/plant/<plant_id>/ingest/status")
-    def status(plant_id):
+    @app.get("/api/admin/onboarding/plant/<plant_id>/ingest/status", endpoint="anvi_clean_ingest_status")
+    def ingestion_status(plant_id):
         from flask import jsonify
         actor = _actor()
         if not _plant_ok(plant_id, actor):
@@ -151,7 +151,7 @@ def register(app):
                 r = {}
         return jsonify({"job_id": jid, "status": st, "job_status": st, "message": msg, "result": r or {}, "created_at": str(cr), "started_at": str(ss) if ss else None, "finished_at": str(ff) if ff else None, "updated_at": str(up) if up else None})
 
-    @app.post("/api/internal/ingestion/dispatch")
+    @app.post("/api/internal/ingestion/dispatch", endpoint="anvi_clean_ingest_dispatch")
     def dispatch():
         from flask import jsonify
         return jsonify(_dispatch_once())
