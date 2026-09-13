@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import zipfile
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
-VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.1"
+VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.2"
 
 def _now(): return datetime.now(timezone.utc).isoformat()
 def _p(): return store._placeholder()
@@ -73,8 +73,11 @@ def _knowledge_schema():
         cur=conn.cursor(); p=_p()
         if store._is_sqlite():
             cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_knowledge (knowledge_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, document_id TEXT, record_type TEXT NOT NULL, external_id TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', area TEXT NOT NULL DEFAULT '', service TEXT NOT NULL DEFAULT '', asset_type TEXT NOT NULL DEFAULT '', tag TEXT NOT NULL DEFAULT '', parent_id TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', metadata TEXT NOT NULL DEFAULT '{}', content TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, UNIQUE(plant_id,external_id,source))")
+            try: cur.execute("ALTER TABLE anviqo_plant_knowledge ADD COLUMN source TEXT NOT NULL DEFAULT ''")
+            except Exception: pass
         else:
             cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_knowledge (knowledge_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, document_id TEXT, record_type TEXT NOT NULL, external_id TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', area TEXT NOT NULL DEFAULT '', service TEXT NOT NULL DEFAULT '', asset_type TEXT NOT NULL DEFAULT '', tag TEXT NOT NULL DEFAULT '', parent_id TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', metadata JSONB NOT NULL DEFAULT '{}'::jsonb, content TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(plant_id,external_id,source))")
+            cur.execute("ALTER TABLE anviqo_plant_knowledge ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT ''")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_plant_knowledge_plant ON anviqo_plant_knowledge(plant_id)")
 
 def _insert_batch(plant_id,org_id,document_id,digest,records):
