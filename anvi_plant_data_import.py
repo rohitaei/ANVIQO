@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import zipfile
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
-VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.3"
+VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4"
 
 def _now(): return datetime.now(timezone.utc).isoformat()
 def _p(): return store._placeholder()
@@ -79,14 +79,18 @@ def _insert_batch(plant_id,org_id,document_id,digest,records):
         meta=dict(item.get("metadata") or {}); meta["import_version"]=VERSION; meta["document_sha256"]=digest
         content=str(meta.pop("content","") or "")
         kid="know_"+hashlib.sha256((plant_id+document_id+str(item.get("external_id","")+str(item.get("source","")))).encode()).hexdigest()[:24]
-        rows.append((kid,org_id,plant_id,document_id,item.get("record_type","ASSET"),str(item.get("external_id", "")),item.get("name", ""),item.get("area", ""),item.get("service", ""),item.get("asset_type", ""),item.get("tag", ""),item.get("parent_id", ""),item.get("source", ""),json.dumps(meta,default=str),content))
+        metadata_value = json.dumps(meta, default=str)
+        rows.append((kid,org_id,plant_id,document_id,item.get("record_type","ASSET"),str(item.get("external_id", "")),item.get("name", ""),item.get("area", ""),item.get("service", ""),item.get("asset_type", ""),item.get("tag", ""),item.get("parent_id", ""),item.get("source", ""),metadata_value,content))
     if not rows:return 0
     with store._connect() as conn:
         cur=conn.cursor()
         if store._is_sqlite():
             cur.executemany(f"INSERT OR REPLACE INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content,created_at) VALUES({','.join([p]*15)},{p})",[r+(_now(),) for r in rows])
         else:
-            cur.executemany(f"INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES({','.join([p]*15)}) ON CONFLICT(plant_id,external_id,source) DO UPDATE SET name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,metadata=EXCLUDED.metadata,content=EXCLUDED.content",rows)
+            placeholders=[p]*15
+            placeholders[13]=f"{p}::jsonb"
+            sql=f"INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES({','.join(placeholders)}) ON CONFLICT(plant_id,external_id,source) DO UPDATE SET name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,metadata=EXCLUDED.metadata,content=EXCLUDED.content"
+            cur.executemany(sql,rows)
     return len(rows)
 
 def import_plant_data(plant_id,actor):
