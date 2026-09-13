@@ -1,12 +1,12 @@
 """Clean universal ingestion runner.
 
 Legacy ingestion jobs are deliberately ignored. This runner uses a separate
-v3 table and fresh job ids. CHANGE DATA, NOT CODE. V5 remains frozen/read-only.
+persistent job table and fresh job ids. CHANGE DATA, NOT CODE. V5 remains
+frozen/read-only.
 """
 from __future__ import annotations
 
 import json
-import threading
 import uuid
 from datetime import datetime, timezone
 
@@ -14,7 +14,7 @@ import anvi_tenant_store as store
 from universal_onboarding import SAFETY
 
 TABLE = "anviqo_plant_ingestion_runs"
-INGESTION_VERSION = "ANVIQO-UNIVERSAL-INGESTION-V3"
+INGESTION_VERSION = "ANVIQO-UNIVERSAL-INGESTION-V4"
 
 
 def _p():
@@ -61,7 +61,7 @@ def enqueue_job(pid, actor):
         old = q.fetchone()
         if old:
             return {"job_id": old[0], "job_status": old[1], "existing": True}
-        jid = "ingv3_" + uuid.uuid4().hex
+        jid = "ingv4_" + uuid.uuid4().hex
         q.execute(f"INSERT INTO {TABLE}(job_id,organization_id,plant_id,actor_json,status,message,created_at,updated_at) VALUES({','.join([p] * 8)})", (jid, actor["organization_id"], pid, json.dumps(actor, separators=(",", ":")), "QUEUED", "Queued for clean universal ingestion.", now, now))
     return {"job_id": jid, "job_status": "QUEUED", "existing": False, "created_at": now, "updated_at": now}
 
@@ -90,6 +90,7 @@ def _finish(jid, pid, org, actor):
     with store._connect() as conn:
         q = conn.cursor()
         q.execute(f"UPDATE {TABLE} SET status={p},message={p},result_json={p},finished_at={p},updated_at={p} WHERE job_id={p}", (status_value, msg, json.dumps(r, default=str), now, now, jid))
+    return r
 
 
 def _claim_job():
@@ -110,13 +111,18 @@ def _claim_job():
     return jid, pid, org, actor
 
 
-def _dispatch_once():
+def process_one():
+    """Claim and execute exactly one persistent V4 job synchronously.
+
+    The worker calls this function directly. No daemon thread or web-process
+    memory is used for execution, so a web restart cannot orphan the job.
+    """
     x = _claim_job()
     if not x:
         return {"processed": 0, "queued_only": True, "safety": dict(SAFETY)}
     jid, pid, org, actor = x
-    threading.Thread(target=_finish, args=x, daemon=True, name=f"anvi-clean-ingest-{jid}").start()
-    return {"processed": 1, "job_id": jid, "status": "RUNNING", "safety": dict(SAFETY)}
+    result = _finish(jid, pid, org, actor)
+    return {"processed": 1, "job_id": jid, "status": "COMPLETED" if result.get("status") == "OK" else "FAILED", "result": result, "safety": dict(SAFETY)}
 
 
 def register(app):
@@ -154,4 +160,6 @@ def register(app):
     @app.post("/api/internal/ingestion/dispatch", endpoint="anvi_clean_ingest_dispatch")
     def dispatch():
         from flask import jsonify
-        return jsonify(_dispatch_once())
+        # Kept as a compatibility/wakeup endpoint, but execution is now
+        # synchronous here if an external worker still calls it.
+        return jsonify(process_one())
