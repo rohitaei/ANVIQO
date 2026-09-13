@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import zipfile
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
-VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.2"
+VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.3"
 
 def _now(): return datetime.now(timezone.utc).isoformat()
 def _p(): return store._placeholder()
@@ -55,7 +55,8 @@ def _records(filename,raw):
     ext=filename.lower().rsplit(".",1)[-1] if "." in filename else ""
     if ext=="xlsx": return _xlsx_records(raw)
     if ext=="csv":
-        for i,row in enumerate(csv.DictReader(io.StringIO(bytes(raw).decode("utf-8-sig",errors="replace"))):
+        reader=csv.DictReader(io.StringIO(bytes(raw).decode("utf-8-sig",errors="replace")))
+        for i,row in enumerate(reader):
             row=dict(row); row["external_id"]=str(row.get("external_id") or row.get("id") or row.get("tag") or row.get("asset_id") or hashlib.sha256((filename+str(i)+json.dumps(row,sort_keys=True,default=str)).encode()).hexdigest()[:20]); row["source"]=filename; row["record_type"]=str(row.get("record_type") or row.get("entity_type") or row.get("type") or "ASSET"); yield row
         return
     if ext=="json":
@@ -76,8 +77,9 @@ def _knowledge_schema():
             try: cur.execute("ALTER TABLE anviqo_plant_knowledge ADD COLUMN source TEXT NOT NULL DEFAULT ''")
             except Exception: pass
         else:
-            cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_knowledge (knowledge_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, document_id TEXT, record_type TEXT NOT NULL, external_id TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', area TEXT NOT NULL DEFAULT '', service TEXT NOT NULL DEFAULT '', asset_type TEXT NOT NULL DEFAULT '', tag TEXT NOT NULL DEFAULT '', parent_id TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', metadata JSONB NOT NULL DEFAULT '{}'::jsonb, content TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(plant_id,external_id,source))")
+            cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_knowledge (knowledge_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, document_id TEXT, record_type TEXT NOT NULL, external_id TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', area TEXT NOT NULL DEFAULT '', service TEXT NOT NULL DEFAULT '', asset_type TEXT NOT NULL DEFAULT '', tag TEXT NOT NULL DEFAULT '', parent_id TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', metadata JSONB NOT NULL DEFAULT '{}'::jsonb, content TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
             cur.execute("ALTER TABLE anviqo_plant_knowledge ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT ''")
+            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_anviqo_plant_knowledge_plant_external_source ON anviqo_plant_knowledge(plant_id,external_id,source)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_plant_knowledge_plant ON anviqo_plant_knowledge(plant_id)")
 
 def _insert_batch(plant_id,org_id,document_id,digest,records):
@@ -94,7 +96,7 @@ def _insert_batch(plant_id,org_id,document_id,digest,records):
         cur=conn.cursor()
         if store._is_sqlite(): cur.executemany(f"INSERT OR REPLACE INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content,created_at) VALUES({','.join([p]*15)},{p})",[r+(_now(),) for r in rows])
         else:
-            placeholders=[p]*15; placeholders[13]=f"{p}::jsonb"; sql=f"INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES({','.join(placeholders)}) ON CONFLICT(plant_id,external_id,source) DO UPDATE SET name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,metadata=EXCLUDED.metadata,content=EXCLUDED.content"; cur.executemany(sql,rows)
+            placeholders=[p]*15; placeholders[13]=f"{p}::jsonb"; sql=f"INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES({','.join(placeholders)}) ON CONFLICT(plant_id,external_id,source) DO UPDATE SET organization_id=EXCLUDED.organization_id,document_id=EXCLUDED.document_id,name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,parent_id=EXCLUDED.parent_id,metadata=EXCLUDED.metadata,content=EXCLUDED.content"; cur.executemany(sql,rows)
     return len(rows),errors
 
 def import_plant_data(plant_id,actor):
