@@ -8,29 +8,50 @@ from datetime import datetime, timezone
 import zipfile
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
-VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4"
+VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.1"
+
 
 def _now(): return datetime.now(timezone.utc).isoformat()
 def _p(): return store._placeholder()
+def _nonempty(v): return v is not None and str(v).strip() != ""
+def _header_score(row):
+    known={"tag","tagname","plctag","plctagname","externalid","assetid","area","service","description","iotyp e".replace(" ",""),"iotype","plcaddress","panel","tb","jb","recordtype","entitytype"}
+    return sum(1 for v in row if _key(v) in known)
+def _key(v): return re.sub(r"[^a-z0-9]+","",str(v or "").strip().lower())
+
 
 def _xlsx_records(raw):
     from openpyxl import load_workbook
     wb = load_workbook(io.BytesIO(bytes(raw)), read_only=True, data_only=True)
     try:
         for ws in wb.worksheets:
-            rows = ws.iter_rows(values_only=True)
-            try: first = next(rows)
-            except StopIteration: continue
-            headers = [str(v).strip() if v is not None and str(v).strip() else f"column_{i+1}" for i,v in enumerate(first)]
-            for idx,row in enumerate(rows, start=2):
-                if not any(v is not None and str(v).strip() for v in row): continue
-                rec = {headers[i]: row[i] for i in range(min(len(headers),len(row)))}
-                rec = {str(k).strip():v for k,v in rec.items() if str(k).strip()}
-                rec["external_id"] = str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or hashlib.sha256((ws.title+str(idx)+json.dumps(rec,sort_keys=True,default=str)).encode()).hexdigest()[:20])
-                rec["source"] = ws.title
-                rec["record_type"] = str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
+            matrix=[]
+            for row in ws.iter_rows(values_only=True):
+                if any(_nonempty(v) for v in row): matrix.append(tuple(row))
+            if not matrix: continue
+            header_index=0
+            best=-1
+            for i,row in enumerate(matrix[:30]):
+                score=_header_score(row)
+                if score>best:
+                    best=score; header_index=i
+            first=matrix[header_index]
+            headers=[]; seen={}
+            for i,v in enumerate(first):
+                h=str(v).strip() if _nonempty(v) else f"column_{i+1}"
+                base=h; n=seen.get(_key(base),0)+1; seen[_key(base)]=n
+                if n>1: h=f"{base}_{n}"
+                headers.append(h)
+            for idx,row in enumerate(matrix[header_index+1:], start=header_index+2):
+                if not any(_nonempty(v) for v in row): continue
+                rec={headers[i]:row[i] for i in range(min(len(headers),len(row)))}
+                rec={str(k).strip():v for k,v in rec.items() if str(k).strip()}
+                rec["external_id"]=str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or rec.get("TAG") or hashlib.sha256((ws.title+str(idx)+json.dumps(rec,sort_keys=True,default=str)).encode()).hexdigest()[:20])
+                rec["source"]=ws.title
+                rec["record_type"]=str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
                 yield rec
     finally: wb.close()
+
 
 def _text(raw, ext):
     if ext in {"txt","log","csv"}: return bytes(raw).decode("utf-8-sig",errors="replace")
@@ -44,54 +65,57 @@ def _text(raw, ext):
         except Exception: return ""
     return ""
 
+
 def _records(filename,raw):
     ext=filename.lower().rsplit(".",1)[-1] if "." in filename else ""
     if ext=="xlsx": return _xlsx_records(raw)
     if ext=="csv":
-        for i,row in enumerate(csv.DictReader(io.StringIO(bytes(raw).decode("utf-8-sig",errors="replace")))):
-            row=dict(row); row["external_id"]=str(row.get("external_id") or row.get("id") or row.get("tag") or row.get("asset_id") or hashlib.sha256((filename+str(i)+json.dumps(row,sort_keys=True)).encode()).hexdigest()[:20]); row["source"]=filename; row["record_type"]=str(row.get("record_type") or row.get("entity_type") or row.get("type") or "ASSET"); yield row
+        for i,row in enumerate(csv.DictReader(io.StringIO(bytes(raw).decode("utf-8-sig",errors="replace"))):
+            row=dict(row); row["external_id"]=str(row.get("external_id") or row.get("id") or row.get("tag") or row.get("asset_id") or hashlib.sha256((filename+str(i)+json.dumps(row,sort_keys=True,default=str)).encode()).hexdigest()[:20]); row["source"]=filename; row["record_type"]=str(row.get("record_type") or row.get("entity_type") or row.get("type") or "ASSET"); yield row
         return
     if ext=="json":
-        data=json.loads(bytes(raw).decode("utf-8",errors="replace")); data=data.get("records") or data.get("data") or [data] if isinstance(data,dict) else data
+        data=json.loads(bytes(raw).decode("utf-8",errors="replace")); data=(data.get("records") or data.get("data") or [data]) if isinstance(data,dict) else data
         for i,row in enumerate(data if isinstance(data,list) else []):
             if not isinstance(row,dict): continue
-            row=dict(row); row["external_id"]=str(row.get("external_id") or row.get("id") or row.get("tag") or row.get("asset_id") or hashlib.sha256((filename+str(i)+json.dumps(row,sort_keys=True)).encode()).hexdigest()[:20]); row["source"]=filename; row["record_type"]=str(row.get("record_type") or row.get("entity_type") or row.get("type") or "ASSET"); yield row
+            row=dict(row); row["external_id"]=str(row.get("external_id") or row.get("id") or row.get("tag") or row.get("asset_id") or hashlib.sha256((filename+str(i)+json.dumps(row,sort_keys=True,default=str)).encode()).hexdigest()[:20]); row["source"]=filename; row["record_type"]=str(row.get("record_type") or row.get("entity_type") or row.get("type") or "ASSET"); yield row
         return
     text=_text(raw,ext)
     if text.strip():
         for i in range(0,len(text),6000): yield {"external_id":hashlib.sha256((filename+str(i)).encode()).hexdigest()[:20],"name":filename,"record_type":"DOCUMENT","source":filename,"metadata":{"content":text[i:i+6000]}}
 
+
 def _knowledge_schema():
     with store._connect() as conn:
         cur=conn.cursor(); p=_p()
         if store._is_sqlite(): cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_knowledge (knowledge_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, document_id TEXT, record_type TEXT NOT NULL, external_id TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', area TEXT NOT NULL DEFAULT '', service TEXT NOT NULL DEFAULT '', asset_type TEXT NOT NULL DEFAULT '', tag TEXT NOT NULL DEFAULT '', parent_id TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', metadata TEXT NOT NULL DEFAULT '{}', content TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, UNIQUE(plant_id,external_id,source))")
-        else: cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_knowledge (knowledge_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, document_id TEXT, record_type TEXT NOT NULL, external_id TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', area TEXT NOT NULL DEFAULT '', service TEXT NOT NULL DEFAULT '', asset_type TEXT NOT NULL DEFAULT '', tag TEXT NOT NULL DEFAULT '', parent_id TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', metadata JSONB NOT NULL DEFAULT '{}'::jsonb, content TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(plant_id,external_id,source))")
+        else: cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_knowledge (knowledge_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, document_id TEXT, record_type TEXT NOT NULL, external_id TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', area TEXT NOT NULL DEFAULT '', service TEXT NOT NULL DEFAULT '', asset_type TEXT NOT NULL DEFAULT '', tag TEXT NOT NULL DEFAULT '', parent_id TEXT NOT NULL DEFAULT '', metadata JSONB NOT NULL DEFAULT '{}'::jsonb, content TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(plant_id,external_id,source))")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_plant_knowledge_plant ON anviqo_plant_knowledge(plant_id)")
 
+
 def _insert_batch(plant_id,org_id,document_id,digest,records):
-    p=_p(); rows=[]
+    p=_p(); rows=[]; errors=[]
     for raw in records:
         try:
             normalized=normalize_record(raw,str(raw.get("record_type") or "ASSET"))
             item=asdict(normalized) if is_dataclass(normalized) else dict(normalized)
-        except Exception:
-            continue
-        meta=dict(item.get("metadata") or {}); meta["import_version"]=VERSION; meta["document_sha256"]=digest
-        content=str(meta.pop("content","") or "")
-        kid="know_"+hashlib.sha256((plant_id+document_id+str(item.get("external_id","")+str(item.get("source","")))).encode()).hexdigest()[:24]
-        metadata_value = json.dumps(meta, default=str)
-        rows.append((kid,org_id,plant_id,document_id,item.get("record_type","ASSET"),str(item.get("external_id", "")),item.get("name", ""),item.get("area", ""),item.get("service", ""),item.get("asset_type", ""),item.get("tag", ""),item.get("parent_id", ""),item.get("source", ""),metadata_value,content))
-    if not rows:return 0
+            meta=dict(item.get("metadata") or {}); meta["import_version"]=VERSION; meta["document_sha256"]=digest
+            content=str(meta.pop("content","") or "")
+            kid="know_"+hashlib.sha256((plant_id+document_id+str(item.get("external_id","")+str(item.get("source","")))).encode()).hexdigest()[:24]
+            metadata_value=json.dumps(meta,default=str)
+            rows.append((kid,org_id,plant_id,document_id,item.get("record_type","ASSET"),str(item.get("external_id", "")),item.get("name", ""),item.get("area", ""),item.get("service", ""),item.get("asset_type", ""),item.get("tag", ""),item.get("parent_id", ""),item.get("source", ""),metadata_value,content))
+        except Exception as exc:
+            errors.append(str(exc))
+    if not rows:return 0,errors
     with store._connect() as conn:
         cur=conn.cursor()
         if store._is_sqlite():
             cur.executemany(f"INSERT OR REPLACE INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content,created_at) VALUES({','.join([p]*15)},{p})",[r+(_now(),) for r in rows])
         else:
-            placeholders=[p]*15
-            placeholders[13]=f"{p}::jsonb"
+            placeholders=[p]*15; placeholders[13]=f"{p}::jsonb"
             sql=f"INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES({','.join(placeholders)}) ON CONFLICT(plant_id,external_id,source) DO UPDATE SET name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,metadata=EXCLUDED.metadata,content=EXCLUDED.content"
             cur.executemany(sql,rows)
-    return len(rows)
+    return len(rows),errors
+
 
 def import_plant_data(plant_id,actor):
     if not actor.get("user_id") or actor.get("role") not in {"OWNER","ADMIN"}: raise PermissionError("OWNER/ADMIN access to this plant is required")
@@ -106,18 +130,21 @@ def import_plant_data(plant_id,actor):
             with store._connect() as conn:
                 cur=conn.cursor(); cur.execute(f"SELECT content FROM anviqo_plant_documents WHERE document_id={p} AND plant_id={p} AND organization_id={p}",(document_id,plant_id,actor["organization_id"])); row=cur.fetchone()
             if not row: raise RuntimeError("Document content not found")
-            raw=bytes(row[0]); records=_records(filename,raw); batch=[]
-            for rec in records:
+            raw=bytes(row[0]); batch=[]
+            for rec in _records(filename,raw):
                 batch.append(rec)
-                if len(batch)>=50: total+=_insert_batch(plant_id,actor["organization_id"],document_id,digest,batch); batch=[]
-            if batch: total+=_insert_batch(plant_id,actor["organization_id"],document_id,digest,batch)
+                if len(batch)>=50:
+                    added,batch_errors=_insert_batch(plant_id,actor["organization_id"],document_id,digest,batch); total+=added; errors.extend({"filename":filename,"error":e} for e in batch_errors); batch=[]
+            if batch:
+                added,batch_errors=_insert_batch(plant_id,actor["organization_id"],document_id,digest,batch); total+=added; errors.extend({"filename":filename,"error":e} for e in batch_errors)
             documents+=1; del raw
         except Exception as exc: errors.append({"filename":filename,"error":str(exc)})
-    status="READY" if documents and not errors and total>0 else "BLOCKED" if errors else "DATA_UPLOADED"
+    status="READY" if total>0 else "BLOCKED" if errors else "DATA_UPLOADED"
     with store._connect() as conn: conn.cursor().execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p} AND organization_id={p}",(status,_now(),plant_id,actor["organization_id"]))
     try: store.record_audit(actor,"IMPORT_PLANT_DATA","PLANT",plant_id,{"documents":documents,"records":total,"errors":len(errors),"version":VERSION})
     except Exception: pass
-    return {"status":"OK" if not errors and total>0 else "COMPLETED_WITH_ERRORS" if errors else "NO_KNOWLEDGE_CREATED","plant_id":plant_id,"documents_processed":documents,"records_available_to_anvi":total,"errors":errors,"import_version":VERSION,"mode":"DIRECT","safety":dict(SAFETY)}
+    return {"status":"OK" if total>0 else "NO_KNOWLEDGE_CREATED","plant_id":plant_id,"documents_processed":documents,"records_available_to_anvi":total,"errors":errors[:100],"error_count":len(errors),"import_version":VERSION,"mode":"DIRECT","safety":dict(SAFETY)}
+
 
 def register(app):
     from flask import jsonify,session
@@ -137,4 +164,5 @@ def register(app):
             cur=conn.cursor(); cur.execute(f"SELECT record_type,COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p} GROUP BY record_type ORDER BY COUNT(*) DESC",(plant_id,actor["organization_id"])); groups=[{"record_type":r[0],"count":r[1]} for r in cur.fetchall()]; cur.execute(f"SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p}",(plant_id,actor["organization_id"])); total=cur.fetchone()[0]
         return jsonify({"status":"OK","plant_id":plant_id,"total_records":total,"by_type":groups,"mode":"DIRECT","safety":dict(SAFETY)})
     return app
+
 __all__=["import_plant_data","register"]
