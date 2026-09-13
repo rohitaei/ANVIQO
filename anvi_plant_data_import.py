@@ -1,9 +1,7 @@
 """ANVIQO clean plant-data import path.
 
-This is deliberately NOT a job/queue/worker system. It imports the files
-already stored for a selected tenant plant directly into the universal plant
-knowledge store. Frozen V5 intelligence and PLC/SCADA boundaries are untouched.
-Principle: CHANGE DATA, NOT CODE.
+Direct, synchronous import. No ingestion job, queue, worker or polling.
+CHANGE DATA, NOT CODE. Frozen V5 intelligence and PLC/SCADA boundaries are untouched.
 """
 from __future__ import annotations
 
@@ -12,7 +10,7 @@ from datetime import datetime, timezone
 import anvi_tenant_store as store
 from universal_onboarding import build_onboarding_package, SAFETY
 
-VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1"
+VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.1"
 
 
 def _now():
@@ -24,6 +22,7 @@ def _p():
 
 
 def _xlsx_records(raw):
+    # read_only keeps large engineering workbooks bounded in memory.
     from openpyxl import load_workbook
     wb = load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
     try:
@@ -66,7 +65,7 @@ def _text(raw, ext):
 def _records(filename, raw):
     ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
     if ext == "xlsx":
-        return list(_xlsx_records(raw))
+        return _xlsx_records(raw)
     if ext == "csv":
         out = []
         for i, row in enumerate(csv.DictReader(io.StringIO(raw.decode("utf-8-sig", errors="replace")))):
@@ -98,8 +97,7 @@ def _records(filename, raw):
 
 def _knowledge_schema():
     with store._connect() as conn:
-        cur = conn.cursor()
-        p = _p()
+        cur = conn.cursor(); p = _p()
         if store._is_sqlite():
             cur.execute("CREATE TABLE IF NOT EXISTS anviqo_plant_knowledge (knowledge_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, document_id TEXT, record_type TEXT NOT NULL, external_id TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', area TEXT NOT NULL DEFAULT '', service TEXT NOT NULL DEFAULT '', asset_type TEXT NOT NULL DEFAULT '', tag TEXT NOT NULL DEFAULT '', parent_id TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', metadata TEXT NOT NULL DEFAULT '{}', content TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, UNIQUE(plant_id,external_id,source))")
         else:
@@ -107,8 +105,11 @@ def _knowledge_schema():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_plant_knowledge_plant ON anviqo_plant_knowledge(plant_id)")
 
 
-def _insert(plant_id, org_id, document_id, digest, rec):
-    normalized = build_onboarding_package({"organization_id": org_id, "plant_id": plant_id}, [rec]).get("records", [])
+def _insert_batch(plant_id, org_id, document_id, digest, records):
+    package = build_onboarding_package({"organization_id": org_id, "plant_id": plant_id, "name": plant_id}, records)
+    normalized = package.get("records", [])
+    if not normalized:
+        return 0
     p = _p(); rows = []
     for item in normalized:
         meta = dict(item.get("metadata") or {})
@@ -116,9 +117,7 @@ def _insert(plant_id, org_id, document_id, digest, rec):
         meta["document_sha256"] = digest
         content = str(meta.pop("content", "") or "")
         kid = "know_" + hashlib.sha256((plant_id + document_id + str(item.get("external_id", "")) + str(item.get("source", ""))).encode()).hexdigest()[:24]
-        rows.append((kid, org_id, plant_id, document_id, item.get("record_type", "ASSET"), str(item.get("external_id", "")), item.get("name", ""), item.get("area", ""), item.get("service", ""), item.get("asset_type", ""), item.get("tag", ""), item.get("parent_id", ""), item.get("source", ""), json.dumps(meta), content))
-    if not rows:
-        return 0
+        rows.append((kid, org_id, plant_id, document_id, item.get("record_type", "ASSET"), str(item.get("external_id", "")), item.get("name", ""), item.get("area", ""), item.get("service", ""), item.get("asset_type", ""), item.get("tag", ""), item.get("parent_id", ""), item.get("source", ""), json.dumps(meta, default=str), content))
     with store._connect() as conn:
         cur = conn.cursor()
         if store._is_sqlite():
@@ -139,51 +138,47 @@ def import_plant_data(plant_id, actor):
             raise PermissionError("Plant is not active in this organization")
         cur.execute(f"SELECT document_id,filename,content,sha256 FROM anviqo_plant_documents WHERE plant_id={p} AND organization_id={p} ORDER BY created_at", (plant_id, actor["organization_id"]))
         docs = cur.fetchall()
-    _knowledge_schema()
-    total = documents = 0; errors = []
+    _knowledge_schema(); total = documents = 0; errors = []
     for document_id, filename, raw, digest in docs:
         try:
             records = _records(filename, bytes(raw))
+            # Batch XLSX records in bounded chunks; this avoids thousands of DB transactions.
+            batch = []; batch_size = 250
             for rec in records:
-                total += _insert(plant_id, actor["organization_id"], document_id, digest, rec)
+                batch.append(rec)
+                if len(batch) >= batch_size:
+                    total += _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); batch = []
+            if batch:
+                total += _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch)
             documents += 1
         except Exception as exc:
             errors.append({"filename": filename, "error": str(exc)})
     status = "READY" if documents and not errors else "BLOCKED" if errors else "DATA_UPLOADED"
     with store._connect() as conn:
         conn.cursor().execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p} AND organization_id={p}", (status, _now(), plant_id, actor["organization_id"]))
-    try:
-        store.record_audit(actor, "IMPORT_PLANT_DATA", "PLANT", plant_id, {"documents": documents, "records": total, "errors": len(errors), "version": VERSION})
-    except Exception:
-        pass
+    try: store.record_audit(actor, "IMPORT_PLANT_DATA", "PLANT", plant_id, {"documents": documents, "records": total, "errors": len(errors), "version": VERSION})
+    except Exception: pass
     return {"status": "OK" if not errors else "COMPLETED_WITH_ERRORS", "plant_id": plant_id, "documents_processed": documents, "records_available_to_anvi": total, "errors": errors, "import_version": VERSION, "mode": "DIRECT", "safety": dict(SAFETY)}
 
 
 def register(app):
-    from flask import jsonify, request
-    from flask import session
-
+    from flask import jsonify, request, session
     @app.post("/api/admin/onboarding/plant/<plant_id>/import")
     def import_route(plant_id):
         actor = {"user_id": session.get("user_id", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "role": session.get("role", ""), "username": session.get("username", "")}
         try:
-            result = import_plant_data(plant_id, actor)
-            return jsonify(result), 200
+            return jsonify(import_plant_data(plant_id, actor)), 200
         except Exception as exc:
-            return jsonify({"status": "ERROR", "message": str(exc), "mode": "DIRECT", "safety": dict(SAFETY)}), 400
-
+            return jsonify({"status":"ERROR","message":str(exc),"mode":"DIRECT","safety":dict(SAFETY)}), 400
     @app.get("/api/admin/onboarding/plant/<plant_id>/knowledge-summary")
     def knowledge_summary(plant_id):
         actor = {"user_id": session.get("user_id", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "role": session.get("role", ""), "username": session.get("username", "")}
-        if not actor.get("user_id") or actor.get("role") not in {"OWNER", "ADMIN"}:
-            return jsonify({"status": "FORBIDDEN"}), 403
-        p = _p(); _knowledge_schema()
+        if not actor.get("user_id") or actor.get("role") not in {"OWNER", "ADMIN"}: return jsonify({"status":"FORBIDDEN"}),403
+        p=_p(); _knowledge_schema()
         with store._connect() as conn:
-            cur = conn.cursor(); cur.execute(f"SELECT record_type,COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p} GROUP BY record_type ORDER BY COUNT(*) DESC", (plant_id,)); groups = [{"record_type": r[0], "count": r[1]} for r in cur.fetchall()]
-            cur.execute(f"SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p}", (plant_id,)); total = cur.fetchone()[0]
-        return jsonify({"status": "OK", "plant_id": plant_id, "total_records": total, "by_type": groups, "mode": "DIRECT", "safety": dict(SAFETY)})
-
+            cur=conn.cursor(); cur.execute(f"SELECT record_type,COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p} GROUP BY record_type ORDER BY COUNT(*) DESC",(plant_id,)); groups=[{"record_type":r[0],"count":r[1]} for r in cur.fetchall()]
+            cur.execute(f"SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p}",(plant_id,)); total=cur.fetchone()[0]
+        return jsonify({"status":"OK","plant_id":plant_id,"total_records":total,"by_type":groups,"mode":"DIRECT","safety":dict(SAFETY)})
     return app
 
-
-__all__ = ["import_plant_data", "register"]
+__all__=["import_plant_data","register"]
