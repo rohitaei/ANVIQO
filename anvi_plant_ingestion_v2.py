@@ -21,6 +21,25 @@ def init_schema():
   q=c.cursor();ph=p()
   if store._is_sqlite(): q.execute(f"CREATE TABLE IF NOT EXISTS {TABLE}(job_id TEXT PRIMARY KEY,organization_id TEXT NOT NULL,plant_id TEXT NOT NULL,actor_json TEXT NOT NULL,status TEXT NOT NULL,message TEXT NOT NULL,result_json TEXT NOT NULL DEFAULT '{{}}',created_at TEXT NOT NULL,started_at TEXT,finished_at TEXT,updated_at TEXT NOT NULL)")
   else: q.execute(f"CREATE TABLE IF NOT EXISTS {TABLE}(job_id TEXT PRIMARY KEY,organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id),plant_id TEXT NOT NULL REFERENCES anviqo_plants(plant_id),actor_json JSONB NOT NULL,status TEXT NOT NULL,message TEXT NOT NULL,result_json JSONB NOT NULL DEFAULT '{{}}'::jsonb,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),started_at TIMESTAMPTZ,finished_at TIMESTAMPTZ,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+def reconcile_legacy_ui(pid,a):
+ """Keep the onboarding display aligned with the new V5 durable queue.
+
+    The old onboarding status field can contain INDEXING from the retired
+    ingestion path. V5 is the source of truth. Never report INDEXING when no
+    V5 job is actually queued/running.
+    """
+ ph=p()
+ try:
+  with store._connect() as c:
+   q=c.cursor()
+   q.execute(f"SELECT status FROM {TABLE} WHERE plant_id={ph} AND organization_id={ph} ORDER BY created_at DESC LIMIT 1",(pid,a["organization_id"]))
+   r=q.fetchone(); latest=str(r[0]).upper() if r else "NOT_STARTED"
+   if latest in {"QUEUED","RUNNING"}: return latest
+   target="READY" if latest=="COMPLETED" else "DATA_UPLOADED"
+   q.execute(f"UPDATE anviqo_plant_onboarding SET status={ph},updated_at={ph} WHERE plant_id={ph} AND organization_id={ph} AND status='INDEXING'",(target,now(),pid,a["organization_id"]))
+   return latest
+ except Exception:
+  return "UNKNOWN"
 def enqueue(pid,a):
  init_schema();ph=p();t=now();jid="ingv5_"+uuid.uuid4().hex
  with store._connect() as c:
@@ -65,11 +84,14 @@ def register(app):
   ph=p()
   with store._connect() as c:
    q=c.cursor();q.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM {TABLE} WHERE plant_id={ph} AND organization_id={ph} ORDER BY created_at DESC LIMIT 1",(plant_id,a["organization_id"]));r=q.fetchone()
-  if not r:return jsonify({"status":"NOT_STARTED","job_status":"NOT_STARTED","ingestion_version":VERSION})
+  if not r:
+   reconcile_legacy_ui(plant_id,a)
+   return jsonify({"status":"NOT_STARTED","job_status":"NOT_STARTED","ingestion_version":VERSION})
   jid,st,msg,res,cr,ss,ff,up=r
   if isinstance(res,str):
    try:res=json.loads(res or "{}")
    except Exception:res={}
+  reconcile_legacy_ui(plant_id,a)
   return jsonify({"job_id":jid,"status":st,"job_status":st,"message":msg,"result":res or {},"created_at":str(cr),"started_at":str(ss) if ss else None,"finished_at":str(ff) if ff else None,"updated_at":str(up) if up else None,"ingestion_version":VERSION})
  @app.post("/api/internal/ingestion/dispatch",endpoint="anvi_clean_ingest_dispatch")
  def dispatch():
