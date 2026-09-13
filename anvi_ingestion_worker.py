@@ -1,43 +1,36 @@
-"""ANVIQO durable universal ingestion worker.
-
-The worker shares the persistent tenant database with the web service and
-executes one queued V4 job at a time. No daemon thread in the web process and
-no in-memory job state are used for ingestion execution. CHANGE DATA, NOT CODE.
-"""
+"""ANVIQO durable universal ingestion dispatcher."""
 from __future__ import annotations
-
-import threading
-import time
+import json, os, threading, time
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 from flask import Flask, jsonify
 
 app = Flask(__name__)
 
-
-def _process_once():
-    import anvi_plant_ingestion_v2 as ingestion
-    return ingestion.process_one()
-
+def _dispatch_once():
+    base = os.environ.get("ANVI_WEB_URL", "https://anviqo.onrender.com").rstrip("/")
+    token = os.environ.get("ANVI_INGESTION_DISPATCH_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("ANVI_INGESTION_DISPATCH_TOKEN is required")
+    req = Request(f"{base}/api/internal/ingestion/dispatch", method="POST", headers={"X-ANVI-INGESTION-TOKEN": token, "Content-Type": "application/json"}, data=b"{}")
+    with urlopen(req, timeout=110) as response:
+        return json.loads(response.read().decode("utf-8"))
 
 def _worker_loop():
     while True:
         try:
-            result = _process_once()
-            print(
-                f"ANVI universal ingestion worker: processed={result.get('processed', 0)} "
-                f"job={result.get('job_id', '-')}",
-                flush=True,
-            )
+            result = _dispatch_once()
+            print(f"ANVI universal ingestion dispatcher: processed={result.get('processed', 0)} job={result.get('job_id', '-')}", flush=True)
+        except (HTTPError, URLError, TimeoutError) as exc:
+            print(f"ANVI universal ingestion dispatcher HTTP error: {exc}", flush=True)
         except Exception as exc:
-            print(f"ANVI universal ingestion worker error: {exc}", flush=True)
+            print(f"ANVI universal ingestion dispatcher error: {exc}", flush=True)
         time.sleep(5)
-
 
 @app.get("/health")
 def health():
     return jsonify({"status": "OK", "service": "anviqo-universal-ingestion-worker"})
 
-
 if __name__ == "__main__":
     threading.Thread(target=_worker_loop, daemon=True, name="anvi-ingestion-loop").start()
-    port = int(__import__("os").environ.get("PORT", "10000"))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "10000")))
