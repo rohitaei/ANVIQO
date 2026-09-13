@@ -1,165 +1,79 @@
-"""Clean universal ingestion runner.
-
-Legacy ingestion jobs are deliberately ignored. This runner uses a separate
-persistent job table and fresh job ids. CHANGE DATA, NOT CODE. V5 remains
-frozen/read-only.
-"""
+"""Fresh universal ingestion runner. Legacy ingestion jobs are ignored. CHANGE DATA, NOT CODE."""
 from __future__ import annotations
-
-import json
-import uuid
-from datetime import datetime, timezone
-
+import json,uuid,os
+from datetime import datetime,timezone
 import anvi_tenant_store as store
 from universal_onboarding import SAFETY
-
-TABLE = "anviqo_plant_ingestion_runs"
-INGESTION_VERSION = "ANVIQO-UNIVERSAL-INGESTION-V4"
-
-
-def _p():
-    return store._placeholder()
-
-
-def _now():
-    return datetime.now(timezone.utc).isoformat()
-
-
-def _actor():
-    from flask import session
-    return {k: session.get(k, "") for k in ("user_id", "organization_id", "plant_id", "role", "username")}
-
-
-def _plant_ok(pid, actor):
-    if not actor.get("user_id") or not actor.get("organization_id") or actor.get("role") not in {"OWNER", "ADMIN"}:
-        return False
-    p = _p()
-    with store._connect() as conn:
-        q = conn.cursor()
-        q.execute(f"SELECT 1 FROM anviqo_plants WHERE plant_id={p} AND organization_id={p} AND status='ACTIVE' LIMIT 1", (pid, actor["organization_id"]))
-        return q.fetchone() is not None
-
-
+TABLE="anviqo_universal_ingestion_jobs"
+VERSION="ANVIQO-UNIVERSAL-INGESTION-V5"
+def p(): return store._placeholder()
+def now(): return datetime.now(timezone.utc).isoformat()
+def actor():
+ from flask import session
+ return {k:session.get(k,"") for k in ("user_id","organization_id","plant_id","role","username")}
+def ok(pid,a):
+ if not a.get("user_id") or not a.get("organization_id") or a.get("role") not in {"OWNER","ADMIN"}: return False
+ with store._connect() as c:
+  q=c.cursor();q.execute(f"SELECT 1 FROM anviqo_plants WHERE plant_id={p()} AND organization_id={p()} AND status='ACTIVE' LIMIT 1",(pid,a["organization_id"]));return q.fetchone() is not None
 def init_schema():
-    if not store.enabled():
-        return
-    with store._connect() as conn:
-        q = conn.cursor()
-        if store._is_sqlite():
-            q.execute(f"CREATE TABLE IF NOT EXISTS {TABLE} (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL, actor_json TEXT NOT NULL DEFAULT '{{}}', status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json TEXT NOT NULL DEFAULT '{{}}', created_at TEXT NOT NULL DEFAULT '', started_at TEXT, finished_at TEXT, updated_at TEXT NOT NULL DEFAULT '')")
-        else:
-            q.execute(f"CREATE TABLE IF NOT EXISTS {TABLE} (job_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id), plant_id TEXT NOT NULL REFERENCES anviqo_plants(plant_id), actor_json JSONB NOT NULL DEFAULT '{{}}'::jsonb, status TEXT NOT NULL DEFAULT 'QUEUED', message TEXT NOT NULL DEFAULT '', result_json JSONB NOT NULL DEFAULT '{{}}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), started_at TIMESTAMPTZ, finished_at TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
-
-
-def enqueue_job(pid, actor):
-    init_schema()
-    p = _p()
-    now = _now()
-    with store._connect() as conn:
-        q = conn.cursor()
-        q.execute(f"SELECT job_id,status FROM {TABLE} WHERE plant_id={p} AND organization_id={p} AND status IN ('QUEUED','RUNNING') ORDER BY created_at DESC LIMIT 1", (pid, actor["organization_id"]))
-        old = q.fetchone()
-        if old:
-            return {"job_id": old[0], "job_status": old[1], "existing": True}
-        jid = "ingv4_" + uuid.uuid4().hex
-        q.execute(f"INSERT INTO {TABLE}(job_id,organization_id,plant_id,actor_json,status,message,created_at,updated_at) VALUES({','.join([p] * 8)})", (jid, actor["organization_id"], pid, json.dumps(actor, separators=(",", ":")), "QUEUED", "Queued for clean universal ingestion.", now, now))
-    return {"job_id": jid, "job_status": "QUEUED", "existing": False, "created_at": now, "updated_at": now}
-
-
-def ingest_plant(pid, actor=None):
-    if not actor or not _plant_ok(pid, actor):
-        raise PermissionError("OWNER/ADMIN access to this plant is required")
-    import anvi_plant_ingestion_runtime as runtime
-    result = runtime.ingest_plant(pid, actor)
-    result["ingestion_version"] = INGESTION_VERSION
-    result["safety"] = dict(SAFETY)
-    return result
-
-
-def _finish(jid, pid, org, actor):
-    try:
-        r = ingest_plant(pid, actor)
-        status_value = "COMPLETED" if r.get("status") == "OK" and not r.get("errors") else "COMPLETED_WITH_ERRORS"
-        msg = f"Processed {r.get('documents_processed', 0)} documents and indexed {r.get('records_indexed', 0)} records."
-    except Exception as e:
-        r = {"status": "ERROR", "plant_id": pid, "message": str(e), "safety": dict(SAFETY)}
-        status_value = "FAILED"
-        msg = str(e)
-    now = _now()
-    p = _p()
-    with store._connect() as conn:
-        q = conn.cursor()
-        q.execute(f"UPDATE {TABLE} SET status={p},message={p},result_json={p},finished_at={p},updated_at={p} WHERE job_id={p}", (status_value, msg, json.dumps(r, default=str), now, now, jid))
-    return r
-
-
-def _claim_job():
-    init_schema()
-    p = _p()
-    with store._connect() as conn:
-        q = conn.cursor()
-        q.execute(f"SELECT job_id,plant_id,organization_id,actor_json FROM {TABLE} WHERE status='QUEUED' ORDER BY created_at LIMIT 1")
-        row = q.fetchone()
-        if not row:
-            return None
-        jid, pid, org, raw = row
-        actor = raw if isinstance(raw, dict) else json.loads(raw or "{}")
-        now = _now()
-        q.execute(f"UPDATE {TABLE} SET status={p},message={p},started_at={p},updated_at={p} WHERE job_id={p} AND status='QUEUED'", ("RUNNING", "Worker claimed clean ingestion job.", now, now, jid))
-        if getattr(q, "rowcount", 1) != 1:
-            return None
-    return jid, pid, org, actor
-
-
+ if not store.enabled(): return
+ with store._connect() as c:
+  q=c.cursor();ph=p()
+  if store._is_sqlite(): q.execute(f"CREATE TABLE IF NOT EXISTS {TABLE}(job_id TEXT PRIMARY KEY,organization_id TEXT NOT NULL,plant_id TEXT NOT NULL,actor_json TEXT NOT NULL,status TEXT NOT NULL,message TEXT NOT NULL,result_json TEXT NOT NULL DEFAULT '{{}}',created_at TEXT NOT NULL,started_at TEXT,finished_at TEXT,updated_at TEXT NOT NULL)")
+  else: q.execute(f"CREATE TABLE IF NOT EXISTS {TABLE}(job_id TEXT PRIMARY KEY,organization_id TEXT NOT NULL REFERENCES anviqo_organizations(organization_id),plant_id TEXT NOT NULL REFERENCES anviqo_plants(plant_id),actor_json JSONB NOT NULL,status TEXT NOT NULL,message TEXT NOT NULL,result_json JSONB NOT NULL DEFAULT '{{}}'::jsonb,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),started_at TIMESTAMPTZ,finished_at TIMESTAMPTZ,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+def enqueue(pid,a):
+ init_schema();ph=p();t=now();jid="ingv5_"+uuid.uuid4().hex
+ with store._connect() as c:
+  q=c.cursor();q.execute(f"SELECT job_id,status FROM {TABLE} WHERE plant_id={ph} AND organization_id={ph} AND status IN('QUEUED','RUNNING') ORDER BY created_at DESC LIMIT 1",(pid,a["organization_id"]));r=q.fetchone()
+  if r:return {"job_id":r[0],"job_status":r[1],"existing":True,"ingestion_version":VERSION}
+  q.execute(f"INSERT INTO {TABLE}(job_id,organization_id,plant_id,actor_json,status,message,created_at,updated_at) VALUES({','.join([ph]*8)})",(jid,a["organization_id"],pid,json.dumps(a,separators=(",",":")),"QUEUED","Queued for universal plant knowledge ingestion.",t,t))
+ return {"job_id":jid,"job_status":"QUEUED","existing":False,"ingestion_version":VERSION}
+def claim():
+ init_schema();ph=p();t=now()
+ with store._connect() as c:
+  q=c.cursor();q.execute(f"SELECT job_id,plant_id,organization_id,actor_json FROM {TABLE} WHERE status='QUEUED' ORDER BY created_at LIMIT 1");r=q.fetchone()
+  if not r:return None
+  jid,pid,org,raw=r;a=raw if isinstance(raw,dict) else json.loads(raw or "{}")
+  q.execute(f"UPDATE {TABLE} SET status={ph},message={ph},started_at={ph},updated_at={ph} WHERE job_id={ph} AND status='QUEUED'",("RUNNING","Worker claimed universal ingestion job.",t,t,jid))
+  if getattr(q,"rowcount",1)!=1:return None
+ return jid,pid,org,a
 def process_one():
-    """Claim and execute exactly one persistent V4 job synchronously.
-
-    The worker calls this function directly. No daemon thread or web-process
-    memory is used for execution, so a web restart cannot orphan the job.
-    """
-    x = _claim_job()
-    if not x:
-        return {"processed": 0, "queued_only": True, "safety": dict(SAFETY)}
-    jid, pid, org, actor = x
-    result = _finish(jid, pid, org, actor)
-    return {"processed": 1, "job_id": jid, "status": "COMPLETED" if result.get("status") == "OK" else "FAILED", "result": result, "safety": dict(SAFETY)}
-
-
+ job=claim()
+ if not job:return {"processed":0,"job_id":None,"status":"IDLE","safety":dict(SAFETY)}
+ jid,pid,org,a=job
+ try:
+  import anvi_plant_ingestion_runtime as runtime
+  r=runtime.ingest_plant(pid,a);st="COMPLETED" if r.get("status")=="OK" and not r.get("errors") else "COMPLETED_WITH_ERRORS";msg=f"Processed {r.get('documents_processed',0)} documents and indexed {r.get('records_indexed',0)} records."
+ except Exception as e:
+  r={"status":"ERROR","plant_id":pid,"message":str(e),"errors":[{"error":str(e)}],"safety":dict(SAFETY)};st="FAILED";msg=str(e)
+ t=now();ph=p()
+ with store._connect() as c:c.cursor().execute(f"UPDATE {TABLE} SET status={ph},message={ph},result_json={ph},finished_at={ph},updated_at={ph} WHERE job_id={ph}",(st,msg,json.dumps(r,default=str),t,t,jid))
+ return {"processed":1,"job_id":jid,"status":st,"result":r,"safety":dict(SAFETY)}
 def register(app):
-    init_schema()
-
-    @app.post("/api/admin/onboarding/plant/<plant_id>/ingest", endpoint="anvi_clean_ingest_start")
-    def start(plant_id):
-        from flask import jsonify
-        actor = _actor()
-        if not _plant_ok(plant_id, actor):
-            return jsonify({"error": "OWNER/ADMIN access to this plant is required"}), 403
-        return jsonify(enqueue_job(plant_id, actor)), 202
-
-    @app.get("/api/admin/onboarding/plant/<plant_id>/ingest/status", endpoint="anvi_clean_ingest_status")
-    def ingestion_status(plant_id):
-        from flask import jsonify
-        actor = _actor()
-        if not _plant_ok(plant_id, actor):
-            return jsonify({"error": "OWNER/ADMIN access to this plant is required"}), 403
-        p = _p()
-        with store._connect() as conn:
-            q = conn.cursor()
-            q.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM {TABLE} WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC LIMIT 1", (plant_id, actor["organization_id"]))
-            row = q.fetchone()
-        if not row:
-            return jsonify({"status": "NOT_STARTED", "job_status": "NOT_STARTED"})
-        jid, st, msg, r, cr, ss, ff, up = row
-        if isinstance(r, str):
-            try:
-                r = json.loads(r or "{}")
-            except Exception:
-                r = {}
-        return jsonify({"job_id": jid, "status": st, "job_status": st, "message": msg, "result": r or {}, "created_at": str(cr), "started_at": str(ss) if ss else None, "finished_at": str(ff) if ff else None, "updated_at": str(up) if up else None})
-
-    @app.post("/api/internal/ingestion/dispatch", endpoint="anvi_clean_ingest_dispatch")
-    def dispatch():
-        from flask import jsonify
-        # Kept as a compatibility/wakeup endpoint, but execution is now
-        # synchronous here if an external worker still calls it.
-        return jsonify(process_one())
+ init_schema()
+ @app.post("/api/admin/onboarding/plant/<plant_id>/ingest",endpoint="anvi_clean_ingest_start")
+ def start(plant_id):
+  from flask import jsonify
+  a=actor()
+  if not ok(plant_id,a):return jsonify({"status":"FORBIDDEN","message":"OWNER/ADMIN access to this plant is required"}),403
+  return jsonify(enqueue(plant_id,a)),202
+ @app.get("/api/admin/onboarding/plant/<plant_id>/ingest/status",endpoint="anvi_clean_ingest_status")
+ def status(plant_id):
+  from flask import jsonify
+  a=actor()
+  if not ok(plant_id,a):return jsonify({"status":"FORBIDDEN","message":"OWNER/ADMIN access to this plant is required"}),403
+  ph=p()
+  with store._connect() as c:
+   q=c.cursor();q.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM {TABLE} WHERE plant_id={ph} AND organization_id={ph} ORDER BY created_at DESC LIMIT 1",(plant_id,a["organization_id"]));r=q.fetchone()
+  if not r:return jsonify({"status":"NOT_STARTED","job_status":"NOT_STARTED","ingestion_version":VERSION})
+  jid,st,msg,res,cr,ss,ff,up=r
+  if isinstance(res,str):
+   try:res=json.loads(res or "{}")
+   except Exception:res={}
+  return jsonify({"job_id":jid,"status":st,"job_status":st,"message":msg,"result":res or {},"created_at":str(cr),"started_at":str(ss) if ss else None,"finished_at":str(ff) if ff else None,"updated_at":str(up) if up else None,"ingestion_version":VERSION})
+ @app.post("/api/internal/ingestion/dispatch",endpoint="anvi_clean_ingest_dispatch")
+ def dispatch():
+  from flask import jsonify,request
+  expected=os.environ.get("ANVI_INGESTION_DISPATCH_TOKEN","").strip()
+  if not expected or request.headers.get("X-ANVI-INGESTION-TOKEN","").strip()!=expected:return jsonify({"status":"FORBIDDEN","message":"Invalid ingestion dispatch authorization"}),403
+  return jsonify(process_one())
