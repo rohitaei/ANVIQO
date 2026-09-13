@@ -1,0 +1,20 @@
+name: Universal importer check
+on:
+  push:
+    branches: [main]
+jobs:
+  importer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install importer dependencies
+        run: python -m pip install openpyxl flask pypdf
+      - name: Compile importer and dependencies
+        run: python -m py_compile anvi_plant_data_import.py universal_onboarding.py anvi_tenant_store.py
+      - name: Import module smoke test
+        env:
+          ANVIQO_SECRET_KEY: importer-check-secret
+        run: python -c "import anvi_plant_data_import; print(anvi_plant_data_import.VERSION)"
