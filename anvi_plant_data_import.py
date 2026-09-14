@@ -1,14 +1,15 @@
 """ANVIQO direct universal plant-data importer.
-Synchronous import path; preserves tenant isolation and V5 safety boundaries.
+Durable asynchronous import path; preserves tenant isolation and V5 safety boundaries.
 """
 from __future__ import annotations
-import csv, hashlib, io, json, re, zipfile
+import csv, hashlib, io, json, re, zipfile, uuid
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
-VERSION="ANVIQO-DIRECT-PLANT-DATA-V1.4.6"
+VERSION="ANVIQO-DIRECT-PLANT-DATA-V1.4.7"
 BATCH_SIZE=2000
+JOB_TABLE="anviqo_direct_import_jobs"
 
 def _now(): return datetime.now(timezone.utc).isoformat()
 def _p(): return store._placeholder()
@@ -90,6 +91,15 @@ def _knowledge_schema():
             cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_anviqo_plant_knowledge_plant_external_source ON anviqo_plant_knowledge(plant_id,external_id,source)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_anviqo_plant_knowledge_plant ON anviqo_plant_knowledge(plant_id)")
 
+def _job_schema():
+    with store._connect() as conn:
+        cur=conn.cursor(); p=_p()
+        if store._is_sqlite():
+            cur.execute(f"CREATE TABLE IF NOT EXISTS {JOB_TABLE}(job_id TEXT PRIMARY KEY,organization_id TEXT NOT NULL,plant_id TEXT NOT NULL,actor_json TEXT NOT NULL,status TEXT NOT NULL,message TEXT NOT NULL,result_json TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL,started_at TEXT,finished_at TEXT,updated_at TEXT NOT NULL)")
+        else:
+            cur.execute(f"CREATE TABLE IF NOT EXISTS {JOB_TABLE}(job_id TEXT PRIMARY KEY,organization_id TEXT NOT NULL,plant_id TEXT NOT NULL,actor_json JSONB NOT NULL,status TEXT NOT NULL,message TEXT NOT NULL,result_json JSONB NOT NULL DEFAULT '{{}}'::jsonb,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),started_at TIMESTAMPTZ,finished_at TIMESTAMPTZ,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_{JOB_TABLE}_plant ON {JOB_TABLE}(plant_id,organization_id,created_at)")
+
 def _insert_batch(plant_id,org_id,document_id,digest,records):
     p=_p(); rows=[]; errors=[]
     for raw in records:
@@ -129,11 +139,35 @@ def import_plant_data(plant_id,actor):
                 a,e=_insert_batch(plant_id,actor["organization_id"],document_id,digest,batch); total+=a; errors.extend({"filename":filename,"error":x} for x in e)
             documents+=1; del raw
         except Exception as exc: errors.append({"filename":filename,"error":str(exc)})
-    status="READY" if total>0 else "BLOCKED" if errors else "DATA_UPLOADED"
+    status="READY" if total>0 and not errors else "BLOCKED" if errors and not total else "READY" if total>0 else "DATA_UPLOADED"
     with store._connect() as conn: conn.cursor().execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p} AND organization_id={p}",(status,_now(),plant_id,actor["organization_id"]))
     try: store.record_audit(actor,"IMPORT_PLANT_DATA","PLANT",plant_id,{"documents":documents,"records":total,"errors":len(errors),"version":VERSION})
     except Exception: pass
-    return {"status":"OK" if total>0 else "NO_KNOWLEDGE_CREATED","plant_id":plant_id,"documents_processed":documents,"records_available_to_anvi":total,"errors":errors[:100],"error_count":len(errors),"import_version":VERSION,"mode":"DIRECT","message":"Imported knowledge successfully" if total>0 else ("Documents were found but produced zero normalized knowledge records. See errors for the exact document/parser/database reason." if errors else "Documents were found but the parser produced zero records. Check the uploaded file format/content."),"safety":dict(SAFETY)}
+    return {"status":"OK" if total>0 else "NO_KNOWLEDGE_CREATED","plant_id":plant_id,"documents_processed":documents,"records_available_to_anvi":total,"errors":errors[:100],"error_count":len(errors),"import_version":VERSION,"mode":"DIRECT_ASYNC","message":"Imported knowledge successfully" if total>0 else ("Documents were found but produced zero normalized knowledge records. See errors for the exact document/parser/database reason." if errors else "Documents were found but the parser produced zero records. Check the uploaded file format/content."),"safety":dict(SAFETY)}
+
+def enqueue_import(plant_id,actor):
+    if not actor.get("user_id") or not actor.get("organization_id") or actor.get("role") not in {"OWNER","ADMIN"}: raise PermissionError("OWNER/ADMIN access to this plant is required")
+    _job_schema(); p=_p(); now=_now()
+    with store._connect() as conn:
+        cur=conn.cursor(); cur.execute(f"SELECT 1 FROM anviqo_plants WHERE plant_id={p} AND organization_id={p} AND status='ACTIVE' LIMIT 1",(plant_id,actor["organization_id"]))
+        if not cur.fetchone(): raise PermissionError("Plant is not active in this organization")
+        cur.execute(f"SELECT job_id,status FROM {JOB_TABLE} WHERE plant_id={p} AND organization_id={p} AND status IN('QUEUED','RUNNING') ORDER BY created_at DESC LIMIT 1",(plant_id,actor["organization_id"]))
+        existing=cur.fetchone()
+        if existing:return {"job_id":existing[0],"job_status":existing[1],"existing":True,"mode":"DIRECT_ASYNC","import_version":VERSION}
+        jid="imp_"+uuid.uuid4().hex
+        cur.execute(f"INSERT INTO {JOB_TABLE}(job_id,organization_id,plant_id,actor_json,status,message,created_at,updated_at) VALUES({','.join([p]*8)})",(jid,actor["organization_id"],plant_id,json.dumps(actor,separators=(",",":")),"QUEUED","Queued for background plant-data import.",now,now))
+    return {"job_id":jid,"job_status":"QUEUED","existing":False,"mode":"DIRECT_ASYNC","import_version":VERSION}
+
+def get_import_status(plant_id,actor):
+    _job_schema(); p=_p()
+    with store._connect() as conn:
+        cur=conn.cursor();cur.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM {JOB_TABLE} WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC LIMIT 1",(plant_id,actor["organization_id"]));r=cur.fetchone()
+    if not r:return {"status":"NOT_STARTED","job_status":"NOT_STARTED","plant_id":plant_id,"mode":"DIRECT_ASYNC","import_version":VERSION}
+    jid,st,msg,res,cr,ss,ff,up=r
+    if isinstance(res,str):
+        try:res=json.loads(res or "{}")
+        except Exception:res={}
+    return {"job_id":jid,"status":st,"job_status":st,"message":msg,"result":res or {},"created_at":str(cr),"started_at":str(ss) if ss else None,"finished_at":str(ff) if ff else None,"updated_at":str(up) if up else None,"plant_id":plant_id,"mode":"DIRECT_ASYNC","import_version":VERSION}
 
 def register(app):
     from flask import jsonify,session
@@ -141,8 +175,14 @@ def register(app):
     def import_route(plant_id):
         actor={"user_id":session.get("user_id",""),"organization_id":session.get("organization_id",""),"plant_id":session.get("plant_id",""),"role":session.get("role",""),"username":session.get("username","")}
         try:
-            result=import_plant_data(plant_id,actor); return jsonify(result),200 if result["status"]=="OK" else 422
-        except Exception as exc:return jsonify({"status":"ERROR","message":str(exc),"mode":"DIRECT","safety":dict(SAFETY)}),400
+            return jsonify(enqueue_import(plant_id,actor)),200
+        except Exception as exc:return jsonify({"status":"ERROR","message":str(exc),"mode":"DIRECT_ASYNC","safety":dict(SAFETY)}),400
+    @app.get("/api/admin/onboarding/plant/<plant_id>/import-status")
+    def import_status_route(plant_id):
+        actor={"user_id":session.get("user_id",""),"organization_id":session.get("organization_id",""),"plant_id":session.get("plant_id",""),"role":session.get("role",""),"username":session.get("username","")}
+        if not actor.get("user_id") or actor.get("role") not in {"OWNER","ADMIN"}:return jsonify({"status":"FORBIDDEN"}),403
+        try:return jsonify(get_import_status(plant_id,actor)),200
+        except Exception as exc:return jsonify({"status":"ERROR","message":str(exc)}),400
     @app.get("/api/admin/onboarding/plant/<plant_id>/knowledge-summary")
     def knowledge_summary(plant_id):
         actor={"user_id":session.get("user_id",""),"organization_id":session.get("organization_id",""),"plant_id":session.get("plant_id",""),"role":session.get("role",""),"username":session.get("username","")}
@@ -150,7 +190,7 @@ def register(app):
         p=_p()
         with store._connect() as conn:
             cur=conn.cursor(); cur.execute(f"SELECT record_type,COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p} GROUP BY record_type ORDER BY COUNT(*) DESC",(plant_id,actor["organization_id"])); groups=[{"record_type":r[0],"count":r[1]} for r in cur.fetchall()]; cur.execute(f"SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p}",(plant_id,actor["organization_id"])); total=cur.fetchone()[0]
-        return jsonify({"status":"OK","plant_id":plant_id,"total_records":total,"by_type":groups,"mode":"DIRECT","safety":dict(SAFETY)})
+        return jsonify({"status":"OK","plant_id":plant_id,"total_records":total,"by_type":groups,"mode":"DIRECT_ASYNC","safety":dict(SAFETY)})
     return app
 
-__all__=["import_plant_data","register"]
+__all__=["import_plant_data","enqueue_import","get_import_status","_job_schema","register"]
