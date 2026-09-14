@@ -12,7 +12,7 @@ import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
 
 VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.10"
-BATCH_SIZE = 250
+BATCH_SIZE = 50
 JOB_TABLE = "anviqo_direct_import_jobs"
 _LOCAL_WORKER_STARTED = False
 _LOCAL_WORKER_THREAD = None
@@ -124,13 +124,27 @@ def _insert_batch(plant_id, org_id, document_id, digest, records):
         except Exception as exc: errors.append(str(exc))
     if not rows: return 0, errors
     with store._connect() as conn:
-        cur = conn.cursor(); ph = [p] * 15
+        cur = conn.cursor()
+        if not store._is_sqlite():
+            cur.execute("SET LOCAL statement_timeout = '15000'")
+        ph = [p] * 15
         if not store._is_sqlite(): ph[13] = p + "::jsonb"
         if store._is_sqlite():
             sql = "INSERT OR REPLACE INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content,created_at) VALUES(" + ",".join(ph) + "," + p + ")"; cur.executemany(sql, [r + (_now(),) for r in rows])
         else:
             sql = "INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES(" + ",".join(ph) + ") ON CONFLICT(plant_id,external_id,source) DO UPDATE SET organization_id=EXCLUDED.organization_id,document_id=EXCLUDED.document_id,name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,parent_id=EXCLUDED.parent_id,metadata=EXCLUDED.metadata,content=EXCLUDED.content"; cur.executemany(sql, rows)
     return len(rows), errors
+
+def _safe_insert_batch(plant_id, org_id, document_id, digest, records):
+    try:
+        return _insert_batch(plant_id, org_id, document_id, digest, records)
+    except Exception:
+        if len(records) <= 1:
+            raise
+        mid = max(1, len(records) // 2)
+        a1, e1 = _safe_insert_batch(plant_id, org_id, document_id, digest, records[:mid])
+        a2, e2 = _safe_insert_batch(plant_id, org_id, document_id, digest, records[mid:])
+        return a1 + a2, e1 + e2
 
 def import_plant_data(plant_id, actor):
     if not actor.get("user_id") or not actor.get("organization_id") or actor.get("role") not in {"OWNER", "ADMIN"}: raise PermissionError("OWNER/ADMIN access to this plant is required")
@@ -149,9 +163,9 @@ def import_plant_data(plant_id, actor):
             for rec in _records(filename, raw):
                 batch.append(rec)
                 if len(batch) >= BATCH_SIZE:
-                    a, e = _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); total += a; errors.extend({"filename": filename, "error": x} for x in e); print(f"ANVIQO_IMPORT_PROGRESS file={filename} records={total} errors={len(errors)}", flush=True); batch = []
+                    a, e = _safe_insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); total += a; errors.extend({"filename": filename, "error": x} for x in e); print(f"ANVIQO_IMPORT_PROGRESS file={filename} records={total} errors={len(errors)}", flush=True); batch = []
             if batch:
-                a, e = _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); total += a; errors.extend({"filename": filename, "error": x} for x in e)
+                a, e = _safe_insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); total += a; errors.extend({"filename": filename, "error": x} for x in e)
             documents += 1
         except Exception as exc: errors.append({"filename": filename, "error": str(exc)})
     status = "READY" if total > 0 and not errors else ("BLOCKED" if errors and not total else ("READY" if total > 0 else "DATA_UPLOADED"))
