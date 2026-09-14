@@ -41,11 +41,35 @@ except Exception:
 # V14 importer: the durable job table is created by the authenticated enqueue
 # path before a job exists. Avoid repeating PostgreSQL DDL/index creation from
 # every worker polling cycle; that DDL can block the worker behind catalog locks.
-# This is onboarding infrastructure only and does not modify V5/PCI intelligence.
 try:
     import anvi_plant_data_import as _anvi_import
     if not getattr(_anvi_import, "_ANVIQO_SCHEMA_LOOP_BYPASS", False):
         _anvi_import._ANVIQO_SCHEMA_LOOP_BYPASS = True
         _anvi_import._job_schema = lambda: None
+
+    # Some engineering workbooks contain large formatted regions with no data.
+    # Bound consecutive empty rows so universal onboarding cannot spend minutes
+    # walking formatting-only rows while still retaining normal sparse sheets.
+    if not getattr(_anvi_import, "_ANVIQO_SPARSE_XLSX_BOUND", False):
+        _anvi_import._ANVIQO_SPARSE_XLSX_BOUND = True
+        def _bounded_xlsx_records(raw):
+            from openpyxl import load_workbook
+            wb = load_workbook(__import__('io').BytesIO(bytes(raw)), read_only=True, data_only=True)
+            try:
+                for ws in wb.worksheets:
+                    def rows_with_bound():
+                        empty = 0
+                        for row in ws.iter_rows(values_only=True):
+                            if any(v is not None and str(v).strip() for v in row):
+                                empty = 0
+                                yield row
+                            else:
+                                empty += 1
+                                if empty >= 5000:
+                                    break
+                    yield from _anvi_import._matrix_records(ws.title, rows_with_bound())
+            finally:
+                wb.close()
+        _anvi_import._xlsx_records = _bounded_xlsx_records
 except Exception:
     pass
