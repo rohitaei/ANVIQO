@@ -1,0 +1,44 @@
+name: V14 importer batch recovery
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Harden importer batch recovery
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('anvi_plant_data_import.py')
+          s = p.read_text()
+          s2 = s.replace('BATCH_SIZE = 250', 'BATCH_SIZE = 50', 1)
+          old = 'with store._connect() as conn:\n        cur = conn.cursor(); ph = [p] * 15'
+          new = 'with store._connect() as conn:\n        cur = conn.cursor()\n        if not store._is_sqlite():\n            cur.execute("SET LOCAL statement_timeout = \'15000\'")\n        ph = [p] * 15'
+          if old not in s2:
+              raise SystemExit('expected _insert_batch connection block not found')
+          s2 = s2.replace(old, new, 1)
+          marker = '\ndef import_plant_data(plant_id, actor):\n'
+          helper = '''\ndef _safe_insert_batch(plant_id, org_id, document_id, digest, records):\n    try:\n        return _insert_batch(plant_id, org_id, document_id, digest, records)\n    except Exception:\n        if len(records) <= 1:\n            raise\n        mid = max(1, len(records) // 2)\n        a1, e1 = _safe_insert_batch(plant_id, org_id, document_id, digest, records[:mid])\n        a2, e2 = _safe_insert_batch(plant_id, org_id, document_id, digest, records[mid:])\n        return a1 + a2, e1 + e2\n\n'''
+          if marker not in s2:
+              raise SystemExit('import marker not found')
+          s2 = s2.replace(marker, helper + 'def import_plant_data(plant_id, actor):\n', 1)
+          s2 = s2.replace('a, e = _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch)', 'a, e = _safe_insert_batch(plant_id, actor["organization_id"], document_id, digest, batch)')
+          if s2 == s:
+              raise SystemExit('no changes made')
+          p.write_text(s2)
+          PY
+      - name: Commit hardened importer
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add anvi_plant_data_import.py
+          git diff --cached --quiet || git commit -m 'V14.11 importer batch timeout and recursive recovery'
+          git push
