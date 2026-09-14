@@ -12,9 +12,10 @@ import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
 
 VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.9"
-BATCH_SIZE = 2000
+BATCH_SIZE = 250
 JOB_TABLE = "anviqo_direct_import_jobs"
 _LOCAL_WORKER_STARTED = False
+_LOCAL_WORKER_THREAD = None
 _LOCAL_WORKER_LOCK = threading.Lock()
 
 
@@ -223,6 +224,7 @@ def enqueue_import(plant_id, actor):
         if existing: return {"job_id": existing[0], "job_status": existing[1], "existing": True, "mode": "WEB_LOCAL_ASYNC", "import_version": VERSION}
         jid = "imp_" + uuid.uuid4().hex
         cur.execute("INSERT INTO " + JOB_TABLE + "(job_id,organization_id,plant_id,actor_json,status,message,created_at,updated_at) VALUES(" + ",".join([p] * 8) + ")", (jid, actor["organization_id"], plant_id, json.dumps(actor, separators=(",", ":")), "QUEUED", "Queued for background plant-data import.", now, now))
+    _start_local_worker()
     return {"job_id": jid, "job_status": "QUEUED", "existing": False, "mode": "WEB_LOCAL_ASYNC", "import_version": VERSION}
 
 
@@ -230,6 +232,11 @@ def _claim_job():
     p = _p(); _job_schema()
     with store._connect() as conn:
         cur = conn.cursor()
+        # Recover only genuinely abandoned jobs after a process restart.
+        if not store._is_sqlite():
+            cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=NOW() WHERE status='RUNNING' AND updated_at < NOW() - INTERVAL '20 minutes'")
+        else:
+            cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=? WHERE status='RUNNING' AND updated_at < ?", (_now(), _now()))
         if store._is_sqlite():
             cur.execute("SELECT job_id,organization_id,plant_id,actor_json FROM " + JOB_TABLE + " WHERE status='QUEUED' ORDER BY created_at LIMIT 1")
             row = cur.fetchone()
@@ -251,29 +258,38 @@ def _finish_job(job_id, status, result, message):
 
 
 def _local_worker_loop():
+    print("ANVIQO_IMPORT_WORKER started", flush=True)
     while True:
         try:
             job = _claim_job()
             if not job:
                 time.sleep(2); continue
             job_id, org_id, plant_id, actor_json = job
+            print(f"ANVIQO_IMPORT_WORKER claimed job={job_id} plant={plant_id}", flush=True)
             actor = json.loads(actor_json) if isinstance(actor_json, str) else dict(actor_json)
             try:
                 result = import_plant_data(plant_id, actor)
                 _finish_job(job_id, "SUCCEEDED" if result.get("records_available_to_anvi", 0) > 0 else "FAILED", result, result.get("message", "Import finished."))
+                print(f"ANVIQO_IMPORT_WORKER finished job={job_id} status={result.get('status')} records={result.get('records_available_to_anvi', 0)} errors={result.get('error_count', 0)}", flush=True)
             except Exception as exc:
-                _finish_job(job_id, "FAILED", {"status": "ERROR", "error": str(exc), "plant_id": plant_id, "import_version": VERSION}, str(exc))
+                print(f"ANVIQO_IMPORT_WORKER failed job={job_id}: {exc!r}", flush=True)
+                try:
+                    _finish_job(job_id, "FAILED", {"status": "ERROR", "error": str(exc), "plant_id": plant_id, "import_version": VERSION}, str(exc))
+                except Exception as finish_exc:
+                    print(f"ANVIQO_IMPORT_WORKER could not mark job failed job={job_id}: {finish_exc!r}", flush=True)
         except Exception:
             time.sleep(3)
 
 
 def _start_local_worker():
-    global _LOCAL_WORKER_STARTED
+    global _LOCAL_WORKER_STARTED, _LOCAL_WORKER_THREAD
     with _LOCAL_WORKER_LOCK:
-        if _LOCAL_WORKER_STARTED: return
+        if _LOCAL_WORKER_THREAD is not None and _LOCAL_WORKER_THREAD.is_alive():
+            return
         _LOCAL_WORKER_STARTED = True
-        t = threading.Thread(target=_local_worker_loop, name="anviqo-web-import-worker", daemon=True)
-        t.start()
+        _LOCAL_WORKER_THREAD = threading.Thread(target=_local_worker_loop, name="anviqo-web-import-worker", daemon=True)
+        _LOCAL_WORKER_THREAD.start()
+        print("ANVIQO_IMPORT_WORKER thread launched", flush=True)
 
 
 def get_import_status(plant_id, actor):
