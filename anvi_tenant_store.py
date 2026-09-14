@@ -20,6 +20,13 @@ from typing import Any, Iterator
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 TENANT_DB_URL = os.getenv("ANVIQO_TENANT_DB_URL", "").strip()
 
+# Render PostgreSQL requires TLS. Keep the tenant store on a secure production connection.
+if not TENANT_DB_URL.startswith("sqlite:") and (TENANT_DB_URL or DATABASE_URL):
+    if TENANT_DB_URL and "sslmode=" not in TENANT_DB_URL.lower():
+        TENANT_DB_URL += ("&" if "?" in TENANT_DB_URL else "?") + "sslmode=require"
+    elif not TENANT_DB_URL and "sslmode=" not in DATABASE_URL.lower():
+        DATABASE_URL += ("&" if "?" in DATABASE_URL else "?") + "sslmode=require"
+
 ROLE_PERMISSIONS = {
     "OWNER": {"tenant:read", "tenant:admin", "audit:read", "plant:read", "inventory:read", "inventory:write"},
     "ADMIN": {"tenant:read", "tenant:admin", "audit:read", "plant:read", "inventory:read", "inventory:write"},
