@@ -37,3 +37,15 @@ try:
     import anvi_tenant_chat_boundary
 except Exception:
     pass
+
+# V14 importer: the durable job table is created by the authenticated enqueue
+# path before a job exists. Avoid repeating PostgreSQL DDL/index creation from
+# every worker polling cycle; that DDL can block the worker behind catalog locks.
+# This is onboarding infrastructure only and does not modify V5/PCI intelligence.
+try:
+    import anvi_plant_data_import as _anvi_import
+    if not getattr(_anvi_import, "_ANVIQO_SCHEMA_LOOP_BYPASS", False):
+        _anvi_import._ANVIQO_SCHEMA_LOOP_BYPASS = True
+        _anvi_import._job_schema = lambda: None
+except Exception:
+    pass
