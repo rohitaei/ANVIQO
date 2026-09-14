@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import zipfile
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
-VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.3"
+VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.4"
 
 def _now(): return datetime.now(timezone.utc).isoformat()
 def _p(): return store._placeholder()
@@ -125,7 +125,7 @@ def import_plant_data(plant_id,actor):
     with store._connect() as conn: conn.cursor().execute(f"UPDATE anviqo_plant_onboarding SET status={p},updated_at={p} WHERE plant_id={p} AND organization_id={p}",(status,_now(),plant_id,actor["organization_id"]))
     try: store.record_audit(actor,"IMPORT_PLANT_DATA","PLANT",plant_id,{"documents":documents,"records":total,"errors":len(errors),"version":VERSION})
     except Exception: pass
-    return {"status":"OK" if total>0 else "NO_KNOWLEDGE_CREATED","plant_id":plant_id,"documents_processed":documents,"records_available_to_anvi":total,"errors":errors[:100],"error_count":len(errors),"import_version":VERSION,"mode":"DIRECT","safety":dict(SAFETY)}
+    return {"status":"OK" if total>0 else "NO_KNOWLEDGE_CREATED","plant_id":plant_id,"documents_processed":documents,"records_available_to_anvi":total,"errors":errors[:100],"error_count":len(errors),"import_version":VERSION,"mode":"DIRECT","message":("Imported knowledge successfully" if total>0 else ("Documents were found but produced zero normalized knowledge records. See errors for the exact document/parser/database reason." if errors else "Documents were found but the parser produced zero records. Check the uploaded file format/content.")),"safety":dict(SAFETY)}
 
 def register(app):
     from flask import jsonify,session
