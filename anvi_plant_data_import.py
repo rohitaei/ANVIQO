@@ -149,7 +149,7 @@ def import_plant_data(plant_id, actor):
             for rec in _records(filename, raw):
                 batch.append(rec)
                 if len(batch) >= BATCH_SIZE:
-                    a, e = _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); total += a; errors.extend({"filename": filename, "error": x} for x in e); batch = []
+                    a, e = _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); total += a; errors.extend({"filename": filename, "error": x} for x in e); print(f"ANVIQO_IMPORT_PROGRESS file={filename} records={total} errors={len(errors)}", flush=True); batch = []
             if batch:
                 a, e = _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); total += a; errors.extend({"filename": filename, "error": x} for x in e)
             documents += 1
@@ -190,6 +190,17 @@ def _claim_job():
             cur.execute("UPDATE " + JOB_TABLE + " SET status='RUNNING',message='Import running in ANVIQO web process.',started_at=NOW(),updated_at=NOW() WHERE job_id=" + p + " AND status='QUEUED'", (row[0],))
         return row
 
+def _touch_job(job_id):
+    p = _p()
+    try:
+        with store._connect() as conn:
+            if store._is_sqlite():
+                conn.cursor().execute("UPDATE " + JOB_TABLE + " SET updated_at=? WHERE job_id=" + p, (_now(), job_id))
+            else:
+                conn.cursor().execute("UPDATE " + JOB_TABLE + " SET updated_at=NOW() WHERE job_id=" + p, (job_id,))
+    except Exception:
+        pass
+
 def _finish_job(job_id, status, result, message):
     p = _p()
     with store._connect() as conn: conn.cursor().execute("UPDATE " + JOB_TABLE + " SET status=" + p + ",message=" + p + ",result_json=" + (p + "::jsonb" if not store._is_sqlite() else p) + ",finished_at=" + ("NOW()" if not store._is_sqlite() else p) + ",updated_at=" + ("NOW()" if not store._is_sqlite() else p) + " WHERE job_id=" + p, (status, message, json.dumps(result, default=str), *([_now(), _now()] if store._is_sqlite() else []), job_id))
@@ -203,7 +214,18 @@ def _local_worker_loop():
             job_id, org_id, plant_id, actor_json = job; print(f"ANVIQO_IMPORT_WORKER claimed job={job_id} plant={plant_id}", flush=True)
             actor = json.loads(actor_json) if isinstance(actor_json, str) else dict(actor_json)
             try:
-                result = import_plant_data(plant_id, actor); _finish_job(job_id, "SUCCEEDED" if result.get("records_available_to_anvi", 0) > 0 else "FAILED", result, result.get("message", "Import finished.")); print(f"ANVIQO_IMPORT_WORKER finished job={job_id} status={result.get('status')} records={result.get('records_available_to_anvi', 0)} errors={result.get('error_count', 0)}", flush=True)
+                print(f"ANVIQO_IMPORT_WORKER processing job={job_id} plant={plant_id}", flush=True)
+                hb_stop = threading.Event()
+                def _hb():
+                    while not hb_stop.wait(20):
+                        _touch_job(job_id)
+                        print(f"ANVIQO_IMPORT_WORKER heartbeat job={job_id}", flush=True)
+                hb = threading.Thread(target=_hb, name="anviqo-import-heartbeat", daemon=True); hb.start()
+                try:
+                    result = import_plant_data(plant_id, actor)
+                finally:
+                    hb_stop.set(); hb.join(timeout=2); _touch_job(job_id)
+                _finish_job(job_id, "SUCCEEDED" if result.get("records_available_to_anvi", 0) > 0 else "FAILED", result, result.get("message", "Import finished.")); print(f"ANVIQO_IMPORT_WORKER finished job={job_id} status={result.get('status')} records={result.get('records_available_to_anvi', 0)} errors={result.get('error_count', 0)}", flush=True)
             except Exception as exc:
                 print(f"ANVIQO_IMPORT_WORKER failed job={job_id}: {exc!r}", flush=True)
                 try: _finish_job(job_id, "FAILED", {"status": "ERROR", "error": str(exc), "plant_id": plant_id, "import_version": VERSION}, str(exc))
