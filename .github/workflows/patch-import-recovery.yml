@@ -1,10 +1,10 @@
-name: Patch importer stale recovery
+name: Patch importer DB writes
 on:
   push:
     branches: [main]
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, 'V14.11 importer heartbeat') }}
+    if: ${{ !contains(github.event.head_commit.message, 'V14.13 importer DB writes') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -12,33 +12,74 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Patch importer heartbeat and progress logging
+      - name: Patch current importer insert function
         run: |
           python - <<'PY'
+          import ast
           from pathlib import Path
+
           p = Path('anvi_plant_data_import.py')
           s = p.read_text()
-          old = '''def _finish_job(job_id, status, result, message):\n    p = _p()\n'''
-          new = '''def _touch_job(job_id):\n    p = _p()\n    try:\n        with store._connect() as conn:\n            if store._is_sqlite():\n                conn.cursor().execute("UPDATE " + JOB_TABLE + " SET updated_at=? WHERE job_id=" + p, (_now(), job_id))\n            else:\n                conn.cursor().execute("UPDATE " + JOB_TABLE + " SET updated_at=NOW() WHERE job_id=" + p, (job_id,))\n    except Exception:\n        pass\n\ndef _finish_job(job_id, status, result, message):\n    p = _p()\n'''
-          if old not in s:
-              raise SystemExit('finish marker not found')
-          s = s.replace(old, new, 1)
-          old = '''            try:\n                result = import_plant_data(plant_id, actor); _finish_job(job_id, "SUCCEEDED" if result.get("records_available_to_anvi", 0) > 0 else "FAILED", result, result.get("message", "Import finished.")); print(f"ANVIQO_IMPORT_WORKER finished job={job_id} status={result.get('status')} records={result.get('records_available_to_anvi', 0)} errors={result.get('error_count', 0)}", flush=True)\n'''
-          new = '''            try:\n                print(f"ANVIQO_IMPORT_WORKER processing job={job_id} plant={plant_id}", flush=True)\n                hb_stop = threading.Event()\n                def _hb():\n                    while not hb_stop.wait(20):\n                        _touch_job(job_id)\n                        print(f"ANVIQO_IMPORT_WORKER heartbeat job={job_id}", flush=True)\n                hb = threading.Thread(target=_hb, name="anviqo-import-heartbeat", daemon=True); hb.start()\n                try:\n                    result = import_plant_data(plant_id, actor)\n                finally:\n                    hb_stop.set(); hb.join(timeout=2); _touch_job(job_id)\n                _finish_job(job_id, "SUCCEEDED" if result.get("records_available_to_anvi", 0) > 0 else "FAILED", result, result.get("message", "Import finished.")); print(f"ANVIQO_IMPORT_WORKER finished job={job_id} status={result.get('status')} records={result.get('records_available_to_anvi', 0)} errors={result.get('error_count', 0)}", flush=True)\n'''
-          if old not in s:
-              raise SystemExit('worker marker not found')
-          s = s.replace(old, new, 1)
-          old = '''                    a, e = _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); total += a; errors.extend({"filename": filename, "error": x} for x in e); batch = []\n'''
-          new = '''                    a, e = _insert_batch(plant_id, actor["organization_id"], document_id, digest, batch); total += a; errors.extend({"filename": filename, "error": x} for x in e); print(f"ANVIQO_IMPORT_PROGRESS file={filename} records={total} errors={len(errors)}", flush=True); batch = []\n'''
-          if old not in s:
-              raise SystemExit('batch marker not found')
-          s = s.replace(old, new, 1)
+          tree = ast.parse(s)
+          fn = next((n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == '_insert_batch'), None)
+          if fn is None:
+              raise SystemExit('current _insert_batch function not found')
+          lines = s.splitlines(True)
+          start = fn.lineno - 1
+          end = (next((n.lineno - 1 for n in tree.body if isinstance(n, ast.FunctionDef) and n.lineno > fn.lineno), len(lines)))
+          new_fn = '''def _insert_batch(plant_id, org_id, document_id, digest, records):
+    p = _p(); rows = []; errors = []
+    for raw in records:
+        try:
+            n = normalize_record(raw, str(raw.get("record_type") or "ASSET")); item = asdict(n) if is_dataclass(n) else dict(n); meta = dict(item.get("metadata") or {}); meta.update(import_version=VERSION, document_sha256=digest); content = str(meta.pop("content", "") or ""); external_id = str(item.get("external_id", "")); source = str(item.get("source", "")); kid = "know_" + hashlib.sha256((plant_id + document_id + external_id + source).encode()).hexdigest()[:24]
+            rows.append((kid, org_id, plant_id, document_id, item.get("record_type", "ASSET"), external_id, item.get("name", ""), item.get("area", ""), item.get("service", ""), item.get("asset_type", ""), item.get("tag", ""), item.get("parent_id", ""), source, json.dumps(meta, default=str), content))
+        except Exception as exc:
+            errors.append(str(exc))
+    if not rows:
+        return 0, errors
+    conn = None
+    try:
+        conn = store._connect()
+        cur = conn.cursor()
+        if not store._is_sqlite():
+            # Session-level limits cover both INSERT execution and COMMIT/lock waits.
+            cur.execute("SET statement_timeout = '10000'")
+            cur.execute("SET lock_timeout = '3000'")
+        ph = [p] * 15
+        if not store._is_sqlite():
+            ph[13] = p + "::jsonb"
+        if store._is_sqlite():
+            sql = "INSERT OR REPLACE INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content,created_at) VALUES(" + ",".join(ph) + "," + p + ")"
+            cur.executemany(sql, [r + (_now(),) for r in rows])
+        else:
+            sql = "INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES(" + ",".join(ph) + ") ON CONFLICT(plant_id,external_id,source) DO UPDATE SET organization_id=EXCLUDED.organization_id,document_id=EXCLUDED.document_id,name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,parent_id=EXCLUDED.parent_id,metadata=EXCLUDED.metadata,content=EXCLUDED.content"
+            cur.executemany(sql, rows)
+        if hasattr(conn, "commit"):
+            conn.commit()
+        return len(rows), errors
+    except Exception as exc:
+        if conn is not None and hasattr(conn, "rollback"):
+            try: conn.rollback()
+            except Exception: pass
+        if len(records) <= 1:
+            return 0, errors + [f"insert failed: {exc}"]
+        raise
+    finally:
+        if conn is not None and hasattr(conn, "close"):
+            try: conn.close()
+            except Exception: pass
+
+'''
+          s = ''.join(lines[:start]) + new_fn + ''.join(lines[end:])
+          ast.parse(s)
           p.write_text(s)
           PY
+      - name: Verify importer syntax
+        run: python -m py_compile anvi_plant_data_import.py universal_onboarding.py anvi_tenant_store.py
       - name: Commit importer patch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add anvi_plant_data_import.py
-          git diff --cached --quiet || git commit -m 'V14.11 importer heartbeat and progress logging'
+          git diff --cached --quiet || git commit -m 'V14.13 importer DB writes lock-safe'
           git push
