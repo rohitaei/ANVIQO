@@ -38,18 +38,14 @@ try:
 except Exception:
     pass
 
-# V14 importer: the durable job table is created by the authenticated enqueue
-# path before a job exists. Avoid repeating PostgreSQL DDL/index creation from
-# every worker polling cycle; that DDL can block the worker behind catalog locks.
+# V14 importer: avoid repeating PostgreSQL DDL/index creation in every worker
+# polling cycle and make Excel parsing robust against formatting-only rows.
 try:
     import anvi_plant_data_import as _anvi_import
     if not getattr(_anvi_import, "_ANVIQO_SCHEMA_LOOP_BYPASS", False):
         _anvi_import._ANVIQO_SCHEMA_LOOP_BYPASS = True
         _anvi_import._job_schema = lambda: None
 
-    # Some engineering workbooks contain large formatted regions with no data.
-    # Bound consecutive empty rows so universal onboarding cannot spend minutes
-    # walking formatting-only rows while still retaining normal sparse sheets.
     if not getattr(_anvi_import, "_ANVIQO_SPARSE_XLSX_BOUND", False):
         _anvi_import._ANVIQO_SPARSE_XLSX_BOUND = True
         def _bounded_xlsx_records(raw):
@@ -72,5 +68,15 @@ try:
             finally:
                 wb.close()
         _anvi_import._xlsx_records = _bounded_xlsx_records
+
+    if not getattr(_anvi_import, "_ANVIQO_BATCH_TRACE", False):
+        _anvi_import._ANVIQO_BATCH_TRACE = True
+        _original_insert_batch = _anvi_import._insert_batch
+        def _traced_insert_batch(plant_id, org_id, document_id, digest, records):
+            print(f"ANVIQO_IMPORT_BATCH start size={len(records)} document={document_id}", flush=True)
+            result = _original_insert_batch(plant_id, org_id, document_id, digest, records)
+            print(f"ANVIQO_IMPORT_BATCH done size={len(records)} inserted={result[0]} errors={len(result[1])}", flush=True)
+            return result
+        _anvi_import._insert_batch = _traced_insert_batch
 except Exception:
     pass
