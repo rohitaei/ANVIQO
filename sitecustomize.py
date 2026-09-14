@@ -54,7 +54,8 @@ try:
         _anvi_import._ANVIQO_SPARSE_XLSX_BOUND = True
         def _bounded_xlsx_records(raw):
             from openpyxl import load_workbook
-            wb = load_workbook(__import__('io').BytesIO(bytes(raw)), read_only=True, data_only=True)
+            import io
+            wb = load_workbook(io.BytesIO(bytes(raw)), read_only=True, data_only=True, keep_links=False)
             try:
                 for ws in wb.worksheets:
                     def rows_with_bound():
@@ -65,7 +66,7 @@ try:
                                 yield row
                             else:
                                 empty += 1
-                                if empty >= 5000:
+                                if empty >= 1000:
                                     break
                     yield from _anvi_import._matrix_records(ws.title, rows_with_bound())
             finally:
