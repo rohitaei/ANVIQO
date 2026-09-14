@@ -1,0 +1,58 @@
+name: V14 importer hardening
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  harden-importer:
+    if: ${{ !contains(github.event.head_commit.message, 'V14.9.1 importer hardening') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Harden durable importer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('anvi_plant_data_import.py')
+          s = p.read_text()
+          s = s.replace('BATCH_SIZE = 2000', 'BATCH_SIZE = 250')
+          s = s.replace('_LOCAL_WORKER_STARTED = False\n_LOCAL_WORKER_LOCK = threading.Lock()', '_LOCAL_WORKER_STARTED = False\n_LOCAL_WORKER_THREAD = None\n_LOCAL_WORKER_LOCK = threading.Lock()')
+          old = '''def _claim_job():\n    p = _p(); _job_schema()\n    with store._connect() as conn:\n        cur = conn.cursor()\n        if store._is_sqlite():'''
+          new = '''def _claim_job():\n    p = _p(); _job_schema()\n    with store._connect() as conn:\n        cur = conn.cursor()\n        # Recover only genuinely abandoned jobs after a process restart.\n        if not store._is_sqlite():\n            cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=NOW() WHERE status='RUNNING' AND updated_at < NOW() - INTERVAL '20 minutes'")\n        else:\n            cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=? WHERE status='RUNNING' AND updated_at < ?", (_now(), _now()))\n        if store._is_sqlite():'''
+          if old not in s: raise SystemExit('claim_job anchor not found')
+          s = s.replace(old, new, 1)
+          old = '''def _local_worker_loop():\n    while True:\n        try:\n            job = _claim_job()\n            if not job:\n                time.sleep(2); continue\n            job_id, org_id, plant_id, actor_json = job'''
+          new = '''def _local_worker_loop():\n    print("ANVIQO_IMPORT_WORKER started", flush=True)\n    while True:\n        try:\n            job = _claim_job()\n            if not job:\n                time.sleep(2); continue\n            job_id, org_id, plant_id, actor_json = job\n            print(f"ANVIQO_IMPORT_WORKER claimed job={job_id} plant={plant_id}", flush=True)'''
+          if old not in s: raise SystemExit('worker_loop anchor not found')
+          s = s.replace(old, new, 1)
+          old = '''def _start_local_worker():\n    global _LOCAL_WORKER_STARTED\n    with _LOCAL_WORKER_LOCK:\n        if _LOCAL_WORKER_STARTED: return\n        _LOCAL_WORKER_STARTED = True\n        t = threading.Thread(target=_local_worker_loop, name="anviqo-web-import-worker", daemon=True)\n        t.start()'''
+          new = '''def _start_local_worker():\n    global _LOCAL_WORKER_STARTED, _LOCAL_WORKER_THREAD\n    with _LOCAL_WORKER_LOCK:\n        if _LOCAL_WORKER_THREAD is not None and _LOCAL_WORKER_THREAD.is_alive():\n            return\n        _LOCAL_WORKER_STARTED = True\n        _LOCAL_WORKER_THREAD = threading.Thread(target=_local_worker_loop, name="anviqo-web-import-worker", daemon=True)\n        _LOCAL_WORKER_THREAD.start()\n        print("ANVIQO_IMPORT_WORKER thread launched", flush=True)'''
+          if old not in s: raise SystemExit('start_worker anchor not found')
+          s = s.replace(old, new, 1)
+          old = '''    return {"job_id": jid, "job_status": "QUEUED", "existing": False, "mode": "WEB_LOCAL_ASYNC", "import_version": VERSION}'''
+          new = '''    _start_local_worker()\n    return {"job_id": jid, "job_status": "QUEUED", "existing": False, "mode": "WEB_LOCAL_ASYNC", "import_version": VERSION}'''
+          if old not in s: raise SystemExit('enqueue return anchor not found')
+          s = s.replace(old, new, 1)
+          old = '''                result = import_plant_data(plant_id, actor)\n                _finish_job(job_id, "SUCCEEDED" if result.get("records_available_to_anvi", 0) > 0 else "FAILED", result, result.get("message", "Import finished."))'''
+          new = '''                result = import_plant_data(plant_id, actor)\n                _finish_job(job_id, "SUCCEEDED" if result.get("records_available_to_anvi", 0) > 0 else "FAILED", result, result.get("message", "Import finished."))\n                print(f"ANVIQO_IMPORT_WORKER finished job={job_id} status={result.get('status')} records={result.get('records_available_to_anvi', 0)} errors={result.get('error_count', 0)}", flush=True)'''
+          if old not in s: raise SystemExit('finish anchor not found')
+          s = s.replace(old, new, 1)
+          old = '''            except Exception as exc:\n                _finish_job(job_id, "FAILED", {"status": "ERROR", "error": str(exc), "plant_id": plant_id, "import_version": VERSION}, str(exc))'''
+          new = '''            except Exception as exc:\n                print(f"ANVIQO_IMPORT_WORKER failed job={job_id}: {exc!r}", flush=True)\n                try:\n                    _finish_job(job_id, "FAILED", {"status": "ERROR", "error": str(exc), "plant_id": plant_id, "import_version": VERSION}, str(exc))\n                except Exception as finish_exc:\n                    print(f"ANVIQO_IMPORT_WORKER could not mark job failed job={job_id}: {finish_exc!r}", flush=True)'''
+          if old not in s: raise SystemExit('exception anchor not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          compile(p.read_text(), str(p), 'exec')
+          print('V14 importer hardening compile: PASS')
+          PY
+      - name: Commit hardening
+        run: |
+          git config user.name 'ANVIQO Automation'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add anvi_plant_data_import.py .github/workflows/v14-importer-hardening.yml
+          git commit -m 'V14.9.1 importer hardening: self-healing worker and bounded batches' || exit 0
+          git push
