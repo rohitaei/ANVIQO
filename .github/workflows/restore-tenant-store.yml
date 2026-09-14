@@ -1,0 +1,24 @@
+name: Restore tenant store
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/restore-tenant-store.yml
+permissions:
+  contents: write
+jobs:
+  restore:
+    if: ${{ !contains(github.event.head_commit.message, 'Restore tenant store from 88e8') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore exact known-good tenant store
+        run: |
+          git checkout 88e8b69362f3161f0524ac05429691594af757d4 -- anvi_tenant_store.py
+          git config user.name 'ANVIQO Restore Bot'
+          git config user.email 'actions@github.com'
+          git add anvi_tenant_store.py
+          git commit -m 'Restore tenant store from 88e8' || exit 0
+          git push origin HEAD:main
