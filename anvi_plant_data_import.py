@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import zipfile
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
-VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.4"
+VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.5"
 
 def _now(): return datetime.now(timezone.utc).isoformat()
 def _p(): return store._placeholder()
@@ -18,26 +18,44 @@ def _header_score(row):
     known={"tag","tagname","plctag","plctagname","externalid","assetid","area","service","description","iotype","plcaddress","panel","tb","jb","recordtype","entitytype"}
     return sum(1 for v in row if _key(v) in known)
 
+def _matrix_records(sheet_name, rows):
+    matrix=[tuple(row) for row in rows if any(_nonempty(v) for v in row)]
+    if not matrix: return
+    header_index=max(range(min(30,len(matrix))),key=lambda i:_header_score(matrix[i]))
+    first=matrix[header_index]; headers=[]; seen={}
+    for i,v in enumerate(first):
+        h=str(v).strip() if _nonempty(v) else f"column_{i+1}"; k=_key(h); seen[k]=seen.get(k,0)+1
+        headers.append(h if seen[k]==1 else f"{h}_{seen[k]}")
+    for idx,row in enumerate(matrix[header_index+1:],start=header_index+2):
+        if not any(_nonempty(v) for v in row): continue
+        rec={headers[i]:row[i] for i in range(min(len(headers),len(row)))}
+        rec={str(k).strip():v for k,v in rec.items() if str(k).strip()}
+        rec["external_id"]=str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or rec.get("TAG") or hashlib.sha256((sheet_name+str(idx)+json.dumps(rec,sort_keys=True,default=str)).encode()).hexdigest()[:20])
+        rec["source"]=sheet_name; rec["record_type"]=str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
+        yield rec
+
 def _xlsx_records(raw):
     from openpyxl import load_workbook
     wb=load_workbook(io.BytesIO(bytes(raw)),read_only=True,data_only=True)
     try:
         for ws in wb.worksheets:
-            matrix=[tuple(row) for row in ws.iter_rows(values_only=True) if any(_nonempty(v) for v in row)]
-            if not matrix: continue
-            header_index=max(range(min(30,len(matrix))),key=lambda i:_header_score(matrix[i]))
-            first=matrix[header_index]; headers=[]; seen={}
-            for i,v in enumerate(first):
-                h=str(v).strip() if _nonempty(v) else f"column_{i+1}"; k=_key(h); seen[k]=seen.get(k,0)+1
-                headers.append(h if seen[k]==1 else f"{h}_{seen[k]}")
-            for idx,row in enumerate(matrix[header_index+1:],start=header_index+2):
-                if not any(_nonempty(v) for v in row): continue
-                rec={headers[i]:row[i] for i in range(min(len(headers),len(row)))}
-                rec={str(k).strip():v for k,v in rec.items() if str(k).strip()}
-                rec["external_id"]=str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or rec.get("TAG") or hashlib.sha256((ws.title+str(idx)+json.dumps(rec,sort_keys=True,default=str)).encode()).hexdigest()[:20])
-                rec["source"]=ws.title; rec["record_type"]=str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
-                yield rec
+            yield from _matrix_records(ws.title, ws.iter_rows(values_only=True))
     finally: wb.close()
+
+def _xls_records(raw):
+    import xlrd
+    wb=xlrd.open_workbook(file_contents=bytes(raw),on_demand=True)
+    try:
+        for ws in wb.sheets():
+            rows=(ws.row_values(i) for i in range(ws.nrows))
+            yield from _matrix_records(ws.name, rows)
+    finally:
+        wb.release_resources()
+
+def _looks_like_xlsx(raw):
+    return bytes(raw).startswith(b"PK\x03\x04")
+def _looks_like_xls(raw):
+    return bytes(raw).startswith(b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1")
 
 def _text(raw,ext):
     if ext in {"txt","log","csv"}: return bytes(raw).decode("utf-8-sig",errors="replace")
@@ -53,7 +71,16 @@ def _text(raw,ext):
 
 def _records(filename,raw):
     ext=filename.lower().rsplit(".",1)[-1] if "." in filename else ""
-    if ext=="xlsx": return _xlsx_records(raw)
+    # Prefer the filename extension, but fall back to the actual binary signature.
+    # This handles legacy XLS files that were uploaded/stored with an XLSX name.
+    if ext=="xls" or (not ext or _looks_like_xls(raw)):
+        try: yield from _xls_records(raw); return
+        except Exception:
+            if ext=="xls": raise
+    if ext=="xlsx" or _looks_like_xlsx(raw):
+        try: yield from _xlsx_records(raw); return
+        except Exception:
+            if ext=="xlsx": raise
     if ext=="csv":
         reader=csv.DictReader(io.StringIO(bytes(raw).decode("utf-8-sig",errors="replace")))
         for i,row in enumerate(reader):
