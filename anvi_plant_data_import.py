@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
 
-VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.9"
+VERSION = "ANVIQO-DIRECT-PLANT-DATA-V1.4.10"
 BATCH_SIZE = 250
 JOB_TABLE = "anviqo_direct_import_jobs"
 _LOCAL_WORKER_STARTED = False
@@ -41,25 +41,46 @@ def _header_score(row):
 
 
 def _matrix_records(sheet_name, rows):
-    matrix = [tuple(r) for r in rows if any(_nonempty(v) for v in r)]
-    if not matrix:
+    """Convert a worksheet iterator without materializing the whole sheet."""
+    iterator = iter(rows)
+    sample = []
+    for _ in range(30):
+        try:
+            row = tuple(next(iterator))
+        except StopIteration:
+            break
+        if any(_nonempty(v) for v in row):
+            sample.append(row)
+    if not sample:
         return
-    hi = max(range(min(30, len(matrix))), key=lambda i: _header_score(matrix[i]))
-    first = matrix[hi]
+    hi = max(range(len(sample)), key=lambda i: _header_score(sample[i]))
+    first = sample[hi]
     headers, seen = [], {}
     for i, v in enumerate(first):
         h = str(v).strip() if _nonempty(v) else "column_" + str(i + 1)
         k = _key(h); seen[k] = seen.get(k, 0) + 1
         headers.append(h if seen[k] == 1 else h + "_" + str(seen[k]))
-    for idx, row in enumerate(matrix[hi + 1:], start=hi + 2):
+
+    def emit(row, idx):
         if not any(_nonempty(v) for v in row):
-            continue
+            return None
         rec = {headers[i]: row[i] for i in range(min(len(headers), len(row)))}
         rec = {str(k).strip(): v for k, v in rec.items() if str(k).strip()}
         rec["external_id"] = str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or rec.get("TAG") or hashlib.sha256((sheet_name + str(idx) + json.dumps(rec, sort_keys=True, default=str)).encode()).hexdigest()[:20])
         rec["source"] = sheet_name
         rec["record_type"] = str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
-        yield rec
+        return rec
+
+    for offset, row in enumerate(sample[hi + 1:], start=hi + 2):
+        rec = emit(row, offset)
+        if rec is not None:
+            yield rec
+    idx = len(sample) + 1
+    for row in iterator:
+        rec = emit(tuple(row), idx)
+        idx += 1
+        if rec is not None:
+            yield rec
 
 
 def _xlsx_records(raw):
@@ -232,7 +253,6 @@ def _claim_job():
     p = _p(); _job_schema()
     with store._connect() as conn:
         cur = conn.cursor()
-        # Recover only genuinely abandoned jobs after a process restart.
         if not store._is_sqlite():
             cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=NOW() WHERE status='RUNNING' AND updated_at < NOW() - INTERVAL '20 minutes'")
         else:
