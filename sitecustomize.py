@@ -1,13 +1,14 @@
 """ANVIQO runtime compatibility hooks.
 
-Loaded automatically by Python's site initialization. This narrowly normalizes
-one natural-language field-report pattern that the existing parser previously
-missed. It does not alter V5, PCI, PLC/SCADA controls, or spare inventory rules.
+Loaded automatically by Python's site initialization. These hooks are limited
+to onboarding/runtime compatibility and do not alter V5, PCI, PLC/SCADA
+controls, or spare inventory rules.
 """
 from __future__ import annotations
 import re
 from contextlib import contextmanager
 import threading
+
 
 def _install_field_report_spare_compat():
     try:
@@ -38,11 +39,10 @@ try:
 except Exception:
     pass
 
-# V14 importer runtime safeguards. The authenticated enqueue path creates the
-# durable job table before work exists; worker polling must not repeatedly run
-# PostgreSQL DDL/index creation. Excel parsing is bounded for formatting-only
-# regions, and database writes are isolated per record so one blocked/conflicting
-# row cannot wedge the whole universal onboarding job.
+# V14 importer safeguards. The durable queue table is created by enqueue;
+# polling must not repeat PostgreSQL DDL. XLSX parsing is bounded and database
+# writes are isolated per record. Importer-only connection options ensure a
+# blocked database connection/statement cannot wedge the universal job.
 try:
     import anvi_plant_data_import as _anvi_import
     import anvi_tenant_store as _anvi_store
@@ -73,24 +73,25 @@ try:
                 wb.close()
         _anvi_import._xlsx_records = _bounded_xlsx_records
 
-    if not getattr(_anvi_import, "_ANVIQO_BATCH_RESILIENT", False):
-        _anvi_import._ANVIQO_BATCH_RESILIENT = True
-        _importing = threading.local()
+    _importing = threading.local()
+    if not getattr(_anvi_import, "_ANVIQO_HARD_DB_GUARD", False):
+        _anvi_import._ANVIQO_HARD_DB_GUARD = True
         _original_connect = _anvi_store._connect
         @contextmanager
         def _connect_with_import_timeout():
             if getattr(_importing, "active", False) and not _anvi_store._is_sqlite():
-                # Protect the importer before a DB connection is even acquired.
-                # The previous wrapper only applied SQL timeouts after connect,
-                # so a connection-pool/server wait could still wedge one record.
                 import psycopg
                 url = _anvi_store._db_url()
-                if "connect_timeout=" not in url.lower():
-                    url += ("&" if "?" in url else "?") + "connect_timeout=5"
-                conn = psycopg.connect(
-                    url,
-                    options="-c statement_timeout=5000 -c lock_timeout=3000",
-                )
+                # Force a short connection timeout even if the environment URL
+                # already contains a stale/large connect_timeout value.
+                parts = url.split("?")
+                base = parts[0]
+                params = []
+                if len(parts) > 1:
+                    params = [x for x in parts[1].split("&") if x and not x.lower().startswith("connect_timeout=") and not x.lower().startswith("sslmode=")]
+                params += ["connect_timeout=5", "sslmode=require"]
+                url = base + "?" + "&".join(params)
+                conn = psycopg.connect(url, options="-c statement_timeout=4000 -c lock_timeout=1500")
                 try:
                     yield conn
                     conn.commit()
@@ -100,24 +101,22 @@ try:
             with _original_connect() as conn:
                 yield conn
         _anvi_store._connect = _connect_with_import_timeout
+
         _original_insert_batch = _anvi_import._insert_batch
         def _resilient_insert_batch(plant_id, org_id, document_id, digest, records):
-            # Deliberately use a fresh DB transaction for each record. The old
-            # batch-level executemany could remain blocked even though timeout
-            # guards were installed, preventing the durable worker from making
-            # progress. Per-record isolation keeps the universal import moving
-            # and records an individual bad row instead of wedging the job.
             _importing.active = True
             inserted = 0
             errors = []
             try:
-                for record in records:
+                for idx, record in enumerate(records, start=1):
                     try:
+                        print(f"ANVIQO_IMPORT_RECORD start batch_index={idx} document={document_id}", flush=True)
                         a, e = _original_insert_batch(plant_id, org_id, document_id, digest, [record])
                         inserted += a
                         errors.extend(e)
+                        print(f"ANVIQO_IMPORT_RECORD done batch_index={idx} inserted={a} errors={len(e)} document={document_id}", flush=True)
                     except Exception as exc:
-                        print(f"ANVIQO_IMPORT_BAD_RECORD document={document_id} error={exc!r}", flush=True)
+                        print(f"ANVIQO_IMPORT_BAD_RECORD batch_index={idx} document={document_id} error={exc!r}", flush=True)
                         errors.append(str(exc))
                 return inserted, errors
             finally:
@@ -133,5 +132,5 @@ try:
             print(f"ANVIQO_IMPORT_BATCH done size={len(records)} inserted={result[0]} errors={len(result[1])}", flush=True)
             return result
         _anvi_import._insert_batch = _traced_insert_batch
-except Exception:
-    pass
+except Exception as exc:
+    print(f"ANVIQO_IMPORT_RUNTIME_HOOK_ERROR error={exc!r}", flush=True)
