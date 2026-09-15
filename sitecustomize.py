@@ -40,8 +40,8 @@ except Exception:
     pass
 
 # V14 importer safeguards. These hooks are onboarding-only. They ensure every
-# durable importer DB operation, including queue claiming and schema checks,
-# has short connection/statement/lock timeouts after a web-process restart.
+durable importer DB operation, including queue claiming and schema checks,
+has short connection/statement/lock timeouts after a web-process restart.
 try:
     import anvi_plant_data_import as _anvi_import
     import anvi_tenant_store as _anvi_store
@@ -88,7 +88,7 @@ try:
                     params = [x for x in parts[1].split("&") if x and not x.lower().startswith("connect_timeout=") and not x.lower().startswith("sslmode=")]
                 params += ["connect_timeout=5", "sslmode=require"]
                 url = base + "?" + "&".join(params)
-                conn = psycopg.connect(url, options="-c statement_timeout=4000 -c lock_timeout=1500")
+                conn = psycopg.connect(url, options="-c statement_timeout=3000 -c lock_timeout=1000")
                 try:
                     yield conn
                     conn.commit()
@@ -129,5 +129,11 @@ try:
             print(f"ANVIQO_IMPORT_BATCH done size={len(records)} inserted={result[0]} errors={len(result[1])}", flush=True)
             return result
         _anvi_import._insert_batch = _traced_insert_batch
+
+    # V1.4 recovery hardening: smaller batches reduce the number of rows held
+    # in one PostgreSQL transaction and sharply reduce lock/conflict surface.
+    # This is onboarding-only and leaves V5/PCI intelligence untouched.
+    _anvi_import.BATCH_SIZE = 10
+    print("ANVIQO_IMPORT_CONFIG batch_size=10 statement_timeout=3000ms lock_timeout=1000ms", flush=True)
 except Exception as exc:
     print(f"ANVIQO_IMPORT_RUNTIME_HOOK_ERROR error={exc!r}", flush=True)
