@@ -40,8 +40,8 @@ except Exception:
     pass
 
 # V14 importer safeguards. These hooks are onboarding-only. They ensure every
-durable importer DB operation, including queue claiming and schema checks,
-has short connection/statement/lock timeouts after a web-process restart.
+# durable importer DB operation, including queue claiming and schema checks,
+# has short connection/statement/lock timeouts after a web-process restart.
 try:
     import anvi_plant_data_import as _anvi_import
     import anvi_tenant_store as _anvi_store
