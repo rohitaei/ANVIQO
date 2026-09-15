@@ -81,8 +81,7 @@ try:
         def _connect_with_import_timeout():
             with _original_connect() as conn:
                 if getattr(_importing, "active", False) and not _anvi_store._is_sqlite():
-                    conn.execute("SET LOCAL lock_timeout = '3000'")
-                    conn.execute("SET LOCAL statement_timeout = '5000'")
+                    conn.execute("SET LOCAL statement_timeout = '15s'")
                 yield conn
         _anvi_store._connect = _connect_with_import_timeout
         _original_insert_batch = _anvi_import._insert_batch
