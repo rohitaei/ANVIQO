@@ -39,10 +39,9 @@ try:
 except Exception:
     pass
 
-# V14 importer safeguards. The durable queue table is created by enqueue;
-# polling must not repeat PostgreSQL DDL. XLSX parsing is bounded and database
-# writes are isolated per record. Importer-only connection options ensure a
-# blocked database connection/statement cannot wedge the universal job.
+# V14 importer safeguards. These hooks are onboarding-only. They ensure every
+# durable importer DB operation, including queue claiming and schema checks,
+# has short connection/statement/lock timeouts after a web-process restart.
 try:
     import anvi_plant_data_import as _anvi_import
     import anvi_tenant_store as _anvi_store
@@ -82,8 +81,6 @@ try:
             if getattr(_importing, "active", False) and not _anvi_store._is_sqlite():
                 import psycopg
                 url = _anvi_store._db_url()
-                # Force a short connection timeout even if the environment URL
-                # already contains a stale/large connect_timeout value.
                 parts = url.split("?")
                 base = parts[0]
                 params = []
@@ -101,6 +98,24 @@ try:
             with _original_connect() as conn:
                 yield conn
         _anvi_store._connect = _connect_with_import_timeout
+
+        _original_claim_job = _anvi_import._claim_job
+        def _guarded_claim_job():
+            _importing.active = True
+            try:
+                return _original_claim_job()
+            finally:
+                _importing.active = False
+        _anvi_import._claim_job = _guarded_claim_job
+
+        _original_import_plant_data = _anvi_import.import_plant_data
+        def _guarded_import_plant_data(plant_id, actor):
+            _importing.active = True
+            try:
+                return _original_import_plant_data(plant_id, actor)
+            finally:
+                _importing.active = False
+        _anvi_import.import_plant_data = _guarded_import_plant_data
 
         _original_insert_batch = _anvi_import._insert_batch
         def _resilient_insert_batch(plant_id, org_id, document_id, digest, records):
