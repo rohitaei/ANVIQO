@@ -89,7 +89,7 @@ try:
                     params = [x for x in parts[1].split("&") if x and not x.lower().startswith("connect_timeout=") and not x.lower().startswith("sslmode=")]
                 params += ["connect_timeout=5", "sslmode=require"]
                 url = base + "?" + "&".join(params)
-                conn = psycopg.connect(url, options="-c statement_timeout=3000 -c lock_timeout=1000")
+                conn = psycopg.connect(url, options="-c statement_timeout=1500 -c lock_timeout=500")
                 try:
                     yield conn
                     conn.commit()
@@ -118,24 +118,11 @@ try:
                 _importing.active = False
         _anvi_import.import_plant_data = _guarded_import_plant_data
 
-    # Keep batch-level tracing only. Do NOT split a normal 50-row importer
-    # batch into 50 separate transactions: that turned a short import into a
-    # long-running process vulnerable to web-process restarts.
-    if not getattr(_anvi_import, "_ANVIQO_BATCH_TRACE", False):
-        _anvi_import._ANVIQO_BATCH_TRACE = True
-        _previous_insert = _anvi_import._insert_batch
-        def _traced_insert_batch(plant_id, org_id, document_id, digest, records):
-            print(f"ANVIQO_IMPORT_BATCH start size={len(records)} document={document_id}", flush=True)
-            result = _previous_insert(plant_id, org_id, document_id, digest, records)
-            print(f"ANVIQO_IMPORT_BATCH done size={len(records)} inserted={result[0]} errors={len(result[1])}", flush=True)
-            return result
-        _anvi_import._insert_batch = _traced_insert_batch
-
-    # V1.4 recovery hardening: smaller batches reduce the number of rows held
-    # in one PostgreSQL transaction and sharply reduce lock/conflict surface.
-    # This is onboarding-only and leaves V5/PCI intelligence untouched.
-    _anvi_import.BATCH_SIZE = 10
-    print("ANVIQO_IMPORT_CONFIG batch_size=10 statement_timeout=3000ms lock_timeout=1000ms", flush=True)
+    # V1.4 stall isolation: one row per transaction. The previous 10-row
+    # transaction stalled on a single batch after 1,850 records; single-row
+    # commits keep any lock/conflict bounded and let the durable job advance.
+    _anvi_import.BATCH_SIZE = 1
+    print("ANVIQO_IMPORT_CONFIG batch_size=1 statement_timeout=1500ms lock_timeout=500ms", flush=True)
 
     # The web service is the durable fallback worker. Start it on every web
     # process boot so a queued/recovered job cannot remain stranded after a
