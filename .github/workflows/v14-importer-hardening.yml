@@ -96,9 +96,9 @@ jobs:
     p = _p(); _job_schema()
     with store._connect() as conn:
         cur = conn.cursor()
-        # Recover only genuinely abandoned jobs after a process restart.
+        # Recover abandoned jobs quickly after a web-process restart.
         if not store._is_sqlite():
-            cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=NOW() WHERE status='RUNNING' AND updated_at < NOW() - INTERVAL '20 minutes'")
+            cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=NOW() WHERE status='RUNNING' AND updated_at < NOW() - INTERVAL '2 minutes'")
         else:
             cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=? WHERE status='RUNNING' AND updated_at < ?", (_now(), _now()))
         if store._is_sqlite():'''
