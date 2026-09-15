@@ -5,6 +5,7 @@ to onboarding/runtime compatibility and do not alter V5, PCI, PLC/SCADA
 controls, or spare inventory rules.
 """
 from __future__ import annotations
+import os
 import re
 from contextlib import contextmanager
 import threading
@@ -135,5 +136,12 @@ try:
     # This is onboarding-only and leaves V5/PCI intelligence untouched.
     _anvi_import.BATCH_SIZE = 10
     print("ANVIQO_IMPORT_CONFIG batch_size=10 statement_timeout=3000ms lock_timeout=1000ms", flush=True)
+
+    # The web service is the durable fallback worker. Start it on every web
+    # process boot so a queued/recovered job cannot remain stranded after a
+    # Render restart. Disabled by default for non-web processes.
+    if os.environ.get("ANVIQO_WEB_LOCAL_WORKER") == "1":
+        _anvi_import._start_local_worker()
+        print("ANVIQO_IMPORT_WORKER auto-start enabled", flush=True)
 except Exception as exc:
     print(f"ANVIQO_IMPORT_RUNTIME_HOOK_ERROR error={exc!r}", flush=True)
