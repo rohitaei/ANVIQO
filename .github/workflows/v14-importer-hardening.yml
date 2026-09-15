@@ -8,162 +8,30 @@ permissions:
   contents: write
 
 jobs:
-  harden-importer:
-    if: ${{ !contains(github.event.head_commit.message, 'V14.9.1 importer hardening') }}
+  recover-importer:
+    if: ${{ !contains(github.event.head_commit.message, 'V14.16 importer recovery') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Harden durable importer
+      - name: Set abandoned-job recovery timeout
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('anvi_plant_data_import.py')
           s = p.read_text()
-          s = s.replace('BATCH_SIZE = 2000', 'BATCH_SIZE = 250')
-          s = s.replace('_LOCAL_WORKER_STARTED = False\n_LOCAL_WORKER_LOCK = threading.Lock()', '_LOCAL_WORKER_STARTED = False\n_LOCAL_WORKER_THREAD = None\n_LOCAL_WORKER_LOCK = threading.Lock()')
-          old_matrix = '''def _matrix_records(sheet_name, rows):
-    matrix = [tuple(r) for r in rows if any(_nonempty(v) for v in r)]
-    if not matrix:
-        return
-    hi = max(range(min(30, len(matrix))), key=lambda i: _header_score(matrix[i]))
-    first = matrix[hi]
-    headers, seen = [], {}
-    for i, v in enumerate(first):
-        h = str(v).strip() if _nonempty(v) else "column_" + str(i + 1)
-        k = _key(h); seen[k] = seen.get(k, 0) + 1
-        headers.append(h if seen[k] == 1 else h + "_" + str(seen[k]))
-    for idx, row in enumerate(matrix[hi + 1:], start=hi + 2):
-        if not any(_nonempty(v) for v in row):
-            continue
-        rec = {headers[i]: row[i] for i in range(min(len(headers), len(row)))}
-        rec = {str(k).strip(): v for k, v in rec.items() if str(k).strip()}
-        rec["external_id"] = str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or rec.get("TAG") or hashlib.sha256((sheet_name + str(idx) + json.dumps(rec, sort_keys=True, default=str)).encode()).hexdigest()[:20])
-        rec["source"] = sheet_name
-        rec["record_type"] = str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
-        yield rec
-'''
-          new_matrix = '''def _matrix_records(sheet_name, rows):
-    """Convert a worksheet iterator without materializing the whole sheet."""
-    iterator = iter(rows)
-    sample = []
-    for _ in range(30):
-        try:
-            row = tuple(next(iterator))
-        except StopIteration:
-            break
-        if any(_nonempty(v) for v in row):
-            sample.append(row)
-    if not sample:
-        return
-    hi = max(range(len(sample)), key=lambda i: _header_score(sample[i]))
-    first = sample[hi]
-    headers, seen = [], {}
-    for i, v in enumerate(first):
-        h = str(v).strip() if _nonempty(v) else "column_" + str(i + 1)
-        k = _key(h); seen[k] = seen.get(k, 0) + 1
-        headers.append(h if seen[k] == 1 else h + "_" + str(seen[k]))
-
-    def emit(row, idx):
-        if not any(_nonempty(v) for v in row):
-            return None
-        rec = {headers[i]: row[i] for i in range(min(len(headers), len(row)))}
-        rec = {str(k).strip(): v for k, v in rec.items() if str(k).strip()}
-        rec["external_id"] = str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or rec.get("TAG") or hashlib.sha256((sheet_name + str(idx) + json.dumps(rec, sort_keys=True, default=str)).encode()).hexdigest()[:20])
-        rec["source"] = sheet_name
-        rec["record_type"] = str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
-        return rec
-
-    for offset, row in enumerate(sample[hi + 1:], start=hi + 2):
-        rec = emit(row, offset)
-        if rec is not None:
-            yield rec
-    idx = len(sample) + 1
-    for row in iterator:
-        rec = emit(tuple(row), idx)
-        idx += 1
-        if rec is not None:
-            yield rec
-'''
-          if old_matrix not in s:
-              raise SystemExit('streaming matrix anchor not found')
-          s = s.replace(old_matrix, new_matrix, 1)
-          old_claim = '''def _claim_job():
-    p = _p(); _job_schema()
-    with store._connect() as conn:
-        cur = conn.cursor()
-        if store._is_sqlite():'''
-          new_claim = '''def _claim_job():
-    p = _p(); _job_schema()
-    with store._connect() as conn:
-        cur = conn.cursor()
-        # Recover abandoned jobs quickly after a web-process restart.
-        if not store._is_sqlite():
-            cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=NOW() WHERE status='RUNNING' AND updated_at < NOW() - INTERVAL '2 minutes'")
-        else:
-            cur.execute("UPDATE " + JOB_TABLE + " SET status='QUEUED',message='Recovered abandoned import after worker restart.',started_at=NULL,updated_at=? WHERE status='RUNNING' AND updated_at < ?", (_now(), _now()))
-        if store._is_sqlite():'''
-          if old_claim in s: s = s.replace(old_claim, new_claim, 1)
-          old_loop = '''def _local_worker_loop():
-    while True:
-        try:
-            job = _claim_job()
-            if not job:
-                time.sleep(2); continue
-            job_id, org_id, plant_id, actor_json = job'''
-          new_loop = '''def _local_worker_loop():
-    print("ANVIQO_IMPORT_WORKER started", flush=True)
-    while True:
-        try:
-            job = _claim_job()
-            if not job:
-                time.sleep(2); continue
-            job_id, org_id, plant_id, actor_json = job
-            print(f"ANVIQO_IMPORT_WORKER claimed job={job_id} plant={plant_id}", flush=True)'''
-          if old_loop in s: s = s.replace(old_loop, new_loop, 1)
-          old_start = '''def _start_local_worker():
-    global _LOCAL_WORKER_STARTED
-    with _LOCAL_WORKER_LOCK:
-        if _LOCAL_WORKER_STARTED: return
-        _LOCAL_WORKER_STARTED = True
-        t = threading.Thread(target=_local_worker_loop, name="anviqo-web-import-worker", daemon=True)
-        t.start()'''
-          new_start = '''def _start_local_worker():
-    global _LOCAL_WORKER_STARTED, _LOCAL_WORKER_THREAD
-    with _LOCAL_WORKER_LOCK:
-        if _LOCAL_WORKER_THREAD is not None and _LOCAL_WORKER_THREAD.is_alive():
-            return
-        _LOCAL_WORKER_STARTED = True
-        _LOCAL_WORKER_THREAD = threading.Thread(target=_local_worker_loop, name="anviqo-web-import-worker", daemon=True)
-        _LOCAL_WORKER_THREAD.start()
-        print("ANVIQO_IMPORT_WORKER thread launched", flush=True)'''
-          if old_start in s: s = s.replace(old_start, new_start, 1)
-          old_enqueue = '''    return {"job_id": jid, "job_status": "QUEUED", "existing": False, "mode": "WEB_LOCAL_ASYNC", "import_version": VERSION}'''
-          new_enqueue = '''    _start_local_worker()
-    return {"job_id": jid, "job_status": "QUEUED", "existing": False, "mode": "WEB_LOCAL_ASYNC", "import_version": VERSION}'''
-          if old_enqueue in s: s = s.replace(old_enqueue, new_enqueue, 1)
-          old_finish = '''                result = import_plant_data(plant_id, actor)
-                _finish_job(job_id, "SUCCEEDED" if result.get("records_available_to_anvi", 0) > 0 else "FAILED", result, result.get("message", "Import finished."))'''
-          new_finish = '''                result = import_plant_data(plant_id, actor)
-                _finish_job(job_id, "SUCCEEDED" if result.get("records_available_to_anvi", 0) > 0 else "FAILED", result, result.get("message", "Import finished."))
-                print(f"ANVIQO_IMPORT_WORKER finished job={job_id} status={result.get('status')} records={result.get('records_available_to_anvi', 0)} errors={result.get('error_count', 0)}", flush=True)'''
-          if old_finish in s: s = s.replace(old_finish, new_finish, 1)
-          old_exc = '''            except Exception as exc:
-                _finish_job(job_id, "FAILED", {"status": "ERROR", "error": str(exc), "plant_id": plant_id, "import_version": VERSION}, str(exc))'''
-          new_exc = '''            except Exception as exc:
-                print(f"ANVIQO_IMPORT_WORKER failed job={job_id}: {exc!r}", flush=True)
-                try:
-                    _finish_job(job_id, "FAILED", {"status": "ERROR", "error": str(exc), "plant_id": plant_id, "import_version": VERSION}, str(exc))
-                except Exception as finish_exc:
-                    print(f"ANVIQO_IMPORT_WORKER could not mark job failed job={job_id}: {finish_exc!r}", flush=True)'''
-          if old_exc in s: s = s.replace(old_exc, new_exc, 1)
+          old = "updated_at < NOW() - INTERVAL '20 minutes'"
+          new = "updated_at < NOW() - INTERVAL '2 minutes'"
+          if old not in s:
+              raise SystemExit('Expected 20-minute importer recovery anchor not found')
+          s = s.replace(old, new, 1)
           p.write_text(s)
-          compile(p.read_text(), str(p), 'exec')
-          print('V14 importer hardening compile: PASS')
+          compile(s, str(p), 'exec')
+          print('V14.16 importer recovery compile: PASS')
           PY
-      - name: Commit hardening
+      - name: Commit recovery hardening
         run: |
           git config user.name 'ANVIQO Automation'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add anvi_plant_data_import.py .github/workflows/v14-importer-hardening.yml
-          git commit -m 'V14.9.1 importer hardening: self-healing worker and bounded batches' || exit 0
+          git add anvi_plant_data_import.py
+          git commit -m 'V14.16 importer recovery 2min' || exit 0
           git push
