@@ -79,10 +79,25 @@ try:
         _original_connect = _anvi_store._connect
         @contextmanager
         def _connect_with_import_timeout():
+            if getattr(_importing, "active", False) and not _anvi_store._is_sqlite():
+                # Protect the importer before a DB connection is even acquired.
+                # The previous wrapper only applied SQL timeouts after connect,
+                # so a connection-pool/server wait could still wedge one record.
+                import psycopg
+                url = _anvi_store._db_url()
+                if "connect_timeout=" not in url.lower():
+                    url += ("&" if "?" in url else "?") + "connect_timeout=5"
+                conn = psycopg.connect(
+                    url,
+                    options="-c statement_timeout=5000 -c lock_timeout=3000",
+                )
+                try:
+                    yield conn
+                    conn.commit()
+                finally:
+                    conn.close()
+                return
             with _original_connect() as conn:
-                if getattr(_importing, "active", False) and not _anvi_store._is_sqlite():
-                    conn.execute("SET LOCAL lock_timeout = '3000'")
-                    conn.execute("SET LOCAL statement_timeout = '5000'")
                 yield conn
         _anvi_store._connect = _connect_with_import_timeout
         _original_insert_batch = _anvi_import._insert_batch
