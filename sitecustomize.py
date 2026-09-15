@@ -117,27 +117,9 @@ try:
                 _importing.active = False
         _anvi_import.import_plant_data = _guarded_import_plant_data
 
-        _original_insert_batch = _anvi_import._insert_batch
-        def _resilient_insert_batch(plant_id, org_id, document_id, digest, records):
-            _importing.active = True
-            inserted = 0
-            errors = []
-            try:
-                for idx, record in enumerate(records, start=1):
-                    try:
-                        print(f"ANVIQO_IMPORT_RECORD start batch_index={idx} document={document_id}", flush=True)
-                        a, e = _original_insert_batch(plant_id, org_id, document_id, digest, [record])
-                        inserted += a
-                        errors.extend(e)
-                        print(f"ANVIQO_IMPORT_RECORD done batch_index={idx} inserted={a} errors={len(e)} document={document_id}", flush=True)
-                    except Exception as exc:
-                        print(f"ANVIQO_IMPORT_BAD_RECORD batch_index={idx} document={document_id} error={exc!r}", flush=True)
-                        errors.append(str(exc))
-                return inserted, errors
-            finally:
-                _importing.active = False
-        _anvi_import._insert_batch = _resilient_insert_batch
-
+    # Keep batch-level tracing only. Do NOT split a normal 50-row importer
+    # batch into 50 separate transactions: that turned a short import into a
+    # long-running process vulnerable to web-process restarts.
     if not getattr(_anvi_import, "_ANVIQO_BATCH_TRACE", False):
         _anvi_import._ANVIQO_BATCH_TRACE = True
         _previous_insert = _anvi_import._insert_batch
