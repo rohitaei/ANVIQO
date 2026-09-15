@@ -41,8 +41,8 @@ except Exception:
 # V14 importer runtime safeguards. The authenticated enqueue path creates the
 # durable job table before work exists; worker polling must not repeatedly run
 # PostgreSQL DDL/index creation. Excel parsing is bounded for formatting-only
-# regions, and long/bad database batches are isolated rather than wedging the
-# entire universal onboarding job.
+# regions, and database writes are isolated per record so one blocked/conflicting
+# row cannot wedge the whole universal onboarding job.
 try:
     import anvi_plant_data_import as _anvi_import
     import anvi_tenant_store as _anvi_store
@@ -87,18 +87,24 @@ try:
         _anvi_store._connect = _connect_with_import_timeout
         _original_insert_batch = _anvi_import._insert_batch
         def _resilient_insert_batch(plant_id, org_id, document_id, digest, records):
+            # Deliberately use a fresh DB transaction for each record. The old
+            # batch-level executemany could remain blocked even though timeout
+            # guards were installed, preventing the durable worker from making
+            # progress. Per-record isolation keeps the universal import moving
+            # and records an individual bad row instead of wedging the job.
             _importing.active = True
+            inserted = 0
+            errors = []
             try:
-                try:
-                    return _original_insert_batch(plant_id, org_id, document_id, digest, records)
-                except Exception as exc:
-                    if len(records) <= 1:
+                for record in records:
+                    try:
+                        a, e = _original_insert_batch(plant_id, org_id, document_id, digest, [record])
+                        inserted += a
+                        errors.extend(e)
+                    except Exception as exc:
                         print(f"ANVIQO_IMPORT_BAD_RECORD document={document_id} error={exc!r}", flush=True)
-                        return 0, [str(exc)]
-                    mid = max(1, len(records) // 2)
-                    left = _resilient_insert_batch(plant_id, org_id, document_id, digest, records[:mid])
-                    right = _resilient_insert_batch(plant_id, org_id, document_id, digest, records[mid:])
-                    return left[0] + right[0], left[1] + right[1]
+                        errors.append(str(exc))
+                return inserted, errors
             finally:
                 _importing.active = False
         _anvi_import._insert_batch = _resilient_insert_batch
