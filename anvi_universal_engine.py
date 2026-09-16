@@ -118,6 +118,12 @@ def readiness(plant_id):
 
 def register(app):
     """Register universal engine endpoints on the existing ANVIQO app."""
+    # Install the final tenant-safe chat guard after the existing boundary layer.
+    try:
+        import anvi_chat_stability as _chat_stability
+        _chat_stability.install()
+    except Exception:
+        pass
     if getattr(app, "_anvi_universal_engine_registered", False):
         return
 
