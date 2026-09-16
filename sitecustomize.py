@@ -118,9 +118,10 @@ try:
                 _importing.active = False
         _anvi_import.import_plant_data = _guarded_import_plant_data
 
-    # V1.4 stall isolation: one row per transaction. A single bad/locked row
-    # must never abort the remainder of the document import.
-    _anvi_import.BATCH_SIZE = 1
+    # Keep batches for throughput, while _safe_insert_batch recursively isolates
+    # a bad row. This avoids the ~one-transaction-per-row slowdown that caused
+    # large MBF-2 imports to run for tens of minutes.
+    _anvi_import.BATCH_SIZE = 25
     if not getattr(_anvi_import, "_ANVIQO_SINGLE_ROW_CONTINUE", False):
         _anvi_import._ANVIQO_SINGLE_ROW_CONTINUE = True
         _original_safe_insert_batch = _anvi_import._safe_insert_batch
@@ -132,11 +133,10 @@ try:
                     return 0, [str(exc)]
                 raise
         _anvi_import._safe_insert_batch = _safe_insert_batch_continue
-    print("ANVIQO_IMPORT_CONFIG batch_size=1 single_row_failures_continue=true statement_timeout=1500ms lock_timeout=500ms", flush=True)
+    print("ANVIQO_IMPORT_CONFIG batch_size=25 recursive_row_isolation=true statement_timeout=1500ms lock_timeout=500ms", flush=True)
 
-    # The web service is the durable fallback worker. Start it on every web
-    # process boot so a queued/recovered job cannot remain stranded after a
-    # Render restart. Disabled by default for non-web processes.
+    # Optional web fallback. The normal Render worker can consume the same
+    # PostgreSQL queue when configured; this fallback is opt-in.
     if os.environ.get("ANVIQO_WEB_LOCAL_WORKER") == "1":
         _anvi_import._start_local_worker()
         print("ANVIQO_IMPORT_WORKER auto-start enabled", flush=True)
