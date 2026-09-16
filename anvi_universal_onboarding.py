@@ -27,6 +27,7 @@ def _plant_ok(plant_id):
  with store._connect() as conn:
   cur=conn.cursor();cur.execute(f"SELECT 1 FROM anviqo_plants WHERE plant_id={p} AND organization_id={p} AND status='ACTIVE' LIMIT 1",(plant_id,a["organization_id"]))
   return cur.fetchone() is not None
+
 def init_schema():
  if not store.enabled():return
  with store._connect() as conn:
@@ -94,6 +95,11 @@ init_schema()
 try:
  import anvi_plant_data_import as _direct_import
  _direct_import.register(app)
+except Exception:
+ pass
+try:
+ import anvi_universal_engine as _engine
+ _engine.register(app)
 except Exception:
  pass
 __all__=["onboarding_page","onboarding_status","update_onboarding_profile","upload_onboarding_document"]
