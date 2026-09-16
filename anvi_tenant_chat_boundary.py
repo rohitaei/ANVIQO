@@ -187,6 +187,13 @@ def _tenant_answer(q: str, rows: list[dict], plant: dict):
     return _safe_response(f"The selected plant {plant['name']} has no indexed onboarding knowledge yet. I will not use another plant's data as a fallback.", blocked=True, reason="TENANT_ONBOARDING_NOT_READY", plant_id=plant["plant_id"], plant_name=plant["name"])
 
 
+def _legacy_onboarding_question(q: str) -> bool:
+    """Keep V5 legacy chat intact except for explicit universal-onboarding questions."""
+    low = str(q or "").lower()
+    terms = ("mbf-2", "mbf2", "plc i/o", "plc io", "cable schedule", "onboarded data", "onboarding data")
+    return any(term in low for term in terms)
+
+
 def install():
     try:
         _prepare_tenant_db_url()
@@ -203,12 +210,16 @@ def install():
         plant = _plant(plant_id)
         if not plant or (organization_id and plant.get("organization_id") != organization_id):
             return _safe_response("The selected plant context is invalid. I will not access plant data.", blocked=True, reason="INVALID_PLANT_CONTEXT")
-        if _legacy(plant):
-            return original(q, *args, **kwargs)
         rows = _rows(plant_id)
+        # Universal onboarding questions must use the selected plant's indexed
+        # knowledge even when that plant still carries the legacy primary-plant slug.
+        if _legacy(plant) and not _legacy_onboarding_question(q):
+            return original(q, *args, **kwargs)
         result = _tenant_answer(q, rows, plant)
         if result is not None:
             return result
+        if _legacy(plant):
+            return original(q, *args, **kwargs)
         return _safe_response("I can only answer from the currently selected plant's onboarded knowledge. That information is not available in this plant yet, so I will not use another plant's data as a fallback.", blocked=True, reason="TENANT_SCOPE_ONLY", plant_id=plant["plant_id"], plant_name=plant["name"])
     wrapped._anviqo_tenant_boundary = True
     knowledge.ask_anvi = wrapped
