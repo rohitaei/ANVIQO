@@ -1,14 +1,59 @@
 """Compatibility entry point for the V1.4 universal tenant chat engine.
 
-The implementation lives in anvi_chat_stability_v2.  This stable module name
-is retained because the universal engine and existing integrations import it.
-No importer, PCI or V5 files are modified here.
+V1.5 adds a thin intelligence-experience envelope around the existing engine:
+intent classification, evidence/context packaging and human-decision guidance.
+The underlying V5/PCI engines remain unchanged and read-only.
 """
 from anvi_chat_stability_v2 import (
-    install,
+    install as _base_install,
     _query_rows,
     _exact_answer,
     _summary_answer,
 )
+
+
+def install():
+    _base_install()
+    try:
+        import anvi_knowledge_layer as knowledge
+        from anvi_intelligence_orchestrator import investigate
+    except Exception:
+        return
+    current = getattr(knowledge, "ask_anvi", None)
+    if not callable(current) or getattr(current, "_anviqo_intelligence_orchestrated", False):
+        return
+
+    def wrapped(question, *args, **kwargs):
+        text = str(question or "").strip()
+        try:
+            result = investigate(
+                text,
+                _plant_id(),
+                _plant_name(),
+                lambda q: current(q, *args, **kwargs),
+            )
+            return result
+        except Exception:
+            return current(text, *args, **kwargs)
+
+    wrapped._anviqo_intelligence_orchestrated = True
+    knowledge.ask_anvi = wrapped
+
+
+def _plant_id():
+    try:
+        from flask import session
+        return session.get("plant_id")
+    except Exception:
+        return None
+
+
+def _plant_name():
+    try:
+        from flask import session
+        return session.get("plant_name") or session.get("plant") or "Selected plant"
+    except Exception:
+        return "Selected plant"
+
 
 __all__ = ["install", "_query_rows", "_exact_answer", "_summary_answer"]
