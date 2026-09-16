@@ -90,8 +90,6 @@ def _rows(plant_id: str):
 def _legacy(plant: dict | None) -> bool:
     if not plant:
         return False
-    # Bootstrap Primary Plant is the only compatibility exception. New plants
-    # are always tenant-only until explicitly migrated in a future phase.
     return str(plant.get("slug", "")).strip().lower() == "primary-plant"
 
 
@@ -108,14 +106,87 @@ def _safe_response(answer: str, **extra):
     return payload
 
 
-def _tag_from_question(q: str):
-    # Prefer explicit engineering tag-like tokens. Resolver remains owned by V5;
-    # this boundary only identifies a tenant row and never invents identity.
+_ENGINEERING_PREFIXES = {
+    "PT", "TT", "FT", "LT", "AT", "DT", "ST", "WT", "CT", "TE", "PE", "FE", "LE", "AE",
+    "AI", "AO", "DI", "DO", "XV", "FV", "PV", "TV", "LV", "ZV", "ZS", "ZSO", "ZSC",
+    "PS", "TS", "LS", "FS", "AS", "HS", "CS", "ES", "IS", "MS", "SS", "VB", "PC", "FC",
+}
+
+
+def _tag_from_question(q: str, rows: list[dict] | None = None):
+    """Return an explicit engineering tag, but do not mistake plant names such as MBF-2 for tags."""
+    known = set()
+    for r in rows or []:
+        for key in ("tag", "external_id"):
+            value = r.get(key)
+            if value:
+                known.add(_normalize(value))
     for token in re.findall(r"\b[A-Za-z]{1,12}[-_ ]?\d{1,6}\b", q or ""):
         n = _normalize(token)
-        if n:
+        if not n:
+            continue
+        if n in known:
+            return n
+        prefix_match = re.match(r"[A-Z]+", n)
+        prefix = prefix_match.group(0) if prefix_match else ""
+        if prefix in _ENGINEERING_PREFIXES:
             return n
     return None
+
+
+def _question_terms(text: str):
+    stop = {
+        "what", "tell", "me", "about", "do", "you", "have", "the", "for", "and", "to", "in", "of",
+        "is", "are", "available", "information", "this", "that", "plant", "please", "give", "show", "can",
+        "i", "we", "my", "your", "on", "from", "with", "currently", "selected", "knowledge",
+    }
+    terms = []
+    for raw in re.findall(r"[A-Za-z0-9][A-Za-z0-9_./-]{1,}", text.lower()):
+        n = _normalize(raw)
+        if len(n) >= 2 and raw not in stop and n not in {_normalize(x) for x in stop}:
+            terms.append(raw)
+    return list(dict.fromkeys(terms))
+
+
+def _natural_knowledge_answer(text: str, rows: list[dict], plant: dict):
+    terms = _question_terms(text)
+    if not terms:
+        return None
+    matches = []
+    for row in rows:
+        hay = " ".join(str(row.get(k) or "") for k in (
+            "external_id", "name", "area", "service", "asset_type", "tag", "source", "content"
+        )).lower()
+        score = sum(1 for term in terms if term in hay)
+        if score:
+            matches.append((score, row))
+    if not matches:
+        return None
+    matches.sort(key=lambda x: (-x[0], int(x[1].get("knowledge_id") or 0)))
+    top = [r for _, r in matches[:12]]
+    sources = {}
+    for r in matches:
+        src = str(r.get("source") or "UNKNOWN")
+        sources[src] = sources.get(src, 0) + 1
+    source_text = "; ".join(f"{name}: {count} matching record(s)" for name, count in list(sources.items())[:6])
+    lines = [
+        f"I found {len(matches)} matching knowledge record(s) in the selected plant {plant['name']}, using only its onboarded data.",
+        f"Sources: {source_text}.",
+        "Representative evidence:",
+    ]
+    for r in top[:8]:
+        label = r.get("tag") or r.get("external_id") or r.get("name") or "record"
+        desc = r.get("name") or r.get("service") or r.get("record_type") or "knowledge record"
+        lines.append(f"{label} — {desc}; Area: {r.get('area') or 'UNKNOWN'}; Source: {r.get('source') or 'UNKNOWN'}")
+    return _safe_response(
+        "\n".join(lines),
+        blocked=False,
+        evidence_status="EVIDENCE_AVAILABLE",
+        plant_id=plant["plant_id"],
+        plant_name=plant["name"],
+        count=len(matches),
+        evidence=top[:8],
+    )
 
 
 def _tenant_answer(q: str, rows: list[dict], plant: dict):
@@ -130,13 +201,13 @@ def _tenant_answer(q: str, rows: list[dict], plant: dict):
             plant_name=plant["name"],
         )
 
-    requested = _tag_from_question(text)
+    requested = _tag_from_question(text, rows)
     if requested:
         row = normalized_tags.get(requested)
         if not row:
+            # Explicit engineering tag not present in this tenant: fail closed.
             return _safe_response(
-                "I cannot find that tag in the currently selected plant's knowledge. "
-                "I will not use another plant's data as a fallback.",
+                "I cannot find that tag in the currently selected plant's knowledge. I will not use another plant's data as a fallback.",
                 blocked=True,
                 reason="TENANT_KNOWLEDGE_NOT_FOUND",
                 plant_id=plant["plant_id"],
@@ -182,11 +253,13 @@ def _tenant_answer(q: str, rows: list[dict], plant: dict):
             count=len(distinct),
         )
 
+    natural = _natural_knowledge_answer(text, rows, plant)
+    if natural is not None:
+        return natural
     if rows:
         return None
     return _safe_response(
-        f"The selected plant {plant['name']} has no indexed onboarding knowledge yet. "
-        "I will not use another plant's data as a fallback.",
+        f"The selected plant {plant['name']} has no indexed onboarding knowledge yet. I will not use another plant's data as a fallback.",
         blocked=True,
         reason="TENANT_ONBOARDING_NOT_READY",
         plant_id=plant["plant_id"],
@@ -226,8 +299,7 @@ def install():
         if result is not None:
             return result
         return _safe_response(
-            "I can only answer from the currently selected plant's onboarded knowledge. "
-            "That information is not available in this plant yet, so I will not use another plant's data as a fallback.",
+            "I can only answer from the currently selected plant's onboarded knowledge. That information is not available in this plant yet, so I will not use another plant's data as a fallback.",
             blocked=True,
             reason="TENANT_SCOPE_ONLY",
             plant_id=plant["plant_id"],
