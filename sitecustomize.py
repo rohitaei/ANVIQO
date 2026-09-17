@@ -40,6 +40,14 @@ try:
 except Exception:
     pass
 
+# Repair chat context after the boundary module is loaded. This keeps Plant &
+# User Management as admin provisioning while allowing a single-plant user to
+# enter ANVI Chat without manually selecting a plant in the admin screen.
+try:
+    import anvi_tenant_context_autofix
+except Exception as exc:
+    print(f"ANVIQO_CHAT_CONTEXT_REPAIR_ERROR error={exc!r}", flush=True)
+
 try:
     import anvi_plant_data_import as _anvi_import
     import anvi_tenant_store as _anvi_store
