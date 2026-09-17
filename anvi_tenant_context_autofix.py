@@ -1,0 +1,83 @@
+"""ANVIQO chat context repair: derive plant from authenticated membership.
+
+This module patches only the presentation/routing context resolver. V5/PCI
+intelligence and PLC/SCADA boundaries are not changed.
+"""
+from __future__ import annotations
+
+
+def resolve():
+    from flask import session
+    plant_id = str(session.get("plant_id") or "").strip()
+    user_id = str(session.get("user_id") or "").strip()
+    if not user_id:
+        return None, None, "NO_AUTHENTICATED_USER"
+
+    import anvi_tenant_store as store
+    if not store.enabled():
+        return None, None, "TENANT_STORE_UNAVAILABLE"
+    store.init_schema()
+    p = store._placeholder()
+
+    # A session plant is usable only when it is still an active membership.
+    # Never trust a stale plant/org pair merely because it is in the session.
+    if plant_id:
+        sql = (
+            "SELECT m.plant_id,m.organization_id,p.name "
+            "FROM anviqo_memberships m "
+            "JOIN anviqo_plants p ON p.plant_id=m.plant_id "
+            f"WHERE m.user_id={p} AND m.plant_id={p} "
+            "AND m.status='ACTIVE' AND p.status='ACTIVE'"
+        )
+        with store._connect() as conn:
+            cur = conn.cursor()
+            cur.execute(sql, (user_id, plant_id))
+            row = cur.fetchone()
+        if row:
+            pid, oid = row[0], row[1]
+            session["plant_id"] = pid
+            session["organization_id"] = oid
+            session["plant_context_source"] = "AUTHORIZED_MEMBERSHIP_SESSION"
+            return pid, oid, "AUTHORIZED_MEMBERSHIP_SESSION"
+
+        # Stale/invalid session context: clear it before membership resolution.
+        session.pop("plant_id", None)
+        session.pop("organization_id", None)
+
+    # No valid explicit context. Resolve the user's active authorized plants.
+    # Do not filter by the stale organization_id; membership itself is the
+    # authority for the user's plant access.
+    sql = (
+        "SELECT m.plant_id,m.organization_id,p.name "
+        "FROM anviqo_memberships m "
+        "JOIN anviqo_plants p ON p.plant_id=m.plant_id "
+        f"WHERE m.user_id={p} AND m.status='ACTIVE' AND p.status='ACTIVE' "
+        "AND m.plant_id IS NOT NULL ORDER BY p.name"
+    )
+    with store._connect() as conn:
+        cur = conn.cursor()
+        cur.execute(sql, (user_id,))
+        rows = cur.fetchall()
+
+    if len(rows) == 1:
+        pid, oid = rows[0][0], rows[0][1]
+        session["plant_id"] = pid
+        session["organization_id"] = oid
+        session["plant_context_source"] = "AUTHORIZED_MEMBERSHIP_SINGLE"
+        return pid, oid, "AUTHORIZED_MEMBERSHIP_SINGLE"
+
+    if len(rows) > 1:
+        return None, None, "MULTIPLE_AUTHORIZED_PLANTS"
+    return None, None, "NO_AUTHORIZED_PLANT"
+
+
+def install():
+    try:
+        import anvi_tenant_chat_boundary as boundary
+        boundary._session_context = resolve
+    except Exception:
+        return False
+    return True
+
+
+install()
