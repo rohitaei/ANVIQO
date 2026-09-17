@@ -14,6 +14,16 @@ from anvi_chat_stability_v2 import (
 
 def install():
     _base_install()
+    # sitecustomize can execute before anvi_chat_stability_v2 is imported.
+    # Re-apply the membership context resolver after v2 is definitely loaded.
+    try:
+        import anvi_tenant_context_autofix as _context_fix
+        import anvi_chat_stability_v2 as _stability
+        _stability._plant_context = _context_fix.resolve_pair
+        _stability._anviqo_membership_context_patch = True
+    except Exception as exc:
+        print(f"ANVIQO_CHAT_CONTEXT_REAPPLY_ERROR error={exc!r}", flush=True)
+
     try:
         import anvi_knowledge_layer as knowledge
         from anvi_intelligence_orchestrator import investigate
