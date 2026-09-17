@@ -14,11 +14,54 @@ def _normalize(value):
     return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
 def _session_context():
+    """Resolve chat plant from authenticated membership when session has no plant.
+
+    Plant & User Management is provisioning/admin only. A single authorized
+    active membership is safe to establish automatically. Multiple memberships
+    remain fail-closed and require explicit plant context; no guessing/fallback.
+    """
     try:
         from flask import session
-        return session.get("plant_id"), session.get("organization_id")
+        plant_id=session.get("plant_id")
+        organization_id=session.get("organization_id")
+        user_id=session.get("user_id")
+        if plant_id:
+            return plant_id,organization_id,"SESSION"
+        if not user_id:
+            return None,organization_id,"NO_AUTHENTICATED_USER"
+        store=_tenant_store()
+        if not store:
+            return None,organization_id,"TENANT_STORE_UNAVAILABLE"
+        p=store._placeholder()
+        clauses=[f"m.user_id={p}","m.status='ACTIVE'","pl.status='ACTIVE'"]
+        params=[user_id]
+        if organization_id:
+            clauses.append(f"m.organization_id={p}")
+            params.append(organization_id)
+        sql=("SELECT m.plant_id,m.organization_id,pl.name "
+             "FROM anviqo_memberships m JOIN anviqo_plants pl ON pl.plant_id=m.plant_id "
+             "WHERE "+" AND ".join(clauses)+" ORDER BY pl.name")
+        with store._connect() as conn:
+            cur=conn.cursor(); cur.execute(sql,tuple(params)); rows=cur.fetchall()
+        if len(rows)==1:
+            row=rows[0]
+            if isinstance(row,dict):
+                pid=row.get("plant_id"); oid=row.get("organization_id") or organization_id
+            else:
+                pid=row[0]; oid=row[1] or organization_id
+            if pid:
+                try:
+                    session["plant_id"]=pid
+                    if oid: session["organization_id"]=oid
+                    session["plant_context_source"]="AUTHORIZED_MEMBERSHIP_SINGLE"
+                except Exception:
+                    pass
+                return pid,oid,"AUTHORIZED_MEMBERSHIP_SINGLE"
+        if len(rows)>1:
+            return None,organization_id,"MULTIPLE_AUTHORIZED_PLANTS"
+        return None,organization_id,"NO_AUTHORIZED_PLANT"
     except Exception:
-        return None,None
+        return None,None,"CONTEXT_RESOLUTION_ERROR"
 
 def _prepare_tenant_db_url():
     url=os.getenv("ANVIQO_TENANT_DB_URL","").strip() or os.getenv("DATABASE_URL","").strip()
@@ -67,7 +110,6 @@ def _rows(plant_id, terms=None, tag=None, limit=2500):
     clauses=[f"plant_id={p}"]
     params=[plant_id]
     if tag:
-        # Normalize common PT_628/PT-628/PT 628 spellings without assuming DB formatting.
         clauses.append(f"regexp_replace(upper(coalesce(tag,'')), '[^A-Z0-9]', '', 'g')={p}")
         params.append(_normalize(tag))
     elif terms:
@@ -232,8 +274,7 @@ def _tenant_answer(q,rows,plant):
     if any(x in low for x in ("count","how many","number of")) and any(x in low for x in ("equipment","instrument","io","i/o","asset","device")):
         terms=_question_terms(text); count=_count_matches(plant["plant_id"],terms) if terms else 0
         return _safe_response(f"The selected plant {plant['name']} has {count} matching indexed equipment/instrument records in tenant knowledge.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],count=count)
-    natural=_natural_knowledge_answer(text,rows,plant)
-    return natural
+    return _natural_knowledge_answer(text,rows,plant)
 
 def _legacy_onboarding_question(q):
     low=str(q or "").lower()
@@ -246,17 +287,21 @@ def install():
     original=getattr(knowledge,"ask_anvi",None)
     if not callable(original) or getattr(original,"_anviqo_tenant_boundary",False): return
     def wrapped(q,*args,**kwargs):
-        plant_id,organization_id=_session_context()
-        if not plant_id: return _safe_response("No plant is selected. Select a plant before asking plant-specific questions.",blocked=True,reason="NO_ACTIVE_PLANT")
+        plant_id,organization_id,context_source=_session_context()
+        if not plant_id:
+            if context_source=="MULTIPLE_AUTHORIZED_PLANTS":
+                return _safe_response("Multiple authorized plants are available. Specify the plant context before asking a plant-specific question; ANVI will not guess or use another plant as a fallback.",blocked=True,reason="MULTIPLE_AUTHORIZED_PLANTS")
+            return _safe_response("No authorized plant context is available for this user. ANVI will not access plant data.",blocked=True,reason="NO_AUTHORIZED_PLANT")
         plant=_plant(plant_id)
-        if not plant or (organization_id and plant.get("organization_id")!=organization_id): return _safe_response("The selected plant context is invalid. I will not access plant data.",blocked=True,reason="INVALID_PLANT_CONTEXT")
+        if not plant or (organization_id and plant.get("organization_id")!=organization_id):
+            return _safe_response("The authorized plant context is invalid. ANVI will not access plant data.",blocked=True,reason="INVALID_PLANT_CONTEXT")
         candidate=_candidate_tag(q)
         rows=_rows(plant_id,tag=candidate) if candidate else _rows(plant_id,terms=_question_terms(q))
         if _legacy(plant) and not _legacy_onboarding_question(q): return original(q,*args,**kwargs)
         result=_tenant_answer(q,rows,plant)
         if result is not None: return result
         if _legacy(plant): return original(q,*args,**kwargs)
-        return _safe_response("I can only answer from the currently selected plant's onboarded knowledge. That information is not available in this plant yet, so I will not use another plant's data as a fallback.",blocked=True,reason="TENANT_SCOPE_ONLY",plant_id=plant["plant_id"],plant_name=plant.get("name"))
+        return _safe_response("I can only answer from this authorized plant's onboarded knowledge. That information is not available in this plant yet, so I will not use another plant's data as a fallback.",blocked=True,reason="TENANT_SCOPE_ONLY",plant_id=plant["plant_id"],plant_name=plant.get("name"))
     wrapped._anviqo_tenant_boundary=True
     knowledge.ask_anvi=wrapped
 
