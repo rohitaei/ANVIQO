@@ -15,6 +15,7 @@ import anvi_plant_auth as plant_auth
 import anvi_cleanup_test_accounts as cleanup_test_accounts
 import anvi_universal_onboarding as universal_onboarding
 import anvi_plant_ingestion_v2 as plant_ingestion
+import anvi_plant_delete as plant_delete
 
 _CLEANUP_RESULT = cleanup_test_accounts.run_once()
 
@@ -100,6 +101,24 @@ def admin_create_plant():
         return jsonify({"status": "OK", "plant_id": plant_id, "name": name, "slug": slug}), 201
     except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 400
 
+@app.delete("/api/admin/plants/<plant_id>")
+def admin_delete_plant(plant_id: str):
+    if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
+    if not plant_id.strip(): return jsonify({"status": "INVALID", "message": "plant_id is required"}), 400
+    try:
+        result = plant_delete.delete_plant(_actor()["organization_id"], plant_id.strip())
+        try:
+            store.record_audit(_actor(), "DELETE_PLANT", "PLANT", plant_id.strip(), {"plant_name": result["plant_name"], "deleted": result["deleted"]})
+        except Exception:
+            pass
+        # If the deleted plant was the current session context, clear it.
+        if session.get("plant_id") == plant_id.strip():
+            session.pop("plant_id", None); session.pop("plant_name", None); session.pop("plant_slug", None)
+        return jsonify({"status": "OK", "message": f"Plant '{result['plant_name']}' and its onboarding data were deleted.", **result})
+    except LookupError as exc: return jsonify({"status": "NOT_FOUND", "message": str(exc)}), 404
+    except ValueError as exc: return jsonify({"status": "INVALID", "message": str(exc)}), 400
+    except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 500
+
 @app.post("/api/admin/plant-users")
 def create_plant_user():
     if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
@@ -133,4 +152,4 @@ def my_plants():
 
 plant_ingestion.register(app)
 
-__all__ = ["plant_login_interceptor", "session_context", "admin_users_page", "admin_plants", "admin_create_plant", "create_plant_user", "change_plant_user_password", "my_plants"]
+__all__ = ["plant_login_interceptor", "session_context", "admin_users_page", "admin_plants", "admin_create_plant", "admin_delete_plant", "create_plant_user", "change_plant_user_password", "my_plants"]
