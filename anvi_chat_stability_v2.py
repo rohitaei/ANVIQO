@@ -1,6 +1,6 @@
 """V1.4 optimized universal tenant chat engine.
 
-Read-only, tenant-scoped answer path.  Designed to keep plant-data queries
+Read-only, tenant-scoped answer path. Designed to keep plant-data queries
 bounded and predictable on Render PostgreSQL while preserving evidence-first
 behavior and the existing V5/PCI safety boundary.
 """
@@ -20,7 +20,7 @@ SAFETY = {
 }
 
 NAMES = ("knowledge_id","organization_id","plant_id","document_id","record_type","external_id","name","area","service","asset_type","tag","parent_id","source","metadata","content","created_at")
-PREFIXES = {"PT","TT","FT","LT","AT","DT","ST","WT","CT","TE","PE","FE","LE","AE","AI","AO","DI","DO","XV","FV","PV","TV","LV","ZV","ZS","ZSO","ZSC","PS","TS","LS","FS","AS","HS","CS","ES","IS","MS","SS","VB","PC","FC"}
+PREFIXES = ("PT","TT","FT","LT","AT","DT","ST","WT","CT","TE","PE","FE","LE","AE","AI","AO","DI","DO","XV","FV","PV","TV","LV","ZV","ZS","ZSO","ZSC","PS","TS","LS","FS","AS","HS","CS","ES","IS","MS","SS","VB","PC","FC")
 STOP = {"what","tell","me","about","do","you","have","the","for","and","to","in","of","is","are","available","information","this","that","plant","please","give","show","can","i","we","my","your","on","from","with","currently","selected","knowledge","including","their","documents","details","instrument","instruments","source","sources","data"}
 
 
@@ -136,12 +136,6 @@ def _plant_context():
 
 
 def _repair_single_plant_context(plant_id, organization_id):
-    """Repair only a stale session when exactly one active membership exists.
-
-    This is deliberately conservative: it never guesses among multiple plants
-    and never falls back to global/legacy plant data. The repaired ID comes only
-    from an active membership belonging to the current organization.
-    """
     if not organization_id:
         return None
     store=_store()
@@ -243,16 +237,25 @@ def _summary_answer(text,rows,plant):
 
 
 def _answer(text):
-    pid,oid=_plant_context()
-    if not pid:return _safe("No plant is selected. Select a plant before asking plant-specific questions.",blocked=True,reason="NO_ACTIVE_PLANT")
+    # Resolve the authenticated membership HERE, in the actual universal
+    # answer function. Do not depend on a UI plant selector or a stale
+    # session plant_id. This is the single source of truth for V1.4 chat.
+    try:
+        import anvi_tenant_context_autofix as _context_fix
+        pid, oid, context_source = _context_fix.resolve()
+    except Exception as exc:
+        return _safe("ANVI could not establish the authenticated plant context. No other plant's data was used.",blocked=True,reason="TENANT_CONTEXT_ERROR",error_type=type(exc).__name__)
+
+    if not pid:
+        if context_source == "MULTIPLE_AUTHORIZED_PLANTS":
+            return _safe("Multiple authorized plants are available for this account. ANVI requires an explicit plant context and will not guess or use another plant.",blocked=True,reason="MULTIPLE_AUTHORIZED_PLANTS")
+        if context_source == "NO_AUTHENTICATED_USER":
+            return _safe("ANVI requires an authenticated user before answering plant-specific questions.",blocked=True,reason="NO_AUTHENTICATED_USER")
+        return _safe("No active authorized plant is available for this account. ANVI will not use another plant's data as a fallback.",blocked=True,reason="NO_AUTHORIZED_PLANT")
+
     plant=_plant(pid,oid)
     if not plant or str(plant.get("status","")).upper()!="ACTIVE":
-        repaired=_repair_single_plant_context(pid,oid)
-        if repaired and repaired!=pid:
-            pid=repaired
-            plant=_plant(pid,oid)
-    if not plant or str(plant.get("status","")).upper()!="ACTIVE":
-        return _safe("The selected plant context is invalid. Select an active plant from Plant & User Management before asking plant-specific questions. I will not access plant data or use another plant as a fallback.",blocked=True,reason="INVALID_PLANT_CONTEXT",plant_id=pid)
+        return _safe("The authenticated plant membership is not active or the plant record is unavailable. ANVI will not use another plant's data as a fallback.",blocked=True,reason="INVALID_PLANT_CONTEXT",plant_id=pid)
     candidate=_candidate(text); rows=_query_rows(pid,oid,identifier=candidate,limit=40) if candidate else _query_rows(pid,oid,terms=_terms(text),limit=80)
     return _exact_answer(text,rows,plant) if candidate else _summary_answer(text,rows,plant)
 
