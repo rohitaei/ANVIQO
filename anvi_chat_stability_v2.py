@@ -173,12 +173,19 @@ def _repair_single_plant_context(plant_id, organization_id):
 
 
 def _plant(plant_id,organization_id):
+    """Validate the plant identity independently of optional org metadata.
+
+    The membership resolver has already authorized (plant_id, organization_id)
+    against the ACTIVE membership + ACTIVE plant join. Requiring the plant row
+    to repeat the membership's organization_id here caused valid memberships
+    to fail when the plant's organization metadata differed or was NULL.
+    """
     store=_store()
     if not store or not plant_id: return None
-    p=store._placeholder(); clauses=[f"plant_id={p}"]; params=[plant_id]
-    if organization_id: clauses.append(f"organization_id={p}"); params.append(organization_id)
-    sql=f"SELECT plant_id,organization_id,name,slug,status FROM anviqo_plants WHERE {' AND '.join(clauses)} LIMIT 1"
-    rows=_execute(sql,params); return rows[0] if rows else None
+    p=store._placeholder()
+    sql=f"SELECT plant_id,organization_id,name,slug,status FROM anviqo_plants WHERE plant_id={p} LIMIT 1"
+    rows=_execute(sql,[plant_id])
+    return rows[0] if rows else None
 
 
 def _category(row):
