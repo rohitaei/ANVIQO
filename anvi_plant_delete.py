@@ -6,6 +6,7 @@ import anvi_tenant_store as store
 # V1.x plant-scoped data only. Frozen V5/PCI data is never touched.
 DATA_TABLES = (
     "anviqo_plant_ingestion_jobs",
+    "anviqo_plant_ingestion_runs",
     "anviqo_universal_ingestion_jobs",
     "anviqo_direct_import_jobs",
     "anviqo_plant_documents",
@@ -35,9 +36,8 @@ def delete_plant(organization_id: str, plant_id: str) -> dict[str, Any]:
         if str(plant[1]).upper() != "ACTIVE":
             raise ValueError("Plant is already inactive or unavailable")
 
-        # The legacy anviqo_plant_ingestion_jobs table is still present in
-        # production and has a direct FK to anviqo_plants. It must be purged
-        # before the parent row, along with the current V1.x data tables.
+        # Legacy/current V1.x ingestion tables may both reference the parent
+        # plant row. Purge every known plant-scoped child before the parent.
         for table in DATA_TABLES:
             if not _table_exists(cur, table):
                 continue
