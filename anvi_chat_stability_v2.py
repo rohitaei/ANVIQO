@@ -89,8 +89,6 @@ def _execute(sql,params):
     if not store: raise RuntimeError("TENANT_STORE_UNAVAILABLE")
     with store._connect() as conn:
         cur=conn.cursor()
-        # Bound database work so a malformed/broad plant question cannot hold
-        # the single Render web worker until the platform returns 502/503.
         try: cur.execute("SET LOCAL statement_timeout = '3000ms'")
         except Exception: pass
         try: cur.execute("SET LOCAL lock_timeout = '500ms'")
@@ -110,8 +108,6 @@ def _query_rows(plant_id,organization_id,identifier=None,terms=None,limit=120):
         sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND ({exact}) ORDER BY created_at DESC LIMIT {min(int(limit),80)}"
         rows=_execute(sql,params+[n]*4)
         if rows: return rows
-        # Content is a deliberately separate fallback; it is the expensive
-        # path and is never combined with the exact identifier query.
         sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND regexp_replace(upper(coalesce(content,'')), '[^A-Z0-9]', '', 'g') LIKE {p} ORDER BY created_at DESC LIMIT {min(int(limit),40)}"
         return _execute(sql,params+[f"%{n}%"])
     terms=list(terms or [])[:10]
@@ -137,6 +133,49 @@ def _plant_context():
         from flask import session
         return session.get("plant_id"),session.get("organization_id")
     except Exception: return None,None
+
+
+def _repair_single_plant_context(plant_id, organization_id):
+    """Repair only a stale session when exactly one active membership exists.
+
+    This is deliberately conservative: it never guesses among multiple plants
+    and never falls back to global/legacy plant data. The repaired ID comes only
+    from an active membership belonging to the current organization.
+    """
+    if not organization_id:
+        return None
+    store=_store()
+    if not store:
+        return None
+    try:
+        p=store._placeholder()
+        with store._connect() as conn:
+            cur=conn.cursor()
+            cur.execute(
+                f"""SELECT m.plant_id,p.name,p.slug
+                    FROM anviqo_memberships m
+                    JOIN anviqo_plants p ON p.plant_id=m.plant_id
+                    WHERE m.user_id={p}
+                      AND m.organization_id={p}
+                      AND m.status='ACTIVE'
+                      AND p.status='ACTIVE'
+                    ORDER BY p.name""",
+                (__import__('flask').session.get("user_id",""), organization_id),
+            )
+            rows=cur.fetchall()
+        if len(rows)!=1:
+            return None
+        repaired_id=rows[0][0]
+        if repaired_id==plant_id:
+            return repaired_id
+        from flask import session
+        session["plant_id"]=repaired_id
+        session["plant_name"]=rows[0][1]
+        session["plant_slug"]=rows[0][2]
+        session.modified=True
+        return repaired_id
+    except Exception:
+        return None
 
 
 def _plant(plant_id,organization_id):
@@ -207,7 +246,13 @@ def _answer(text):
     pid,oid=_plant_context()
     if not pid:return _safe("No plant is selected. Select a plant before asking plant-specific questions.",blocked=True,reason="NO_ACTIVE_PLANT")
     plant=_plant(pid,oid)
-    if not plant or str(plant.get("status","")).upper()!="ACTIVE":return _safe("The selected plant context is invalid. I will not access plant data.",blocked=True,reason="INVALID_PLANT_CONTEXT")
+    if not plant or str(plant.get("status","")).upper()!="ACTIVE":
+        repaired=_repair_single_plant_context(pid,oid)
+        if repaired and repaired!=pid:
+            pid=repaired
+            plant=_plant(pid,oid)
+    if not plant or str(plant.get("status","")).upper()!="ACTIVE":
+        return _safe("The selected plant context is invalid. Select an active plant from Plant & User Management before asking plant-specific questions. I will not access plant data or use another plant as a fallback.",blocked=True,reason="INVALID_PLANT_CONTEXT",plant_id=pid)
     candidate=_candidate(text); rows=_query_rows(pid,oid,identifier=candidate,limit=40) if candidate else _query_rows(pid,oid,terms=_terms(text),limit=80)
     return _exact_answer(text,rows,plant) if candidate else _summary_answer(text,rows,plant)
 
