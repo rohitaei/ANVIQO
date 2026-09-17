@@ -21,6 +21,19 @@ def install():
         import anvi_chat_stability_v2 as _stability
         _stability._plant_context = _context_fix.resolve_pair
         _stability._anviqo_membership_context_patch = True
+
+        # Do not rely only on monkey-patching _plant_context. Another import
+        # path can reload/replace that function. Resolve the authenticated
+        # membership immediately before every live V1.4 answer instead.
+        if not getattr(_stability, "_anviqo_answer_membership_patch", False):
+            _original_answer = _stability._answer
+
+            def _membership_scoped_answer(text, *args, **kwargs):
+                _context_fix.resolve()
+                return _original_answer(text, *args, **kwargs)
+
+            _stability._answer = _membership_scoped_answer
+            _stability._anviqo_answer_membership_patch = True
     except Exception as exc:
         print(f"ANVIQO_CHAT_CONTEXT_REAPPLY_ERROR error={exc!r}", flush=True)
 
