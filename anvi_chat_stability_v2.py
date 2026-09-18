@@ -211,6 +211,8 @@ def _exact_answer(text,rows,plant):
     if not requested:return None
     exact=[r for r in rows if any(_norm(r.get(k))==requested for k in ("tag","external_id","name","service"))]
     if not exact: exact=[r for r in rows if requested in _norm(r.get("content"))]
+    if not exact:
+        exact=[r for r in rows if requested in _norm(json.dumps(r.get("metadata") or {}, ensure_ascii=False))]
     if not exact:return _safe("I cannot find that tag in the currently selected plant's knowledge. I will not use another plant's data as a fallback.",blocked=True,reason="TENANT_KNOWLEDGE_NOT_FOUND",plant_id=plant["plant_id"],plant_name=plant.get("name"))
     row=max(exact,key=_richness); shown=row.get("tag") or row.get("external_id") or requested
     return _safe("Verified tenant knowledge for "+str(shown)+": "+_field(row),blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant.get("name"),evidence=[row],count=1)
