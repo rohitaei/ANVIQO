@@ -60,7 +60,7 @@ def _engineering_metadata(raw: Mapping[str, Any]) -> Dict[str, Any]:
     aliases = {
         "io_type": ("io_type", "I/O TYPE", "IO TYPE", "signal type", "signal_type"),
         "plc_address": ("plc_address", "PLC ADDRESS", "S7 PLC ADRESS", "S7 PLC ADDRESS", "PLC ADRESS", "address"),
-        "plc_tag": ("plc_tag", "PLC TAG", "PLC TAG NAME", "TAG NAME", "TAG"),
+        "plc_tag": ("plc_tag", "PLC TAG", "PLC TAG NAME", "TAG NAME", "TAG", "Instrument Tag", "Loop Tag"),
         "panel": ("panel", "PANEL", "PANEL NAME"),
         "tb": ("tb", "TB", "TB NAME", "TB NO", "TB NUMBER", "TERMINAL BLOCK"),
         "tb_no": ("tb_no", "TB NO", "TB NUMBER"),
@@ -84,8 +84,8 @@ def _engineering_metadata(raw: Mapping[str, Any]) -> Dict[str, Any]:
 
 def normalize_record(raw: Mapping[str, Any], record_type: str) -> OnboardingRecord:
     """Normalize canonical and common engineering spreadsheet column names."""
-    tag = _text(_pick(raw, "tag", "tag_name", "PLC TAG", "PLC TAG NAME", "TAG NAME"))
-    rid = _text(_pick(raw, "external_id", "id", "asset_id", "tag", "tag_name", "PLC TAG", "PLC TAG NAME", "TAG NAME"))
+    tag = _text(_pick(raw, "tag", "tag_name", "PLC TAG", "PLC TAG NAME", "TAG NAME", "Instrument Tag", "Loop Tag"))
+    rid = _text(_pick(raw, "external_id", "id", "asset_id", "tag", "tag_name", "PLC TAG", "PLC TAG NAME", "TAG NAME", "Instrument Tag", "Loop Tag"))
     if not rid:
         raise ValueError("external_id, id, tag, PLC TAG or asset_id is required")
     return OnboardingRecord(
