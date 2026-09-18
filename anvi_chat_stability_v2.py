@@ -149,9 +149,10 @@ def _pci_resolve_rows(plant_id, organization_id, query):
     for r in rows:
         meta=r.get("metadata") if isinstance(r.get("metadata"),dict) else {}
         def mv(*keys):
-            for k in keys:
-                v=meta.get(k)
-                if v not in (None,""): return v
+            wanted={re.sub(r"[^a-z0-9]+","",str(k).lower()) for k in keys}
+            for k,v in meta.items():
+                if re.sub(r"[^a-z0-9]+","",str(k).lower()) in wanted and v not in (None,""):
+                    return v
             return ""
         tag=r.get("tag") or mv("plc_tag","instrument_tag","loop_tag","tag_name","tag") or ""
         desc=r.get("name") or r.get("service") or mv("description","instrument_description","service_description") or r.get("content") or ""
