@@ -127,6 +127,52 @@ def _query_rows(plant_id,organization_id,identifier=None,terms=None,limit=120):
     return _execute(sql,params)
 
 
+def _pci_resolve_rows(plant_id, organization_id, query):
+    """Use the proven PCI identity resolver against this tenant's imported data.
+
+    The resolver is reused as an identity/indexing engine only; BF-2 data is
+    supplied as records and the PCI JSON database is never consulted.
+    """
+    store=_store()
+    if not store or not plant_id: return []
+    p=store._placeholder(); fields=",".join(NAMES)
+    clauses=[f"plant_id={p}"]; params=[plant_id]
+    if organization_id:
+        clauses.append(f"organization_id={p}"); params.append(organization_id)
+    rows=_execute(f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} ORDER BY created_at DESC LIMIT 5000",params)
+    if not rows: return []
+    try:
+        from pci_universal_resolver import resolve
+    except Exception:
+        return []
+    records=[]
+    for r in rows:
+        meta=r.get("metadata") if isinstance(r.get("metadata"),dict) else {}
+        def mv(*keys):
+            for k in keys:
+                v=meta.get(k)
+                if v not in (None,""): return v
+            return ""
+        tag=r.get("tag") or mv("plc_tag","instrument_tag","loop_tag","tag_name","tag") or ""
+        desc=r.get("name") or r.get("service") or mv("description","instrument_description","service_description") or r.get("content") or ""
+        records.append({
+            "tag":str(tag),
+            "fox_plc_tag":str(mv("plc_tag","fox_plc_tag")),
+            "description":str(desc),
+            "io_type":str(mv("io_type","i_o_type")),
+            "plc_address":str(mv("plc_address")),
+            "panel":str(mv("panel")),
+            "tb_name":str(mv("tb","tb_name")),
+            "tb_no":str(mv("tb_no")),
+            "jb_name":str(mv("jb","jb_name")),
+            "jb_no":str(mv("jb_no")),
+            "source_sheet":str(r.get("source") or ""),
+            "_universal_row":r,
+        })
+    resolved,_match=resolve(query,records)
+    return [r["_universal_row"] for r in resolved if r.get("_universal_row")]
+
+
 def _plant_context():
     try:
         from flask import session
@@ -264,7 +310,7 @@ def _answer(text):
     plant=_plant(pid,oid)
     if not plant or str(plant.get("status","")).upper()!="ACTIVE":
         return _safe("The authenticated plant membership is not active or the plant record is unavailable. ANVI will not use another plant's data as a fallback.",blocked=True,reason="INVALID_PLANT_CONTEXT",plant_id=pid)
-    candidate=_candidate(text); rows=_query_rows(pid,oid,identifier=candidate,limit=40) if candidate else _query_rows(pid,oid,terms=_terms(text),limit=80)
+    candidate=_candidate(text); rows=_pci_resolve_rows(pid,oid,candidate) if candidate else _query_rows(pid,oid,terms=_terms(text),limit=80)
     return _exact_answer(text,rows,plant) if candidate else _summary_answer(text,rows,plant)
 
 
