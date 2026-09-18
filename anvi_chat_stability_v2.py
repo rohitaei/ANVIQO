@@ -20,7 +20,7 @@ SAFETY = {
 }
 
 NAMES = ("knowledge_id","organization_id","plant_id","document_id","record_type","external_id","name","area","service","asset_type","tag","parent_id","source","metadata","content","created_at")
-PREFIXES = ("PT","TT","FT","LT","AT","DT","ST","WT","CT","TE","PE","FE","LE","AE","AI","AO","DI","DO","XV","FV","PV","TV","LV","ZV","ZS","ZSO","ZSC","PS","TS","LS","FS","AS","HS","CS","ES","IS","MS","SS","VB","PC","FC")
+PREFIXES = ("PT","TT","FT","LT","AT","DT","ST","WT","CT","TE","PE","FE","LE","AE","AI","AO","DI","DO","XV","FV","PV","TV","LV","ZV","ZS","ZSO","ZSC","PS","TS","LS","FS","AS","HS","CS","ES","IS","MS","SS","VB","PC","FC","MFT")
 STOP = {"what","tell","me","about","do","you","have","the","for","and","to","in","of","is","are","available","information","this","that","plant","please","give","show","can","i","we","my","your","on","from","with","currently","selected","knowledge","including","their","documents","details","instrument","instruments","source","sources","data"}
 
 
@@ -108,8 +108,7 @@ def _query_rows(plant_id,organization_id,identifier=None,terms=None,limit=120):
         sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND ({exact}) ORDER BY created_at DESC LIMIT {min(int(limit),80)}"
         rows=_execute(sql,params+[n]*4)
         if rows: return rows
-        sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND regexp_replace(upper(coalesce(content,'')), '[^A-Z0-9]', '', 'g') LIKE {p} ORDER BY created_at DESC LIMIT {min(int(limit),40)}"
-        return _execute(sql,params+[f"%{n}%"])
+        # Search preserved source metadata too; real engineering sheets often use\n        # non-canonical headers such as Instrument Tag or Loop Tag.\n        sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND (regexp_replace(upper(coalesce(content,'')), '[^A-Z0-9]', '', 'g') LIKE {p} OR regexp_replace(upper(coalesce(metadata::text,'')), '[^A-Z0-9]', '', 'g') LIKE {p}) ORDER BY created_at DESC LIMIT {min(int(limit),40)}"\n        return _execute(sql,params+[f"%{n}%",f"%{n}%"])
     terms=list(terms or [])[:10]
     if not terms: return []
     searchable=("external_id","name","area","service","asset_type","tag","source","content")
