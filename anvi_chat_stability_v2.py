@@ -108,7 +108,10 @@ def _query_rows(plant_id,organization_id,identifier=None,terms=None,limit=120):
         sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND ({exact}) ORDER BY created_at DESC LIMIT {min(int(limit),80)}"
         rows=_execute(sql,params+[n]*4)
         if rows: return rows
-        # Search preserved source metadata too; real engineering sheets often use\n        # non-canonical headers such as Instrument Tag or Loop Tag.\n        sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND (regexp_replace(upper(coalesce(content,'')), '[^A-Z0-9]', '', 'g') LIKE {p} OR regexp_replace(upper(coalesce(metadata::text,'')), '[^A-Z0-9]', '', 'g') LIKE {p}) ORDER BY created_at DESC LIMIT {min(int(limit),40)}"\n        return _execute(sql,params+[f"%{n}%",f"%{n}%"])
+        # Search preserved source metadata too; real engineering sheets often use
+        # non-canonical headers such as Instrument Tag or Loop Tag.
+        sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND (regexp_replace(upper(coalesce(content,'')), '[^A-Z0-9]', '', 'g') LIKE {p} OR regexp_replace(upper(coalesce(metadata::text,'')), '[^A-Z0-9]', '', 'g') LIKE {p}) ORDER BY created_at DESC LIMIT {min(int(limit),40)}"
+        return _execute(sql,params+[f"%{n}%",f"%{n}%"])
     terms=list(terms or [])[:10]
     if not terms: return []
     searchable=("external_id","name","area","service","asset_type","tag","source","content")
