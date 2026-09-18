@@ -1,0 +1,18 @@
+name: BF-2 PCI resolver predeploy check
+on:
+  push:
+    branches: [predeploy-bf2-pci-check]
+jobs:
+  resolver:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install runtime dependencies
+        run: python -m pip install -r requirements.txt pytest
+      - name: Compile target modules
+        run: python -m py_compile anvi_chat_stability_v2.py universal_onboarding.py pci_universal_resolver.py
+      - name: Run BF-2 PCI resolver tests
+        run: pytest -q tests/test_bf2_pci_resolver.py
