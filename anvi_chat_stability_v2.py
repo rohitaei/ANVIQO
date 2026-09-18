@@ -311,7 +311,7 @@ def _answer(text):
     plant=_plant(pid,oid)
     if not plant or str(plant.get("status","")).upper()!="ACTIVE":
         return _safe("The authenticated plant membership is not active or the plant record is unavailable. ANVI will not use another plant's data as a fallback.",blocked=True,reason="INVALID_PLANT_CONTEXT",plant_id=pid)
-    candidate=_candidate(text); rows=_pci_resolve_rows(pid,oid,candidate) if candidate else _query_rows(pid,oid,terms=_terms(text),limit=80)
+    candidate=_candidate(text)\n    if candidate:\n        # PCI resolver is the primary identity engine. If it cannot map a\n        # universal engineering row, fall back to the same tenant-scoped\n        # evidence index used by the importer. This preserves the PCI\n        # resolver while allowing arbitrary spreadsheet tag columns.\n        rows=_pci_resolve_rows(pid,oid,candidate)\n        if not rows:\n            rows=_query_rows(pid,oid,identifier=candidate,limit=80)\n    else:\n        rows=_query_rows(pid,oid,terms=_terms(text),limit=80)
     return _exact_answer(text,rows,plant) if candidate else _summary_answer(text,rows,plant)
 
 
