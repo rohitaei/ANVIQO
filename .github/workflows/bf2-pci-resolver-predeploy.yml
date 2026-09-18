@@ -19,4 +19,6 @@ jobs:
       - name: Compile target modules
         run: python -m py_compile anvi_chat_stability_v2.py universal_onboarding.py pci_universal_resolver.py tests/test_bf2_pci_resolver.py
       - name: Run BF-2 PCI resolver check
+        env:
+          PYTHONPATH: .
         run: python tests/test_bf2_pci_resolver.py
