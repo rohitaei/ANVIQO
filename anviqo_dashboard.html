@@ -600,8 +600,8 @@ const titles={
  equipment:['Equipment Status','Equipment health and context'],
  spares:['Maintenance & Spares Intelligence','Equipment, maintenance and spare intelligence'],
  maintenance:['Maintenance Intelligence','Maintenance decision support'],
- pci:['Instruments / PCI','PCI instrumentation intelligence'],
- plc:['PLC & I/O Intelligence','Read-only simulated I/O'],
+ pci:['Instruments','Plant instrumentation intelligence'],
+ plc:['PLC & I/O Intelligence','Read-only plant I/O and engineering identity'],
  interlocks:['Interlocks & Process Context','Process and interlock evidence'],
  shift:['Shift Report','A / B / C shift intelligence'],
  management:['Management Decision','Evidence-backed decision support'],
@@ -655,10 +655,10 @@ async function refresh(){
   document.getElementById('events').textContent=d.active_events??0;
   document.getElementById('overviewSituation').innerHTML=
    '<div class="row"><span>Mode</span><b class="amber">'+(d.mode||'SIMULATION')+'</b></div>'+
-   '<div class="row"><span>Total I/O</span><b>1,064</b></div>'+
+   '<div class="row"><span>Total I/O</span><b>'+(d.total_io??0)+'</b></div>'+
    '<div class="row"><span>Healthy</span><b class="green">'+(d.healthy==null?'—':d.healthy)+'</b></div>'+
    '<div class="row"><span>Warning</span><b class="amber">'+(d.warning==null?'—':d.warning)+'</b></div>'+
-   '<div class="row"><span>Critical</span><b class="red">'+(d.critical??0)+'</b></div>';
+   '<div class="row"><span>Critical</span><b class="red">'+(d.critical==null?'—':d.critical)+'</b></div>';
  }catch(e){
   document.getElementById('overviewSituation').textContent='API connection unavailable';
  }
@@ -671,11 +671,11 @@ async function loadPage(name){
   try{
    const d=await api('/api/pci/live');
    let html=
-    '<div class="row"><span>MODE</span><b class="amber">'+(d.mode||'SIMULATION')+'</b></div>'+
+    '<div class="row"><span>MODE</span><b class="amber">'+(d.mode||'ONBOARDING_DATA').replace(/_/g,' ')+'</b></div>'+
     '<div class="row"><span>TOTAL I/O</span><b>'+(d.total_io??0)+'</b></div>'+
-    '<div class="row"><span>HEALTHY</span><b class="green">'+(d.healthy??0)+'</b></div>'+
-    '<div class="row"><span>WARNING</span><b class="amber">'+(d.warning??0)+'</b></div>'+
-    '<div class="row"><span>CRITICAL</span><b class="red">'+(d.critical??0)+'</b></div>'+
+    '<div class="row"><span>HEALTHY</span><b class="green">'+(d.healthy==null?'—':d.healthy)+'</b></div>'+
+    '<div class="row"><span>WARNING</span><b class="amber">'+(d.warning==null?'—':d.warning)+'</b></div>'+
+    '<div class="row"><span>CRITICAL</span><b class="red">'+(d.critical==null?'—':d.critical)+'</b></div>'+
     '<div class="row"><span>CHANGED</span><b>'+JSON.stringify(d.changed??0)+'</b></div>';
    const ids={pci:'pciData',plc:'plcData',alarms:'alarmData',analysis:'analysisData',prediction:'predictionData',critical:'criticalData',equipment:'equipmentData'};
    if(ids[name])document.getElementById(ids[name]).innerHTML=html;
