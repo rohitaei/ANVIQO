@@ -364,6 +364,12 @@ def ask_anvi():
         mutation_words = (" add ", " added ", " receive ", " received ", " use ", " used ", " remove ", " removed ", " consume ", " consumed ")
         q_probe = " " + q.lower() + " "
         if any(word in q_probe for word in mutation_words) and _extract_tag(q):
+            # Resolve the authenticated tenant context before authorizing the
+            # inventory write. The normal plant-user login already stores these
+            # fields in session, while the bootstrap/admin login may carry a
+            # stale or different plant context. Use the same membership resolver
+            # as ANVI Chat so inventory writes follow the active authorized plant
+            # instead of depending on a UI selector or a stale session value.
             actor = {
                 "user_id": session.get("user_id", ""),
                 "organization_id": session.get("organization_id", ""),
@@ -371,6 +377,18 @@ def ask_anvi():
                 "role": session.get("role", ""),
                 "username": session.get("username", ""),
             }
+            try:
+                from anvi_tenant_context_autofix import resolve as resolve_context
+                resolved_pid, resolved_oid, context_source = resolve_context()
+                if resolved_pid and resolved_oid:
+                    actor["plant_id"] = resolved_pid
+                    actor["organization_id"] = resolved_oid
+                    session["plant_id"] = resolved_pid
+                    session["organization_id"] = resolved_oid
+                    session.modified = True
+            except Exception:
+                pass
+
             from anvi_tenant_store import authorize
             if not authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"]):
                 return jsonify({
