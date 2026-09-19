@@ -58,17 +58,17 @@ def _engineering_metadata(raw: Mapping[str, Any]) -> Dict[str, Any]:
     """Preserve common engineering-sheet fields without changing V5 semantics."""
     metadata = dict(raw.get("metadata") or {})
     aliases = {
-        "io_type": ("io_type", "I/O TYPE", "IO TYPE", "signal type", "signal_type"),
-        "plc_address": ("plc_address", "PLC ADDRESS", "S7 PLC ADRESS", "S7 PLC ADDRESS", "PLC ADRESS", "address"),
+        "io_type": ("io_type", "I/O", "IO", "I/O TYPE", "IO TYPE", "signal type", "signal_type", "signal", "signal type / io"),
+        "plc_address": ("plc_address", "PLC ADDRESS", "PLC ADDR", "PLC IO ADDRESS", "PLC I/O ADDRESS", "PLC I/O", "PLC IO", "S7 PLC ADRESS", "S7 PLC ADDRESS", "PLC ADRESS", "PLC ADDRESS / I/O", "address"),
         "plc_tag": ("plc_tag", "PLC TAG", "PLC TAG NAME", "TAG NAME", "TAG", "Instrument Tag", "Loop Tag"),
-        "panel": ("panel", "PANEL", "PANEL NAME"),
-        "tb": ("tb", "TB", "TB NAME", "TB NO", "TB NUMBER", "TERMINAL BLOCK"),
+        "panel": ("panel", "PANEL", "PANEL NAME", "PANEL NO", "PANEL NUMBER"),
+        "tb": ("tb", "TB", "TB NAME", "TB NO", "TB NUMBER", "TB NO.", "TERMINAL BLOCK", "TERMINAL BLOCK NAME", "TERMINAL BLOCK NO"),
         "tb_no": ("tb_no", "TB NO", "TB NUMBER"),
-        "jb": ("jb", "JB", "JB NAME", "JB NO", "JUNCTION BOX"),
+        "jb": ("jb", "JB", "JB NAME", "JB NO", "JB NUMBER", "JB NO.", "JUNCTION BOX", "JUNCTION BOX NAME", "JUNCTION BOX NO"),
         "jb_no": ("jb_no", "JB NO", "JB NUMBER"),
-        "range": ("range", "RANGE", "instrument range", "measurement range"),
+        "range": ("range", "RANGE", "instrument range", "measurement range", "range / span", "span"),
         "unit": ("unit", "UNIT", "engineering unit", "engg unit"),
-        "model": ("model", "MODEL", "model no", "model number"),
+        "model": ("model", "MODEL", "MODEL NO", "MODEL NO.", "model no", "model number", "make / model", "manufacturer model"),
         "criticality": ("criticality", "CRITICALITY", "critical"),
         "description": ("description", "DESCRIPTION", "service description", "instrument description"),
     }
