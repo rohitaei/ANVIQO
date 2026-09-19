@@ -10,6 +10,14 @@ def main():
     )
     normalized = asdict(row)
     assert normalized["tag"] == "PT-628", ("canonical_tag", normalized)
+    assert normalized["metadata"]["io_type"] == "AI"
+    assert normalized["metadata"]["plc_address"] == "PIW 628"
+    assert normalized["metadata"]["panel"] == "C2"
+    assert normalized["metadata"]["tb"] == "XA628"
+    assert normalized["metadata"]["jb"] == "JB-62"
+    assert normalized["metadata"]["range"] == "0-10 bar"
+    assert normalized["metadata"]["unit"] == "bar"
+    assert normalized["metadata"]["model"] == "TX-100"
     rendered = _field({"tag":"PT-628","external_id":"bf2-test","name":"Pressure transmitter","area":"BF-2","source":"BF2_TEST","metadata":normalized["metadata"]})
     for expected in ("I/O: AI","PLC: PIW 628","Panel: C2","TB: XA628","TB No: 14","JB: JB-62","JB No: 5","Range: 0-10 bar","Unit: bar","Model: TX-100","Criticality: CRITICAL"):
         assert expected in rendered, ("missing_engineering_field", expected, rendered)
