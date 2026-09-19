@@ -31,7 +31,7 @@ ROLE_PERMISSIONS = {
     "OWNER": {"tenant:read", "tenant:admin", "audit:read", "plant:read", "inventory:read", "inventory:write"},
     "ADMIN": {"tenant:read", "tenant:admin", "audit:read", "plant:read", "inventory:read", "inventory:write"},
     "ENGINEER": {"tenant:read", "audit:read", "plant:read", "inventory:read", "inventory:write"},
-    "OPERATOR": {"tenant:read", "plant:read", "inventory:read"},
+    "OPERATOR": {"tenant:read", "plant:read", "inventory:read", "inventory:write"},
     "VIEWER": {"tenant:read", "plant:read", "inventory:read"},
 }
 

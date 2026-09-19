@@ -2,7 +2,7 @@ name: BF-2 PCI resolver predeploy check
 
 on:
   push:
-    branches: [predeploy-bf2-pci-check, fix-inventory-context-resolution]
+    branches: [predeploy-bf2-pci-check, fix-inventory-context-resolution, allow-operator-inventory-write]
   pull_request:
     branches: [main]
 
