@@ -377,19 +377,35 @@ def ask_anvi():
                 "role": session.get("role", ""),
                 "username": session.get("username", ""),
             }
-            try:
-                from anvi_tenant_context_autofix import resolve as resolve_context
-                resolved_pid, resolved_oid, context_source = resolve_context()
-                if resolved_pid and resolved_oid:
-                    actor["plant_id"] = resolved_pid
-                    actor["organization_id"] = resolved_oid
-                    session["plant_id"] = resolved_pid
-                    session["organization_id"] = resolved_oid
-                    session.modified = True
-            except Exception:
-                pass
-
             from anvi_tenant_store import authorize
+            # Keep a valid authenticated tenant session as the source of truth.
+            # Only repair the context when the existing session cannot authorize
+            # the requested inventory write. This prevents the bootstrap Primary
+            # Plant context from overwriting an already-valid BF-2 session.
+            session_context_valid = bool(
+                actor["user_id"]
+                and actor["organization_id"]
+                and actor["plant_id"]
+                and authorize(
+                    actor,
+                    "inventory:write",
+                    actor["organization_id"],
+                    actor["plant_id"],
+                )
+            )
+            if not session_context_valid:
+                try:
+                    from anvi_tenant_context_autofix import resolve as resolve_context
+                    resolved_pid, resolved_oid, context_source = resolve_context()
+                    if resolved_pid and resolved_oid:
+                        actor["plant_id"] = resolved_pid
+                        actor["organization_id"] = resolved_oid
+                        session["plant_id"] = resolved_pid
+                        session["organization_id"] = resolved_oid
+                        session.modified = True
+                except Exception:
+                    pass
+
             if not authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"]):
                 return jsonify({
                     "status": "FORBIDDEN",
