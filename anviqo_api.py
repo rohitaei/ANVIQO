@@ -358,16 +358,24 @@ def ask_anvi():
     try:
         q=(request.get_json(silent=True) or {}).get("question","").strip()
 
-        # Phase 1: inventory mutations require an authenticated ADMIN session.
-        # Read-only questions remain available to any authenticated session.
+        # Inventory mutations use the tenant permission model.
+        # ENGINEER/ADMIN/OWNER may write inventory; OPERATOR/VIEWER remain read-only.
         from pci_spares import _extract_tag
         mutation_words = (" add ", " added ", " receive ", " received ", " use ", " used ", " remove ", " removed ", " consume ", " consumed ")
         q_probe = " " + q.lower() + " "
         if any(word in q_probe for word in mutation_words) and _extract_tag(q):
-            if session.get("role") != "ADMIN":
+            actor = {
+                "user_id": session.get("user_id", ""),
+                "organization_id": session.get("organization_id", ""),
+                "plant_id": session.get("plant_id", ""),
+                "role": session.get("role", ""),
+                "username": session.get("username", ""),
+            }
+            from anvi_tenant_store import authorize
+            if not authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"]):
                 return jsonify({
                     "status": "FORBIDDEN",
-                    "message": "Inventory mutation requires ADMIN authorization.",
+                    "message": "Inventory mutation requires inventory:write authorization.",
                     "inventory_mutation": True,
                     "executed": False,
                     "blocked": True,
