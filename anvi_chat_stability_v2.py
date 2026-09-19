@@ -154,10 +154,12 @@ def _query_rows(plant_id,organization_id,identifier=None,terms=None,limit=120):
 
 
 def _pci_resolve_rows(plant_id, organization_id, query):
-    """Use the proven PCI identity resolver against this tenant's imported data.
+    """Resolve a universal engineering identifier with the frozen PCI resolver.
 
-    The resolver is reused as an identity/indexing engine only; BF-2 data is
-    supplied as records and the PCI JSON database is never consulted.
+    The resolver algorithm is unchanged. Only the tenant's imported rows are
+    supplied to it. After identity resolution, related rows for the same
+    normalized tag are folded into one evidence record so engineering
+    attributes split across PLC/I-O/cable sheets are presented together.
     """
     store=_store()
     if not store or not plant_id: return []
@@ -165,39 +167,88 @@ def _pci_resolve_rows(plant_id, organization_id, query):
     clauses=[f"plant_id={p}"]; params=[plant_id]
     if organization_id:
         clauses.append(f"organization_id={p}"); params.append(organization_id)
-    rows=_execute(f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} ORDER BY created_at DESC LIMIT 5000",params)
+    rows=_execute(
+        f"SELECT {fields} FROM anviqo_plant_knowledge "
+        f"WHERE {' AND '.join(clauses)} ORDER BY created_at DESC LIMIT 5000",
+        params,
+    )
     if not rows: return []
     try:
         from pci_universal_resolver import resolve
     except Exception:
         return []
+
+    def meta_map(row):
+        meta=row.get("metadata") if isinstance(row.get("metadata"),dict) else {}
+        return {re.sub(r"[^a-z0-9]+","",str(k).lower()):v for k,v in meta.items() if v not in (None,"")}
+
+    def value(row,*keys):
+        meta=meta_map(row)
+        wanted={re.sub(r"[^a-z0-9]+","",str(k).lower()) for k in keys}
+        for key in wanted:
+            if meta.get(key) not in (None,""):
+                return meta[key]
+        return ""
+
+    def row_tag(row):
+        return str(row.get("tag") or value(row,"plc_tag","instrument_tag","loop_tag","tag_name","tag") or "").strip()
+
     records=[]
-    for r in rows:
-        meta=r.get("metadata") if isinstance(r.get("metadata"),dict) else {}
-        def mv(*keys):
-            wanted={re.sub(r"[^a-z0-9]+","",str(k).lower()) for k in keys}
-            for k,v in meta.items():
-                if re.sub(r"[^a-z0-9]+","",str(k).lower()) in wanted and v not in (None,""):
-                    return v
-            return ""
-        tag=r.get("tag") or mv("plc_tag","instrument_tag","loop_tag","tag_name","tag") or ""
-        desc=r.get("name") or r.get("service") or mv("description","instrument_description","service_description") or r.get("content") or ""
+    for row in rows:
+        tag=row_tag(row)
+        desc=row.get("name") or row.get("service") or value(row,"description","instrument_description","service_description") or row.get("content") or ""
         records.append({
             "tag":str(tag),
-            "fox_plc_tag":str(mv("plc_tag","fox_plc_tag")),
+            "fox_plc_tag":str(value(row,"plc_tag","fox_plc_tag")),
             "description":str(desc),
-            "io_type":str(mv("io_type","i_o_type")),
-            "plc_address":str(mv("plc_address")),
-            "panel":str(mv("panel")),
-            "tb_name":str(mv("tb","tb_name")),
-            "tb_no":str(mv("tb_no")),
-            "jb_name":str(mv("jb","jb_name")),
-            "jb_no":str(mv("jb_no")),
-            "source_sheet":str(r.get("source") or ""),
-            "_universal_row":r,
+            "io_type":str(value(row,"io_type","i_o_type")),
+            "plc_address":str(value(row,"plc_address")),
+            "panel":str(value(row,"panel")),
+            "tb_name":str(value(row,"tb","tb_name")),
+            "tb_no":str(value(row,"tb_no")),
+            "jb_name":str(value(row,"jb","jb_name")),
+            "jb_no":str(value(row,"jb_no")),
+            "source_sheet":str(row.get("source") or ""),
+            "_universal_row":row,
         })
+
     resolved,_match=resolve(query,records)
-    return [r["_universal_row"] for r in resolved if r.get("_universal_row")]
+    if not resolved: return []
+
+    # Fold all imported evidence rows belonging to the resolved identifier.
+    # This is data aggregation only; no new reasoning or plant-specific rules.
+    out=[]
+    seen=set()
+    for hit in resolved:
+        base=hit.get("_universal_row") or {}
+        wanted=row_tag(base)
+        if not wanted:
+            wanted=str(hit.get("tag") or "")
+        wanted_norm=re.sub(r"[^A-Z0-9]+","",wanted.upper())
+        related=[]
+        for row in rows:
+            rt=row_tag(row)
+            rn=re.sub(r"[^A-Z0-9]+","",rt.upper())
+            if rn and wanted_norm and rn==wanted_norm:
+                related.append(row)
+        if not related:
+            related=[base]
+
+        merged=dict(base)
+        merged_meta=dict(base.get("metadata") or {}) if isinstance(base.get("metadata"),dict) else {}
+        for row in related:
+            for key in ("tag","external_id","name","area","service","asset_type","parent_id","source","content"):
+                if not merged.get(key) and row.get(key):
+                    merged[key]=row.get(key)
+            meta=row.get("metadata") if isinstance(row.get("metadata"),dict) else {}
+            for key,val in meta.items():
+                if val not in (None,"") and (key not in merged_meta or merged_meta.get(key) in (None,"")):
+                    merged_meta[key]=val
+        merged["metadata"]=merged_meta
+        identity=re.sub(r"[^A-Z0-9]+","",str(merged.get("tag") or merged.get("external_id") or "").upper())
+        if identity and identity not in seen:
+            out.append(merged); seen.add(identity)
+    return out
 
 
 def _plant_context():
