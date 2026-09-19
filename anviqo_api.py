@@ -363,7 +363,7 @@ def ask_anvi():
         # engineering identifiers independently of the legacy spare parser.
         import re as _re
         mutation_match = _re.search(
-            r"\\b(add|added|receive|received|use|used|remove|removed|consume|consumed)\\b.*?\\b([A-Za-z]{1,12}[-_ ]?\\d{1,6})\\b",
+            r"\b(add|added|receive|received|use|used|remove|removed|consume|consumed)\b.*?\b([A-Za-z]{1,12}[-_ ]?\d{1,6})\b",
             q, _re.IGNORECASE,
         )
         if mutation_match:
