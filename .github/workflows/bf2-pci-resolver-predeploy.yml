@@ -2,7 +2,7 @@ name: BF-2 PCI resolver predeploy check
 
 on:
   push:
-    branches: [predeploy-bf2-pci-check]
+    branches: [predeploy-bf2-pci-check, fix-inventory-context-resolution]
   pull_request:
     branches: [main]
 
@@ -17,7 +17,7 @@ jobs:
       - name: Install runtime dependencies
         run: python -m pip install -r requirements.txt
       - name: Compile target modules
-        run: python -m py_compile anvi_chat_stability_v2.py universal_onboarding.py pci_universal_resolver.py tests/test_bf2_pci_resolver.py
+        run: python -m py_compile anvi_chat_stability_v2.py universal_onboarding.py pci_universal_resolver.py anviqo_api.py tests/test_bf2_pci_resolver.py
       - name: Run BF-2 PCI resolver check
         env:
           PYTHONPATH: .
