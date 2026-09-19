@@ -358,18 +358,15 @@ def ask_anvi():
     try:
         q=(request.get_json(silent=True) or {}).get("question","").strip()
 
-        # Inventory mutations use the tenant permission model.
-        # ENGINEER/ADMIN/OWNER may write inventory; OPERATOR/VIEWER remain read-only.
-        from pci_spares import _extract_tag
-        mutation_words = (" add ", " added ", " receive ", " received ", " use ", " used ", " remove ", " removed ", " consume ", " consumed ")
-        q_probe = " " + q.lower() + " "
-        if any(word in q_probe for word in mutation_words) and _extract_tag(q):
-            # Resolve the authenticated tenant context before authorizing the
-            # inventory write. The normal plant-user login already stores these
-            # fields in session, while the bootstrap/admin login may carry a
-            # stale or different plant context. Use the same membership resolver
-            # as ANVI Chat so inventory writes follow the active authorized plant
-            # instead of depending on a UI selector or a stale session value.
+        # Direct conversational spare mutations must be handled by the existing
+        # V1.8 inventory engine before normal knowledge routing. Recognize
+        # engineering identifiers independently of the legacy spare parser.
+        import re as _re
+        mutation_match = _re.search(
+            r"\\b(add|added|receive|received|use|used|remove|removed|consume|consumed)\\b.*?\\b([A-Za-z]{1,12}[-_ ]?\\d{1,6})\\b",
+            q, _re.IGNORECASE,
+        )
+        if mutation_match:
             actor = {
                 "user_id": session.get("user_id", ""),
                 "organization_id": session.get("organization_id", ""),
@@ -378,25 +375,14 @@ def ask_anvi():
                 "username": session.get("username", ""),
             }
             from anvi_tenant_store import authorize
-            # Keep a valid authenticated tenant session as the source of truth.
-            # Only repair the context when the existing session cannot authorize
-            # the requested inventory write. This prevents the bootstrap Primary
-            # Plant context from overwriting an already-valid BF-2 session.
             session_context_valid = bool(
-                actor["user_id"]
-                and actor["organization_id"]
-                and actor["plant_id"]
-                and authorize(
-                    actor,
-                    "inventory:write",
-                    actor["organization_id"],
-                    actor["plant_id"],
-                )
+                actor["user_id"] and actor["organization_id"] and actor["plant_id"]
+                and authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"])
             )
             if not session_context_valid:
                 try:
                     from anvi_tenant_context_autofix import resolve as resolve_context
-                    resolved_pid, resolved_oid, context_source = resolve_context()
+                    resolved_pid, resolved_oid, _context_source = resolve_context()
                     if resolved_pid and resolved_oid:
                         actor["plant_id"] = resolved_pid
                         actor["organization_id"] = resolved_oid
@@ -405,18 +391,22 @@ def ask_anvi():
                         session.modified = True
                 except Exception:
                     pass
-
             if not authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"]):
                 return jsonify({
                     "status": "FORBIDDEN",
                     "message": "Inventory mutation requires inventory:write authorization.",
-                    "inventory_mutation": True,
-                    "executed": False,
-                    "blocked": True,
-                    "read_only": True,
-                    "plc_write": False,
-                    "scada_control": False,
+                    "inventory_mutation": True, "executed": False, "blocked": True,
+                    "read_only": True, "plc_write": False, "scada_control": False,
                 }), 403
+            from pci_spares import execute_spare_mutation_v18
+            result = execute_spare_mutation_v18(q)
+            if isinstance(result, dict):
+                result.setdefault("inventory_mutation", True)
+                result.setdefault("read_only", True)
+                result.setdefault("plc_write", False)
+                result.setdefault("scada_control", False)
+                result.setdefault("human_decision_required", True)
+            return result
 
         return knowledge_ask(q)
     except Exception as e:
