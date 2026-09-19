@@ -220,7 +220,7 @@ input,select{
 <button data-page="maintenance">⚙ Maintenance Intelligence</button>
 
   <div class="nav-title">INSTRUMENTATION</div>
-  <button data-page="pci">⌁ Instruments / PCI</button>
+  <button data-page="pci">⌁ Instruments</button>
   <button data-page="plc">🔌 PLC & I/O Intelligence</button>
   <button data-page="interlocks">🔗 Interlocks & Process Context</button>
 
@@ -240,8 +240,8 @@ input,select{
  </nav>
 
  <div class="safe">
-  <b>SIMULATION MODE</b><br>
-  I/O<br>
+  <b>READ-ONLY INTELLIGENCE</b><br>
+  Plant onboarding data<br>
   PLC WRITE: BLOCKED<br>
   SCADA CONTROL: BLOCKED<br>
   HUMAN DECISION REQUIRED
@@ -349,12 +349,12 @@ input,select{
 </div>
 
 <div class="page" id="page-pci">
- <div class="hero"><div class="card"><div class="kicker">INSTRUMENTATION / PCI</div><h1>1,064 I/O Reference Points</h1><p>Verified PCI reference database operating in read-only simulation mode.</p></div><div class="card brain"><div class="orb">⌁</div><b>PCI</b><small class="muted">SIMULATION</small></div></div>
+ <div class="hero"><div class="card"><div class="kicker">INSTRUMENTATION</div><h1 id="instrumentationTitle">Plant I/O & Instrumentation</h1><p id="instrumentationSubtitle">Tenant-onboarded engineering data operating in read-only mode.</p></div><div class="card brain"><div class="orb">⌁</div><b id="instrumentationBrainTitle">INSTRUMENTATION</b><small class="muted">READ-ONLY</small></div></div>
  <div class="grid2"><div class="card"><div class="card-head"><b>PCI SNAPSHOT</b></div><div class="card-body" id="pciData">Loading...</div></div><div class="card"><div class="card-head"><b>ASK ABOUT AN INSTRUMENT</b></div><div class="card-body"><button class="btn primary" onclick="go('ask')">Open ANVI</button></div></div></div>
 </div>
 
 <div class="page" id="page-plc">
- <div class="card"><div class="card-head"><b>PLC & I/O INTELLIGENCE</b><span>READ-ONLY SIMULATION</span></div><div class="card-body" id="plcData">Loading...</div></div>
+ <div class="card"><div class="card-head"><b>PLC & I/O INTELLIGENCE</b><span>READ-ONLY</span></div><div class="card-body" id="plcData">Loading...</div></div>
 </div>
 
 <div class="page" id="page-interlocks">
@@ -648,14 +648,16 @@ async function refresh(){
  try{
   const d=await api('/api/pci/live');
   document.getElementById('health').textContent=d.plant_health_score??'—';
+  const totalIO=document.getElementById('totalIO'); if(totalIO) totalIO.textContent=d.total_io??'—';
+  const ioMode=document.getElementById('ioMode'); if(ioMode) ioMode.textContent=(d.mode||'ONBOARDED_DATA').replace(/_/g,' ');
   document.getElementById('alarms').textContent=(d.warning||0)+(d.critical||0);
   document.getElementById('critical').textContent=d.critical??0;
   document.getElementById('events').textContent=d.active_events??0;
   document.getElementById('overviewSituation').innerHTML=
    '<div class="row"><span>Mode</span><b class="amber">'+(d.mode||'SIMULATION')+'</b></div>'+
    '<div class="row"><span>Total I/O</span><b>1,064</b></div>'+
-   '<div class="row"><span>Healthy</span><b class="green">'+(d.healthy??0)+'</b></div>'+
-   '<div class="row"><span>Warning</span><b class="amber">'+(d.warning??0)+'</b></div>'+
+   '<div class="row"><span>Healthy</span><b class="green">'+(d.healthy==null?'—':d.healthy)+'</b></div>'+
+   '<div class="row"><span>Warning</span><b class="amber">'+(d.warning==null?'—':d.warning)+'</b></div>'+
    '<div class="row"><span>Critical</span><b class="red">'+(d.critical??0)+'</b></div>';
  }catch(e){
   document.getElementById('overviewSituation').textContent='API connection unavailable';
@@ -670,7 +672,7 @@ async function loadPage(name){
    const d=await api('/api/pci/live');
    let html=
     '<div class="row"><span>MODE</span><b class="amber">'+(d.mode||'SIMULATION')+'</b></div>'+
-    '<div class="row"><span>TOTAL I/O</span><b>1,064</b></div>'+
+    '<div class="row"><span>TOTAL I/O</span><b>'+(d.total_io??0)+'</b></div>'+
     '<div class="row"><span>HEALTHY</span><b class="green">'+(d.healthy??0)+'</b></div>'+
     '<div class="row"><span>WARNING</span><b class="amber">'+(d.warning??0)+'</b></div>'+
     '<div class="row"><span>CRITICAL</span><b class="red">'+(d.critical??0)+'</b></div>'+
