@@ -1,14 +1,18 @@
 from dataclasses import asdict
 from universal_onboarding import normalize_record
 from pci_universal_resolver import resolve, normalize
+from anvi_chat_stability_v2 import _field
 
 def main():
     row = normalize_record(
-        {"Instrument Tag": "PT-628", "description": "BF-2 pressure transmitter"},
+        {"Instrument Tag": "PT-628", "description": "BF-2 pressure transmitter", "I/O TYPE": "AI", "PLC ADDRESS": "PIW 628", "PANEL": "C2", "TB NAME": "XA628", "TB NO": "14", "JB NAME": "JB-62", "JB NO": "5", "RANGE": "0-10 bar", "UNIT": "bar", "MODEL": "TX-100", "CRITICALITY": "CRITICAL"},
         "INSTRUMENT",
     )
     normalized = asdict(row)
     assert normalized["tag"] == "PT-628", ("canonical_tag", normalized)
+    rendered = _field({"tag":"PT-628","external_id":"bf2-test","name":"Pressure transmitter","area":"BF-2","source":"BF2_TEST","metadata":normalized["metadata"]})
+    for expected in ("I/O: AI","PLC: PIW 628","Panel: C2","TB: XA628","TB No: 14","JB: JB-62","JB No: 5","Range: 0-10 bar","Unit: bar","Model: TX-100","Criticality: CRITICAL"):
+        assert expected in rendered, ("missing_engineering_field", expected, rendered)
     assert normalize(normalized["tag"]) == "PT628", ("normalized_tag", normalized)
 
     record = {

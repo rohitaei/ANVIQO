@@ -70,19 +70,42 @@ def _safe(answer,**extra):
     p={"answer":answer,**SAFETY}; p.update(extra); return p
 
 
+def _meta_value(meta, *aliases):
+    if not isinstance(meta, dict):
+        return ""
+    wanted={re.sub(r"[^a-z0-9]+","",str(k).lower()) for k in aliases}
+    for key,value in meta.items():
+        if re.sub(r"[^a-z0-9]+","",str(key).lower()) in wanted and value not in (None,""):
+            return str(value).strip()
+    return ""
+
 def _field(row):
     row=_row(row); meta=row.get("metadata") if isinstance(row.get("metadata"),dict) else {}; vals=[]
     for k,l in (("tag","Tag"),("external_id","External ID"),("name","Instrument/service"),("area","Area"),("source","Source")):
         if row.get(k): vals.append(f"{l}: {row[k]}")
-    for k,l in (("io_type","I/O"),("i_o_type","I/O"),("plc_address","PLC"),("panel","Panel"),("tb","TB"),("jb","JB"),("range","Range"),("unit","Unit"),("model","Model"),("criticality","Criticality")):
-        if meta.get(k) not in (None,""): vals.append(f"{l}: {meta[k]}")
+    fields=(
+        (("io_type","i_o_type","I/O TYPE","signal type"),"I/O"),
+        (("plc_address","PLC ADDRESS","address"),"PLC"),
+        (("panel","PANEL","panel name"),"Panel"),
+        (("tb","tb_name","TB NAME","TB NO","TB NUMBER","terminal block"),"TB"),
+        (("tb_no","TB NO","TB NUMBER"),"TB No"),
+        (("jb","jb_name","JB NAME","JB NO","JB NUMBER","junction box"),"JB"),
+        (("jb_no","JB NO","JB NUMBER"),"JB No"),
+        (("range","instrument range","measurement range"),"Range"),
+        (("unit","engineering unit","engg unit"),"Unit"),
+        (("model","model no","model number"),"Model"),
+        (("criticality","critical"),"Criticality"),
+        (("description","service description","instrument description"),"Description"),
+    )
+    for aliases,label in fields:
+        value=_meta_value(meta,*aliases)
+        if value: vals.append(f"{label}: {value}")
     return "; ".join(vals)
-
 
 def _richness(row):
     row=_row(row); meta=row.get("metadata") if isinstance(row.get("metadata"),dict) else {}
-    return sum(bool(str(row.get(k) or "").strip()) for k in ("tag","external_id","name","area","service","asset_type","record_type","source","content"))+sum(meta.get(k) not in (None,"") for k in ("io_type","i_o_type","plc_address","panel","tb","jb","range","unit","model","criticality"))
-
+    meta_fields=("io_type","i_o_type","plc_address","panel","tb","tb_name","tb_no","jb","jb_name","jb_no","range","unit","model","criticality","description")
+    return sum(bool(str(row.get(k) or "").strip()) for k in ("tag","external_id","name","area","service","asset_type","record_type","source","content"))+sum(bool(_meta_value(meta,k)) for k in meta_fields)
 
 def _execute(sql,params):
     store=_store()
