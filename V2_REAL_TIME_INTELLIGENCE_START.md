@@ -79,3 +79,15 @@ V2 now joins generic WATCH candidates with tenant-scoped Equipment DNA context a
 - Existing V5 What Changed/Event intelligence remains authoritative; V2 does not duplicate it.
 - No plant-specific thresholds, tags, process rules, or reasoning were added.
 - Safety remains read-only: PLC write FALSE, SCADA control FALSE, automatic action FALSE, human decision required TRUE.
+
+
+## Alpha 1.7 delivered — live stream into existing V5 What Changed/Event
+
+V2 now provides a dedicated bridge from live-event context into existing V5 What Changed/Event intelligence.
+
+- V2 passes tenant-scoped live change evidence and Equipment DNA context to an injected existing V5 handler.
+- Existing V5 What Changed/Event, plant health, equipment reasoning, and event correlation remain authoritative.
+- Without an injected V5 handler, V2 reports NOT_INVOKED rather than creating replacement reasoning.
+- No plant-specific thresholds, tags, process rules, anomaly rules, prediction logic, diagnosis logic, alarm logic, or control logic were added.
+- Tenant isolation is preserved and no cross-plant fallback is permitted.
+- Safety remains read-only: PLC write FALSE, SCADA control FALSE, automatic action FALSE, human decision required TRUE.
