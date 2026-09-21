@@ -1,6 +1,6 @@
 # ANVIQO V2 - Real-Time Industrial Intelligence
 
-Status: V2 FOUNDATION STARTED - ALPHA 1.4
+Status: V2 FOUNDATION STARTED - ALPHA 1.5
 
 ## Frozen boundary
 
@@ -61,3 +61,10 @@ V2 now provides a universal WATCH/discovery coordinator around the read-only dat
 - PLC write, SCADA control, and automatic action remain disabled.
 
 This step deliberately does not activate OPC UA/MQTT/Historian clients and does not create a second anomaly, prediction, root-cause, health, alarm, or reasoning engine.
+
+
+## Alpha 1.5 delivered — Equipment DNA context
+
+V2 now includes a universal, plant-scoped Equipment DNA context layer. It stores supplied equipment identity and supplied relationships without inventing topology or process semantics. Normalized IndustrialPoint metadata can be converted into equipment nodes. Context is exposed as evidence for existing V5 intelligence; V2 does not add prediction, diagnosis, health, alarm, or control logic.
+
+Safety remains read-only: PLC write FALSE, SCADA control FALSE, automatic action FALSE, human decision required TRUE.
