@@ -1922,7 +1922,52 @@ def execute_spare_mutation(question, confirmed=False):
     """Compatibility entry point; V1.8 is authoritative."""
     return execute_spare_mutation_v18(question)
 
-def execute_spare_mutation_v18(question):
+def _v18_load_bf2_registry():
+    import json
+    path = ROOT / "database" / "spares" / "bf2_spare_registry.json"
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data.get("records", []) if isinstance(data, dict) else []
+    except Exception:
+        return []
+
+
+def _v18_bf2_exact(identifier, plant_id=None):
+    """Resolve only the explicitly registered BF-2 spare records."""
+    if str(plant_id or "").strip().lower() not in {"bf2", "bf-2", "bf_2"}:
+        return []
+    target = _norm(identifier)
+    return [r for r in _v18_load_bf2_registry() if _norm(r.get("tag")) == target]
+
+
+def _v18_write_bf2_record(record, action, quantity, identifier):
+    import json
+    path = ROOT / "database" / "spares" / "bf2_spare_registry.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    records = data.setdefault("records", [])
+    target = _norm(identifier)
+    current = next((r for r in records if _norm(r.get("tag")) == target), None)
+    if current is None:
+        raise RuntimeError("BF-2 spare registry record disappeared during mutation.")
+    before = int(current.get("qty_available") or 0)
+    after = before + quantity if action == "ADD" else before - quantity
+    if after < 0:
+        raise RuntimeError("Negative inventory prevented.")
+    current["qty_available"] = after
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    verify = json.loads(path.read_text(encoding="utf-8"))
+    verified = next(r for r in verify.get("records", []) if _norm(r.get("tag")) == target)
+    if int(verified.get("qty_available") or 0) != after:
+        raise RuntimeError("BF-2 spare registry verification failed.")
+    timestamp = _v16_datetime.now().isoformat(timespec="seconds")
+    with _V16_AUDIT.open("a", encoding="utf-8") as f:
+        f.write(f"{timestamp} | V1.8 | {action} | {identifier} | qty={quantity} | before={before} | after={after} | source=bf2_spare_registry.json | PLC_WRITE=FALSE | SCADA_CONTROL=FALSE\n")
+    return before, after
+
+
+def execute_spare_mutation_v18(question, plant_id=None):
     """
     V1.8 direct conversational inventory mutation.
 
@@ -1977,6 +2022,32 @@ def execute_spare_mutation_v18(question):
         }
 
     matches = _v18_find_exact(identifier)
+    registry_matches = _v18_bf2_exact(identifier, plant_id) if not matches else []
+
+    # BF-2 onboarded equipment may be a valid spare target even when the
+    # legacy PCI critical-spares workbook has no exact tag. The BF-2 registry
+    # is explicit, plant-scoped, and starts at zero; it never guesses a
+    # different spare record.
+    if not matches and registry_matches:
+        record = registry_matches[0]
+        before = int(record.get("qty_available") or 0)
+        if action == "USE" and before < quantity:
+            return {
+                **base, "action": action, "quantity": quantity, "identifier": identifier,
+                "before": before, "after": before, "blocked": True, "executed": False,
+                "error": f"Insufficient stock for {identifier}. Available: {before}; requested: {quantity}. Inventory unchanged.",
+                "source": "bf2_spare_registry.json"
+            }
+        try:
+            before, after = _v18_write_bf2_record(record, action, quantity, identifier)
+        except Exception as exc:
+            return {**base, "action": action, "quantity": quantity, "identifier": identifier, "error": str(exc), "source": "bf2_spare_registry.json"}
+        return {
+            **base, "ok": True, "executed": True, "action": action, "quantity": quantity,
+            "identifier": identifier, "before": before, "after": after,
+            "source": "bf2_spare_registry.json", "registry_verified": True,
+            "message": f"{action} {quantity} spare(s) of {identifier} completed. Available stock: {before} -> {after}."
+        }
 
     if len(matches) == 0:
         return {

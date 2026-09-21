@@ -399,7 +399,7 @@ def ask_anvi():
                     "read_only": True, "plc_write": False, "scada_control": False,
                 }), 403
             from pci_spares import execute_spare_mutation_v18
-            result = execute_spare_mutation_v18(q)
+            result = execute_spare_mutation_v18(q, plant_id=actor["plant_id"])
             if isinstance(result, dict):
                 result.setdefault("inventory_mutation", True)
                 result.setdefault("read_only", True)

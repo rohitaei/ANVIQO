@@ -1,0 +1,18 @@
+{
+  "version": "BF2-SPARE-REGISTRY-1.0",
+  "plant_aliases": [
+    "bf2",
+    "Bf2",
+    "BF-2"
+  ],
+  "records": [
+    {
+      "tag": "PT-628",
+      "instrument": "HBV1 outlet water Pr",
+      "area": "MBF",
+      "qty_available": 0,
+      "source": "BF-2 onboarded plant knowledge",
+      "status": "REGISTERED_BY_EXPLICIT_INVENTORY_COMMAND"
+    }
+  ]
+}
