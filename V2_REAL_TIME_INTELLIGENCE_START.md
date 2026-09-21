@@ -1,6 +1,6 @@
 # ANVIQO V2 - Real-Time Industrial Intelligence
 
-Status: V2 FOUNDATION STARTED - ALPHA 1.2
+Status: V2 FOUNDATION STARTED - ALPHA 1.3
 
 ## Frozen boundary
 
@@ -32,7 +32,7 @@ PLC / SCADA / Historian / Demo Stream
 4. Transport-neutral read-only source adapter interface.
 5. Adapter for the existing PCI demo stream.
 6. FabricSourceRunner for one-shot source -> fabric polling.
-7. Universal data trust and freshness policy with explicit evidence status.\n8. Regression tests for normalization, plant isolation, safety and trust/freshness.
+7. Universal data trust and freshness policy with explicit evidence status.\n8. Universal Live Plant Brain orchestration that passes evidence into an injected existing-V5 bridge.\n9. Regression tests for normalization, plant isolation, safety, trust/freshness and Plant Brain tenant scoping.
 
 No OPC UA/MQTT/Historian client is activated in this step. They will implement the same interface later.
 
