@@ -410,7 +410,7 @@ def ask_anvi():
 
         # Inventory questions must read the BF-2 spare registry before plant knowledge.
         import re as _re
-        inventory_query = _re.search(r"\\b(how many|how much|spares? of|spare stock|stock of|available spares?)\\b.*?\\b([A-Za-z]{1,12}[-_ ]?\\d{1,6})\\b", q, _re.IGNORECASE)
+        inventory_query = _re.search(r"\b(how many|how much|spares? of|spare stock|stock of|available spares?)\b.*?\b([A-Za-z]{1,12}[-_ ]?\d{1,6})\b", q, _re.IGNORECASE)
         if inventory_query:
             from pci_spares import _v18_bf2_exact
             identifier = inventory_query.group(2)
