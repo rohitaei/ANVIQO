@@ -13,6 +13,14 @@
       "qty_available": 0,
       "source": "BF-2 onboarded plant knowledge",
       "status": "REGISTERED_BY_EXPLICIT_INVENTORY_COMMAND"
+    },
+    {
+      "tag": "MFT-680",
+      "instrument": "TUYERE BODY 6 INLET FLOW",
+      "area": "MBF",
+      "qty_available": 0,
+      "source": "BF-2 onboarded plant knowledge",
+      "status": "REGISTERED_BY_EXPLICIT_INVENTORY_COMMAND"
     }
   ]
 }
