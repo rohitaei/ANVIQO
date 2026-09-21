@@ -61,5 +61,5 @@ def test_policy_is_plant_neutral():
     now = datetime(2026, 9, 21, 10, 0, 0, tzinfo=timezone.utc)
     a = point("2026-09-21T09:59:55+00:00")
     b = IndustrialPoint(**{**a.to_dict(), "plant_id": "cement-plant", "tag": "TEMP-1"})
-    assert policy := DataTrustPolicy()
+    policy = DataTrustPolicy()
     assert policy.evaluate(a, now=now).to_dict() == policy.evaluate(b, now=now).to_dict()
