@@ -408,6 +408,22 @@ def ask_anvi():
                 result.setdefault("human_decision_required", True)
             return result
 
+        # Inventory questions must read the BF-2 spare registry before plant knowledge.
+        import re as _re
+        inventory_query = _re.search(r"\b(how many|how much|spares? of|spare stock|stock of|available spares?)\b.*?\b([A-Za-z]{1,12}[-_ ]?\d{1,6})\b", q, _re.IGNORECASE)
+        if inventory_query:
+            from pci_spares import _v18_bf2_exact
+            identifier = inventory_query.group(2)
+            rows = _v18_bf2_exact(identifier, session.get("plant_slug") or session.get("plant_id"))
+            if rows:
+                r = rows[0]
+                return {"ok": True, "inventory_query": True, "inventory_mutation": False,
+                        "identifier": identifier, "available": int(r.get("qty_available") or 0),
+                        "instrument": r.get("instrument"), "area": r.get("area"),
+                        "source": r.get("source"), "plc_write": False, "scada_control": False,
+                        "human_decision_required": True,
+                        "answer": f"Available spares for {identifier}: {int(r.get('qty_available') or 0)}."}
+
         return knowledge_ask(q)
     except Exception as e:
         return {
