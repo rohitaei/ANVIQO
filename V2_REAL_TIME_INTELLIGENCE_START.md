@@ -91,3 +91,13 @@ V2 now provides a dedicated bridge from live-event context into existing V5 What
 - No plant-specific thresholds, tags, process rules, anomaly rules, prediction logic, diagnosis logic, alarm logic, or control logic were added.
 - Tenant isolation is preserved and no cross-plant fallback is permitted.
 - Safety remains read-only: PLC write FALSE, SCADA control FALSE, automatic action FALSE, human decision required TRUE.
+
+
+## Alpha 1.8 delivered — tenant-safe V5 What Changed adapter
+
+V2 now has an explicit adapter that invokes the existing V5 `build_plant_what_changed` implementation using supplied tenant-scoped area evidence.
+
+- The adapter rejects area evidence whose plant_id differs from the live context.
+- The existing V5 implementation remains the only What Changed / health / event-correlation engine.
+- V2 adds no new thresholds, anomaly rules, diagnosis, prediction, alarm, or control logic.
+- Read-only and human-governed safety flags are preserved.
