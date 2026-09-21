@@ -1,6 +1,6 @@
 # ANVIQO V2 - Real-Time Industrial Intelligence
 
-Status: V2 FOUNDATION STARTED - ALPHA 1.3
+Status: V2 FOUNDATION STARTED - ALPHA 1.4
 
 ## Frozen boundary
 
@@ -46,3 +46,18 @@ No OPC UA/MQTT/Historian client is activated in this step. They will implement t
 6. End-to-end PT-303/304 abnormal-pressure demo with evidence, verified history, recovery and human verification.
 
 V2 does not introduce a second prediction, root-cause, health or reasoning engine. The trust layer is evidence gating/metadata only; it is not a reasoning engine.
+
+
+## Alpha 1.4 delivered — WATCH + discovery orchestration
+
+V2 now provides a universal WATCH/discovery coordinator around the read-only data fabric.
+
+- WatchOrchestrator evaluates evidence freshness/quality metadata and generic value changes between observations.
+- States are INSUFFICIENT_EVIDENCE, WATCH, or OBSERVE.
+- A WATCH candidate is a discovery prompt, not an anomaly, prediction, diagnosis, alarm, or failure verdict.
+- Existing V5 intelligence can be invoked only through an injected bridge.
+- Plant scope is preserved; no global fallback is used.
+- No plant-specific tags, thresholds, process rules, or reasoning are added.
+- PLC write, SCADA control, and automatic action remain disabled.
+
+This step deliberately does not activate OPC UA/MQTT/Historian clients and does not create a second anomaly, prediction, root-cause, health, alarm, or reasoning engine.
