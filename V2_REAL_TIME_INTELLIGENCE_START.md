@@ -114,3 +114,14 @@ V2 now provides a tenant-safe live bridge from live context to the existing V5 W
 - The existing V5 build_plant_what_changed implementation remains authoritative.
 - No second health, event-correlation, anomaly, prediction, diagnosis, alarm, or control engine is created.
 - Safety remains read-only and human-governed.
+
+
+## Alpha 1.10 delivered — live V2 → V5 orchestration seam
+
+V2 now provides `run_live_v5_pipeline()` to join tenant-scoped Watch evidence with Equipment DNA and the existing V5 What Changed adapter.
+
+- Watch context and requested plant identity must match.
+- Equipment DNA is resolved only for the requested plant.
+- Area evidence is still supplied by an explicit tenant-scoped provider.
+- Existing V5 reasoning remains authoritative; V2 adds orchestration only.
+- No global PCI fallback, plant-specific rules, prediction logic, or control path is introduced.
