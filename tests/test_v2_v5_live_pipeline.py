@@ -86,3 +86,38 @@ def test_pipeline_has_no_global_fallback():
     )
     assert seen == ["PLANT-B"]
     assert result["result"]["areas"] == []
+
+def test_pipeline_accepts_tenant_evidence_provider_without_cross_plant_fallback():
+    from v2.tenant_evidence import TenantEvidenceProvider
+    from v2.v5_live_pipeline import run_live_v5_pipeline_with_tenant_evidence
+
+    provider = TenantEvidenceProvider({
+        "plant": {"plant_id": "PLANT-B", "name": "Plant B"},
+        "records": [{
+            "external_id": "PT-628",
+            "tag": "PT-628",
+            "area": "MBF-2",
+            "metadata": {"health_score": 88, "status": "HEALTHY"},
+        }],
+    })
+
+    dna = EquipmentDNAContext()
+    seen = []
+
+    def v5(plant, areas, equipment_events=None):
+        seen.append((plant, areas))
+        return {"plant": plant, "areas": areas}
+
+    result = run_live_v5_pipeline_with_tenant_evidence(
+        "PLANT-B",
+        watch("PLANT-B"),
+        dna,
+        provider,
+        v5_builder=v5,
+    )
+
+    assert seen[0][0] == "PLANT-B"
+    assert seen[0][1][0]["plant_id"] == "PLANT-B"
+    assert seen[0][1][0]["area"] == "MBF-2"
+    assert result["safety"]["plc_write"] is False
+    assert result["safety"]["scada_control"] is False
