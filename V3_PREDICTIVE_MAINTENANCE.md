@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 6 IMPLEMENTED, PENDING CI VERIFICATION
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 7 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -9,15 +9,18 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 6 IMPLEMENTED, PENDING CI VERIFICATI
 3. **Explicit Prediction Outcome Verification Contract** — VERIFIED
 4. **Universal Predictive Evidence Quality & Window Contract** — VERIFIED
 5. **Tenant-safe Predictive History Provider Bridge** — VERIFIED
-6. **Canonical Tenant-safe Predictor Invocation Path** — IMPLEMENTED
+6. **Canonical Tenant-safe Predictor Invocation Path** — VERIFIED
+7. **Tenant-safe Maintenance Memory Bridge** — IMPLEMENTED
 
-## Alpha 6 canonical predictor gateway
+## Alpha 7 maintenance memory boundary
 
-`v3/predictive_maintenance.py` remains the evidence/request front door, but it no longer contains a second predictor-invocation implementation. Its `run_existing_predictor()` compatibility entry point delegates to `v3.predictive_bridge.invoke_existing_predictor()`.
+`v3/maintenance_memory_bridge.py` provides a universal retrieval seam for existing maintenance memory. It accepts records only from a provider that explicitly declares `plant_id`.
 
-This removes duplicate predictor invocation logic while preserving the existing public entry point.
+Returned records must carry the requested plant scope. If a tag is present, it must match the requested tag.
 
-The canonical bridge requires an explicit `plant_id` parameter on any supplied predictor. Legacy/global predictors remain blocked.
+The existing `plant_memory.py` and `pci_plant_memory.py` implementations were inspected and remain outside this bridge because they do not expose an explicit tenant contract. V3 does not silently consume their global records.
+
+This milestone adds no new learning or reasoning engine. It is retrieval orchestration only.
 
 ## Universal contract
 
@@ -25,6 +28,7 @@ Any plant
 -> tenant-scoped observations
 -> predictive evidence validation
 -> canonical tenant-safe predictor bridge
+-> tenant-safe maintenance memory when explicitly available
 -> existing predictor only when explicitly tenant-aware
 -> explicit outcome verification
 -> human verification / decision
@@ -33,34 +37,20 @@ No plant-specific predictive code is created.
 
 ## Existing intelligence boundary
 
-The existing `failure_prediction.py` path was inspected before integration. It is a legacy/global path and does not expose an explicit `plant_id` contract. V3 therefore deliberately does NOT connect it.
+The existing `failure_prediction.py` path remains blocked because it is legacy/global and does not expose explicit `plant_id`.
 
-No prediction logic was copied into V3.
+The existing `failure_prediction_history.py` path remains outside V3 for the same tenant-scope reason.
 
-The architecture remains:
-
-**CHANGE DATA, NOT CODE.**
-
-## Predictive history boundary
-
-`v3/predictive_history_bridge.py` accepts historical observations only from an explicitly tenant-scoped provider. The existing `failure_prediction_history.py` remains outside the bridge because its records do not expose explicit `plant_id`.
-
-## Outcome verification
-
-V3 accepts explicit prediction and actual outcome records and returns:
-
-- `VERIFIED_MATCH`
-- `VERIFIED_MISMATCH`
-- `UNVERIFIED`
-
-It does not infer outcomes, train models, calculate RUL/probabilities, diagnose failures, or control equipment.
+No prediction, trend, probability, RUL, diagnosis, causation, or control logic was copied into V3.
 
 ## Tenant and safety guarantees
 
 - Cross-plant predictive evidence: REJECTED
 - Cross-plant outcomes: REJECTED
+- Cross-plant maintenance memory: REJECTED
 - Legacy/global predictor: BLOCKED
 - Legacy/global history: BLOCKED
+- Legacy/global maintenance memory: BLOCKED
 - Read-only: TRUE
 - PLC write: FALSE
 - SCADA control: FALSE
@@ -69,10 +59,10 @@ It does not infer outcomes, train models, calculate RUL/probabilities, diagnose 
 
 ## Verification
 
-Dedicated V3 regression workflow: **PENDING ALPHA 6 CI**
+Dedicated V3 regression workflow: **PENDING ALPHA 7 CI**
 
 The branch remains separate and PR #40 remains draft/unmerged.
 
 ## Next milestone
 
-After Alpha 6 CI verification, the next milestone will be selected only after inspecting the existing predictive/maintenance architecture for an already-supported tenant-scoped integration point. No legacy/global prediction path will be forced into V3.
+After Alpha 7 CI verification, inspect the existing architecture again before selecting the next milestone. Do not create duplicate prediction or learning logic where an existing tenant-safe contract already exists.
