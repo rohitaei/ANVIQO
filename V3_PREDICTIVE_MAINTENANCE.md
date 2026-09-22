@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 7 IMPLEMENTED, PENDING CI VERIFICATION
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 8 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -10,17 +10,25 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 7 IMPLEMENTED, PENDING CI VERIFICATI
 4. **Universal Predictive Evidence Quality & Window Contract** — VERIFIED
 5. **Tenant-safe Predictive History Provider Bridge** — VERIFIED
 6. **Canonical Tenant-safe Predictor Invocation Path** — VERIFIED
-7. **Tenant-safe Maintenance Memory Bridge** — IMPLEMENTED
+7. **Tenant-safe Maintenance Memory Bridge** — VERIFIED
+8. **Canonical Tenant-safe Predictive Context** — IMPLEMENTED
 
-## Alpha 7 maintenance memory boundary
+## Alpha 8 predictive context
 
-`v3/maintenance_memory_bridge.py` provides a universal retrieval seam for existing maintenance memory. It accepts records only from a provider that explicitly declares `plant_id`.
+`v3/predictive_context.py` is a composition boundary for already validated V3 evidence, history, and maintenance-memory results.
 
-Returned records must carry the requested plant scope. If a tag is present, it must match the requested tag.
+It verifies that every supplied context component belongs to the requested `plant_id` and `tag`, then assembles one predictive context object.
 
-The existing `plant_memory.py` and `pci_plant_memory.py` implementations were inspected and remain outside this bridge because they do not expose an explicit tenant contract. V3 does not silently consume their global records.
+It does NOT calculate:
+- failure probability
+- trend
+- RUL
+- diagnosis
+- causation
+- thresholds
+- control actions
 
-This milestone adds no new learning or reasoning engine. It is retrieval orchestration only.
+No second prediction or learning engine is introduced.
 
 ## Universal contract
 
@@ -28,29 +36,29 @@ Any plant
 -> tenant-scoped observations
 -> predictive evidence validation
 -> canonical tenant-safe predictor bridge
--> tenant-safe maintenance memory when explicitly available
+-> tenant-safe history/memory where explicitly available
+-> canonical predictive context
 -> existing predictor only when explicitly tenant-aware
 -> explicit outcome verification
 -> human verification / decision
 
-No plant-specific predictive code is created.
+**CHANGE DATA, NOT CODE.**
 
 ## Existing intelligence boundary
 
-The existing `failure_prediction.py` path remains blocked because it is legacy/global and does not expose explicit `plant_id`.
+Legacy/global `failure_prediction.py`, `failure_prediction_history.py`, `plant_memory.py`, and `pci_plant_memory.py` remain outside V3 integration where they lack explicit tenant contracts.
 
-The existing `failure_prediction_history.py` path remains outside V3 for the same tenant-scope reason.
-
-No prediction, trend, probability, RUL, diagnosis, causation, or control logic was copied into V3.
+No legacy/global data is used as a hidden fallback.
 
 ## Tenant and safety guarantees
 
-- Cross-plant predictive evidence: REJECTED
-- Cross-plant outcomes: REJECTED
+- Cross-plant evidence: REJECTED
+- Cross-plant history: REJECTED
 - Cross-plant maintenance memory: REJECTED
+- Tag mismatch: REJECTED
 - Legacy/global predictor: BLOCKED
 - Legacy/global history: BLOCKED
-- Legacy/global maintenance memory: BLOCKED
+- Legacy/global memory: BLOCKED
 - Read-only: TRUE
 - PLC write: FALSE
 - SCADA control: FALSE
@@ -59,10 +67,10 @@ No prediction, trend, probability, RUL, diagnosis, causation, or control logic w
 
 ## Verification
 
-Dedicated V3 regression workflow: **PENDING ALPHA 7 CI**
+Dedicated V3 regression workflow: **PENDING ALPHA 8 CI**
 
 The branch remains separate and PR #40 remains draft/unmerged.
 
 ## Next milestone
 
-After Alpha 7 CI verification, inspect the existing architecture again before selecting the next milestone. Do not create duplicate prediction or learning logic where an existing tenant-safe contract already exists.
+After Alpha 8 CI verification, inspect the existing predictive/maintenance architecture again before selecting the next milestone. Do not duplicate an existing tenant-safe capability.
