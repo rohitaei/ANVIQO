@@ -101,3 +101,16 @@ V2 now has an explicit adapter that invokes the existing V5 `build_plant_what_ch
 - The existing V5 implementation remains the only What Changed / health / event-correlation engine.
 - V2 adds no new thresholds, anomaly rules, diagnosis, prediction, alarm, or control logic.
 - Read-only and human-governed safety flags are preserved.
+
+
+## Alpha 1.9 delivered — tenant-safe live V5 evidence bridge
+
+V2 now provides a tenant-safe live bridge from live context to the existing V5 What Changed engine.
+
+- A tenant-scoped area-evidence provider is supplied by the caller; V2 does not invent plant-specific health rules.
+- The provider is called only with context.plant_id.
+- Returned area evidence must carry the same plant_id; mismatches are rejected.
+- Empty evidence stays empty; there is no global or cross-plant fallback.
+- The existing V5 build_plant_what_changed implementation remains authoritative.
+- No second health, event-correlation, anomaly, prediction, diagnosis, alarm, or control engine is created.
+- Safety remains read-only and human-governed.
