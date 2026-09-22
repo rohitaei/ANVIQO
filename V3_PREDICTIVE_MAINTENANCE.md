@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 5 IMPLEMENTED, PENDING CI VERIFICATION
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 6 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -8,25 +8,23 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 5 IMPLEMENTED, PENDING CI VERIFICATI
 2. **Tenant-safe Existing Predictor Bridge** — VERIFIED
 3. **Explicit Prediction Outcome Verification Contract** — VERIFIED
 4. **Universal Predictive Evidence Quality & Window Contract** — VERIFIED
-5. **Tenant-safe Predictive History Provider Bridge** — IMPLEMENTED
+5. **Tenant-safe Predictive History Provider Bridge** — VERIFIED
+6. **Canonical Tenant-safe Predictor Invocation Path** — IMPLEMENTED
 
-## Alpha 4 evidence quality contract
+## Alpha 6 canonical predictor gateway
 
-`v3/predictive_evidence.py` validates supplied predictive observations before any existing predictor is considered. It checks tenant scope, optional tag scope, timestamp validity, numeric value validity, usable/invalid row counts, and the explicit evidence time window. It never repairs missing data or creates predictive conclusions.
+`v3/predictive_maintenance.py` remains the evidence/request front door, but it no longer contains a second predictor-invocation implementation. Its `run_existing_predictor()` compatibility entry point delegates to `v3.predictive_bridge.invoke_existing_predictor()`.
 
-The predictive gateway now consumes this canonical evidence-quality result. No new trend, failure probability, RUL, diagnosis, threshold, or control logic was added.
+This removes duplicate predictor invocation logic while preserving the existing public entry point.
 
-## Alpha 5 tenant-safe history contract
-
-`v3/predictive_history_bridge.py` provides the next integration seam: predictive history may be supplied only by an explicitly tenant-scoped provider declaring `plant_id`. Returned rows must carry the same plant scope and requested tag. Legacy/global history providers are blocked.
-
-The existing `failure_prediction_history.py` was inspected and deliberately remains outside this bridge because its observation records do not expose an explicit `plant_id` contract. V3 does not modify or duplicate that history implementation.
+The canonical bridge requires an explicit `plant_id` parameter on any supplied predictor. Legacy/global predictors remain blocked.
 
 ## Universal contract
 
 Any plant
 -> tenant-scoped observations
 -> predictive evidence validation
+-> canonical tenant-safe predictor bridge
 -> existing predictor only when explicitly tenant-aware
 -> explicit outcome verification
 -> human verification / decision
@@ -43,6 +41,10 @@ The architecture remains:
 
 **CHANGE DATA, NOT CODE.**
 
+## Predictive history boundary
+
+`v3/predictive_history_bridge.py` accepts historical observations only from an explicitly tenant-scoped provider. The existing `failure_prediction_history.py` remains outside the bridge because its records do not expose explicit `plant_id`.
+
 ## Outcome verification
 
 V3 accepts explicit prediction and actual outcome records and returns:
@@ -58,6 +60,7 @@ It does not infer outcomes, train models, calculate RUL/probabilities, diagnose 
 - Cross-plant predictive evidence: REJECTED
 - Cross-plant outcomes: REJECTED
 - Legacy/global predictor: BLOCKED
+- Legacy/global history: BLOCKED
 - Read-only: TRUE
 - PLC write: FALSE
 - SCADA control: FALSE
@@ -66,16 +69,10 @@ It does not infer outcomes, train models, calculate RUL/probabilities, diagnose 
 
 ## Verification
 
-Dedicated V3 regression workflow: **PENDING ALPHA 5 CI**
+Dedicated V3 regression workflow: **PENDING ALPHA 6 CI**
 
-Run #17:
-- compile: PASS
-- predictive maintenance tests: PASS
-- predictive bridge tests: PASS
-- prediction outcome tests: PASS
-
-The V3 branch remains separate and PR #40 remains draft/unmerged.
+The branch remains separate and PR #40 remains draft/unmerged.
 
 ## Next milestone
 
-The next milestone remains tenant-safe integration of an existing predictor only when an existing prediction implementation exposes an explicit tenant-scoped contract. The legacy/global `failure_prediction.py` path remains blocked.
+After Alpha 6 CI verification, the next milestone will be selected only after inspecting the existing predictive/maintenance architecture for an already-supported tenant-scoped integration point. No legacy/global prediction path will be forced into V3.
