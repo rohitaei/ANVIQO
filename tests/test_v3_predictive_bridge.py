@@ -27,7 +27,7 @@ def test_tenant_aware_predictor_is_invoked():
 
     def predictor(*, plant_id, tag, evidence):
         seen.update(plant_id=plant_id, tag=tag, evidence=evidence)
-        return {"ok": True}
+        return {"plant_id": plant_id, "tag": tag, "predicted_state": "NORMAL"}
 
     result = invoke_existing_predictor(_request(), predictor)
     assert result["status"] == "INVOKED"
