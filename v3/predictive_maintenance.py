@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
+from v3.predictive_evidence import validate_prediction_evidence
+
 SAFETY = {
     "read_only": True,
     "plc_write": False,
@@ -30,12 +32,7 @@ class PredictionEvidence:
             raise ValueError("plant_id is required")
         if not str(self.tag).strip():
             raise ValueError("tag is required")
-        for row in self.observations:
-            if not isinstance(row, dict):
-                raise ValueError("observations must contain dictionaries")
-            row_plant = row.get("plant_id")
-            if row_plant is not None and row_plant != self.plant_id:
-                raise ValueError("cross-plant predictive evidence is not allowed")
+        validate_prediction_evidence(self.plant_id, self.tag, list(self.observations))
 
     @property
     def numeric_timestamped_count(self) -> int:
@@ -57,17 +54,21 @@ def build_prediction_request(
     observations: list[dict[str, Any]],
 ) -> dict[str, Any]:
     evidence = PredictionEvidence(plant_id, tag, tuple(observations))
-    count = evidence.numeric_timestamped_count
+    quality = validate_prediction_evidence(
+        evidence.plant_id, evidence.tag, list(evidence.observations)
+    )
+    count = quality["usable_observation_count"]
     return {
         "plant_id": evidence.plant_id,
         "tag": evidence.tag,
         "status": "READY_FOR_EXISTING_PREDICTOR" if count >= 2 else "INSUFFICIENT_EVIDENCE",
         "numeric_timestamped_observations": count,
-        "evidence": list(evidence.observations),
+        "evidence": quality["evidence"],
+        "evidence_quality": quality,
         "reason": (
-            "At least two timestamped numeric observations are available."
+            "At least two valid timestamped numeric observations are available."
             if count >= 2
-            else "At least two timestamped numeric observations are required; no future failure is inferred."
+            else "At least two valid timestamped numeric observations are required; no future failure is inferred."
         ),
         "safety": dict(SAFETY),
     }
