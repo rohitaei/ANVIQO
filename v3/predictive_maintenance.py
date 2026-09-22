@@ -1,14 +1,15 @@
 """Universal predictive-maintenance evidence gateway.
 
 This module is orchestration/evidence gating only. It does not implement a
-second prediction engine. A caller may inject the existing prediction
-intelligence after tenant-scoped evidence has been validated.
+second prediction engine. Predictor invocation is delegated to the canonical
+tenant-safe bridge so V3 has one predictor invocation path.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
+from v3.predictive_bridge import invoke_existing_predictor
 from v3.predictive_evidence import validate_prediction_evidence
 
 SAFETY = {
@@ -72,40 +73,5 @@ def run_existing_predictor(
     request: dict[str, Any],
     predictor: Optional[Callable[..., Any]] = None,
 ) -> dict[str, Any]:
-    """Invoke an existing predictor only after tenant/evidence validation."""
-    if not isinstance(request, dict):
-        raise ValueError("prediction request must be a dictionary")
-    plant_id = request.get("plant_id")
-    tag = request.get("tag")
-    if not plant_id or not tag:
-        raise ValueError("prediction request requires plant_id and tag")
-    for row in request.get("evidence", []):
-        if isinstance(row, dict) and row.get("plant_id") not in (None, plant_id):
-            raise ValueError("cross-plant predictive evidence is not allowed")
-
-    if request.get("status") != "READY_FOR_EXISTING_PREDICTOR":
-        return {
-            "plant_id": plant_id,
-            "tag": tag,
-            "status": "NOT_INVOKED",
-            "reason": request.get("reason"),
-            "safety": dict(SAFETY),
-        }
-
-    if predictor is None:
-        return {
-            "plant_id": plant_id,
-            "tag": tag,
-            "status": "NOT_INVOKED",
-            "reason": "No existing predictor was supplied; V3 will not create replacement prediction logic.",
-            "safety": dict(SAFETY),
-        }
-
-    result = predictor(plant_id, tag, request["evidence"])
-    return {
-        "plant_id": plant_id,
-        "tag": tag,
-        "status": "INVOKED",
-        "result": result,
-        "safety": dict(SAFETY),
-    }
+    """Compatibility entry point using the canonical tenant-safe bridge."""
+    return invoke_existing_predictor(request, predictor)
