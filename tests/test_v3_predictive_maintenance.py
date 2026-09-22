@@ -55,14 +55,15 @@ def test_ready_request_calls_only_supplied_predictor():
 
     def predictor(*, plant_id, tag, evidence):
         return {
-            "plant": plant_id,
+            "plant_id": plant_id,
             "tag": tag,
+            "predicted_state": "NORMAL",
             "observations": len(evidence),
         }
 
     result = run_existing_predictor(request, predictor)
     assert request["status"] == "READY_FOR_EXISTING_PREDICTOR"
     assert result["status"] == "INVOKED"
-    assert result["result"]["plant"] == "PLANT-A"
+    assert result["result"]["plant_id"] == "PLANT-A"
     assert result["result"]["tag"] == "PT-303"
     assert result["safety"]["human_decision_required"] is True
