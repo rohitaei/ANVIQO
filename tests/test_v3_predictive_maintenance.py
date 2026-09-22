@@ -35,7 +35,7 @@ def test_insufficient_evidence_does_not_invoke_predictor():
     called = []
     result = run_existing_predictor(
         request,
-        lambda *args: called.append(args) or {"prediction": "unexpected"},
+        lambda **kwargs: called.append(kwargs) or {"prediction": "unexpected"},
     )
     assert result["status"] == "NOT_INVOKED"
     assert called == []
@@ -52,14 +52,15 @@ def test_ready_request_calls_only_supplied_predictor():
             {"plant_id": "PLANT-A", "timestamp": "2026-09-22T11:00:00Z", "value": 12},
         ],
     )
-    result = run_existing_predictor(
-        request,
-        lambda plant, tag, evidence: {
-            "plant": plant,
+
+    def predictor(*, plant_id, tag, evidence):
+        return {
+            "plant": plant_id,
             "tag": tag,
             "observations": len(evidence),
-        },
-    )
+        }
+
+    result = run_existing_predictor(request, predictor)
     assert request["status"] == "READY_FOR_EXISTING_PREDICTOR"
     assert result["status"] == "INVOKED"
     assert result["result"]["plant"] == "PLANT-A"
