@@ -1,6 +1,6 @@
 # ANVIQO V2 - Real-Time Industrial Intelligence
 
-Status: V2 FOUNDATION STARTED - ALPHA 1.6
+Status: V2 REAL-TIME INTELLIGENCE FOUNDATION COMPLETE
 
 ## Frozen boundary
 
@@ -13,115 +13,192 @@ V5 remains frozen and read-only.
 - Human decision required: TRUE
 - V5 reasoning is reused, not duplicated.
 
-## Architecture
+## Universal architecture
 
-PLC / SCADA / Historian / Demo Stream
+Any Plant
+-> Universal onboarding / normalized data
 -> read-only source adapters
 -> V2 Real-Time Data Fabric
--> V5 Frozen Intelligence
--> prediction / investigation / recommendation
+-> evidence trust / freshness
+-> WATCH / discovery orchestration
+-> Equipment DNA context
+-> existing V5 Frozen Intelligence
 -> human decision
 -> Plant Memory
 -> ROI
 
-## Alpha 1.1 delivered
+The V2 layer is plant-universal. Plant-specific tags, thresholds, process rules, prediction logic, diagnosis logic, or control logic are not embedded in V2. The design principle remains **CHANGE DATA, NOT CODE**.
+
+## Completed V2 sequence
+
+### Alpha 1.1 - Source Adapter + Data Fabric
+
+Delivered:
 
 1. Normalized IndustrialPoint contract.
 2. Bounded plant-scoped, tag-scoped read-only stream buffer.
 3. Data-path health reporting.
 4. Transport-neutral read-only source adapter interface.
-5. Adapter for the existing PCI demo stream.
+5. Existing PCI demo-stream adapter using the existing simulator only.
 6. FabricSourceRunner for one-shot source -> fabric polling.
-7. Universal data trust and freshness policy with explicit evidence status.\n8. Universal Live Plant Brain orchestration that passes evidence into an injected existing-V5 bridge.\n9. Regression tests for normalization, plant isolation, safety, trust/freshness and Plant Brain tenant scoping.
 
-No OPC UA/MQTT/Historian client is activated in this step. They will implement the same interface later.
+No OPC UA/MQTT/Historian client is activated by the demo adapter.
 
-## Next V2 build order
+### Alpha 1.2 - Data Trust / Freshness
 
-1. Data trust and freshness layer.
-2. Live Plant Brain orchestration using existing V5 engines.
-3. WATCH state and anomaly/discovery orchestration.
-4. Knowledge Graph / Equipment DNA context.
-5. What Changed and alarm intelligence on the live stream.
-6. End-to-end PT-303/304 abnormal-pressure demo with evidence, verified history, recovery and human verification.
+Delivered:
 
-V2 does not introduce a second prediction, root-cause, health or reasoning engine. The trust layer is evidence gating/metadata only; it is not a reasoning engine.
+- Freshness states: FRESH, AGING, STALE, EXPIRED, INVALID, FUTURE.
+- Evidence trust states: TRUSTED, DEGRADED, LIMITED, UNTRUSTED.
+- Quality handling for GOOD, DEGRADED, BAD, UNKNOWN.
+- BAD, invalid, future, and expired evidence is rejected.
+- Stale evidence can remain visible but is explicitly marked stale.
+- Trust is evidence gating/metadata only; it is not a reasoning engine.
 
+### Alpha 1.3 - Live Plant Brain
 
-## Alpha 1.4 delivered — WATCH + discovery orchestration
+Delivered:
 
-V2 now provides a universal WATCH/discovery coordinator around the read-only data fabric.
+- Universal tenant-scoped observation over the V2 fabric.
+- Trusted / limited / untrusted evidence accounting.
+- Fresh / stale evidence accounting.
+- Existing V5 intelligence can be invoked through an explicit bridge.
+- No replacement plant-health, prediction, diagnosis, or root-cause engine.
 
-- WatchOrchestrator evaluates evidence freshness/quality metadata and generic value changes between observations.
-- States are INSUFFICIENT_EVIDENCE, WATCH, or OBSERVE.
-- A WATCH candidate is a discovery prompt, not an anomaly, prediction, diagnosis, alarm, or failure verdict.
-- Existing V5 intelligence can be invoked only through an injected bridge.
-- Plant scope is preserved; no global fallback is used.
-- No plant-specific tags, thresholds, process rules, or reasoning are added.
-- PLC write, SCADA control, and automatic action remain disabled.
+### Alpha 1.4 - WATCH + discovery orchestration
 
-This step deliberately does not activate OPC UA/MQTT/Historian clients and does not create a second anomaly, prediction, root-cause, health, alarm, or reasoning engine.
+Delivered:
 
+- Generic value-change and evidence-quality/freshness observation.
+- States: INSUFFICIENT_EVIDENCE, WATCH, OBSERVE.
+- WATCH candidates are discovery prompts, not anomaly, alarm, diagnosis, prediction, or failure verdicts.
+- No plant-specific thresholds or process rules.
 
-## Alpha 1.5 delivered — Equipment DNA context
+### Alpha 1.5 - Equipment DNA
 
-V2 now includes a universal, plant-scoped Equipment DNA context layer. It stores supplied equipment identity and supplied relationships without inventing topology or process semantics. Normalized IndustrialPoint metadata can be converted into equipment nodes. Context is exposed as evidence for existing V5 intelligence; V2 does not add prediction, diagnosis, health, alarm, or control logic.
+Delivered:
 
-Safety remains read-only: PLC write FALSE, SCADA control FALSE, automatic action FALSE, human decision required TRUE.
+- Universal plant-scoped equipment nodes.
+- Supplied equipment relationships.
+- Exact-tenant context lookup.
+- No invented topology or process semantics.
+- Context is evidence for existing V5 intelligence.
 
+### Alpha 1.6 - Live event context
 
-## Alpha 1.6 delivered — live event context bridge
+Delivered:
 
-V2 now joins generic WATCH candidates with tenant-scoped Equipment DNA context and preserves an injected result from the existing V5 What Changed/Event intelligence.
+- Joins WATCH candidates with tenant-scoped Equipment DNA.
+- Preserves an existing V5 What Changed/Event result when supplied.
+- No cross-plant fallback.
+- Read-only and human-governed safety contract preserved.
 
-- WATCH candidates remain evidence/discovery signals, not new alarms or diagnoses.
-- Equipment DNA lookup is always scoped to the supplied plant.
-- Existing V5 What Changed/Event intelligence remains authoritative; V2 does not duplicate it.
-- No plant-specific thresholds, tags, process rules, or reasoning were added.
-- Safety remains read-only: PLC write FALSE, SCADA control FALSE, automatic action FALSE, human decision required TRUE.
+### Alpha 1.7 - Live V2 -> existing V5 event bridge
 
+Delivered:
 
-## Alpha 1.7 delivered — live stream into existing V5 What Changed/Event
+- Tenant-scoped live change evidence and Equipment DNA are passed to an injected existing V5 handler.
+- Without a handler, V2 reports NOT_INVOKED instead of creating replacement reasoning.
+- Existing V5 event intelligence remains authoritative.
 
-V2 now provides a dedicated bridge from live-event context into existing V5 What Changed/Event intelligence.
+### Alpha 1.8 - Tenant-safe V5 What Changed adapter
 
-- V2 passes tenant-scoped live change evidence and Equipment DNA context to an injected existing V5 handler.
-- Existing V5 What Changed/Event, plant health, equipment reasoning, and event correlation remain authoritative.
-- Without an injected V5 handler, V2 reports NOT_INVOKED rather than creating replacement reasoning.
-- No plant-specific thresholds, tags, process rules, anomaly rules, prediction logic, diagnosis logic, alarm logic, or control logic were added.
-- Tenant isolation is preserved and no cross-plant fallback is permitted.
-- Safety remains read-only: PLC write FALSE, SCADA control FALSE, automatic action FALSE, human decision required TRUE.
+Delivered:
 
+- Explicit adapter to the existing V5 build_plant_what_changed implementation.
+- Area evidence with a mismatched plant_id is rejected.
+- Existing V5 remains the only What Changed / health / event-correlation engine.
 
-## Alpha 1.8 delivered — tenant-safe V5 What Changed adapter
+### Alpha 1.9 - Tenant-safe live V5 evidence bridge
 
-V2 now has an explicit adapter that invokes the existing V5 `build_plant_what_changed` implementation using supplied tenant-scoped area evidence.
+Delivered:
 
-- The adapter rejects area evidence whose plant_id differs from the live context.
-- The existing V5 implementation remains the only What Changed / health / event-correlation engine.
-- V2 adds no new thresholds, anomaly rules, diagnosis, prediction, alarm, or control logic.
-- Read-only and human-governed safety flags are preserved.
+- Area evidence is obtained from an explicit tenant-scoped provider.
+- Provider is called only with context.plant_id.
+- Returned evidence must carry the same plant_id.
+- Empty evidence remains empty; no global fallback.
 
+### Alpha 1.10 - Live V2 -> V5 orchestration seam
 
-## Alpha 1.9 delivered — tenant-safe live V5 evidence bridge
+Delivered:
 
-V2 now provides a tenant-safe live bridge from live context to the existing V5 What Changed engine.
+- run_live_v5_pipeline() joins WATCH, Equipment DNA, live event context, and existing V5 What Changed.
+- Watch context and requested plant identity must match.
+- Existing V5 reasoning remains authoritative.
 
-- A tenant-scoped area-evidence provider is supplied by the caller; V2 does not invent plant-specific health rules.
-- The provider is called only with context.plant_id.
-- Returned area evidence must carry the same plant_id; mismatches are rejected.
-- Empty evidence stays empty; there is no global or cross-plant fallback.
-- The existing V5 build_plant_what_changed implementation remains authoritative.
-- No second health, event-correlation, anomaly, prediction, diagnosis, alarm, or control engine is created.
+### Alpha 1.11 - Universal tenant evidence provider
+
+Delivered:
+
+- TenantEvidenceProvider adapts the existing universal onboarding package into tenant-scoped V5-compatible evidence.
+- Only explicit health_score/status evidence is forwarded.
+- V2 never invents plant health from raw records.
+- Cross-plant package requests are rejected.
 - Safety remains read-only and human-governed.
 
+### Alpha 1.12 - Discovery orchestration
 
-## Alpha 1.10 delivered — live V2 → V5 orchestration seam
+Delivered:
 
-V2 now provides `run_live_v5_pipeline()` to join tenant-scoped Watch evidence with Equipment DNA and the existing V5 What Changed adapter.
+- Generic WATCH candidates are converted into discovery candidates.
+- Classification is DISCOVERY_CANDIDATE.
+- Discovery does not declare anomaly, alarm, diagnosis, or failure.
+- Exact plant scope and safety are preserved.
 
-- Watch context and requested plant identity must match.
-- Equipment DNA is resolved only for the requested plant.
-- Area evidence is still supplied by an explicit tenant-scoped provider.
-- Existing V5 reasoning remains authoritative; V2 adds orchestration only.
-- No global PCI fallback, plant-specific rules, prediction logic, or control path is introduced.
+### Alpha 1.13 - Alarm bridge
+
+Delivered:
+
+- Explicit supplied alarm evidence can be normalized and passed to an existing V5 handler.
+- V2 does not create alarm thresholds or alarm decisions.
+- Tenant scope and read-only safety are enforced.
+
+### Alpha 1.14 - PT-303 pressure demonstration
+
+Delivered:
+
+- Deterministic read-only PT-303 demonstration harness.
+- Uses explicit tenant evidence.
+- Reuses the live V2 -> existing V5 pipeline.
+- Accepts a supplied verified-history callback.
+- Requires human verification.
+- No automatic control or repair action is performed.
+
+The PT-303 demo is a demonstration harness, not a plant-specific reasoning engine. PT-304 can use the same universal seam by changing supplied data/evidence rather than adding plant-specific code.
+
+## Verification
+
+The dedicated **ANVIQO V2 Regression Tests** workflow passed on the latest V2 implementation commit.
+
+The V2 regression suite covers:
+
+- normalization and data-fabric behavior
+- tenant isolation
+- trust/freshness
+- Plant Brain orchestration
+- WATCH/discovery behavior
+- Equipment DNA context
+- live event context
+- V2 -> existing V5 What Changed bridging
+- tenant evidence
+- alarm bridge
+- PT pressure demo
+- read-only / human-governed safety contracts
+
+Unrelated legacy/phase certification workflows are tracked separately and are not used as the V2 regression verdict.
+
+## V2 architectural guarantees
+
+1. **Universal:** plant data/configuration changes; V2 intelligence code does not become plant-specific.
+2. **Tenant-safe:** no cross-plant fallback or substitution.
+3. **Evidence-first:** stale, invalid, bad, future, or missing evidence is explicitly represented.
+4. **V5 reuse:** existing V5 health, What Changed, event correlation and other frozen intelligence remain authoritative.
+5. **No duplicate reasoning:** V2 adds transport, evidence gating, orchestration and context seams only.
+6. **Human governed:** no automatic authorization, execution, PLC write, or SCADA control.
+7. **Read-only:** all V2 source/demo paths preserve the safety boundary.
+
+## Next roadmap phase
+
+V2 Real-Time Industrial Intelligence foundation is complete at the current universal orchestration scope.
+
+Future capabilities such as live production connectors, richer predictive intelligence, autonomous investigation, enterprise ROI, or expanded Command Centre behavior must be implemented as separate milestones and must continue to reuse the frozen V5 intelligence rather than creating duplicate reasoning engines.
