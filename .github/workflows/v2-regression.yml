@@ -42,4 +42,7 @@ jobs:
               tests/test_v2_v5_what_changed.py \
               tests/test_v2_v5_live_what_changed.py \
               tests/test_v2_v5_live_pipeline.py \
-              tests/test_v2_tenant_evidence.py
+              tests/test_v2_tenant_evidence.py \
+              tests/test_v2_discovery.py \
+              tests/test_v2_alarm_bridge.py \
+              tests/test_v2_pt_pressure_demo.py
