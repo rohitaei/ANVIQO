@@ -1,4 +1,4 @@
-from v2.equipment_dna import EquipmentDNAContext
+from v2.equipment_dna import EquipmentDNAContext, EquipmentNode, EquipmentRelation
 from v2.event_context import LiveEventContext
 from v2.v5_live_pipeline import run_live_v5_pipeline
 from v2.watch import WatchSnapshot
@@ -33,8 +33,17 @@ def watch(plant):
 
 def test_pipeline_joins_watch_dna_and_existing_v5():
     dna = EquipmentDNAContext()
-    dna.add_node("PLANT-A", "PT-303", equipment_type="TRANSMITTER")
-    dna.add_relation("PLANT-A", "PT-303", "MEASURES", "MILL")
+    dna.add_node(EquipmentNode(
+        plant_id="PLANT-A",
+        tag="PT-303",
+        equipment_type="TRANSMITTER",
+    ))
+    dna.add_relation(EquipmentRelation(
+        plant_id="PLANT-A",
+        source_tag="PT-303",
+        relation="MEASURES",
+        target_tag="MILL",
+    ))
 
     calls = []
 
