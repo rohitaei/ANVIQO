@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 8 IMPLEMENTED, PENDING CI VERIFICATION
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 9 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -11,7 +11,8 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 8 IMPLEMENTED, PENDING CI VERIFICATI
 5. **Tenant-safe Predictive History Provider Bridge** — VERIFIED
 6. **Canonical Tenant-safe Predictor Invocation Path** — VERIFIED
 7. **Tenant-safe Maintenance Memory Bridge** — VERIFIED
-8. **Canonical Tenant-safe Predictive Context** — IMPLEMENTED
+8. **Canonical Tenant-safe Predictive Context** — VERIFIED
+9. **Canonical Tenant-safe Prediction Result Contract** — IMPLEMENTED
 
 ## Alpha 8 predictive context
 
@@ -29,6 +30,12 @@ It does NOT calculate:
 - control actions
 
 No second prediction or learning engine is introduced.
+
+## Alpha 9 prediction result contract
+
+`v3/predictive_result.py` validates the boundary output of an existing predictor. It requires the returned result to carry the exact requested `plant_id` and `tag` before the result is accepted into the V3 flow.
+
+It does NOT interpret the prediction or calculate failure probability, trend, RUL, diagnosis, causation, thresholds, or control actions.
 
 ## Universal contract
 
@@ -67,10 +74,10 @@ No legacy/global data is used as a hidden fallback.
 
 ## Verification
 
-Dedicated V3 regression workflow: **PENDING ALPHA 8 CI**
+Dedicated V3 regression workflow: **PENDING ALPHA 9 CI**
 
 The branch remains separate and PR #40 remains draft/unmerged.
 
 ## Next milestone
 
-After Alpha 8 CI verification, inspect the existing predictive/maintenance architecture again before selecting the next milestone. Do not duplicate an existing tenant-safe capability.
+After Alpha 9 CI verification, inspect the existing predictive/maintenance architecture again before selecting the next milestone. Do not duplicate an existing tenant-safe capability.
