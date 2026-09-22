@@ -8,6 +8,8 @@ from __future__ import annotations
 import inspect
 from typing import Any, Callable, Dict
 
+from v3.predictive_result import validate_prediction_result
+
 SAFETY = {
     "read_only": True,
     "plc_write": False,
@@ -85,10 +87,11 @@ def invoke_existing_predictor(
         }
 
     result = predictor(plant_id=plant_id, tag=tag, evidence=evidence)
+    validated = validate_prediction_result(plant_id, tag, result)
     return {
         "plant_id": plant_id,
         "tag": tag,
         "status": "INVOKED",
-        "result": result,
+        "result": validated["result"],
         "safety": dict(SAFETY),
     }
