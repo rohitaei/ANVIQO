@@ -36,16 +36,10 @@ class PredictionEvidence:
 
     @property
     def numeric_timestamped_count(self) -> int:
-        count = 0
-        for row in self.observations:
-            if row.get("timestamp") is None:
-                continue
-            try:
-                float(row["value"])
-            except (KeyError, TypeError, ValueError):
-                continue
-            count += 1
-        return count
+        quality = validate_prediction_evidence(
+            self.plant_id, self.tag, list(self.observations)
+        )
+        return quality["usable_observation_count"]
 
 
 def build_prediction_request(
