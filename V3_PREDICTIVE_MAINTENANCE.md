@@ -1,70 +1,49 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE FOUNDATION — ALPHA 3 COMPLETE
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 3 VERIFIED
 
-## Purpose
+## Completed milestones
 
-V3 continues the predictive-maintenance/futurecast phase without replacing or duplicating existing ANVIQO prediction intelligence.
-
-Completed milestones:
-
-1. **Universal Predictive Evidence Gateway**
-2. **Tenant-safe Existing Predictor Bridge**
-3. **Explicit Prediction Outcome Verification Contract**
+1. **Universal Predictive Evidence Gateway** — VERIFIED
+2. **Tenant-safe Existing Predictor Bridge** — VERIFIED
+3. **Explicit Prediction Outcome Verification Contract** — VERIFIED
 
 ## Universal contract
 
-Any plant can provide timestamped equipment observations through the same contract:
-
-Any Plant
+Any plant
 -> tenant-scoped observations
 -> predictive evidence validation
--> existing predictor (only when explicitly tenant-aware)
+-> existing predictor only when explicitly tenant-aware
 -> explicit outcome verification
 -> human verification / decision
 
-The V3 foundation does not contain plant-specific thresholds, failure rules, probabilities, failure dates, RUL logic, diagnosis, or control actions.
-
-## Evidence gate
-
-A prediction request is marked READY_FOR_EXISTING_PREDICTOR only when at least two timestamped numeric observations are available.
-
-With insufficient evidence:
-
-- prediction is not invoked
-- no future failure is inferred
-- the reason is returned explicitly
-
-Cross-plant evidence is rejected.
+No plant-specific predictive code is created.
 
 ## Existing intelligence boundary
 
-The gateway and bridge are orchestration layers. They do not copy or rewrite `failure_prediction.py`.
+The existing `failure_prediction.py` path was inspected before integration. It is a legacy/global path and does not expose an explicit `plant_id` contract. V3 therefore deliberately does NOT connect it.
 
-An existing predictor may be invoked only when it explicitly declares `plant_id`. Legacy/global predictors are blocked because they may read non-tenant-scoped data.
+No prediction logic was copied into V3.
 
-This preserves the architecture principle:
+The architecture remains:
 
 **CHANGE DATA, NOT CODE.**
 
 ## Outcome verification
 
-`v3/prediction_outcomes.py` accepts only explicit prediction and outcome records.
+V3 accepts explicit prediction and actual outcome records and returns:
 
-It:
+- `VERIFIED_MATCH`
+- `VERIFIED_MISMATCH`
+- `UNVERIFIED`
 
-- requires matching tenant and tag
-- returns UNVERIFIED when comparable states are not explicitly supplied
-- records VERIFIED_MATCH or VERIFIED_MISMATCH when both states are explicit
-- does not infer an outcome
-- does not train a model
-- does not modify the existing predictor
-- provides a future seam for verified outcome learning
+It does not infer outcomes, train models, calculate RUL/probabilities, diagnose failures, or control equipment.
 
-No duplicate prediction engine was created.
+## Tenant and safety guarantees
 
-## Safety
-
+- Cross-plant predictive evidence: REJECTED
+- Cross-plant outcomes: REJECTED
+- Legacy/global predictor: BLOCKED
 - Read-only: TRUE
 - PLC write: FALSE
 - SCADA control: FALSE
@@ -73,18 +52,18 @@ No duplicate prediction engine was created.
 
 ## Verification
 
-The dedicated GitHub Actions workflow is `.github/workflows/v3-predictive-maintenance.yml`.
+Dedicated V3 regression workflow: **PASS**
 
-It now compiles and runs:
+Run #17:
+- compile: PASS
+- predictive maintenance tests: PASS
+- predictive bridge tests: PASS
+- prediction outcome tests: PASS
 
-- `tests/test_v3_predictive_maintenance.py`
-- `tests/test_v3_predictive_bridge.py`
-- `tests/test_v3_prediction_outcomes.py`
+The V3 branch remains separate and PR #40 remains draft/unmerged.
 
-V3 Alpha 2 was verified successfully after its test assertion fix. Alpha 3 is being verified by the updated regression workflow before any further milestone is started.
+## Next milestone
 
-## Roadmap discipline
+The next milestone is **not** to force-connect the existing global predictor. A tenant-safe real predictor integration can proceed only when an existing prediction implementation exposes a tenant-scoped contract.
 
-No V3 milestone will be skipped, duplicated, or implemented ahead of verification.
-
-The next milestone after Alpha 3 verification is **tenant-safe integration with a real existing prediction path**, but only if an existing predictor can consume tenant-scoped evidence without global/PCI fallback. Otherwise the integration remains explicitly blocked rather than creating duplicate prediction logic.
+Until then, the safe roadmap path is to strengthen universal predictive evidence/outcome handling rather than duplicate or rewrite the existing prediction engine.
