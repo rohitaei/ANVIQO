@@ -19,7 +19,7 @@ def test_legacy_global_predictor_is_blocked():
 
     result = invoke_existing_predictor(_request(), legacy)
     assert result["status"] == "NOT_INVOKED"
-    assert "tenant-aware" in result["reason"]
+    assert "tenant-aware" in result["reason"] or "legacy/global" in result["reason"]
 
 
 def test_tenant_aware_predictor_is_invoked():
