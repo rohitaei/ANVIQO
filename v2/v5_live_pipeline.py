@@ -34,3 +34,29 @@ def run_live_v5_pipeline(
         equipment_events=equipment_events,
         v5_builder=v5_builder,
     )
+
+def run_live_v5_pipeline_with_tenant_evidence(
+    plant_id: str,
+    watch_snapshot: WatchSnapshot,
+    equipment_dna: EquipmentDNAContext,
+    evidence_provider: Callable[[str], list[dict[str, Any]]],
+    equipment_events: Any = None,
+    existing_what_changed: Any = None,
+    v5_builder: Optional[Callable[..., Any]] = None,
+) -> dict[str, Any]:
+    """Run the live V2→V5 pipeline using a tenant-scoped evidence provider.
+
+    The provider is called only with the requested plant_id; no global or
+    cross-plant evidence fallback is permitted.
+    """
+    if not callable(evidence_provider):
+        raise TypeError("evidence_provider must be callable")
+    return run_live_v5_pipeline(
+        plant_id,
+        watch_snapshot,
+        equipment_dna,
+        evidence_provider,
+        equipment_events=equipment_events,
+        existing_what_changed=existing_what_changed,
+        v5_builder=v5_builder,
+    )
