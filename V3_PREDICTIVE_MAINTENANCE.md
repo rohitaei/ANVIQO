@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 10 IMPLEMENTED, PENDING CI VERIFICATION
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 11 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -13,7 +13,8 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 10 IMPLEMENTED, PENDING CI VERIFICAT
 7. **Tenant-safe Maintenance Memory Bridge** — VERIFIED
 8. **Canonical Tenant-safe Predictive Context** — VERIFIED
 9. **Canonical Tenant-safe Prediction Result Contract** — VERIFIED
-10. **Canonical Predictive Flow Boundary** — IMPLEMENTED
+10. **Canonical Predictive Flow Boundary** — VERIFIED
+11. **Predictive Outcome Verification Integration** — IMPLEMENTED
 
 ## Alpha 10 predictive flow
 
@@ -28,6 +29,8 @@ evidence validation
 -> existing tenant-aware predictor
 -> prediction-result validation
 
+Alpha 10 was verified by the dedicated V3 regression workflow on commit `7dab9bcf65dfb58cb7d72034e1ae1a9976b67c89`.
+
 It does NOT add a prediction/model engine or calculate:
 - failure probability
 - trend
@@ -39,6 +42,21 @@ It does NOT add a prediction/model engine or calculate:
 
 A predictor is not invoked when the evidence gate is insufficient, and legacy/global predictors remain blocked.
 
+## Alpha 11 outcome verification integration
+
+Alpha 11 reuses the existing `v3/prediction_outcomes.py` contract instead of creating a second outcome engine.
+
+When an existing tenant-aware predictor is actually invoked and an explicit outcome is supplied, the canonical flow calls `verify_prediction_outcome()`.
+
+Supported states remain the existing contract:
+- `VERIFIED_MATCH`
+- `VERIFIED_MISMATCH`
+- `UNVERIFIED`
+
+No outcome is inferred, and no model training or prediction adjustment is added.
+
+Cross-plant prediction/outcome pairs remain rejected.
+
 ## Universal contract
 
 Any plant
@@ -48,6 +66,7 @@ Any plant
 -> canonical predictive context
 -> existing predictor only when explicitly tenant-aware
 -> canonical prediction-result validation
+-> explicit outcome verification when supplied
 -> human verification / decision
 
 **CHANGE DATA, NOT CODE.**
@@ -63,11 +82,13 @@ No legacy/global data is used as a hidden fallback.
 - Cross-plant evidence: REJECTED
 - Cross-plant history: REJECTED
 - Cross-plant maintenance memory: REJECTED
+- Cross-plant prediction outcome: REJECTED
 - Tag mismatch: REJECTED
 - Legacy/global predictor: BLOCKED
 - Legacy/global history: BLOCKED
 - Legacy/global memory: BLOCKED
 - Insufficient evidence: predictor NOT INVOKED
+- No explicit outcome: outcome NOT inferred
 - Read-only: TRUE
 - PLC write: FALSE
 - SCADA control: FALSE
@@ -76,10 +97,12 @@ No legacy/global data is used as a hidden fallback.
 
 ## Verification
 
-Dedicated V3 regression workflow: **PENDING ALPHA 10 CI**
+Alpha 10 dedicated V3 regression: **PASSED**.
+
+Alpha 11 dedicated V3 regression: **PENDING CI**.
 
 The branch remains separate and PR #40 remains draft/unmerged.
 
 ## Next milestone
 
-After Alpha 10 CI verification, inspect the existing predictive/maintenance architecture again before selecting the next milestone. Do not duplicate an existing tenant-safe capability.
+After Alpha 11 CI verification, inspect the existing predictive/maintenance architecture again before selecting the next milestone. Do not duplicate an existing tenant-safe capability.
