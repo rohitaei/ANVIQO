@@ -1,6 +1,7 @@
 import pytest
 
 from v3 import production_boundary
+import anvi_tenant_store as store
 
 
 def _package():
@@ -43,7 +44,7 @@ def test_alpha20_production_flow_uses_tenant_package(monkeypatch):
     assert calls["scope"] == ("PLANT-A", "ORG-1")
     assert result["plant_id"] == "PLANT-A"
     assert result["tag"] == "PT-303"
-    assert result["prediction"]["status"] == "INSUFFICIENT_EVIDENCE"
+    assert result["prediction"]["status"] == "INVOKED"
     assert result["execution_audit"]["plant_id"] == "PLANT-A"
 
 
