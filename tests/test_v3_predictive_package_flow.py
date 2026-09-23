@@ -38,6 +38,9 @@ def test_alpha14_uses_real_package_sources_and_existing_predictor():
     assert prediction["status"] == "PREDICTION_AVAILABLE"
     assert prediction["trend"]["direction"] == "RISING"
     assert prediction["evidence_summary"]["persisted_observation_count"] == 2
+    assert result["context"]["history"]["status"] == "INVOKED"
+    assert len(result["context"]["history"]["records"]) == 2
+    assert result["context"]["maintenance_memory"]["status"] == "INVOKED"
     assert result["safety"]["plc_write"] is False
     assert result["safety"]["scada_control"] is False
 
