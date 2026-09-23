@@ -10,7 +10,7 @@ from typing import Any, Callable
 
 from v3.predictive_bridge import invoke_existing_predictor
 from v3.predictive_context import build_predictive_context
-from v3.predictive_evidence import validate_prediction_evidence
+from v3.predictive_maintenance import build_prediction_request
 from v3.predictive_history_bridge import fetch_tenant_predictive_history
 from v3.maintenance_memory_bridge import fetch_tenant_maintenance_memory
 
@@ -34,11 +34,9 @@ def run_predictive_flow(
 ) -> dict[str, Any]:
     """Run the canonical V3 predictive boundary without adding intelligence.
 
-    The flow is strictly:
-    evidence validation -> optional tenant-scoped history/memory -> context
-    assembly -> existing tenant-aware predictor -> validated result.
-
-    A predictor is never invoked unless the canonical evidence gate is ready.
+    The flow reuses the existing canonical evidence gate, then composes
+    tenant-scoped context and delegates prediction only through the existing
+    tenant-safe predictor bridge.
     """
     plant_id = str(plant_id or "").strip()
     tag = str(tag or "").strip()
@@ -47,7 +45,9 @@ def run_predictive_flow(
     if not isinstance(observations, list):
         raise ValueError("observations must be a list")
 
-    evidence = validate_prediction_evidence(plant_id, tag, observations)
+    request = build_prediction_request(plant_id, tag, observations)
+    evidence = request["evidence_quality"]
+
     history = fetch_tenant_predictive_history(
         plant_id, tag, provider=history_provider
     )
@@ -63,17 +63,8 @@ def run_predictive_flow(
         maintenance_memory=maintenance_memory,
     )
 
-    request = {
-        "plant_id": plant_id,
-        "tag": tag,
-        "status": (
-            "READY_FOR_EXISTING_PREDICTOR"
-            if evidence["quality"] == "VALID"
-            else "INSUFFICIENT_EVIDENCE"
-        ),
-        "evidence": evidence["evidence"],
-        "context": context,
-    }
+    request = dict(request)
+    request["context"] = context
     prediction = invoke_existing_predictor(request, predictor=predictor)
 
     return {
