@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 11 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 12 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -15,6 +15,7 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 11 VERIFIED
 9. **Canonical Tenant-safe Prediction Result Contract** — VERIFIED
 10. **Canonical Predictive Flow Boundary** — VERIFIED
 11. **Predictive Outcome Verification Integration** — VERIFIED
+12. **Tenant-safe Integration of Existing Predictor Sources** — IMPLEMENTED, PENDING CI
 
 ## Alpha 11 outcome verification integration
 
@@ -28,6 +29,28 @@ Supported states remain:
 - `UNVERIFIED`
 
 No outcome is inferred, no model training is added, and no prediction is modified from an outcome.
+
+
+## Alpha 12 tenant-safe existing predictor integration
+
+Alpha 12 adds a tenant-scoped source contract for every data source consumed by the existing prediction algorithm:
+- PCI identity/live evidence
+- persisted predictive history
+- verified maintenance memory
+- event timeline
+- equipment health
+
+v3/predictive_sources.py requires every provider to explicitly declare plant_id and rejects rows whose plant_id or tag does not match the requested tenant.
+
+failure_prediction.py now exposes build_tenant_failure_prediction(...), which reuses the existing prediction/trend implementation after receiving validated tenant-scoped source data. The legacy build_failure_prediction(...) entry point remains unchanged for existing callers and is not used by V3.
+
+v3/existing_predictor_adapter.py connects this tenant-safe entry point to the existing V3 predictor bridge. No prediction algorithm was copied into v3/.
+
+Alpha 12 tests cover:
+- existing trend behavior through tenant-scoped sources
+- tenant-aware adapter invocation
+- cross-plant source rejection
+- legacy provider rejection
 
 ## Architecture inspection after Alpha 11
 
@@ -78,5 +101,6 @@ If a required source cannot be made tenant-safe, V3 will keep that path blocked 
 
 Alpha 10 dedicated V3 regression: **PASSED**.
 Alpha 11 dedicated V3 regression: **PASSED** (run #88).
+Alpha 12 dedicated V3 regression: **PENDING**.
 
 The branch remains separate and PR #40 remains draft/unmerged.
