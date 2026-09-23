@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 13 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 14 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -17,6 +17,7 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 13 VERIFIED
 11. **Predictive Outcome Verification Integration** — VERIFIED
 12. **Tenant-safe Integration of Existing Predictor Sources** — VERIFIED
 13. **Real Tenant-Scoped Predictive Evidence Providers** — VERIFIED
+14. **Canonical Predictive Flow from Universal Plant Package** — IMPLEMENTED, PENDING CI
 
 ## Alpha 11 outcome verification integration
 
@@ -99,6 +100,19 @@ The legacy global stores (`failure_prediction_history.py`, `plant_memory.py`, `p
 
 This preserves the universal architecture: plant-specific data enters through the normalized onboarding package, while the existing prediction intelligence remains unchanged.
 
+## Alpha 14 canonical predictive flow from universal plant package
+
+Alpha 14 wires the real Alpha 13 tenant-scoped provider set into the canonical V3 predictive flow.
+
+`v3/predictive_package_flow.py`:
+- requires the requested `plant_id` to match the onboarding package tenant
+- creates the real tenant-scoped evidence providers
+- connects them to the existing predictor through `v3/existing_predictor_adapter.py`
+- reuses the canonical V3 predictive flow
+- does not add prediction or trend logic
+
+The existing `failure_prediction.py` algorithm remains the single prediction implementation. No legacy/global source is used by this path.
+
 ## Universal and safety guarantees
 
 - Cross-plant evidence: REJECTED
@@ -121,5 +135,6 @@ Alpha 10 dedicated V3 regression: **PASSED**.
 Alpha 11 dedicated V3 regression: **PASSED** (run #88).
 Alpha 12 dedicated V3 regression: **PASSED** (run #100).
 Alpha 13 dedicated V3 regression: **PASSED** (run #114, 52 tests).
+Alpha 14 dedicated V3 regression: **PENDING**.
 
 The branch remains separate and PR #40 remains draft/unmerged.
