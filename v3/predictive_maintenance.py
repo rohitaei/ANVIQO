@@ -53,17 +53,18 @@ def build_prediction_request(
         evidence.plant_id, evidence.tag, list(evidence.observations)
     )
     count = quality["usable_observation_count"]
+    ready = quality["quality"] == "VALID" and count >= 2
     return {
         "plant_id": evidence.plant_id,
         "tag": evidence.tag,
-        "status": "READY_FOR_EXISTING_PREDICTOR" if count >= 2 else "INSUFFICIENT_EVIDENCE",
+        "status": "READY_FOR_EXISTING_PREDICTOR" if ready else "INSUFFICIENT_EVIDENCE",
         "numeric_timestamped_observations": count,
         "evidence": quality["evidence"],
         "evidence_quality": quality,
         "reason": (
-            "At least two valid timestamped numeric observations are available."
-            if count >= 2
-            else "At least two valid timestamped numeric observations are required; no future failure is inferred."
+            "Evidence quality is VALID and at least two valid timestamped numeric observations are available."
+            if ready
+            else "Predictive evidence must be VALID with at least two valid timestamped numeric observations; partial or insufficient evidence is not predictive."
         ),
         "safety": dict(SAFETY),
     }
