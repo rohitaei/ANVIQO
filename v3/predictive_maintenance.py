@@ -47,10 +47,17 @@ def build_prediction_request(
     plant_id: str,
     tag: str,
     observations: list[dict[str, Any]],
+    *,
+    window_start: str | None = None,
+    window_end: str | None = None,
 ) -> dict[str, Any]:
     evidence = PredictionEvidence(plant_id, tag, tuple(observations))
     quality = validate_prediction_evidence(
-        evidence.plant_id, evidence.tag, list(evidence.observations)
+        evidence.plant_id,
+        evidence.tag,
+        list(evidence.observations),
+        window_start=window_start,
+        window_end=window_end,
     )
     count = quality["usable_observation_count"]
     ready = quality["quality"] == "VALID" and count >= 2
