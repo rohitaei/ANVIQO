@@ -23,7 +23,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install test runner
-        run: python -m pip install --upgrade pip pytest
+        run: python -m pip install --upgrade pip pytest Flask
 
       - name: Compile V3 modules and regression tests
         run: python -m compileall -q v3 tests/test_v3_predictive_maintenance.py tests/test_v3_predictive_bridge.py tests/test_v3_prediction_outcomes.py tests/test_v3_predictive_evidence.py tests/test_v3_predictive_history_bridge.py tests/test_v3_maintenance_memory_bridge.py tests/test_v3_predictive_context.py tests/test_v3_predictive_result.py tests/test_v3_predictive_flow.py tests/test_v3_predictive_sources.py tests/test_v3_predictive_audit.py tests/test_v3_production_boundary.py tests/test_v3_predictive_api_boundary.py
