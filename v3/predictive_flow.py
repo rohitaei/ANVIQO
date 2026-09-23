@@ -13,6 +13,7 @@ from v3.predictive_context import build_predictive_context
 from v3.predictive_maintenance import build_prediction_request
 from v3.predictive_history_bridge import fetch_tenant_predictive_history
 from v3.maintenance_memory_bridge import fetch_tenant_maintenance_memory
+from v3.prediction_outcomes import verify_prediction_outcome
 
 SAFETY = {
     "read_only": True,
@@ -31,12 +32,14 @@ def run_predictive_flow(
     predictor: Callable[..., Any] | None = None,
     history_provider: Callable[..., Any] | None = None,
     maintenance_memory_provider: Callable[..., Any] | None = None,
+    outcome: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run the canonical V3 predictive boundary without adding intelligence.
 
     The flow reuses the existing canonical evidence gate, then composes
     tenant-scoped context and delegates prediction only through the existing
-    tenant-safe predictor bridge.
+    tenant-safe predictor bridge. When an explicit outcome is supplied for an
+    invoked prediction, the existing outcome-verification contract is reused.
     """
     plant_id = str(plant_id or "").strip()
     tag = str(tag or "").strip()
@@ -67,6 +70,18 @@ def run_predictive_flow(
     request["context"] = context
     prediction = invoke_existing_predictor(request, predictor=predictor)
 
+    outcome_verification = {
+        "plant_id": plant_id,
+        "tag": tag,
+        "status": "NOT_PROVIDED",
+        "reason": "No explicit outcome was supplied; no outcome is inferred.",
+        "safety": dict(SAFETY),
+    }
+    if outcome is not None and prediction["status"] == "INVOKED":
+        outcome_verification = verify_prediction_outcome(
+            prediction["result"], outcome
+        )
+
     return {
         "plant_id": plant_id,
         "tag": tag,
@@ -74,5 +89,6 @@ def run_predictive_flow(
         "evidence": evidence,
         "context": context,
         "prediction": prediction,
+        "outcome_verification": outcome_verification,
         "safety": dict(SAFETY),
     }
