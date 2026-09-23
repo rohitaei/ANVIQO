@@ -160,7 +160,9 @@ def test_predictive_flow_does_not_invoke_predictor_with_partial_evidence():
     assert result["evidence"]["usable_observation_count"] == 2
     assert result["status"] == "NOT_INVOKED"
     assert calls == []
-\n\ndef test_predictive_flow_blocks_when_evidence_falls_outside_requested_window():
+
+
+def test_predictive_flow_blocks_when_evidence_falls_outside_requested_window():
     calls = []
 
     def predictor(*, plant_id, tag, evidence):
