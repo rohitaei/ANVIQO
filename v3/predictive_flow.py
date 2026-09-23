@@ -33,6 +33,8 @@ def run_predictive_flow(
     history_provider: Callable[..., Any] | None = None,
     maintenance_memory_provider: Callable[..., Any] | None = None,
     outcome: dict[str, Any] | None = None,
+    window_start: str | None = None,
+    window_end: str | None = None,
 ) -> dict[str, Any]:
     """Run the canonical V3 predictive boundary without adding intelligence.
 
@@ -48,7 +50,13 @@ def run_predictive_flow(
     if not isinstance(observations, list):
         raise ValueError("observations must be a list")
 
-    request = build_prediction_request(plant_id, tag, observations)
+    request = build_prediction_request(
+        plant_id,
+        tag,
+        observations,
+        window_start=window_start,
+        window_end=window_end,
+    )
     evidence = request["evidence_quality"]
 
     history = fetch_tenant_predictive_history(
