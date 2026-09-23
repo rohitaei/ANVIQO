@@ -68,20 +68,20 @@ This is an intentional safety boundary, not a missing fallback.
 
 ### Next safe milestone
 
-**Alpha 16 — Predictive Evidence Window & Trust Integration**
+**Alpha 17 — Predictive Trust/Freshness Decision Boundary**
 
-Alpha 16 should extend the already-verified canonical package flow by making predictive evidence quality/freshness explicitly visible at the final orchestration boundary.
+Alpha 17 should make the already-validated predictive evidence quality and time window an explicit decision boundary before existing prediction is invoked.
 
 Required before implementation:
-1. reuse the existing `v3/predictive_evidence.py` validator; do not duplicate evidence validation
-2. expose evidence quality/window status in the package-flow result
-3. preserve the existing predictor and prediction algorithm unchanged
-4. maintain explicit `plant_id` and tag validation
-5. add cross-plant and insufficient-evidence regression coverage
-6. verify read-only/human-decision safety
-7. run dedicated V3 CI before declaring Alpha 16 verified
+1. reuse the existing evidence validator; do not create a second trust engine
+2. define only deterministic evidence-acceptance states from existing quality/window facts
+3. keep the existing predictor and prediction algorithm unchanged
+4. reject cross-plant or invalid evidence before predictor invocation
+5. add insufficient/partial/valid evidence regression coverage
+6. preserve read-only/human-decision safety
+7. run dedicated V3 CI before declaring Alpha 17 verified
 
-If evidence is insufficient or outside the accepted contract, V3 must remain evidence-gated rather than inventing a prediction or falling back to global data.
+No failure probability, RUL, diagnosis, trend, threshold, or control action may be invented in this boundary. If evidence cannot satisfy the explicit contract, the predictor remains uninvoked.
 
 **CHANGE DATA, NOT CODE.**
 
