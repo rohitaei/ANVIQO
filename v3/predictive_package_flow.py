@@ -17,6 +17,8 @@ def run_predictive_flow_from_package(
     *,
     package: Mapping[str, Any],
     outcome: dict[str, Any] | None = None,
+    window_start: str | None = None,
+    window_end: str | None = None,
 ) -> dict[str, Any]:
     """Run the canonical V3 flow with real tenant-scoped package providers."""
     provider = TenantPredictiveProviderSet(package)
@@ -35,6 +37,8 @@ def run_predictive_flow_from_package(
         history_provider=sources.history,
         maintenance_memory_provider=sources.memory,
         outcome=outcome,
+        window_start=window_start,
+        window_end=window_end,
     )
 
 
