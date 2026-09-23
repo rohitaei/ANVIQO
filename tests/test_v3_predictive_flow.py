@@ -137,3 +137,26 @@ def test_predictive_flow_rejects_cross_plant_outcome():
         assert "cross-plant" in str(exc)
     else:
         raise AssertionError("cross-plant outcome was not rejected")
+
+
+def test_predictive_flow_does_not_invoke_predictor_with_partial_evidence():
+    calls = []
+
+    def predictor(*, plant_id, tag, evidence):
+        calls.append(True)
+        return _predictor(plant_id=plant_id, tag=tag, evidence=evidence)
+
+    observations = [
+        {"plant_id": "PLANT-A", "tag": "PT-303", "timestamp": "2026-09-20T10:00:00Z", "value": 10.0},
+        {"plant_id": "PLANT-A", "tag": "PT-303", "timestamp": "not-a-time", "value": 11.0},
+        {"plant_id": "PLANT-A", "tag": "PT-303", "timestamp": "2026-09-20T10:02:00Z", "value": 12.0},
+    ]
+
+    result = run_predictive_flow(
+        "PLANT-A", "PT-303", observations, predictor=predictor
+    )
+
+    assert result["evidence"]["quality"] == "PARTIAL"
+    assert result["evidence"]["usable_observation_count"] == 2
+    assert result["status"] == "NOT_INVOKED"
+    assert calls == []
