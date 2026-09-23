@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 9 IMPLEMENTED, PENDING CI VERIFICATION
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 10 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -12,15 +12,23 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 9 IMPLEMENTED, PENDING CI VERIFICATI
 6. **Canonical Tenant-safe Predictor Invocation Path** — VERIFIED
 7. **Tenant-safe Maintenance Memory Bridge** — VERIFIED
 8. **Canonical Tenant-safe Predictive Context** — VERIFIED
-9. **Canonical Tenant-safe Prediction Result Contract** — IMPLEMENTED
+9. **Canonical Tenant-safe Prediction Result Contract** — VERIFIED
+10. **Canonical Predictive Flow Boundary** — IMPLEMENTED
 
-## Alpha 8 predictive context
+## Alpha 10 predictive flow
 
-`v3/predictive_context.py` is a composition boundary for already validated V3 evidence, history, and maintenance-memory results.
+`v3/predictive_flow.py` is the single orchestration boundary for the V3 predictive path.
 
-It verifies that every supplied context component belongs to the requested `plant_id` and `tag`, then assembles one predictive context object.
+It composes the already existing contracts in this order:
 
-It does NOT calculate:
+evidence validation
+-> optional tenant-scoped history
+-> optional tenant-scoped maintenance memory
+-> predictive context assembly
+-> existing tenant-aware predictor
+-> prediction-result validation
+
+It does NOT add a prediction/model engine or calculate:
 - failure probability
 - trend
 - RUL
@@ -29,24 +37,17 @@ It does NOT calculate:
 - thresholds
 - control actions
 
-No second prediction or learning engine is introduced.
-
-## Alpha 9 prediction result contract
-
-`v3/predictive_result.py` validates the boundary output of an existing predictor. It requires the returned result to carry the exact requested `plant_id` and `tag` before the result is accepted into the V3 flow.
-
-It does NOT interpret the prediction or calculate failure probability, trend, RUL, diagnosis, causation, thresholds, or control actions.
+A predictor is not invoked when the evidence gate is insufficient, and legacy/global predictors remain blocked.
 
 ## Universal contract
 
 Any plant
 -> tenant-scoped observations
 -> predictive evidence validation
--> canonical tenant-safe predictor bridge
 -> tenant-safe history/memory where explicitly available
 -> canonical predictive context
 -> existing predictor only when explicitly tenant-aware
--> explicit outcome verification
+-> canonical prediction-result validation
 -> human verification / decision
 
 **CHANGE DATA, NOT CODE.**
@@ -66,6 +67,7 @@ No legacy/global data is used as a hidden fallback.
 - Legacy/global predictor: BLOCKED
 - Legacy/global history: BLOCKED
 - Legacy/global memory: BLOCKED
+- Insufficient evidence: predictor NOT INVOKED
 - Read-only: TRUE
 - PLC write: FALSE
 - SCADA control: FALSE
@@ -74,10 +76,10 @@ No legacy/global data is used as a hidden fallback.
 
 ## Verification
 
-Dedicated V3 regression workflow: **PENDING ALPHA 9 CI**
+Dedicated V3 regression workflow: **PENDING ALPHA 10 CI**
 
 The branch remains separate and PR #40 remains draft/unmerged.
 
 ## Next milestone
 
-After Alpha 9 CI verification, inspect the existing predictive/maintenance architecture again before selecting the next milestone. Do not duplicate an existing tenant-safe capability.
+After Alpha 10 CI verification, inspect the existing predictive/maintenance architecture again before selecting the next milestone. Do not duplicate an existing tenant-safe capability.
