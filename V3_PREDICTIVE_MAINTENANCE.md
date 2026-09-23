@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 17 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 18 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -21,6 +21,7 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 17 VERIFIED
 15. **Complete Real Evidence Context Composition** — VERIFIED
 16. **Predictive Evidence Window & Trust Integration** — VERIFIED
 17. **Predictive Trust/Freshness Decision Boundary** — VERIFIED
+18. **Predictive Evidence Freshness Window Contract** — IMPLEMENTED, PENDING CI
 
 ## Alpha 11 outcome verification integration
 
@@ -140,6 +141,14 @@ The canonical request is now predictive-ready only when:
 `PARTIAL` evidence remains evidence for reporting but does not authorize predictor invocation, even when it contains two or more usable rows. `EMPTY` evidence is also blocked.
 
 No new trust engine, prediction logic, trend logic, RUL, probability, diagnosis, threshold, or control action was added. The existing predictor remains unchanged and the tenant/read-only boundary remains enforced.
+
+## Alpha 18 predictive evidence freshness window contract
+
+Alpha 18 adds an explicit, caller-supplied evidence window contract using the existing predictive evidence validator.
+
+The contract records the requested `window_start` and `window_end` and rejects an invalid reversed window. Observations outside a supplied window are reported as invalid rather than repaired or silently accepted. The resulting `window_status` is exposed as `VALID`, `PARTIAL`, or `EMPTY`.
+
+The contract is deterministic and timestamp-based. It does not invent a freshness threshold, compare against wall-clock time, or add prediction/trend/RUL/diagnosis/control logic. Predictor invocation remains governed by the Alpha 17 `VALID` evidence boundary.
 
 ## Universal and safety guarantees
 
