@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 11 IMPLEMENTED, PENDING CI VERIFICATION
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 11 VERIFIED
 
 ## Completed milestones
 
@@ -14,81 +14,60 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 11 IMPLEMENTED, PENDING CI VERIFICAT
 8. **Canonical Tenant-safe Predictive Context** — VERIFIED
 9. **Canonical Tenant-safe Prediction Result Contract** — VERIFIED
 10. **Canonical Predictive Flow Boundary** — VERIFIED
-11. **Predictive Outcome Verification Integration** — IMPLEMENTED
-
-## Alpha 10 predictive flow
-
-`v3/predictive_flow.py` is the single orchestration boundary for the V3 predictive path.
-
-It composes the already existing contracts in this order:
-
-evidence validation
--> optional tenant-scoped history
--> optional tenant-scoped maintenance memory
--> predictive context assembly
--> existing tenant-aware predictor
--> prediction-result validation
-
-Alpha 10 was verified by the dedicated V3 regression workflow on commit `7dab9bcf65dfb58cb7d72034e1ae1a9976b67c89`.
-
-It does NOT add a prediction/model engine or calculate:
-- failure probability
-- trend
-- RUL
-- diagnosis
-- causation
-- thresholds
-- control actions
-
-A predictor is not invoked when the evidence gate is insufficient, and legacy/global predictors remain blocked.
+11. **Predictive Outcome Verification Integration** — VERIFIED
 
 ## Alpha 11 outcome verification integration
 
-Alpha 11 reuses the existing `v3/prediction_outcomes.py` contract instead of creating a second outcome engine.
+Alpha 11 reuses the existing `v3/prediction_outcomes.py` contract inside the canonical `v3/predictive_flow.py` boundary.
 
-When an existing tenant-aware predictor is actually invoked and an explicit outcome is supplied, the canonical flow calls `verify_prediction_outcome()`.
+When an existing tenant-aware predictor is invoked and an explicit outcome is supplied, the existing verification contract is reused.
 
-Supported states remain the existing contract:
+Supported states remain:
 - `VERIFIED_MATCH`
 - `VERIFIED_MISMATCH`
 - `UNVERIFIED`
 
-No outcome is inferred, and no model training or prediction adjustment is added.
+No outcome is inferred, no model training is added, and no prediction is modified from an outcome.
 
-Cross-plant prediction/outcome pairs remain rejected.
+## Architecture inspection after Alpha 11
 
-## Universal contract
+The existing `failure_prediction.py` contains real prediction/trend logic, so V3 must NOT copy or recreate it.
 
-Any plant
--> tenant-scoped observations
--> predictive evidence validation
--> tenant-safe history/memory where explicitly available
--> canonical predictive context
--> existing predictor only when explicitly tenant-aware
--> canonical prediction-result validation
--> explicit outcome verification when supplied
--> human verification / decision
+However, the existing predictor is currently legacy/global:
+- its public `build_failure_prediction()` entry point does not declare `plant_id`
+- its supporting PCI/history/memory/event sources are not uniformly tenant-scoped
+- V3 therefore correctly blocks it through the existing tenant-safe predictor bridge
+
+This is an intentional safety boundary, not a missing fallback.
+
+### Next safe milestone
+
+**Alpha 12 — Tenant-safe integration of the existing predictor**
+
+This milestone must adapt the existing predictor's real intelligence to explicit tenant-scoped evidence **without duplicating its prediction logic**.
+
+Required before implementation:
+1. identify every data source used by the existing predictor
+2. establish an explicit `plant_id` contract for each required source
+3. preserve existing prediction logic rather than copy it into `v3/`
+4. add cross-plant rejection tests
+5. verify read-only/human-decision safety
+6. run dedicated V3 CI before declaring Alpha 12 verified
+
+If a required source cannot be made tenant-safe, V3 will keep that path blocked rather than silently falling back to global data.
 
 **CHANGE DATA, NOT CODE.**
 
-## Existing intelligence boundary
-
-Legacy/global `failure_prediction.py`, `failure_prediction_history.py`, `plant_memory.py`, and `pci_plant_memory.py` remain outside V3 integration where they lack explicit tenant contracts.
-
-No legacy/global data is used as a hidden fallback.
-
-## Tenant and safety guarantees
+## Universal and safety guarantees
 
 - Cross-plant evidence: REJECTED
 - Cross-plant history: REJECTED
 - Cross-plant maintenance memory: REJECTED
 - Cross-plant prediction outcome: REJECTED
-- Tag mismatch: REJECTED
-- Legacy/global predictor: BLOCKED
+- Legacy/global predictor: BLOCKED until tenant-safe
 - Legacy/global history: BLOCKED
 - Legacy/global memory: BLOCKED
 - Insufficient evidence: predictor NOT INVOKED
-- No explicit outcome: outcome NOT inferred
 - Read-only: TRUE
 - PLC write: FALSE
 - SCADA control: FALSE
@@ -98,11 +77,6 @@ No legacy/global data is used as a hidden fallback.
 ## Verification
 
 Alpha 10 dedicated V3 regression: **PASSED**.
-
-Alpha 11 dedicated V3 regression: **PENDING CI**.
+Alpha 11 dedicated V3 regression: **PASSED** (run #88).
 
 The branch remains separate and PR #40 remains draft/unmerged.
-
-## Next milestone
-
-After Alpha 11 CI verification, inspect the existing predictive/maintenance architecture again before selecting the next milestone. Do not duplicate an existing tenant-safe capability.
