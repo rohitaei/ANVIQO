@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 12 IMPLEMENTED, PENDING CI VERIFICATION
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 12 VERIFIED
 
 ## Completed milestones
 
@@ -15,7 +15,7 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 12 IMPLEMENTED, PENDING CI VERIFICAT
 9. **Canonical Tenant-safe Prediction Result Contract** — VERIFIED
 10. **Canonical Predictive Flow Boundary** — VERIFIED
 11. **Predictive Outcome Verification Integration** — VERIFIED
-12. **Tenant-safe Integration of Existing Predictor Sources** — IMPLEMENTED, PENDING CI
+12. **Tenant-safe Integration of Existing Predictor Sources** — VERIFIED
 
 ## Alpha 11 outcome verification integration
 
@@ -101,6 +101,6 @@ If a required source cannot be made tenant-safe, V3 will keep that path blocked 
 
 Alpha 10 dedicated V3 regression: **PASSED**.
 Alpha 11 dedicated V3 regression: **PASSED** (run #88).
-Alpha 12 dedicated V3 regression: **PENDING**.
+Alpha 12 dedicated V3 regression: **PASSED** (run #100).
 
 The branch remains separate and PR #40 remains draft/unmerged.
