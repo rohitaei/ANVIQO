@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 16 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 17 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -19,6 +19,8 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 16 VERIFIED
 13. **Real Tenant-Scoped Predictive Evidence Providers** — VERIFIED
 14. **Canonical Predictive Flow from Universal Plant Package** — VERIFIED
 15. **Complete Real Evidence Context Composition** — VERIFIED
+16. **Predictive Evidence Window & Trust Integration** — VERIFIED
+17. **Predictive Trust/Freshness Decision Boundary** — IMPLEMENTED, PENDING CI
 
 ## Alpha 11 outcome verification integration
 
@@ -126,6 +128,18 @@ The real Alpha 13 providers are now passed into the canonical V3 flow for:
 Therefore the canonical predictive context is populated from the same tenant-scoped package sources used by the existing predictor, rather than leaving history and maintenance context as `NOT_PROVIDED`.
 
 No prediction logic is added and no second evidence store is introduced.
+
+## Alpha 17 predictive trust/freshness decision boundary
+
+Alpha 17 makes the existing predictive evidence quality contract an explicit deterministic gate before predictor invocation.
+
+The canonical request is now predictive-ready only when:
+- evidence quality is `VALID`
+- at least two usable timestamped numeric observations exist
+
+`PARTIAL` evidence remains evidence for reporting but does not authorize predictor invocation, even when it contains two or more usable rows. `EMPTY` evidence is also blocked.
+
+No new trust engine, prediction logic, trend logic, RUL, probability, diagnosis, threshold, or control action was added. The existing predictor remains unchanged and the tenant/read-only boundary remains enforced.
 
 ## Universal and safety guarantees
 
