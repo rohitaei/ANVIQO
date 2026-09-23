@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 19 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 20 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -23,6 +23,7 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 19 VERIFIED
 17. **Predictive Trust/Freshness Decision Boundary** — VERIFIED
 18. **Predictive Evidence Freshness Window Contract** — VERIFIED
 19. **Predictive Execution Provenance Contract** — VERIFIED
+20. **Predictive Flow Production Boundary Inspection** — IMPLEMENTED, PENDING CI
 
 ## Alpha 11 outcome verification integration
 
@@ -192,5 +193,6 @@ Alpha 16 dedicated V3 regression: **PASSED** (run #140, 55 tests).
 Alpha 17 dedicated V3 regression: **PASSED** (run #150, 56 tests).
 Alpha 18 dedicated V3 regression: **PASSED** (run #178, 60 tests).
 Alpha 19 dedicated V3 regression: **PASSED** (run #188).
+Alpha 20 dedicated V3 regression: **PENDING** on the current branch head.
 
 The branch remains separate and PR #40 remains draft/unmerged.
