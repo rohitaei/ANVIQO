@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 18 IMPLEMENTED, PENDING CI VERIFICATION
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 19 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -21,7 +21,8 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 18 IMPLEMENTED, PENDING CI VERIFICAT
 15. **Complete Real Evidence Context Composition** — VERIFIED
 16. **Predictive Evidence Window & Trust Integration** — VERIFIED
 17. **Predictive Trust/Freshness Decision Boundary** — VERIFIED
-18. **Predictive Evidence Freshness Window Contract** — IMPLEMENTED, PENDING CI
+18. **Predictive Evidence Freshness Window Contract** — VERIFIED
+19. **Predictive Execution Provenance Contract** — IMPLEMENTED, PENDING CI
 
 ## Alpha 11 outcome verification integration
 
@@ -69,22 +70,35 @@ However, the existing predictor is currently legacy/global:
 
 This is an intentional safety boundary, not a missing fallback.
 
+### Alpha 19 predictive execution provenance contract
+
+Alpha 19 adds a deterministic provenance record to the canonical predictive flow.
+
+The contract captures:
+- exact plant and tag scope
+- evidence quality and observation/window summary
+- context assembly status
+- predictor invocation status/reason
+- explicit outcome-verification status
+- immutable safety flags
+
+The audit object is a contract builder only. It does not persist records, calculate predictions, interpret predictor output, infer outcomes, or perform control actions. Persistence remains the caller's responsibility.
+
 ### Next safe milestone
 
-**Alpha 18 — Predictive Evidence Freshness Window Contract**
+**Alpha 20 — Predictive Flow Production Boundary Inspection**
 
-Alpha 18 should make the accepted predictive evidence time-window contract explicit without creating another prediction or trust engine.
+Before adding another feature, inspect the complete V3 package-flow path against the real application boundary and identify any remaining integration gap between the verified tenant-safe predictive foundation and the user-facing Predictive Intelligence path.
 
 Required before implementation:
-1. reuse `v3/predictive_evidence.py` and the Alpha 17 decision boundary
-2. define deterministic freshness/window acceptance from supplied timestamps only
-3. keep the existing predictor and prediction algorithm unchanged
-4. reject cross-plant and invalid timestamp evidence before predictor invocation
-5. add regression coverage for accepted, empty, and invalid/partial windows
-6. preserve read-only/human-decision safety
-7. run dedicated V3 CI before declaring Alpha 18 verified
+1. trace the actual production entry point into the canonical package flow
+2. verify tenant identity reaches the flow without global fallback
+3. verify evidence/window/result provenance survives the API/UI boundary
+4. add only missing integration wiring; do not duplicate prediction/trend/RUL/diagnosis logic
+5. preserve read-only/human-decision safety
+6. run dedicated V3 CI and the relevant application regression checks
 
-No future-state inference, failure probability, RUL, diagnosis, threshold, or control action may be added. If the evidence window does not satisfy the explicit contract, the predictor remains uninvoked.
+No future-state inference, failure probability, RUL, diagnosis, threshold, or control action may be added.
 
 **CHANGE DATA, NOT CODE.**
 
@@ -173,5 +187,10 @@ Alpha 11 dedicated V3 regression: **PASSED** (run #88).
 Alpha 12 dedicated V3 regression: **PASSED** (run #100).
 Alpha 13 dedicated V3 regression: **PASSED** (run #114, 52 tests).
 Alpha 14 dedicated V3 regression: **PASSED** (run #124, 52 tests).
+Alpha 15 dedicated V3 regression: **PASSED** (run #134).
+Alpha 16 dedicated V3 regression: **PASSED** (run #140, 55 tests).
+Alpha 17 dedicated V3 regression: **PASSED** (run #150, 56 tests).
+Alpha 18 dedicated V3 regression: **PASSED** (run #178, 60 tests).
+Alpha 19 dedicated V3 regression: **PENDING** on the current branch head.
 
 The branch remains separate and PR #40 remains draft/unmerged.
