@@ -25,12 +25,15 @@ def run_predictive_flow_from_package(
 
     from v3.existing_predictor_adapter import make_existing_predictor
 
-    predictor = make_existing_predictor(provider.sources())
+    sources = provider.sources()
+    predictor = make_existing_predictor(sources)
     return run_predictive_flow(
         plant_id,
         tag,
         observations,
         predictor=predictor,
+        history_provider=sources.history,
+        maintenance_memory_provider=sources.memory,
         outcome=outcome,
     )
 
