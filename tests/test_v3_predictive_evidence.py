@@ -70,7 +70,9 @@ def test_empty_or_unusable_evidence_is_not_predictive():
     )
     assert result["quality"] == "EMPTY"
     assert result["usable_observation_count"] == 0
-\n\ndef test_requested_window_accepts_observations_inside_contract():
+
+
+def test_requested_window_accepts_observations_inside_contract():
     result = validate_prediction_evidence(
         "PLANT-A", "PT-303",
         [
