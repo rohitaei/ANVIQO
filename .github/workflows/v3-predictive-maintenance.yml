@@ -13,6 +13,8 @@ on:
 jobs:
   v3-predictive-maintenance:
     runs-on: ubuntu-latest
+    env:
+      ANVIQO_SECRET_KEY: alpha21-ci-test-secret
     steps:
       - name: Checkout
         uses: actions/checkout@v6
