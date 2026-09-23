@@ -14,6 +14,7 @@ from v3.predictive_maintenance import build_prediction_request
 from v3.predictive_history_bridge import fetch_tenant_predictive_history
 from v3.maintenance_memory_bridge import fetch_tenant_maintenance_memory
 from v3.prediction_outcomes import verify_prediction_outcome
+from v3.predictive_audit import build_predictive_execution_audit
 
 SAFETY = {
     "read_only": True,
@@ -90,6 +91,15 @@ def run_predictive_flow(
             prediction["result"], outcome
         )
 
+    execution_audit = build_predictive_execution_audit(
+        plant_id,
+        tag,
+        evidence=evidence,
+        context=context,
+        prediction=prediction,
+        outcome_verification=outcome_verification,
+    )
+
     return {
         "plant_id": plant_id,
         "tag": tag,
@@ -98,5 +108,6 @@ def run_predictive_flow(
         "context": context,
         "prediction": prediction,
         "outcome_verification": outcome_verification,
+        "execution_audit": execution_audit,
         "safety": dict(SAFETY),
     }
