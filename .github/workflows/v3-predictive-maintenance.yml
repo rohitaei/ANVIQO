@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANVIQO_SECRET_KEY: alpha21-ci-test-secret
+      ANVIQO_ADMIN_USER: alpha21-ci-admin
+      ANVIQO_ADMIN_PASSWORD: alpha21-ci-password
     steps:
       - name: Checkout
         uses: actions/checkout@v6
