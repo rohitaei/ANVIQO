@@ -70,20 +70,20 @@ This is an intentional safety boundary, not a missing fallback.
 
 ### Next safe milestone
 
-**Alpha 17 — Predictive Trust/Freshness Decision Boundary**
+**Alpha 18 — Predictive Evidence Freshness Window Contract**
 
-Alpha 17 should make the already-validated predictive evidence quality and time window an explicit decision boundary before existing prediction is invoked.
+Alpha 18 should make the accepted predictive evidence time-window contract explicit without creating another prediction or trust engine.
 
 Required before implementation:
-1. reuse the existing evidence validator; do not create a second trust engine
-2. define only deterministic evidence-acceptance states from existing quality/window facts
+1. reuse `v3/predictive_evidence.py` and the Alpha 17 decision boundary
+2. define deterministic freshness/window acceptance from supplied timestamps only
 3. keep the existing predictor and prediction algorithm unchanged
-4. reject cross-plant or invalid evidence before predictor invocation
-5. add insufficient/partial/valid evidence regression coverage
+4. reject cross-plant and invalid timestamp evidence before predictor invocation
+5. add regression coverage for accepted, empty, and invalid/partial windows
 6. preserve read-only/human-decision safety
-7. run dedicated V3 CI before declaring Alpha 17 verified
+7. run dedicated V3 CI before declaring Alpha 18 verified
 
-No failure probability, RUL, diagnosis, trend, threshold, or control action may be invented in this boundary. If evidence cannot satisfy the explicit contract, the predictor remains uninvoked.
+No future-state inference, failure probability, RUL, diagnosis, threshold, or control action may be added. If the evidence window does not satisfy the explicit contract, the predictor remains uninvoked.
 
 **CHANGE DATA, NOT CODE.**
 
