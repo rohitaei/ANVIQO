@@ -72,6 +72,8 @@ def test_alpha20_package_loader_rejects_unauthorized_organization(monkeypatch):
         def __exit__(self, *args):
             return False
 
-    monkeypatch.setattr(production_boundary.store, "_connect", lambda: FakeConn(), raising=False) if hasattr(production_boundary, "store") else None
-    # The production loader imports the tenant store locally; an explicit
-    # missing plant is therefore the safe outcome.
+    monkeypatch.setattr(store, "init_schema", lambda: None)
+    monkeypatch.setattr(store, "_placeholder", lambda: "?")
+    monkeypatch.setattr(store, "_connect", lambda: FakeConn())
+    with pytest.raises(PermissionError):
+        production_boundary.load_tenant_onboarding_package("PLANT-A", "ORG-1")
