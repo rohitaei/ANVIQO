@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 14 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 15 IMPLEMENTED, PENDING CI VERIFICATION
 
 ## Completed milestones
 
@@ -18,6 +18,7 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 14 VERIFIED
 12. **Tenant-safe Integration of Existing Predictor Sources** — VERIFIED
 13. **Real Tenant-Scoped Predictive Evidence Providers** — VERIFIED
 14. **Canonical Predictive Flow from Universal Plant Package** — VERIFIED
+15. **Complete Real Evidence Context Composition** — IMPLEMENTED, PENDING CI
 
 ## Alpha 11 outcome verification integration
 
@@ -112,6 +113,18 @@ Alpha 14 wires the real Alpha 13 tenant-scoped provider set into the canonical V
 - does not add prediction or trend logic
 
 The existing `failure_prediction.py` algorithm remains the single prediction implementation. No legacy/global source is used by this path.
+
+## Alpha 15 complete real evidence context composition
+
+Alpha 15 closes the remaining wiring gap in the canonical package flow.
+
+The real Alpha 13 providers are now passed into the canonical V3 flow for:
+- predictive history
+- verified maintenance memory
+
+Therefore the canonical predictive context is populated from the same tenant-scoped package sources used by the existing predictor, rather than leaving history and maintenance context as `NOT_PROVIDED`.
+
+No prediction logic is added and no second evidence store is introduced.
 
 ## Universal and safety guarantees
 
