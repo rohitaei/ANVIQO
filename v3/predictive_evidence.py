@@ -46,6 +46,9 @@ def validate_prediction_evidence(
     plant_id: str,
     tag: str,
     observations: list[dict[str, Any]],
+    *,
+    window_start: str | None = None,
+    window_end: str | None = None,
 ) -> dict[str, Any]:
     """Validate tenant, tag, timestamp and numeric-value integrity.
 
@@ -58,6 +61,15 @@ def validate_prediction_evidence(
         raise ValueError("plant_id and tag are required")
     if not isinstance(observations, list):
         raise TypeError("observations must be a list")
+
+    requested_start = _parse_timestamp(window_start)
+    requested_end = _parse_timestamp(window_end)
+    if window_start is not None and requested_start is None:
+        raise ValueError("window_start is invalid")
+    if window_end is not None and requested_end is None:
+        raise ValueError("window_end is invalid")
+    if requested_start is not None and requested_end is not None and requested_start > requested_end:
+        raise ValueError("window_start must not be after window_end")
 
     usable: list[dict[str, Any]] = []
     invalid_rows: list[dict[str, Any]] = []
@@ -83,6 +95,13 @@ def validate_prediction_evidence(
 
         if not _is_numeric(row.get("value")):
             invalid_rows.append({"index": index, "reason": "value is not numeric"})
+            continue
+
+        if requested_start is not None and timestamp < requested_start:
+            invalid_rows.append({"index": index, "reason": "timestamp is before requested window"})
+            continue
+        if requested_end is not None and timestamp > requested_end:
+            invalid_rows.append({"index": index, "reason": "timestamp is after requested window"})
             continue
 
         usable.append(row)
@@ -113,6 +132,9 @@ def validate_prediction_evidence(
         "timestamp_start": start,
         "timestamp_end": end,
         "span_seconds": span_seconds,
+        "window_start": requested_start.isoformat().replace("+00:00", "Z") if requested_start else start,
+        "window_end": requested_end.isoformat().replace("+00:00", "Z") if requested_end else end,
+        "window_status": "VALID" if usable and not invalid_rows else ("PARTIAL" if usable else "EMPTY"),
         "evidence": list(usable),
         "safety": dict(SAFETY),
     }
