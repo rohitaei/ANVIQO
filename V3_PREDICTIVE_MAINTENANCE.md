@@ -68,19 +68,20 @@ This is an intentional safety boundary, not a missing fallback.
 
 ### Next safe milestone
 
-**Alpha 12 — Tenant-safe integration of the existing predictor**
+**Alpha 16 — Predictive Evidence Window & Trust Integration**
 
-This milestone must adapt the existing predictor's real intelligence to explicit tenant-scoped evidence **without duplicating its prediction logic**.
+Alpha 16 should extend the already-verified canonical package flow by making predictive evidence quality/freshness explicitly visible at the final orchestration boundary.
 
 Required before implementation:
-1. identify every data source used by the existing predictor
-2. establish an explicit `plant_id` contract for each required source
-3. preserve existing prediction logic rather than copy it into `v3/`
-4. add cross-plant rejection tests
-5. verify read-only/human-decision safety
-6. run dedicated V3 CI before declaring Alpha 12 verified
+1. reuse the existing `v3/predictive_evidence.py` validator; do not duplicate evidence validation
+2. expose evidence quality/window status in the package-flow result
+3. preserve the existing predictor and prediction algorithm unchanged
+4. maintain explicit `plant_id` and tag validation
+5. add cross-plant and insufficient-evidence regression coverage
+6. verify read-only/human-decision safety
+7. run dedicated V3 CI before declaring Alpha 16 verified
 
-If a required source cannot be made tenant-safe, V3 will keep that path blocked rather than silently falling back to global data.
+If evidence is insufficient or outside the accepted contract, V3 must remain evidence-gated rather than inventing a prediction or falling back to global data.
 
 **CHANGE DATA, NOT CODE.**
 
