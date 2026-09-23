@@ -31,6 +31,11 @@ def test_predictive_flow_invokes_only_tenant_aware_predictor():
     assert result["prediction"]["result"]["plant_id"] == "PLANT-A"
     assert calls == [("PLANT-A", "PT-303", 2)]
     assert result["outcome_verification"]["status"] == "NOT_PROVIDED"
+    assert result["evidence"]["quality"] == "VALID"
+    assert result["evidence"]["usable_observation_count"] == 2
+    assert result["evidence"]["timestamp_start"] == "2026-09-20T10:00:00Z"
+    assert result["evidence"]["timestamp_end"] == "2026-09-20T10:01:00Z"
+    assert result["evidence"]["span_seconds"] == 60.0
     assert result["safety"]["read_only"] is True
     assert result["safety"]["plc_write"] is False
     assert result["safety"]["scada_control"] is False
