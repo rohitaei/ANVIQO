@@ -118,6 +118,70 @@ def phase2_field_report_query_bridge():
     return None
 
 
+@app.before_request
+def phase2_shift_report_history_query_bridge():
+    """Answer historical shift-report value questions from tenant history."""
+    if not _api_authenticated() or request.path != "/api/ask" or request.method != "POST":
+        return None
+    payload = request.get_json(silent=True) or {}
+    question = str(
+        payload.get("question")
+        or payload.get("query")
+        or payload.get("message")
+        or payload.get("text")
+        or ""
+    ).strip()
+    if not question:
+        return None
+    try:
+        from v3.shift_report_qa import is_shift_history_question, answer_shift_history_question
+        if not is_shift_history_question(question):
+            return None
+        actor = _actor()
+        if not authorize(actor, "plant:read", actor["organization_id"], actor["plant_id"]):
+            return jsonify({
+                "status": "FORBIDDEN",
+                "message": "plant:read permission is required for historical shift-report Q&A.",
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "human_decision_required": True,
+            }), 403
+        plant_id = str(actor.get("plant_id") or "").strip()
+        organization_id = str(actor.get("organization_id") or "").strip()
+        if not plant_id or not organization_id:
+            return jsonify({
+                "status": "TENANT_CONTEXT_REQUIRED",
+                "message": "An authorized plant and organization context is required. No global history fallback is allowed.",
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "human_decision_required": True,
+            }), 409
+
+        def history_provider(*, plant_id: str, organization_id: str, tag: str):
+            from failure_prediction_history import get_tenant_observations
+            return get_tenant_observations(
+                plant_id=plant_id,
+                organization_id=organization_id,
+                tag=tag,
+            )
+
+        result = answer_shift_history_question(
+            question,
+            plant_id=plant_id,
+            organization_id=organization_id,
+            history_provider=history_provider,
+        )
+        if result is not None:
+            return jsonify(result)
+    except Exception:
+        # Preserve the existing /api/ask routing if this optional historical
+        # evidence path cannot answer the question.
+        pass
+    return None
+
+
 @app.route("/api/tenant/context")
 def tenant_context():
     if not session.get("authenticated"):
