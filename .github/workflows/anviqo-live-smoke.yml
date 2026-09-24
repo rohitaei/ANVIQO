@@ -30,15 +30,14 @@ jobs:
         run: |
           set -e
           curl -fsS "$URL/health" | tee /tmp/health.json
-          curl -fsS "$URL/api/status" | tee /tmp/status.json
-          curl -fsS "$URL/api/safety" | tee /tmp/safety.json
+          status=$(curl -sS -o /tmp/status.json -w "%{http_code}" "$URL/api/status" || true)
+          safety=$(curl -sS -o /tmp/safety.json -w "%{http_code}" "$URL/api/safety" || true)
           python - <<'PY'
           import json
           h=json.load(open("/tmp/health.json"))
-          s=json.load(open("/tmp/status.json"))
-          x=json.load(open("/tmp/safety.json"))
           assert h.get("status") in ("ok","READY")
-          assert isinstance(s, dict)
-          assert isinstance(x, dict)
-          print("ANVIQO LIVE SMOKE: PASS")
+          print("ANVIQO LIVE HEALTH: PASS")
           PY
+          test "$status" = "401"
+          test "$safety" = "401"
+          echo "ANVIQO LIVE AUTH BOUNDARY: PASS (protected APIs return 401 without session)"
