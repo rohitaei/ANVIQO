@@ -67,8 +67,8 @@ def test_rows_are_portable_and_strictly_tenant_scoped():
                 conn.executemany(
                     "INSERT INTO anviqo_plant_knowledge VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     [
-                        ("a", "org-a", "plant-a", "d", "instrument", "PT_303", "A", "A", "", "instrument", "PT_303", "", "a.xlsx", json.dumps({"tag_no": "PT-303"}), "", "", "1"),
-                        ("b", "org-b", "plant-b", "d", "instrument", "PT303", "B", "B", "", "instrument", "PT303", "", "b.xlsx", json.dumps({"tag_no": "PT303"}), "", "", "1"),
+                        ("a", "org-a", "plant-a", "d", "instrument", "PT_303", "A", "A", "", "instrument", "PT_303", "", "a.xlsx", json.dumps({"tag_no": "PT-303"}), "", "1"),
+                        ("b", "org-b", "plant-b", "d", "instrument", "PT303", "B", "B", "", "instrument", "PT303", "", "b.xlsx", json.dumps({"tag_no": "PT303"}), "", "1"),
                     ],
                 )
                 conn.commit()
