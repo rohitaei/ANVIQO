@@ -2112,15 +2112,14 @@ def execute_spare_mutation_v18(question, plant_id=None):
     else:
         after = before + quantity
 
-    # Resolve the actual worksheet/row/column from the authoritative record.
+    # Resolve the authoritative Qty Available column from the real header.
+    # Do not assume a fixed column: the PCI spare workbook contains merged
+    # cells and sheet layouts can differ.
     sheet_name = record.get("sheet")
     row_number = int(record.get("row"))
 
-    # The existing V1.4 loader records the Excel row and raw fields.
-    # Column I is the authoritative Qty Available column in the PCI spare workbook.
-    available_col = 9
-
     from openpyxl import load_workbook
+    from openpyxl.cell.cell import MergedCell
 
     wb = load_workbook(_V16_XLSX)
     if sheet_name not in wb.sheetnames:
@@ -2134,8 +2133,42 @@ def execute_spare_mutation_v18(question, plant_id=None):
         }
 
     ws = wb[sheet_name]
+    header_row = _find_header_row(ws)
+    headers = _header_map(ws, header_row)
+    available_col = _get_col(
+        headers,
+        "Qty Avbl",
+        "Qty Available",
+        "Available",
+        "Qty",
+    ) or 9
 
-    excel_before = ws.cell(row=row_number, column=available_col).value
+    # A few spare sheets use horizontal merged cells. If the parsed quantity
+    # cell is a non-writable MergedCell, resolve its same-row merge owner.
+    target = ws.cell(row=row_number, column=available_col)
+    if isinstance(target, MergedCell):
+        owner = None
+        for merged_range in ws.merged_cells.ranges:
+            if target.coordinate in merged_range:
+                if merged_range.min_row == merged_range.max_row == row_number:
+                    owner = ws.cell(row=row_number, column=merged_range.min_col)
+                break
+        if owner is None or isinstance(owner, MergedCell):
+            wb.close()
+            return {
+                **base,
+                "action": action,
+                "quantity": quantity,
+                "identifier": identifier,
+                "error": (
+                    f"Qty Available cell for {sheet_name} row {row_number} "
+                    "is part of a non-writable merged range. Inventory unchanged."
+                ),
+            }
+        target = owner
+        available_col = target.column
+
+    excel_before = target.value
 
     try:
         excel_before = int(excel_before or 0)
@@ -2147,7 +2180,7 @@ def execute_spare_mutation_v18(question, plant_id=None):
             "quantity": quantity,
             "identifier": identifier,
             "error": (
-                f"Qty Available at {sheet_name}!I{row_number} "
+                f"Qty Available at {sheet_name}!{target.coordinate} "
                 "is not numeric. Inventory unchanged."
             ),
         }
@@ -2187,7 +2220,7 @@ def execute_spare_mutation_v18(question, plant_id=None):
             "error": "Negative inventory prevented. Excel unchanged."
         }
 
-    ws.cell(row=row_number, column=available_col).value = excel_after
+    target.value = excel_after
     wb.save(_V16_XLSX)
     wb.close()
 
