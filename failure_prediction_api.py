@@ -6,6 +6,8 @@ from flask import jsonify, request, session
 from anviqo_api_phase2 import app
 from anvi_tenant_store import authorize
 
+SAFETY = {"read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True}
+
 
 def _actor():
     return {"user_id": session.get("user_id", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "role": session.get("role", ""), "username": session.get("username", "")}
@@ -238,7 +240,12 @@ def failure_prediction_observation_api():
         return jsonify({"status":"BAD_REQUEST","message":"Missing required fields: " + ", ".join(missing)}), 400
     try:
         from failure_prediction_history import record_observation
-        record = record_observation(tag=payload.get("tag"), value=payload.get("value"), timestamp=payload.get("timestamp"), source_type=payload.get("source_type"), source=payload.get("source"), unit=payload.get("unit"), state=payload.get("state"), area=payload.get("area"), provenance=payload.get("provenance"))
+        plant_id = str(actor.get("plant_id") or "").strip()
+        organization_id = str(actor.get("organization_id") or "").strip()
+        if not plant_id or not organization_id:
+            return jsonify({"status":"TENANT_CONTEXT_REQUIRED","message":"Explicit organization and plant context are required; no global history fallback is allowed.", **SAFETY}), 409
+        from failure_prediction_history import record_tenant_observation
+        record = record_tenant_observation(plant_id=plant_id, organization_id=organization_id, tag=payload.get("tag"), value=payload.get("value"), timestamp=payload.get("timestamp"), source_type=payload.get("source_type"), source=payload.get("source"), unit=payload.get("unit"), state=payload.get("state"), area=payload.get("area"), provenance=payload.get("provenance"))
         return jsonify({"status":"RECORDED","observation":record,"prediction_history_changed":True,"plc_write":False,"scada_control":False,"automatic_execution":False,"human_decision_required":True})
     except ValueError as exc:
         return jsonify({"status":"BAD_REQUEST","message":str(exc),"prediction_history_changed":False,"plc_write":False,"scada_control":False}), 400
@@ -257,8 +264,21 @@ def failure_prediction_history_api():
     tag = str(payload.get("tag") or "").strip()
     if not tag:
         return jsonify({"status":"BAD_REQUEST","message":"tag is required."}), 400
+    plant_id = str(actor.get("plant_id") or "").strip()
+    organization_id = str(actor.get("organization_id") or "").strip()
+    if not plant_id or not organization_id:
+        return jsonify({"status":"TENANT_CONTEXT_REQUIRED","message":"Explicit organization and plant context are required; no global history fallback is allowed.", **SAFETY}), 409
     try:
-        from failure_prediction_history import history_summary
-        return jsonify(history_summary(tag))
+        from v3.production_boundary import fetch_production_predictive_history
+        result = fetch_production_predictive_history(
+            plant_id=plant_id,
+            organization_id=organization_id,
+            tag=tag,
+        )
+        return jsonify(result)
+    except PermissionError as exc:
+        return jsonify({"status":"FORBIDDEN","message":str(exc), **SAFETY}), 403
+    except ValueError as exc:
+        return jsonify({"status":"BAD_REQUEST","message":str(exc), **SAFETY}), 400
     except Exception as exc:
-        return jsonify({"status":"ERROR","message":str(exc),"plc_write":False,"scada_control":False}), 500
+        return jsonify({"status":"ERROR","message":str(exc), **SAFETY}), 500
