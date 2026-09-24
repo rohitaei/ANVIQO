@@ -30,6 +30,7 @@ def test_alpha21_api_ask_uses_v3_tenant_flow(monkeypatch):
 
     monkeypatch.setattr(api, "jsonify", lambda value, status_code=None: (value, status_code) if status_code else value)
     monkeypatch.setattr("v3.production_boundary.run_production_predictive_flow", fake_flow)
+    monkeypatch.setattr(api, "jsonify", lambda value, status_code=None: (value, status_code) if status_code else value)
     old_secret = app.secret_key
     app.secret_key = "alpha23-test"
     try:
