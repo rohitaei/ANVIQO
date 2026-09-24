@@ -196,9 +196,15 @@ if "dashboard" in app.view_functions:
 # compatibility endpoint so the running service can become healthy immediately
 # while the dashboard setting is corrected to /health. This endpoint is
 # operational only and does not touch V5/PCI intelligence or plant controls.
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok", "service": "ANVIQO", "health_check": True}), 200
+
+
+# Backward compatibility for the historical Render health-check setting.
 @app.route("/health ")
 def health_compat_with_trailing_space():
-    return jsonify({"status": "ok", "service": "ANVIQO", "health_check": True}), 200
+    return health()
 
 
 @app.before_request
