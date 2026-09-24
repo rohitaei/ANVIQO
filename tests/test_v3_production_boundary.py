@@ -293,3 +293,41 @@ def test_alpha27_production_flow_uses_recorded_tenant_history_as_evidence(monkey
         "organization_id": "ORG-1",
         "tag": "PT-303",
     }]
+
+
+def test_alpha28_industrial_point_bridge_preserves_read_only_telemetry(monkeypatch, tmp_path):
+    from v2.contracts import IndustrialPoint
+    import failure_prediction_history as history
+    monkeypatch.setattr(history, "HISTORY_FILE", tmp_path / "observation_history.json")
+    point = IndustrialPoint(
+        plant_id="PLANT-A", tag="PT-303", timestamp="2026-09-24T10:00:00Z",
+        value=47.5, source="OPC-UA READ ONLY", mode="LIVE", quality="GOOD",
+        state="HEALTHY", unit="kg/cm2", area="PCI",
+    )
+    row = history.record_tenant_industrial_point(
+        plant_id="PLANT-A", organization_id="ORG-1", point=point,
+        source_type="LIVE_TELEMETRY", provenance="adapter=OPC-UA; access=read-only",
+    )
+    assert row["plant_id"] == "PLANT-A"
+    assert row["organization_id"] == "ORG-1"
+    assert row["tag"] == "PT-303"
+    assert row["value"] == 47.5
+    assert row["timestamp"] == "2026-09-24T10:00:00Z"
+    assert row["source"] == "OPC-UA READ ONLY"
+    assert row["provenance"] == "adapter=OPC-UA; access=read-only"
+    assert row["simulation"] is False
+
+
+def test_alpha28_industrial_point_bridge_rejects_simulation(tmp_path, monkeypatch):
+    from v2.contracts import IndustrialPoint
+    import failure_prediction_history as history
+    monkeypatch.setattr(history, "HISTORY_FILE", tmp_path / "observation_history.json")
+    point = IndustrialPoint(
+        plant_id="PLANT-A", tag="PT-303", timestamp="2026-09-24T10:00:00Z",
+        value=47.5, source="PCI DEMO STREAM", mode="SIMULATION",
+    )
+    with pytest.raises(ValueError, match="simulation/demo"):
+        history.record_tenant_industrial_point(
+            plant_id="PLANT-A", organization_id="ORG-1", point=point,
+            source_type="LIVE_TELEMETRY", provenance="demo",
+        )
