@@ -110,26 +110,25 @@ def _rows(plant_id, terms=None, tag=None, limit=2500):
     clauses=[f"plant_id={p}"]
     params=[plant_id]
     if tag:
-        # Match imported engineering tags in canonical tag, external_id, or
-        # onboarding metadata while remaining strictly inside this plant.
-        clauses.append(
-            f"(regexp_replace(upper(coalesce(tag,'')), '[^A-Z0-9]', '', 'g')={p} "
-            f"OR regexp_replace(upper(coalesce(external_id,'')), '[^A-Z0-9]', '', 'g')={p} "
-            f"OR upper(coalesce(metadata::text,'')) LIKE {p} "
-            f"OR upper(coalesce(metadata::text,'')) LIKE {p} "
-            f"OR upper(coalesce(metadata::text,'')) LIKE {p})"
-        )
+        # Keep the SQL portable across PostgreSQL and SQLite.  The tenant
+        # predicate is always applied first; identifier normalization is
+        # completed in Python after fetching only this plant's candidates.
         raw_tag = str(tag or "").strip().upper()
         compact_tag = _normalize(raw_tag)
-        underscored_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\1_\2", compact_tag)
-        dashed_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\1-\2", compact_tag)
-        params.extend([
-            compact_tag,
-            compact_tag,
-            "%"+compact_tag+"%",
-            "%"+underscored_tag+"%",
-            "%"+dashed_tag+"%",
-        ])
+        underscored_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\\1_\\2", compact_tag)
+        dashed_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\\1-\\2", compact_tag)
+        spaced_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\\1 \\2", compact_tag)
+        variants = [raw_tag, compact_tag, underscored_tag, dashed_tag, spaced_tag]
+        clauses.append(
+            "(" + " OR ".join(
+                f"upper(coalesce({column},'')) LIKE {p}"
+                for column in ("tag", "external_id", "metadata", "content")
+                for _ in variants
+            ) + ")"
+        )
+        params.extend(
+            [f"%{variant}%" for column in ("tag", "external_id", "metadata", "content") for variant in variants]
+        )
     elif terms:
         search=[]
         for term in list(dict.fromkeys(terms))[:10]:
@@ -141,12 +140,24 @@ def _rows(plant_id, terms=None, tag=None, limit=2500):
     with store._connect() as conn:
         cur=conn.cursor(); cur.execute(sql,tuple(params)); raw=cur.fetchall()
     result=[]
+    target = _normalize(tag) if tag else ""
     for raw_row in raw:
         item=_coerce_row(raw_row)
         meta=item.get("metadata")
         if isinstance(meta,str):
             try: item["metadata"]=json.loads(meta)
             except Exception: item["metadata"]={}
+        if target:
+            # Final canonical match across every common engineering identity
+            # location.  This makes PT_303/PT-303/PT303 and imported
+            # external_id/metadata aliases equivalent without widening tenant scope.
+            identities=[item.get("tag"), item.get("external_id")]
+            meta_obj=item.get("metadata") if isinstance(item.get("metadata"),dict) else {}
+            identities.extend(meta_obj.get(k) for k in (
+                "tag","tag_no","tag_number","instrument_tag","external_id"
+            ))
+            if not any(_normalize(v)==target for v in identities if v):
+                continue
         result.append(item)
     return result
 
@@ -275,7 +286,15 @@ def _natural_knowledge_answer(text,rows,plant):
 def _tenant_answer(q,rows,plant):
     rows=[_coerce_row(r) for r in (rows or [])]
     text=str(q or "").strip(); low=text.lower()
-    normalized_tags={_normalize(r.get("tag")):r for r in rows if r.get("tag")}
+    normalized_tags={}
+    for r in rows:
+        identities=[r.get("tag"),r.get("external_id")]
+        meta=r.get("metadata") if isinstance(r.get("metadata"),dict) else {}
+        identities.extend(meta.get(k) for k in ("tag","tag_no","tag_number","instrument_tag","external_id"))
+        for identity in identities:
+            n=_normalize(identity)
+            if n and n not in normalized_tags:
+                normalized_tags[n]=r
     if any(x in low for x in ("what plant","which plant","connected to","current plant","selected plant")):
         return _safe_response(f"ANVI is connected to {plant['name']} (selected plant).",plant_id=plant["plant_id"],plant_name=plant["name"])
     requested=_tag_from_question(text,rows)
