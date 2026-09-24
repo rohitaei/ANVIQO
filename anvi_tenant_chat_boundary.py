@@ -110,8 +110,14 @@ def _rows(plant_id, terms=None, tag=None, limit=2500):
     clauses=[f"plant_id={p}"]
     params=[plant_id]
     if tag:
-        clauses.append(f"regexp_replace(upper(coalesce(tag,'')), '[^A-Z0-9]', '', 'g')={p}")
-        params.append(_normalize(tag))
+        # Match imported engineering tags in canonical tag, external_id, or
+        # onboarding metadata while remaining strictly inside this plant.
+        clauses.append(
+            f"(regexp_replace(upper(coalesce(tag,'')), '[^A-Z0-9]', '', 'g')={p} "
+            f"OR regexp_replace(upper(coalesce(external_id,'')), '[^A-Z0-9]', '', 'g')={p} "
+            f"OR upper(coalesce(metadata::text,'')) LIKE {p})"
+        )
+        params.extend([_normalize(tag), _normalize(tag), "%"+str(tag).upper().replace("%","")+"%"])
     elif terms:
         search=[]
         for term in list(dict.fromkeys(terms))[:10]:
