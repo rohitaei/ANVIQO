@@ -680,22 +680,25 @@ def _sheet_hint(q):
 # EXACT TAG SEARCH
 # ============================================================
 
+# Engineering identifier prefixes accepted by the universal spare resolver.
+# Exact-tag matching is intentionally broader than the sheet-family classifier:
+# imported plants may use PT/TT/FT/LT, DI/DO/AI/AO, valves, switches, etc.
+_SPARE_TAG_PREFIXES = (
+    "ZSO|ZSC|SOV|FSV|PCV|MCV|XV|FV|PV|TV|LV|ZV|"
+    "PT|TT|FT|LT|AT|DT|ST|WT|CT|TE|PE|FE|LE|AE|"
+    "AI|AO|DI|DO|PS|TS|LS|FS|AS|HS|CS|ES|IS|MS|SS|VB"
+)
+
 def _extract_tag(q):
-
     pattern = re.compile(
-        r"\b"
-        r"(MCV|PT|FT|LT|RTD|TE|SOV|FSV|PCV)"
-        r"[-_ ]?\d+[A-Z]?"
+        r"\b("
+        + _SPARE_TAG_PREFIXES
+        + r")[-_ ]?\d{1,6}[A-Z]?"
         r"\b",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
-
-    match = pattern.search(q)
-
-    if not match:
-        return None
-
-    return match.group(0)
+    match = pattern.search(q or "")
+    return match.group(0) if match else None
 
 
 # ============================================================
