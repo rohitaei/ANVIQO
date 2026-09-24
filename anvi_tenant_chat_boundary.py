@@ -115,9 +115,21 @@ def _rows(plant_id, terms=None, tag=None, limit=2500):
         clauses.append(
             f"(regexp_replace(upper(coalesce(tag,'')), '[^A-Z0-9]', '', 'g')={p} "
             f"OR regexp_replace(upper(coalesce(external_id,'')), '[^A-Z0-9]', '', 'g')={p} "
+            f"OR upper(coalesce(metadata::text,'')) LIKE {p} "
+            f"OR upper(coalesce(metadata::text,'')) LIKE {p} "
             f"OR upper(coalesce(metadata::text,'')) LIKE {p})"
         )
-        params.extend([_normalize(tag), _normalize(tag), "%"+str(tag).upper().replace("%","")+"%"])
+        raw_tag = str(tag or "").strip().upper()
+        compact_tag = _normalize(raw_tag)
+        underscored_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\1_\2", compact_tag)
+        dashed_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\1-\2", compact_tag)
+        params.extend([
+            compact_tag,
+            compact_tag,
+            "%"+compact_tag+"%",
+            "%"+underscored_tag+"%",
+            "%"+dashed_tag+"%",
+        ])
     elif terms:
         search=[]
         for term in list(dict.fromkeys(terms))[:10]:
