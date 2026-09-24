@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 26 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 27 VERIFIED
 
 ## Completed milestones
 
@@ -30,53 +30,31 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 26 VERIFIED
 24. **Predictive Production Tenant Integration Regression** — VERIFIED
 25. **Predictive Production History Tenant Boundary** — VERIFIED
 26. **Predictive Production Data → V3 History Integration** — VERIFIED
+27. **Recorded Tenant History → Canonical Predictive Evidence** — VERIFIED
 
-## Alpha 22 cross-organization boundary
+## Alpha 27 — production predictive evidence path
 
-Alpha 22 verifies that predictive requests cannot cross organization boundaries at the user-facing /api/ask predictive path.
+When `/api/failure_prediction` receives no manually supplied observation list, the production boundary now reads the already-recorded observation history for the exact authenticated organization + plant + tag and passes those observations into the existing canonical V3 predictive flow.
 
-The API path:
-- requires authenticated read access
-- requires explicit organization_id and plant_id
-- passes both tenant identifiers into the production predictive boundary
-- preserves the existing organization+plant authorization contract
-- converts a production-boundary PermissionError into an explicit FORBIDDEN response
-- never falls back to a global plant
-- never invokes the legacy/global predictor when authorization fails
+The path is:
 
-The regression test uses an organization/plant mismatch and proves the predictive flow is rejected while the legacy predictor remains uncalled.
+`Authenticated tenant → production boundary → tenant-scoped recorded observations → existing V3 evidence validator/gate → existing tenant-safe predictor`
 
-No prediction algorithm, trend engine, RUL engine, diagnosis engine, threshold logic, or control capability was added.
+The recorded observation rows retain:
+- timestamp
+- numeric value
+- source_type
+- source
+- provenance
+- plant_id
+- organization_id
+- simulation=False
 
-## Alpha 21 API boundary
+No observation is manufactured or repaired. The existing V3 evidence contract still decides whether the evidence is VALID/PARTIAL/EMPTY and whether the existing predictor may be invoked.
 
-Alpha 21 connected the user-facing /api/ask predictive request path to the canonical V3 tenant-safe production flow.
+Explicitly supplied observations remain supported; automatic use occurs only when the caller supplies an empty observation list.
 
-The API preserves:
-- tenant identity
-- canonical predictive result
-- execution provenance
-- read-only/human-decision safety flags
-
-Missing tenant context returns TENANT_CONTEXT_REQUIRED; no global fallback is permitted.
-
-## Alpha 20 production boundary
-
-Alpha 20 connects the real application Predictive Intelligence boundary to the canonical tenant-safe V3 package flow.
-
-v3/production_boundary.py:
-- requires explicit plant_id and organization_id
-- loads only the requested active plant and its normalized onboarding knowledge
-- rejects missing tenant scope
-- rejects a plant belonging to another organization
-- does not read legacy/global predictive stores
-- delegates prediction execution to run_predictive_flow_from_package(...)
-
-failure_prediction_api.py now uses this production boundary instead of directly invoking the legacy/global build_failure_prediction(...) path.
-
-The API requires authenticated read access and explicit tenant context. Missing tenant context returns TENANT_CONTEXT_REQUIRED; there is no global fallback. Query/message, tag, observations, outcome, and optional evidence-window inputs are passed through the canonical flow.
-
-The response preserves the canonical predictive result and execution provenance together with the read-only/human-decision safety boundary.
+No new prediction algorithm, trend engine, RUL engine, diagnosis engine, threshold logic, or control capability was added.
 
 ## Universal and safety guarantees
 
@@ -89,6 +67,7 @@ The response preserves the canonical predictive result and execution provenance 
 - Legacy/global history: BLOCKED
 - Legacy/global memory: BLOCKED
 - Insufficient/partial evidence: predictor NOT INVOKED
+- Simulation/demo observations: NOT ELIGIBLE for production history
 - Read-only: TRUE
 - PLC write: FALSE
 - SCADA control: FALSE
@@ -104,19 +83,25 @@ Alpha 23 dedicated V3 regression: **PASSED** (run #238, 70 passed).
 Alpha 24 dedicated V3 regression: **PASSED** (run #243).
 Alpha 25 dedicated V3 regression: **PASSED** (run #258, production history boundary tests included).
 Alpha 26 dedicated V3 regression: **PASSED** (run #268, production history injection regression included).
+Alpha 27 dedicated V3 regression: **PASSED** (run #275, production-history-to-evidence regression included).
 
 PR #40 remains draft/unmerged.
 
+## Important live-status distinction
+
+Alpha 27 verifies the production code path and its regression contract in CI. It does **not** by itself prove that a live Render plant is currently receiving real telemetry. Real deployment/telemetry verification remains a separate operational test.
+
 ## Next safe milestone
 
-**Alpha 25 — Predictive production integration depth inspection.**
+**Alpha 28 — Production observation source integration inspection.**
 
 Focus:
-1. inspect the remaining production predictive endpoints for legacy/global history paths
-2. verify any write/read history boundary is tenant-scoped before exposing it to V3
-3. preserve the canonical predictor and provenance contracts without duplication
-4. preserve read-only/human-decision safety
-5. add no new prediction or reasoning engine
+1. trace what component actually produces `/api/failure_prediction/observation` records in a real plant
+2. verify live/read-only telemetry can populate the existing observation contract without simulation
+3. preserve organization + plant + tag scope at the source boundary
+4. preserve timestamp/value/source/provenance evidence
+5. keep the existing V3 predictor and evidence gate unchanged
+6. add no new prediction or reasoning engine
 
 No new prediction, trend, RUL, diagnosis, threshold, or control engine may be introduced.
 
