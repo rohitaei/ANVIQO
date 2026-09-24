@@ -69,6 +69,8 @@ def record_observation(
     state: str = "",
     area: str = "",
     provenance: str = "",
+    plant_id: str = "",
+    organization_id: str = "",
 ) -> Dict[str, Any]:
     """Persist one externally supplied numeric observation.
 
@@ -98,9 +100,17 @@ def record_observation(
     except ValueError:
         raise ValueError("timestamp must be ISO-8601")
 
+    plant_id = str(plant_id or "").strip()
+    organization_id = str(organization_id or "").strip()
+    if bool(plant_id) != bool(organization_id):
+        raise ValueError("plant_id and organization_id must be supplied together")
+
     data = _load()
     for existing in data["observations"]:
-        if existing.get("tag") == normalized_tag and existing.get("timestamp") == ts and existing.get("source") == source:
+        if (existing.get("tag") == normalized_tag and existing.get("timestamp") == ts
+                and existing.get("source") == source
+                and (not plant_id or existing.get("plant_id") == plant_id)
+                and (not organization_id or existing.get("organization_id") == organization_id)):
             return existing
 
     record = {
@@ -116,6 +126,8 @@ def record_observation(
         "provenance": provenance,
         "simulation": False,
         "recorded_at": _now(),
+        "plant_id": plant_id,
+        "organization_id": organization_id,
     }
     data["observations"].append(record)
     data["observations"].sort(key=lambda row: (str(row.get("tag", "")), str(row.get("timestamp", ""))))
@@ -165,19 +177,11 @@ def record_tenant_observation(
     organization_id = str(organization_id or "").strip()
     if not plant_id or not organization_id:
         raise ValueError("plant_id and organization_id are required")
-    record = record_observation(
+    return record_observation(
         tag=tag, value=value, timestamp=timestamp, source_type=source_type,
         source=source, unit=unit, state=state, area=area, provenance=provenance,
+        plant_id=plant_id, organization_id=organization_id,
     )
-    data = _load()
-    for existing in data["observations"]:
-        if existing.get("observation_id") == record.get("observation_id"):
-            existing["plant_id"] = plant_id
-            existing["organization_id"] = organization_id
-            record = existing
-            break
-    _save(data)
-    return record
 
 
 def get_tenant_observations(
