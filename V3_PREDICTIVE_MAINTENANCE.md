@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 23 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 24 VERIFIED
 
 ## Completed milestones
 
@@ -27,6 +27,7 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 23 VERIFIED
 21. **Predictive Intelligence API Boundary** — VERIFIED
 22. **Cross-Organization Predictive API Boundary Regression** — VERIFIED
 23. **Predictive API Provenance Contract Regression** — VERIFIED
+24. **Predictive Production Tenant Integration Regression** — VERIFIED
 
 ## Alpha 22 cross-organization boundary
 
@@ -98,17 +99,18 @@ Alpha 20 dedicated V3 regression: **PASSED** (run #206, 64 passed).
 Alpha 21 dedicated V3 regression: **PASSED** (run #225).
 Alpha 22 dedicated V3 regression: **PASSED** (run #231).
 Alpha 23 dedicated V3 regression: **PASSED** (run #238, 70 passed).
+Alpha 24 dedicated V3 regression: **PASSED** (run #243).
 
 PR #40 remains draft/unmerged.
 
 ## Next safe milestone
 
-**Alpha 24 — Predictive production integration regression.**
+**Alpha 25 — Predictive production integration depth inspection.**
 
 Focus:
-1. inspect the real production predictive path end-to-end after the API provenance boundary
-2. verify tenant-scoped normalized onboarding data reaches the canonical flow without global fallback
-3. verify cross-organization rejection and provenance remain intact at the production boundary
+1. inspect the remaining production predictive endpoints for legacy/global history paths
+2. verify any write/read history boundary is tenant-scoped before exposing it to V3
+3. preserve the canonical predictor and provenance contracts without duplication
 4. preserve read-only/human-decision safety
 5. add no new prediction or reasoning engine
 
