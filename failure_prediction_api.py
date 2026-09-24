@@ -99,6 +99,15 @@ def failure_prediction_query_bridge():
             "scada_control":False,
             "human_decision_required":True,
         })
+    except PermissionError as exc:
+        return jsonify({
+            "status":"FORBIDDEN",
+            "message":str(exc),
+            "read_only":True,
+            "plc_write":False,
+            "scada_control":False,
+            "human_decision_required":True,
+        }), 403
     except Exception:
         return None
 
