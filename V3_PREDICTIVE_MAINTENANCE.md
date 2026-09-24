@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 30 IMPLEMENTED — CI VERIFICATION PENDING
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 31 VERIFIED — CI PASSED
 
 ## Completed milestones
 
@@ -33,58 +33,36 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 30 IMPLEMENTED — CI VERIFICATION P
 27. **Recorded Tenant History → Canonical Predictive Evidence** — VERIFIED
 28. **Read-only IndustrialPoint → Tenant Predictive History Adapter Seam** — VERIFIED
 29. **Universal Real Read-only IndustrialPoint Source Adapter Contract** — VERIFIED
-30. **Tata Metaliks Shift Report → IndustrialPoint Historical Source Adapter** — IMPLEMENTED
+30. **Tata Metaliks Shift Report → IndustrialPoint Historical Source Adapter** — VERIFIED
+31. **Historical Shift Report → Tenant History + Canonical Evidence Gate** — VERIFIED
 
-## Alpha 29 — universal real read-only source adapter contract
+## Alpha 31 — historical shift-report evidence bridge
 
-Alpha 29 establishes the transport-neutral handoff for an actual read-only plant source.
+Alpha 31 connects the normalized historical shift-report points to the existing tenant-scoped observation boundary and then reuses the canonical V3 predictive evidence validator.
 
 The path is:
 
-`Actual read-only source → IndustrialPointSourceAdapter → tenant validation → IndustrialPoint → existing data/predictive path`
+`Supplied historical shift report → universal tabular adapter → IndustrialPoint → tenant history boundary → canonical V3 evidence gate`
 
-The new adapter contract:
-- requires an explicit `plant_id`
-- requires every emitted object to be an `IndustrialPoint`
-- requires exact plant identity matching
-- requires tag, timestamp and source evidence
-- rejects simulation/demo source or mode values
-- preserves the original IndustrialPoint unchanged
-- does not implement a protocol-specific transport
-- does not add PLC/SCADA write capability
-- does not add prediction, trend, RUL, diagnosis, threshold or control logic
+The implementation:
+- requires both `plant_id` and `organization_id`
+- parses the supplied report using the universal Alpha 30 adapter
+- persists every parsed numeric point through the existing tenant-scoped industrial-point history boundary
+- preserves timestamp, tag, value, source and provenance
+- labels the persisted source as `HISTORICAL_ARCHIVE`
+- rejects missing tenant identity before persistence
+- reuses `validate_prediction_evidence` rather than creating a second evidence/trend engine
+- keeps historical data explicitly separate from live telemetry
 
-Regression coverage includes:
-- valid tenant-scoped live IndustrialPoint accepted
-- cross-plant IndustrialPoint rejected
-- simulation/demo IndustrialPoint rejected
-- missing source evidence rejected
-- existing PCI demo adapter remains explicitly simulation-only
+Regression coverage proves:
+- exact organization + plant identity reaches the persistence boundary
+- 9 sample points from PT_303, PT_304 and TE_301 are parsed/persisted
+- PT_303/PT_304 values and timestamps are preserved
+- missing tenant identity is rejected
+- canonical evidence validation reports the correct usable observation count
+- read-only safety remains unchanged
 
-### Important live-source finding
-
-The repository still does **not** contain an actual OPC-UA, MQTT, Modbus, PLC, SCADA or historian transport implementation.
-
-Therefore Alpha 29 verifies the **universal adapter contract**, not live plant telemetry connectivity.
-
-The real transport must be supplied behind this contract. Once a permitted read-only source is available, its reader can emit `IndustrialPoint` records without changing the V3 predictor or ANVI intelligence layer.
-
-## Alpha 30 — Tata Metaliks shift report integration
-
-The supplied Tata Metaliks shift report was used as the real source shape for a universal tabular adapter. The pasted report contains a report date, an hourly-period column, and many instrument/process tag columns with numeric hourly averages.
-
-The new `v2.shift_report_adapter` path:
-- accepts tab-separated report text supplied by the caller
-- discovers the report date and `1 Hr. Avg. Value` header without plant-specific tag code
-- converts each hourly period to its hour-start ISO timestamp
-- converts numeric cells into existing `IndustrialPoint` records
-- preserves source tag names such as `PT_303` without inventing units or quality
-- marks the source as `HISTORICAL`, not live telemetry
-- skips blank/non-numeric cells rather than repairing or inventing values
-- requires caller-supplied `plant_id`
-- can feed the existing `IndustrialPointSourceAdapter`/V2 fabric and tenant history path
-
-This is historical plant evidence, not proof of live PLC/SCADA connectivity. The pasted message ends partway through the report, so only the supplied portion can be parsed from this conversation; the adapter is designed for the complete export when available.
+The supplied report in the conversation is partial, so this milestone does not claim that the complete 23/09/2026 report was ingested.
 
 No prediction, trend, RUL, diagnosis, threshold, alarm, PLC write, SCADA control, or automatic action logic was added.
 
@@ -117,25 +95,25 @@ Alpha 26 dedicated V3 regression: **PASSED** (run #268, production history injec
 Alpha 27 dedicated V3 regression: **PASSED** (run #275, production-history-to-evidence regression included).
 Alpha 28 dedicated V3 regression: **PASSED** (run #279, read-only IndustrialPoint adapter regressions included).
 Alpha 29 dedicated V3 regression: **PASSED** (run #287, live IndustrialPoint adapter contract regressions included).
-Alpha 30 dedicated regression: **PENDING** (shift-report adapter implementation and tests added from the supplied Tata Metaliks report shape).
+Alpha 30/31 dedicated V3 regression: **PASSED** (run #310; 85 passed, 1 corrected assertion, then full V3 regression passed).
 
 PR #40 remains draft/unmerged.
 
 ## Important live-status distinction
 
-Alpha 29 verifies the universal source adapter contract in CI. It does **not** prove that a live Render plant is currently receiving real PLC/SCADA/OPC telemetry. No such claim is being made.
+Alpha 29 still does **not** prove that a live Render plant is receiving real PLC/SCADA/OPC telemetry. Alpha 30/31 proves only the historical shift-report path supplied to ANVIQO and its tenant-safe evidence handoff.
 
 ## Next safe milestone
 
-**Alpha 31 — Connect normalized shift-report evidence to tenant history/predictive flow.**
+**Alpha 32 — Historical Shift Report → ANVI Q&A retrieval**
 
 Focus:
-1. persist supplied historical points through the existing tenant-scoped observation boundary
-2. verify organization + plant identity before persistence
-3. route the same observations into the canonical V3 evidence gate
-4. preserve timestamps, values, source and provenance
-5. test PT_303/PT_304 and additional report tags without tag-specific reasoning code
-6. keep PLC write, SCADA control and automatic action disabled
+1. inspect the existing `/api/ask` and tenant-scoped history/query path
+2. reuse existing tag extraction/resolution and tenant boundaries
+3. allow ANVI to retrieve supplied historical shift-report evidence for questions such as hourly PT_303 values
+4. preserve date/time, source and historical provenance in answers
+5. keep plant/org isolation strict with no global fallback
+6. do not create a second reasoning, prediction or trend engine
 
 No protocol credentials or connection details will be invented. Live telemetry remains a separate integration task.
 
