@@ -78,3 +78,88 @@ def test_alpha20_package_loader_rejects_unauthorized_organization(monkeypatch):
     monkeypatch.setattr(store, "_connect", lambda: FakeConn())
     with pytest.raises(PermissionError):
         production_boundary.load_tenant_onboarding_package("PLANT-A", "ORG-1")
+
+
+
+def test_alpha24_production_loader_reads_only_scoped_normalized_knowledge(monkeypatch):
+    calls = []
+    class FakeCursor:
+        def __init__(self):
+            self.kind = None
+        def execute(self, sql, params=()):
+            calls.append((sql, params))
+            self.kind = "plant" if "FROM anviqo_plants" in sql else "knowledge"
+        def fetchone(self):
+            if self.kind == "plant":
+                return ("Demo Plant", "steel")
+            return None
+        def fetchall(self):
+            if self.kind == "knowledge":
+                return [(
+                    "INSTRUMENT", "PT-303", "Mill outlet pressure", "VRM/MILL",
+                    "Mill gas", "PRESSURE", "PT-303", None, "MBF-2",
+                    '{"pci_identity":{"plant_id":"PLANT-A","tag":"PT-303"}}',
+                    "normalized evidence",
+                )]
+            return []
+    class FakeConn:
+        def __init__(self):
+            self._cursor = FakeCursor()
+        def cursor(self):
+            return self._cursor
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+
+    monkeypatch.setattr(store, "init_schema", lambda: None)
+    monkeypatch.setattr(store, "_placeholder", lambda: "?")
+    monkeypatch.setattr(store, "_connect", lambda: FakeConn())
+
+    package = production_boundary.load_tenant_onboarding_package("PLANT-A", "ORG-1")
+
+    assert package["plant"]["plant_id"] == "PLANT-A"
+    assert package["plant"]["organization_id"] == "ORG-1"
+    assert package["plant"]["industry"] == "steel"
+    assert len(package["records"]) == 1
+    assert package["records"][0]["tag"] == "PT-303"
+    assert package["records"][0]["pci_identity"]["plant_id"] == "PLANT-A"
+    assert all("ORG-1" in str(params) for _, params in calls)
+
+
+def test_alpha24_production_flow_preserves_loaded_tenant_package(monkeypatch):
+    package = _package()
+    captured = {}
+
+    monkeypatch.setattr(
+        production_boundary,
+        "load_tenant_onboarding_package",
+        lambda plant_id, organization_id: package,
+    )
+
+    def fake_package_flow(plant_id, tag, observations, **kwargs):
+        captured.update({
+            "plant_id": plant_id,
+            "tag": tag,
+            "observations": observations,
+            "package": kwargs["package"],
+        })
+        return {"plant_id": plant_id, "tag": tag, "status": "PACKAGE_REACHED"}
+
+    monkeypatch.setattr(
+        production_boundary,
+        "run_predictive_flow_from_package",
+        fake_package_flow,
+    )
+
+    result = production_boundary.run_production_predictive_flow(
+        plant_id="PLANT-A",
+        organization_id="ORG-1",
+        tag="PT-303",
+        observations=[],
+    )
+
+    assert result["status"] == "PACKAGE_REACHED"
+    assert captured["plant_id"] == "PLANT-A"
+    assert captured["tag"] == "PT-303"
+    assert captured["package"] is package
