@@ -114,6 +114,13 @@ def run_production_predictive_flow(
             tag=tag,
         )
 
+    # When the API caller does not manually provide observations, use the
+    # already-recorded tenant history as the canonical predictive evidence
+    # input. This is data plumbing only; V3 still performs the same evidence
+    # validation/gating and the same existing predictor invocation.
+    if not observations:
+        observations = history_provider(plant_id=plant_id, tag=tag)
+
     return run_predictive_flow_from_package(
         plant_id,
         tag,
