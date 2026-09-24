@@ -46,6 +46,10 @@ def test_alpha21_api_ask_uses_v3_tenant_flow(monkeypatch):
     assert captured["organization_id"] == "ORG-1"
     assert captured["tag"] == "PT-303"
     assert result["failure_prediction"]["execution_audit"]["plant_id"] == "PLANT-A"
+    assert result["read_only"] is True
+    assert result["plc_write"] is False
+    assert result["scada_control"] is False
+    assert result["human_decision_required"] is True
 
 
 def test_alpha21_api_ask_blocks_missing_tenant_context(monkeypatch):
@@ -75,6 +79,6 @@ def test_alpha21_api_ask_blocks_missing_tenant_context(monkeypatch):
     assert result[1] == 409
 
 
-def test_alpha21_predictive_api_safety_is_read_only():
-    assert api._run_tenant_predictive_request is not None
+def test_alpha21_predictive_api_route_exists_and_is_read_only_contract():
     assert api.failure_prediction_api is not None
+    assert api.failure_prediction_query_bridge is not None
