@@ -183,14 +183,9 @@ def _trend(observations: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {"status": "AVAILABLE", "direction": direction, "delta": delta, "first": first, "last": last, "observations_used": len(historical)}
 
 
-def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str, Any]:
+def _build_failure_prediction_from_sources(query: str, tag: Optional[str], *, identity: Any, live: Any, history: List[Dict[str, Any]], memory: List[Dict[str, Any]], events: List[Dict[str, Any]], health: Any) -> Dict[str, Any]:
     query = str(query or "").strip()
     tag = extract_tag(tag or query) or str(tag or "").strip().upper()
-    identity, live = _pci(tag) if tag else (None, None)
-    history = _history(tag) if tag else []
-    memory = _memory(tag) if tag else []
-    events = _events(tag) if tag else []
-    health = _health(tag) if tag else None
     observations = _numeric_history(history, memory, events, live)
     trend = _trend(observations)
 
@@ -278,3 +273,41 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
         "safety": dict(SAFETY),
         "decision_status": "HUMAN_DECISION_REQUIRED",
     }
+
+
+
+def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str, Any]:
+    """Legacy/global entry point retained for existing callers."""
+    query = str(query or "").strip()
+    resolved_tag = extract_tag(tag or query) or str(tag or "").strip().upper()
+    identity, live = _pci(resolved_tag) if resolved_tag else (None, None)
+    history = _history(resolved_tag) if resolved_tag else []
+    memory = _memory(resolved_tag) if resolved_tag else []
+    events = _events(resolved_tag) if resolved_tag else []
+    health = _health(resolved_tag) if resolved_tag else None
+    return _build_failure_prediction_from_sources(
+        query, resolved_tag,
+        identity=identity, live=live, history=history, memory=memory,
+        events=events, health=health,
+    )
+
+
+def build_tenant_failure_prediction(plant_id: str, query: str, tag: Optional[str], *, sources) -> Dict[str, Any]:
+    """Run the existing prediction intelligence with tenant-scoped sources."""
+    from v3.predictive_sources import fetch
+    plant_id = str(plant_id or "").strip()
+    if not plant_id:
+        raise ValueError("plant_id is required")
+    query = str(query or "").strip()
+    resolved_tag = extract_tag(tag or query) or str(tag or "").strip().upper()
+    if not resolved_tag:
+        raise ValueError("tag is required")
+    scoped = fetch(sources, plant_id, resolved_tag)
+    result = _build_failure_prediction_from_sources(
+        query, resolved_tag,
+        identity=scoped["identity"], live=scoped["live"],
+        history=scoped["history"], memory=scoped["memory"],
+        events=scoped["events"], health=scoped["health"],
+    )
+    result["plant_id"] = plant_id
+    return result

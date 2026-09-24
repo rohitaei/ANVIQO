@@ -69,6 +69,8 @@ def record_observation(
     state: str = "",
     area: str = "",
     provenance: str = "",
+    plant_id: str = "",
+    organization_id: str = "",
 ) -> Dict[str, Any]:
     """Persist one externally supplied numeric observation.
 
@@ -98,9 +100,17 @@ def record_observation(
     except ValueError:
         raise ValueError("timestamp must be ISO-8601")
 
+    plant_id = str(plant_id or "").strip()
+    organization_id = str(organization_id or "").strip()
+    if bool(plant_id) != bool(organization_id):
+        raise ValueError("plant_id and organization_id must be supplied together")
+
     data = _load()
     for existing in data["observations"]:
-        if existing.get("tag") == normalized_tag and existing.get("timestamp") == ts and existing.get("source") == source:
+        if (existing.get("tag") == normalized_tag and existing.get("timestamp") == ts
+                and existing.get("source") == source
+                and (not plant_id or existing.get("plant_id") == plant_id)
+                and (not organization_id or existing.get("organization_id") == organization_id)):
             return existing
 
     record = {
@@ -116,6 +126,8 @@ def record_observation(
         "provenance": provenance,
         "simulation": False,
         "recorded_at": _now(),
+        "plant_id": plant_id,
+        "organization_id": organization_id,
     }
     data["observations"].append(record)
     data["observations"].sort(key=lambda row: (str(row.get("tag", "")), str(row.get("timestamp", ""))))
@@ -144,4 +156,104 @@ def history_summary(tag: str) -> Dict[str, Any]:
         "last_timestamp": rows[-1].get("timestamp") if rows else None,
         "sources": sorted({str(row.get("source") or "") for row in rows if row.get("source")}),
         "observations": rows,
+    }
+
+
+def record_tenant_observation(
+    plant_id: str,
+    organization_id: str,
+    tag: str,
+    value: float,
+    timestamp: Optional[str] = None,
+    source_type: str = "",
+    source: str = "",
+    unit: str = "",
+    state: str = "",
+    area: str = "",
+    provenance: str = "",
+) -> Dict[str, Any]:
+    """Persist one observation with explicit organization and plant scope."""
+    plant_id = str(plant_id or "").strip()
+    organization_id = str(organization_id or "").strip()
+    if not plant_id or not organization_id:
+        raise ValueError("plant_id and organization_id are required")
+    return record_observation(
+        tag=tag, value=value, timestamp=timestamp, source_type=source_type,
+        source=source, unit=unit, state=state, area=area, provenance=provenance,
+        plant_id=plant_id, organization_id=organization_id,
+    )
+
+
+def record_tenant_industrial_point(plant_id: str, organization_id: str, point: Any, source_type: str, provenance: str) -> Dict[str, Any]:
+    """Persist an existing V2 read-only IndustrialPoint as tenant history.
+
+    Adapter seam only: it does not poll PLC/SCADA, create values, or predict.
+    Simulation/demo points are explicitly rejected.
+    """
+    plant_id = str(plant_id or "").strip()
+    organization_id = str(organization_id or "").strip()
+    if not plant_id or not organization_id:
+        raise ValueError("plant_id and organization_id are required")
+    if getattr(point, "plant_id", "") != plant_id:
+        raise ValueError("IndustrialPoint plant_id does not match tenant plant")
+    mode = str(getattr(point, "mode", "") or "").upper()
+    source = str(getattr(point, "source", "") or "").strip()
+    if "SIMULATION" in mode or "DEMO" in mode or "SIMULATION" in source.upper() or "DEMO" in source.upper():
+        raise ValueError("simulation/demo IndustrialPoint is not eligible for production history")
+    return record_tenant_observation(
+        plant_id=plant_id, organization_id=organization_id,
+        tag=getattr(point, "tag", ""), value=getattr(point, "value", None),
+        timestamp=getattr(point, "timestamp", None), source_type=source_type,
+        source=source, unit=getattr(point, "unit", None) or "",
+        state=getattr(point, "state", None) or "", area=getattr(point, "area", None) or "",
+        provenance=provenance,
+    )
+
+
+def get_tenant_observations(
+    plant_id: str,
+    organization_id: str,
+    tag: str,
+    limit: int = 500,
+) -> List[Dict[str, Any]]:
+    """Read history only for the exact organization, plant, and tag."""
+    plant_id = str(plant_id or "").strip()
+    organization_id = str(organization_id or "").strip()
+    if not plant_id or not organization_id:
+        raise ValueError("plant_id and organization_id are required")
+    normalized_tag = _norm_tag(tag)
+    data = _load()
+    rows = [
+        row for row in data["observations"]
+        if isinstance(row, dict)
+        and row.get("plant_id") == plant_id
+        and row.get("organization_id") == organization_id
+        and row.get("tag") == normalized_tag
+        and row.get("simulation") is False
+    ]
+    rows.sort(key=lambda row: str(row.get("timestamp") or ""))
+    return rows[-max(1, int(limit)) :]
+
+
+def tenant_history_summary(
+    plant_id: str,
+    organization_id: str,
+    tag: str,
+) -> Dict[str, Any]:
+    """Return tenant-scoped history without any global fallback."""
+    rows = get_tenant_observations(plant_id, organization_id, tag)
+    return {
+        "version": VERSION,
+        "plant_id": plant_id,
+        "organization_id": organization_id,
+        "tag": _norm_tag(tag),
+        "count": len(rows),
+        "first_timestamp": rows[0].get("timestamp") if rows else None,
+        "last_timestamp": rows[-1].get("timestamp") if rows else None,
+        "sources": sorted({str(row.get("source") or "") for row in rows if row.get("source")}),
+        "observations": rows,
+        "read_only": True,
+        "plc_write": False,
+        "scada_control": False,
+        "human_decision_required": True,
     }

@@ -1,0 +1,36 @@
+name: ANVIQO V3 Predictive Maintenance Regression
+
+on:
+  push:
+    branches:
+      - main
+      - v3-predictive-maintenance-foundation
+  pull_request:
+    branches:
+      - main
+      - v3-predictive-maintenance-foundation
+
+jobs:
+  v3-predictive-maintenance:
+    runs-on: ubuntu-latest
+    env:
+      ANVIQO_SECRET_KEY: alpha21-ci-test-secret
+      ANVIQO_ADMIN_USER: alpha21-ci-admin
+      ANVIQO_ADMIN_PASSWORD: alpha21-ci-password
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test runner
+        run: python -m pip install --upgrade pip pytest Flask
+
+      - name: Compile V3 modules and regression tests
+        run: python -m compileall -q v3 tests/test_v3_predictive_maintenance.py tests/test_v3_predictive_bridge.py tests/test_v3_prediction_outcomes.py tests/test_v3_predictive_evidence.py tests/test_v3_predictive_history_bridge.py tests/test_v3_maintenance_memory_bridge.py tests/test_v3_predictive_context.py tests/test_v3_predictive_result.py tests/test_v3_predictive_flow.py tests/test_v3_predictive_sources.py tests/test_v3_predictive_audit.py tests/test_v3_production_boundary.py tests/test_v3_predictive_api_boundary.py tests/test_v2_shift_report_adapter.py tests/test_v3_shift_report_history.py v2/shift_report_adapter.py v3/shift_report_history.py
+
+      - name: Run V3 predictive maintenance regression
+        run: python -m pytest -q tests/test_v3_predictive_maintenance.py tests/test_v3_predictive_bridge.py tests/test_v3_prediction_outcomes.py tests/test_v3_predictive_evidence.py tests/test_v3_predictive_history_bridge.py tests/test_v3_maintenance_memory_bridge.py tests/test_v3_predictive_context.py tests/test_v3_predictive_result.py tests/test_v3_predictive_flow.py tests/test_v3_predictive_sources.py tests/test_v3_tenant_predictive_providers.py tests/test_v3_predictive_package_flow.py tests/test_v3_predictive_audit.py tests/test_v3_production_boundary.py tests/test_v3_predictive_api_boundary.py tests/test_v2_shift_report_adapter.py tests/test_v3_shift_report_history.py

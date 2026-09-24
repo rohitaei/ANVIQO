@@ -6,6 +6,8 @@ from flask import jsonify, request, session
 from anviqo_api_phase2 import app
 from anvi_tenant_store import authorize
 
+SAFETY = {"read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True}
+
 
 def _actor():
     return {"user_id": session.get("user_id", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "role": session.get("role", ""), "username": session.get("username", "")}
@@ -45,14 +47,69 @@ def failure_prediction_query_bridge():
     payload = request.get_json(silent=True) or {}
     question = _question(payload)
     try:
-        from failure_prediction import is_failure_prediction_query, build_failure_prediction
+        from failure_prediction import is_failure_prediction_query
         if not is_failure_prediction_query(question):
             return None
         actor = _actor()
         if not _can_read(actor):
             return jsonify({"status":"FORBIDDEN","message":"plant:read permission is required for Failure Prediction.","read_only":True,"plc_write":False,"scada_control":False}), 403
-        result = build_failure_prediction(question)
-        return jsonify({"answer": result["prediction"], "domain":"failure_prediction", "failure_prediction":result, "read_only":True, "plc_write":False, "scada_control":False, "human_decision_required":True})
+
+        plant_id = str(actor.get("plant_id") or "").strip()
+        organization_id = str(actor.get("organization_id") or "").strip()
+        if not plant_id or not organization_id:
+            return jsonify({
+                "status":"TENANT_CONTEXT_REQUIRED",
+                "message":"An authorized plant context is required for predictive intelligence. No global fallback is allowed.",
+                "read_only":True,
+                "plc_write":False,
+                "scada_control":False,
+                "human_decision_required":True,
+            }), 409
+
+        from v3.production_boundary import run_production_predictive_flow
+        from failure_prediction import extract_tag
+        resolved_tag = extract_tag(question) or str(payload.get("tag") or "").strip()
+        if not resolved_tag:
+            return jsonify({
+                "status":"INSUFFICIENT_EVIDENCE",
+                "message":"An explicit equipment tag is required for tenant-scoped predictive intelligence.",
+                "plant_id":plant_id,
+                "read_only":True,
+                "plc_write":False,
+                "scada_control":False,
+                "human_decision_required":True,
+            })
+
+        observations = payload.get("observations")
+        if observations is None:
+            observations = []
+        result = run_production_predictive_flow(
+            plant_id=plant_id,
+            organization_id=organization_id,
+            tag=resolved_tag,
+            observations=observations,
+            outcome=payload.get("outcome"),
+            window_start=payload.get("window_start"),
+            window_end=payload.get("window_end"),
+        )
+        return jsonify({
+            "answer": result.get("prediction", {}).get("reason", result.get("status")),
+            "domain":"failure_prediction",
+            "failure_prediction":result,
+            "read_only":True,
+            "plc_write":False,
+            "scada_control":False,
+            "human_decision_required":True,
+        })
+    except PermissionError as exc:
+        return jsonify({
+            "status":"FORBIDDEN",
+            "message":str(exc),
+            "read_only":True,
+            "plc_write":False,
+            "scada_control":False,
+            "human_decision_required":True,
+        }), 403
     except Exception:
         return None
 
@@ -77,19 +134,91 @@ def failure_prediction_demo_api():
 def failure_prediction_api():
     if not session.get("authenticated"):
         return jsonify({"status":"UNAUTHORIZED","message":"ANVIQO authentication required"}), 401
+
     actor = _actor()
     if not _can_read(actor):
-        return jsonify({"status":"FORBIDDEN","message":"plant:read permission is required for Failure Prediction.","plc_write":False,"scada_control":False}), 403
+        return jsonify({
+            "status":"FORBIDDEN",
+            "message":"plant:read permission is required for Failure Prediction.",
+            "plc_write":False,
+            "scada_control":False,
+        }), 403
+
+    plant_id = str(actor.get("plant_id") or "").strip()
+    organization_id = str(actor.get("organization_id") or "").strip()
     payload = request.get_json(silent=True) or {}
     query = str(payload.get("query") or payload.get("question") or payload.get("message") or "").strip()
     tag = str(payload.get("tag") or "").strip()
+
+    if not plant_id or not organization_id:
+        return jsonify({
+            "status":"TENANT_CONTEXT_REQUIRED",
+            "message":"An authorized plant context is required for predictive intelligence. No global fallback is allowed.",
+            "read_only":True,
+            "plc_write":False,
+            "scada_control":False,
+            "human_decision_required":True,
+        }), 409
+
     if not query and not tag:
         return jsonify({"status":"BAD_REQUEST","message":"query or equipment tag is required."}), 400
+
     try:
-        from failure_prediction import build_failure_prediction
-        return jsonify(build_failure_prediction(query, tag or None))
+        from v3.production_boundary import run_production_predictive_flow
+        from failure_prediction import extract_tag
+
+        resolved_tag = tag or extract_tag(query) or ""
+        if not resolved_tag:
+            return jsonify({
+                "status":"INSUFFICIENT_EVIDENCE",
+                "message":"An explicit equipment tag is required for tenant-scoped predictive intelligence.",
+                "plant_id":plant_id,
+                "read_only":True,
+                "plc_write":False,
+                "scada_control":False,
+                "human_decision_required":True,
+            }), 200
+
+        observations = payload.get("observations")
+        if observations is None:
+            observations = []
+
+        result = run_production_predictive_flow(
+            plant_id=plant_id,
+            organization_id=organization_id,
+            tag=resolved_tag,
+            observations=observations,
+            outcome=payload.get("outcome"),
+            window_start=payload.get("window_start"),
+            window_end=payload.get("window_end"),
+        )
+        return jsonify({
+            "answer": result.get("prediction", {}).get("reason", result.get("status")),
+            "domain":"failure_prediction",
+            "failure_prediction":result,
+            "read_only":True,
+            "plc_write":False,
+            "scada_control":False,
+            "human_decision_required":True,
+        })
+    except (ValueError, PermissionError) as exc:
+        return jsonify({
+            "status":"BAD_REQUEST",
+            "message":str(exc),
+            "read_only":True,
+            "plc_write":False,
+            "scada_control":False,
+            "human_decision_required":True,
+        }), 400
     except Exception as exc:
-        return jsonify({"status":"ERROR","message":str(exc),"plc_write":False,"scada_control":False,"automatic_execution":False,"human_decision_required":True}), 500
+        return jsonify({
+            "status":"ERROR",
+            "message":str(exc),
+            "read_only":True,
+            "plc_write":False,
+            "scada_control":False,
+            "human_decision_required":True,
+        }), 500
 
 
 @app.route("/api/failure_prediction/observation", methods=["POST"])
@@ -111,7 +240,12 @@ def failure_prediction_observation_api():
         return jsonify({"status":"BAD_REQUEST","message":"Missing required fields: " + ", ".join(missing)}), 400
     try:
         from failure_prediction_history import record_observation
-        record = record_observation(tag=payload.get("tag"), value=payload.get("value"), timestamp=payload.get("timestamp"), source_type=payload.get("source_type"), source=payload.get("source"), unit=payload.get("unit"), state=payload.get("state"), area=payload.get("area"), provenance=payload.get("provenance"))
+        plant_id = str(actor.get("plant_id") or "").strip()
+        organization_id = str(actor.get("organization_id") or "").strip()
+        if not plant_id or not organization_id:
+            return jsonify({"status":"TENANT_CONTEXT_REQUIRED","message":"Explicit organization and plant context are required; no global history fallback is allowed.", **SAFETY}), 409
+        from failure_prediction_history import record_tenant_observation
+        record = record_tenant_observation(plant_id=plant_id, organization_id=organization_id, tag=payload.get("tag"), value=payload.get("value"), timestamp=payload.get("timestamp"), source_type=payload.get("source_type"), source=payload.get("source"), unit=payload.get("unit"), state=payload.get("state"), area=payload.get("area"), provenance=payload.get("provenance"))
         return jsonify({"status":"RECORDED","observation":record,"prediction_history_changed":True,"plc_write":False,"scada_control":False,"automatic_execution":False,"human_decision_required":True})
     except ValueError as exc:
         return jsonify({"status":"BAD_REQUEST","message":str(exc),"prediction_history_changed":False,"plc_write":False,"scada_control":False}), 400
@@ -130,8 +264,21 @@ def failure_prediction_history_api():
     tag = str(payload.get("tag") or "").strip()
     if not tag:
         return jsonify({"status":"BAD_REQUEST","message":"tag is required."}), 400
+    plant_id = str(actor.get("plant_id") or "").strip()
+    organization_id = str(actor.get("organization_id") or "").strip()
+    if not plant_id or not organization_id:
+        return jsonify({"status":"TENANT_CONTEXT_REQUIRED","message":"Explicit organization and plant context are required; no global history fallback is allowed.", **SAFETY}), 409
     try:
-        from failure_prediction_history import history_summary
-        return jsonify(history_summary(tag))
+        from v3.production_boundary import fetch_production_predictive_history
+        result = fetch_production_predictive_history(
+            plant_id=plant_id,
+            organization_id=organization_id,
+            tag=tag,
+        )
+        return jsonify(result)
+    except PermissionError as exc:
+        return jsonify({"status":"FORBIDDEN","message":str(exc), **SAFETY}), 403
+    except ValueError as exc:
+        return jsonify({"status":"BAD_REQUEST","message":str(exc), **SAFETY}), 400
     except Exception as exc:
-        return jsonify({"status":"ERROR","message":str(exc),"plc_write":False,"scada_control":False}), 500
+        return jsonify({"status":"ERROR","message":str(exc), **SAFETY}), 500

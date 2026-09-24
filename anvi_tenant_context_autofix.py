@@ -74,6 +74,12 @@ def _install_live_answer_patch():
             stability._is_data_question = universal_data_question
             stability._anviqo_universal_tag_question_patch = True
 
+        # Preserve the existing V5/PCI answer path for the original
+        # primary plant. The membership context patch must not replace that
+        # already-implemented intelligence with the onboarding-only query
+        # path. Other plants remain strictly tenant-onboarded.
+        original_answer = stability._answer
+
         def membership_answer(text):
             from flask import session
             try:
@@ -93,8 +99,15 @@ def _install_live_answer_patch():
                 "slug": session.get("plant_slug") or "",
                 "status": "ACTIVE",
             }
+
+            # Primary Plant is the existing V5/PCI compatibility tenant.
+            # Keep its established resolver/intelligence intact. This is not
+            # a global fallback: the plant context was authenticated above.
+            if str(plant.get("slug") or "").strip().lower() == "primary-plant":
+                return original_answer(text)
+
             candidate = stability._candidate(text)
-            rows = (stability._query_rows(pid, None, identifier=candidate, limit=40) if candidate else stability._query_rows(pid, None, terms=stability._terms(text), limit=80))
+            rows = (stability._query_rows(pid, oid, identifier=candidate, limit=40) if candidate else stability._query_rows(pid, oid, terms=stability._terms(text), limit=80))
             return stability._exact_answer(text, rows, plant) if candidate else stability._summary_answer(text, rows, plant)
 
         stability._answer = membership_answer
