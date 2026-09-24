@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 24 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 25 IN VERIFICATION
 
 ## Completed milestones
 
@@ -28,6 +28,7 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 24 VERIFIED
 22. **Cross-Organization Predictive API Boundary Regression** — VERIFIED
 23. **Predictive API Provenance Contract Regression** — VERIFIED
 24. **Predictive Production Tenant Integration Regression** — VERIFIED
+25. **Predictive Production History Tenant Boundary** — IN VERIFICATION
 
 ## Alpha 22 cross-organization boundary
 
