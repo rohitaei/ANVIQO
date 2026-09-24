@@ -49,3 +49,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    
+def test_universal_spare_tag_normalization():
+    import pci_spares
+    assert pci_spares._v18_identifier("Add 3 nos spares for pt304") == "PT-304"
+    assert pci_spares._v18_identifier("use 1 MCV205") == "MCV205"
+
+
+def test_spare_query_engine_is_available():
+    import pci_spares
+    result = pci_spares.answer_spare_query("Spares of MCV")
+    assert isinstance(result, dict)
+    assert result.get("domain") == "critical_spares"
+    assert result.get("evidence") == "critical_spares.xlsx"

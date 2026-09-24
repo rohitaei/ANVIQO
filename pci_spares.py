@@ -1868,9 +1868,11 @@ def _v18_quantity(q):
 def _v18_identifier(q):
     q = str(q or "").strip().upper()
 
-    # Exact engineering tag such as PT-303, MCV-205, FT-201.
-    for token in re.findall(r"[A-Z][A-Z0-9_]*[-_]\d+", q):
-        return token.replace("_", "-")
+    # Reuse the authoritative universal spare-tag parser so both
+    # PT-304 and PT304 (and MCV-205/MCV205, etc.) resolve identically.
+    explicit_tag = _extract_tag(q)
+    if explicit_tag:
+        return explicit_tag.replace("_", "-")
 
     # Exact PCI inventory item.
     pos = q.find("PCI_")

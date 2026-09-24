@@ -93,8 +93,37 @@ def _install_live_answer_patch():
                 "slug": session.get("plant_slug") or "",
                 "status": "ACTIVE",
             }
+            # Reuse the authoritative critical-spares intelligence before the
+            # plant-knowledge resolver. This keeps "spares of MCV" and exact
+            # spare-tag questions on the existing spare engine instead of
+            # incorrectly treating them as plant-knowledge searches.
+            low = str(text or "").lower()
+            spare_intent = any(x in low for x in (
+                "spare", "spares", "inventory", "stock", "indent"
+            ))
+            if spare_intent:
+                try:
+                    import pci_spares
+                    result = pci_spares.answer_spare_management(text)
+                    if isinstance(result, dict):
+                        result.setdefault("plant_id", pid)
+                        result.setdefault("plant_name", plant.get("name"))
+                        result.setdefault("human_decision_required", True)
+                        result.setdefault("plc_write", False)
+                        result.setdefault("scada_control", False)
+                        return result
+                except Exception as exc:
+                    print(f"ANVIQO_SPARE_ROUTING_ERROR error={exc!r}", flush=True)
+
             candidate = stability._candidate(text)
-            # Keep the universal PCI resolver on the actual live request path.\n            # The previous direct membership patch bypassed it, so verified\n            # PCI identities such as PT_303/PT303 could incorrectly report\n            # TENANT_KNOWLEDGE_NOT_FOUND. Resolver input remains tenant-scoped.\n            if candidate:\n                rows = stability._pci_resolve_rows(pid, oid, candidate)\n                if not rows:\n                    rows = stability._query_rows(pid, None, identifier=candidate, limit=40)\n            else:\n                rows = stability._query_rows(pid, None, terms=stability._terms(text), limit=80)
+            # Keep the universal PCI resolver on the actual live request path.
+            # Resolver input remains tenant-scoped.
+            if candidate:
+                rows = stability._pci_resolve_rows(pid, oid, candidate)
+                if not rows:
+                    rows = stability._query_rows(pid, oid, identifier=candidate, limit=40)
+            else:
+                rows = stability._query_rows(pid, oid, terms=stability._terms(text), limit=80)
             return stability._exact_answer(text, rows, plant) if candidate else stability._summary_answer(text, rows, plant)
 
         stability._answer = membership_answer
