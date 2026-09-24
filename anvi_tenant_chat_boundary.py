@@ -180,7 +180,7 @@ def _legacy(plant):
 def _safe_response(answer,**extra):
     payload={"answer":answer,**SAFETY}; payload.update(extra); return payload
 
-_ENGINEERING_PREFIXES={"PT","TT","FT","LT","AT","DT","ST","WT","CT","TE","PE","FE","LE","AE","AI","AO","DI","DO","XV","FV","PV","TV","LV","ZV","ZS","ZSO","ZSC","PS","TS","LS","FS","AS","HS","CS","ES","IS","MS","SS","VB","PC","FC"}
+_ENGINEERING_PREFIXES={"PT","TT","FT","LT","AT","DT","ST","WT","CT","TE","PE","FE","LE","AE","AI","AO","DI","DO","XV","FV","PV","TV","LV","ZV","ZS","ZSO","ZSC","PS","TS","LS","FS","AS","HS","CS","ES","IS","MS","SS","VB","PC","FC","MCV","SOV","FSV","PCV"}
 
 def _candidate_tag(q):
     for token in re.findall(r"\b[A-Za-z]{1,12}[-_ ]?\d{1,6}\b",q or ""):
