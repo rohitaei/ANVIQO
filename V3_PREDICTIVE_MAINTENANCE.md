@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 20 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 22 VERIFIED
 
 ## Completed milestones
 
@@ -24,6 +24,37 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 20 VERIFIED
 18. **Predictive Evidence Freshness Window Contract** — VERIFIED
 19. **Predictive Execution Provenance Contract** — VERIFIED
 20. **Predictive Flow Production Boundary Inspection** — VERIFIED
+21. **Predictive Intelligence API Boundary** — VERIFIED
+22. **Cross-Organization Predictive API Boundary Regression** — VERIFIED
+
+## Alpha 22 cross-organization boundary
+
+Alpha 22 verifies that predictive requests cannot cross organization boundaries at the user-facing /api/ask predictive path.
+
+The API path:
+- requires authenticated read access
+- requires explicit organization_id and plant_id
+- passes both tenant identifiers into the production predictive boundary
+- preserves the existing organization+plant authorization contract
+- converts a production-boundary PermissionError into an explicit FORBIDDEN response
+- never falls back to a global plant
+- never invokes the legacy/global predictor when authorization fails
+
+The regression test uses an organization/plant mismatch and proves the predictive flow is rejected while the legacy predictor remains uncalled.
+
+No prediction algorithm, trend engine, RUL engine, diagnosis engine, threshold logic, or control capability was added.
+
+## Alpha 21 API boundary
+
+Alpha 21 connected the user-facing /api/ask predictive request path to the canonical V3 tenant-safe production flow.
+
+The API preserves:
+- tenant identity
+- canonical predictive result
+- execution provenance
+- read-only/human-decision safety flags
+
+Missing tenant context returns TENANT_CONTEXT_REQUIRED; no global fallback is permitted.
 
 ## Alpha 20 production boundary
 
@@ -43,26 +74,13 @@ The API requires authenticated read access and explicit tenant context. Missing 
 
 The response preserves the canonical predictive result and execution provenance together with the read-only/human-decision safety boundary.
 
-## Alpha 19 predictive execution provenance contract
-
-Alpha 19 adds a deterministic provenance record to the canonical predictive flow.
-
-The contract captures:
-- exact plant and tag scope
-- evidence quality and observation/window summary
-- context assembly status
-- predictor invocation status/reason
-- explicit outcome-verification status
-- immutable safety flags
-
-The audit object is a contract builder only. It does not persist records, calculate predictions, interpret predictor output, infer outcomes, or perform control actions. Persistence remains the caller's responsibility.
-
 ## Universal and safety guarantees
 
 - Cross-plant evidence: REJECTED
 - Cross-plant history: REJECTED
 - Cross-plant maintenance memory: REJECTED
 - Cross-plant prediction outcome: REJECTED
+- Cross-organization plant access: REJECTED
 - Legacy/global predictor: BLOCKED on V3 path
 - Legacy/global history: BLOCKED
 - Legacy/global memory: BLOCKED
@@ -75,32 +93,22 @@ The audit object is a contract builder only. It does not persist records, calcul
 
 ## Verification
 
-Alpha 10 dedicated V3 regression: **PASSED**.
-Alpha 11 dedicated V3 regression: **PASSED** (run #88).
-Alpha 12 dedicated V3 regression: **PASSED** (run #100).
-Alpha 13 dedicated V3 regression: **PASSED** (run #114, 52 tests).
-Alpha 14 dedicated V3 regression: **PASSED** (run #124, 52 tests).
-Alpha 15 dedicated V3 regression: **PASSED** (run #134).
-Alpha 16 dedicated V3 regression: **PASSED** (run #140, 55 tests).
-Alpha 17 dedicated V3 regression: **PASSED** (run #150, 56 tests).
-Alpha 18 dedicated V3 regression: **PASSED** (run #178, 60 tests).
-Alpha 19 dedicated V3 regression: **PASSED** (run #188).
 Alpha 20 dedicated V3 regression: **PASSED** (run #206, 64 passed).
+Alpha 21 dedicated V3 regression: **PASSED** (run #225).
+Alpha 22 dedicated V3 regression: **PASSED** (run #231).
 
-Additional checks on Alpha 20 head:
-- ANVIQO V2 Regression: **PASSED**
-- Failure Prediction Dashboard workflow: **PASSED**
-
-The branch remains separate and PR #40 remains draft/unmerged.
+PR #40 remains draft/unmerged.
 
 ## Next safe milestone
 
-Before adding another predictive feature, inspect the user-facing Predictive Intelligence API contract and add a focused production-boundary regression covering:
-1. authenticated tenant context reaching the V3 flow
-2. missing tenant context blocked without fallback
-3. cross-organization plant access blocked
-4. canonical evidence/window/prediction/provenance fields preserved at the API boundary
-5. read-only/human-decision safety preserved
+**Alpha 23 — Predictive API provenance contract regression.**
+
+Focus:
+1. prove canonical evidence quality/window fields survive the /api/failure_prediction boundary
+2. prove execution provenance survives the API response
+3. prove cross-plant and cross-organization scope remains enforced
+4. preserve read-only/human-decision safety
+5. add no new prediction or reasoning engine
 
 No new prediction, trend, RUL, diagnosis, threshold, or control engine may be introduced.
 
