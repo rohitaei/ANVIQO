@@ -145,3 +145,85 @@ def history_summary(tag: str) -> Dict[str, Any]:
         "sources": sorted({str(row.get("source") or "") for row in rows if row.get("source")}),
         "observations": rows,
     }
+
+
+def record_tenant_observation(
+    plant_id: str,
+    organization_id: str,
+    tag: str,
+    value: float,
+    timestamp: Optional[str] = None,
+    source_type: str = "",
+    source: str = "",
+    unit: str = "",
+    state: str = "",
+    area: str = "",
+    provenance: str = "",
+) -> Dict[str, Any]:
+    """Persist one observation with explicit organization and plant scope."""
+    plant_id = str(plant_id or "").strip()
+    organization_id = str(organization_id or "").strip()
+    if not plant_id or not organization_id:
+        raise ValueError("plant_id and organization_id are required")
+    record = record_observation(
+        tag=tag, value=value, timestamp=timestamp, source_type=source_type,
+        source=source, unit=unit, state=state, area=area, provenance=provenance,
+    )
+    data = _load()
+    for existing in data["observations"]:
+        if existing.get("observation_id") == record.get("observation_id"):
+            existing["plant_id"] = plant_id
+            existing["organization_id"] = organization_id
+            record = existing
+            break
+    _save(data)
+    return record
+
+
+def get_tenant_observations(
+    plant_id: str,
+    organization_id: str,
+    tag: str,
+    limit: int = 500,
+) -> List[Dict[str, Any]]:
+    """Read history only for the exact organization, plant, and tag."""
+    plant_id = str(plant_id or "").strip()
+    organization_id = str(organization_id or "").strip()
+    if not plant_id or not organization_id:
+        raise ValueError("plant_id and organization_id are required")
+    normalized_tag = _norm_tag(tag)
+    data = _load()
+    rows = [
+        row for row in data["observations"]
+        if isinstance(row, dict)
+        and row.get("plant_id") == plant_id
+        and row.get("organization_id") == organization_id
+        and row.get("tag") == normalized_tag
+        and row.get("simulation") is False
+    ]
+    rows.sort(key=lambda row: str(row.get("timestamp") or ""))
+    return rows[-max(1, int(limit)) :]
+
+
+def tenant_history_summary(
+    plant_id: str,
+    organization_id: str,
+    tag: str,
+) -> Dict[str, Any]:
+    """Return tenant-scoped history without any global fallback."""
+    rows = get_tenant_observations(plant_id, organization_id, tag)
+    return {
+        "version": VERSION,
+        "plant_id": plant_id,
+        "organization_id": organization_id,
+        "tag": _norm_tag(tag),
+        "count": len(rows),
+        "first_timestamp": rows[0].get("timestamp") if rows else None,
+        "last_timestamp": rows[-1].get("timestamp") if rows else None,
+        "sources": sorted({str(row.get("source") or "") for row in rows if row.get("source")}),
+        "observations": rows,
+        "read_only": True,
+        "plc_write": False,
+        "scada_control": False,
+        "human_decision_required": True,
+    }
