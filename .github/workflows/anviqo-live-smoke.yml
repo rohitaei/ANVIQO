@@ -1,0 +1,44 @@
+name: ANVIQO live smoke test
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Render deployment
+        env:
+          URL: https://anviqo.onrender.com
+        run: |
+          for i in {1..30}; do
+            code=$(curl -sS -o /tmp/health.json -w "%{http_code}" "$URL/health" || true)
+            if [ "$code" = "200" ]; then
+              cat /tmp/health.json
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Render health check failed"
+          cat /tmp/health.json || true
+          exit 1
+      - name: Verify public API contracts
+        env:
+          URL: https://anviqo.onrender.com
+        run: |
+          set -e
+          curl -fsS "$URL/health" | tee /tmp/health.json
+          curl -fsS "$URL/api/status" | tee /tmp/status.json
+          curl -fsS "$URL/api/safety" | tee /tmp/safety.json
+          python - <<'PY'
+          import json
+          h=json.load(open("/tmp/health.json"))
+          s=json.load(open("/tmp/status.json"))
+          x=json.load(open("/tmp/safety.json"))
+          assert h.get("status") in ("ok","READY")
+          assert isinstance(s, dict)
+          assert isinstance(x, dict)
+          print("ANVIQO LIVE SMOKE: PASS")
+          PY
