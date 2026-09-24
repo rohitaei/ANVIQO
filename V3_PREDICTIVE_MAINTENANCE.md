@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 27 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 28 VERIFIED
 
 ## Completed milestones
 
@@ -31,30 +31,33 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 27 VERIFIED
 25. **Predictive Production History Tenant Boundary** — VERIFIED
 26. **Predictive Production Data → V3 History Integration** — VERIFIED
 27. **Recorded Tenant History → Canonical Predictive Evidence** — VERIFIED
+28. **Read-only IndustrialPoint → Tenant Predictive History Adapter Seam** — VERIFIED
 
-## Alpha 27 — production predictive evidence path
+## Alpha 28 — production observation source integration boundary
 
-When `/api/failure_prediction` receives no manually supplied observation list, the production boundary now reads the already-recorded observation history for the exact authenticated organization + plant + tag and passes those observations into the existing canonical V3 predictive flow.
+The production observation path now has a universal, read-only adapter seam from the existing V2 `IndustrialPoint` contract into the existing tenant-scoped predictive history store.
 
 The path is:
 
-`Authenticated tenant → production boundary → tenant-scoped recorded observations → existing V3 evidence validator/gate → existing tenant-safe predictor`
+`Read-only source adapter → IndustrialPoint → tenant-scoped observation history → existing V3 evidence gate → existing predictor`
 
-The recorded observation rows retain:
-- timestamp
-- numeric value
-- source_type
-- source
-- provenance
-- plant_id
-- organization_id
-- simulation=False
+The Alpha 28 bridge:
+- requires explicit `plant_id` and `organization_id`
+- requires the IndustrialPoint plant identity to match exactly
+- preserves tag, timestamp, numeric value, source, unit, state, area and provenance
+- rejects simulation/demo points from production predictive history
+- reuses the existing `record_tenant_observation` storage contract
+- adds no PLC/SCADA write path
+- adds no polling implementation or invented telemetry
+- adds no prediction, trend, RUL, diagnosis, threshold or control logic
 
-No observation is manufactured or repaired. The existing V3 evidence contract still decides whether the evidence is VALID/PARTIAL/EMPTY and whether the existing predictor may be invoked.
+### Important source finding
 
-Explicitly supplied observations remain supported; automatic use occurs only when the caller supplies an empty observation list.
+The repository does **not** currently contain a production component that automatically reads real PLC/SCADA/OPC telemetry and feeds the observation endpoint.
 
-No new prediction algorithm, trend engine, RUL engine, diagnosis engine, threshold logic, or control capability was added.
+The existing V2 `ReadOnlySourceAdapter` is deliberately transport-neutral, and the current PCI adapter is explicitly a simulation/demo adapter. Therefore Alpha 28 verifies the **safe source boundary**, not live telemetry connectivity.
+
+Actual live telemetry requires a real plant-specific transport configuration behind the universal adapter contract; ANVIQO intelligence remains unchanged.
 
 ## Universal and safety guarantees
 
@@ -66,7 +69,6 @@ No new prediction algorithm, trend engine, RUL engine, diagnosis engine, thresho
 - Legacy/global predictor: BLOCKED on V3 path
 - Legacy/global history: BLOCKED
 - Legacy/global memory: BLOCKED
-- Insufficient/partial evidence: predictor NOT INVOKED
 - Simulation/demo observations: NOT ELIGIBLE for production history
 - Read-only: TRUE
 - PLC write: FALSE
@@ -84,25 +86,26 @@ Alpha 24 dedicated V3 regression: **PASSED** (run #243).
 Alpha 25 dedicated V3 regression: **PASSED** (run #258, production history boundary tests included).
 Alpha 26 dedicated V3 regression: **PASSED** (run #268, production history injection regression included).
 Alpha 27 dedicated V3 regression: **PASSED** (run #275, production-history-to-evidence regression included).
+Alpha 28 dedicated V3 regression: **PASSED** (run #279, read-only IndustrialPoint adapter regressions included).
 
 PR #40 remains draft/unmerged.
 
 ## Important live-status distinction
 
-Alpha 27 verifies the production code path and its regression contract in CI. It does **not** by itself prove that a live Render plant is currently receiving real telemetry. Real deployment/telemetry verification remains a separate operational test.
+Alpha 28 verifies the source boundary and regression contract in CI. It does **not** prove that a live Render plant is currently receiving real PLC/SCADA/OPC telemetry. No such claim is being made.
 
 ## Next safe milestone
 
-**Alpha 28 — Production observation source integration inspection.**
+**Alpha 29 — Real read-only source adapter integration contract.**
 
 Focus:
-1. trace what component actually produces `/api/failure_prediction/observation` records in a real plant
-2. verify live/read-only telemetry can populate the existing observation contract without simulation
-3. preserve organization + plant + tag scope at the source boundary
-4. preserve timestamp/value/source/provenance evidence
+1. define the transport-neutral handoff from an actual read-only source into `IndustrialPoint`
+2. require explicit plant identity and source provenance at ingestion
+3. reject simulation/demo sources at the production boundary
+4. preserve timestamp/value/quality/unit/state evidence
 5. keep the existing V3 predictor and evidence gate unchanged
-6. add no new prediction or reasoning engine
+6. do not invent protocol credentials, PLC polling, or plant-specific reasoning
 
-No new prediction, trend, RUL, diagnosis, threshold, or control engine may be introduced.
+The actual protocol (OPC UA, MQTT, historian/API, etc.) must be supplied/configured as a source adapter; the intelligence layer must remain universal.
 
 **CHANGE DATA, NOT CODE.**
