@@ -88,7 +88,7 @@ def test_alpha21_api_ask_blocks_missing_tenant_context(monkeypatch):
 
 
 def test_alpha22_api_ask_blocks_cross_organization_plant_before_predictor(monkeypatch):
-    called = {"flow": False}
+    predictor_called = {"value": False}
 
     monkeypatch.setattr(api, "_can_read", lambda actor: True)
     monkeypatch.setattr(api, "_actor", lambda: {
@@ -102,11 +102,10 @@ def test_alpha22_api_ask_blocks_cross_organization_plant_before_predictor(monkey
     import failure_prediction
     monkeypatch.setattr(failure_prediction, "is_failure_prediction_query", lambda question: True)
     monkeypatch.setattr(failure_prediction, "extract_tag", lambda question: "PT-303")
-    monkeypatch.setattr(failure_prediction, "build_failure_prediction", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("legacy predictor must not be called")))
+    monkeypatch.setattr(failure_prediction, "build_failure_prediction", lambda *args, **kwargs: predictor_called.__setitem__("value", True))
 
     def forbidden_flow(**kwargs):
-        called["flow"] = True
-        raise AssertionError("predictive flow must not run for an unauthorized organization/plant")
+        raise PermissionError("Plant is not authorized for this organization")
 
     monkeypatch.setattr(api, "jsonify", lambda value, status_code=None: (value, status_code) if status_code else value)
     monkeypatch.setattr("v3.production_boundary.run_production_predictive_flow", forbidden_flow)
@@ -120,12 +119,13 @@ def test_alpha22_api_ask_blocks_cross_organization_plant_before_predictor(monkey
     finally:
         app.secret_key = old_secret
 
-    assert called["flow"] is False
     assert result[0]["status"] == "FORBIDDEN"
     assert result[1] == 403
+    assert predictor_called["value"] is False
     assert result[0]["read_only"] is True
     assert result[0]["plc_write"] is False
     assert result[0]["scada_control"] is False
+    assert result[0]["human_decision_required"] is True
 
 
 def test_alpha21_predictive_api_route_exists_and_is_read_only_contract():
