@@ -1,6 +1,6 @@
 # ANVIQO V3 - Predictive Maintenance Foundation
 
-Status: V3 PREDICTIVE MAINTENANCE — ALPHA 29 VERIFIED
+Status: V3 PREDICTIVE MAINTENANCE — ALPHA 30 IMPLEMENTED — CI VERIFICATION PENDING
 
 ## Completed milestones
 
@@ -33,6 +33,7 @@ Status: V3 PREDICTIVE MAINTENANCE — ALPHA 29 VERIFIED
 27. **Recorded Tenant History → Canonical Predictive Evidence** — VERIFIED
 28. **Read-only IndustrialPoint → Tenant Predictive History Adapter Seam** — VERIFIED
 29. **Universal Real Read-only IndustrialPoint Source Adapter Contract** — VERIFIED
+30. **Tata Metaliks Shift Report → IndustrialPoint Historical Source Adapter** — IMPLEMENTED
 
 ## Alpha 29 — universal real read-only source adapter contract
 
@@ -68,6 +69,25 @@ Therefore Alpha 29 verifies the **universal adapter contract**, not live plant t
 
 The real transport must be supplied behind this contract. Once a permitted read-only source is available, its reader can emit `IndustrialPoint` records without changing the V3 predictor or ANVI intelligence layer.
 
+## Alpha 30 — Tata Metaliks shift report integration
+
+The supplied Tata Metaliks shift report was used as the real source shape for a universal tabular adapter. The pasted report contains a report date, an hourly-period column, and many instrument/process tag columns with numeric hourly averages.
+
+The new `v2.shift_report_adapter` path:
+- accepts tab-separated report text supplied by the caller
+- discovers the report date and `1 Hr. Avg. Value` header without plant-specific tag code
+- converts each hourly period to its hour-start ISO timestamp
+- converts numeric cells into existing `IndustrialPoint` records
+- preserves source tag names such as `PT_303` without inventing units or quality
+- marks the source as `HISTORICAL`, not live telemetry
+- skips blank/non-numeric cells rather than repairing or inventing values
+- requires caller-supplied `plant_id`
+- can feed the existing `IndustrialPointSourceAdapter`/V2 fabric and tenant history path
+
+This is historical plant evidence, not proof of live PLC/SCADA connectivity. The pasted message ends partway through the report, so only the supplied portion can be parsed from this conversation; the adapter is designed for the complete export when available.
+
+No prediction, trend, RUL, diagnosis, threshold, alarm, PLC write, SCADA control, or automatic action logic was added.
+
 ## Universal and safety guarantees
 
 - Cross-plant evidence: REJECTED
@@ -97,6 +117,7 @@ Alpha 26 dedicated V3 regression: **PASSED** (run #268, production history injec
 Alpha 27 dedicated V3 regression: **PASSED** (run #275, production-history-to-evidence regression included).
 Alpha 28 dedicated V3 regression: **PASSED** (run #279, read-only IndustrialPoint adapter regressions included).
 Alpha 29 dedicated V3 regression: **PASSED** (run #287, live IndustrialPoint adapter contract regressions included).
+Alpha 30 dedicated regression: **PENDING** (shift-report adapter implementation and tests added from the supplied Tata Metaliks report shape).
 
 PR #40 remains draft/unmerged.
 
@@ -106,17 +127,16 @@ Alpha 29 verifies the universal source adapter contract in CI. It does **not** p
 
 ## Next safe milestone
 
-**Alpha 30 — Actual read-only plant source integration inspection.**
+**Alpha 31 — Connect normalized shift-report evidence to tenant history/predictive flow.**
 
 Focus:
-1. identify what real read-only plant data source is actually available
-2. inspect its connection/API/export contract before writing any transport code
-3. map source fields into the existing `IndustrialPoint` contract
-4. preserve plant and organization tenant identity
-5. route the data into the existing V2/V3 evidence/history path
-6. test with real source evidence without changing the predictor
-7. keep PLC write, SCADA control and automatic action disabled
+1. persist supplied historical points through the existing tenant-scoped observation boundary
+2. verify organization + plant identity before persistence
+3. route the same observations into the canonical V3 evidence gate
+4. preserve timestamps, values, source and provenance
+5. test PT_303/PT_304 and additional report tags without tag-specific reasoning code
+6. keep PLC write, SCADA control and automatic action disabled
 
-No protocol credentials or connection details will be invented. If no real source is available yet, Alpha 30 will stop at the integration contract rather than fabricate telemetry.
+No protocol credentials or connection details will be invented. Live telemetry remains a separate integration task.
 
 **CHANGE DATA, NOT CODE.**
