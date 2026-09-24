@@ -117,13 +117,23 @@ def _install_live_answer_patch():
 
             candidate = stability._candidate(text)
             # Keep the universal PCI resolver on the actual live request path.
-            # Resolver input remains tenant-scoped.
+            # Resolver input remains tenant-scoped. Plant ID is the
+            # authorization boundary; organization_id is retried without the
+            # redundant filter so older/imported rows remain readable when
+            # their organization metadata is stale. No cross-plant fallback
+            # is possible because every query still requires this plant_id.
             if candidate:
                 rows = stability._pci_resolve_rows(pid, oid, candidate)
+                if not rows and oid:
+                    rows = stability._pci_resolve_rows(pid, None, candidate)
                 if not rows:
                     rows = stability._query_rows(pid, oid, identifier=candidate, limit=40)
+                if not rows and oid:
+                    rows = stability._query_rows(pid, None, identifier=candidate, limit=40)
             else:
                 rows = stability._query_rows(pid, oid, terms=stability._terms(text), limit=80)
+                if not rows and oid:
+                    rows = stability._query_rows(pid, None, terms=stability._terms(text), limit=80)
             return stability._exact_answer(text, rows, plant) if candidate else stability._summary_answer(text, rows, plant)
 
         stability._answer = membership_answer
