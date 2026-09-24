@@ -163,3 +163,51 @@ def test_alpha24_production_flow_preserves_loaded_tenant_package(monkeypatch):
     assert captured["plant_id"] == "PLANT-A"
     assert captured["tag"] == "PT-303"
     assert captured["package"] is package
+
+
+def test_alpha26_production_flow_injects_tenant_history_provider(monkeypatch):
+    captured = {}
+
+    package = {
+        "plant": {"plant_id": "PLANT-A", "organization_id": "ORG-1", "name": "Demo", "industry": "steel"},
+        "records": [{"tag": "PT-303", "external_id": "PT-303", "metadata": {}}],
+    }
+
+    monkeypatch.setattr(
+        production_boundary,
+        "load_tenant_onboarding_package",
+        lambda plant_id, organization_id: package,
+    )
+
+    import failure_prediction_history as history
+    monkeypatch.setattr(
+        history,
+        "get_tenant_observations",
+        lambda **kwargs: captured.setdefault("history_scope", kwargs) or [],
+    )
+
+    def fake_flow(*args, **kwargs):
+        captured["flow"] = kwargs
+        provider = kwargs["history_provider"]
+        captured["history"] = provider(plant_id="PLANT-A", tag="PT-303")
+        return {"status": "TEST"}
+
+    monkeypatch.setattr(production_boundary, "run_predictive_flow_from_package", fake_flow)
+
+    result = production_boundary.run_production_predictive_flow(
+        plant_id="PLANT-A",
+        organization_id="ORG-1",
+        tag="PT-303",
+        observations=[
+            {"plant_id": "PLANT-A", "tag": "PT-303", "timestamp": "2026-09-20T10:00:00Z", "value": 10.0},
+            {"plant_id": "PLANT-A", "tag": "PT-303", "timestamp": "2026-09-20T10:01:00Z", "value": 10.2},
+        ],
+    )
+
+    assert result["status"] == "TEST"
+    assert captured["flow"]["history_provider"] is not None
+    assert captured["history_scope"] == {
+        "plant_id": "PLANT-A",
+        "organization_id": "ORG-1",
+        "tag": "PT-303",
+    }
