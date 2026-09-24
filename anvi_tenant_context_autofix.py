@@ -136,6 +136,27 @@ def _install_live_answer_patch():
                     rows = stability._query_rows(pid, None, terms=stability._terms(text), limit=80)
             return stability._exact_answer(text, rows, plant) if candidate else stability._summary_answer(text, rows, plant)
 
+        # Tenant-scoped verified PCI adapter: when the selected plant has an
+        # explicit binding to the bundled verified PCI dataset, expose that evidence
+        # through the existing frozen resolver. Never use the registry as a global
+        # fallback; unbound plants remain tenant-knowledge-only.
+        if not getattr(stability, "_anviqo_verified_pci_adapter_patch", False):
+            original_pci_resolve_rows = stability._pci_resolve_rows
+            def tenant_pci_resolve_rows(plant_id, organization_id, query):
+                rows = original_pci_resolve_rows(plant_id, organization_id, query)
+                if rows:
+                    return rows
+                try:
+                    import anvi_verified_pci_adapter as verified_pci
+                    return verified_pci.resolve_for_bound_plant(
+                        plant_id, organization_id, query
+                    )
+                except Exception as exc:
+                    print(f"ANVIQO_VERIFIED_PCI_ADAPTER_ERROR error={exc!r}", flush=True)
+                    return []
+            stability._pci_resolve_rows = tenant_pci_resolve_rows
+            stability._anviqo_verified_pci_adapter_patch = True
+
         stability._answer = membership_answer
         stability._anviqo_direct_membership_answer_patch = True
         return True
