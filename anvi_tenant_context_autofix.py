@@ -94,7 +94,7 @@ def _install_live_answer_patch():
                 "status": "ACTIVE",
             }
             candidate = stability._candidate(text)
-            rows = (stability._query_rows(pid, None, identifier=candidate, limit=40) if candidate else stability._query_rows(pid, None, terms=stability._terms(text), limit=80))
+            # Keep the universal PCI resolver on the actual live request path.\n            # The previous direct membership patch bypassed it, so verified\n            # PCI identities such as PT_303/PT303 could incorrectly report\n            # TENANT_KNOWLEDGE_NOT_FOUND. Resolver input remains tenant-scoped.\n            if candidate:\n                rows = stability._pci_resolve_rows(pid, oid, candidate)\n                if not rows:\n                    rows = stability._query_rows(pid, None, identifier=candidate, limit=40)\n            else:\n                rows = stability._query_rows(pid, None, terms=stability._terms(text), limit=80)
             return stability._exact_answer(text, rows, plant) if candidate else stability._summary_answer(text, rows, plant)
 
         stability._answer = membership_answer
