@@ -92,6 +92,6 @@ def test_alpha31_reuses_canonical_evidence_gate():
     ]
     result = validate_shift_report_tag_evidence("plant-a", "PT-303", observations)
     assert result["quality"] == "VALID"
-    assert result["usable_count"] == 2
+    assert result["usable_observation_count"] == 2
     assert result["safety"]["read_only"] is True
     assert result["safety"]["plc_write"] is False
