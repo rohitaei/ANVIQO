@@ -110,10 +110,10 @@ class TenantPredictiveProviderSet:
                 return self._row(value, tag)
         return None
 
-    def sources(self):
+    def sources(self, history_provider=None):
         from v3.predictive_sources import TenantPredictiveSources
         return TenantPredictiveSources(
-            self.pci, self.history, self.memory, self.events, self.health
+            self.pci, history_provider or self.history, self.memory, self.events, self.health
         )
 
     @staticmethod
