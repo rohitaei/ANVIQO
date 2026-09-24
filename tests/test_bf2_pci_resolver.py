@@ -63,3 +63,21 @@ def test_spare_query_engine_is_available():
     assert isinstance(result, dict)
     assert result.get("domain") == "critical_spares"
     assert result.get("evidence") == "critical_spares.xlsx"
+
+def test_verified_pci_adapter_is_plant_bound():
+    import anvi_verified_pci_adapter as adapter
+    original = adapter.is_bound
+    try:
+        adapter.is_bound = lambda plant_id, organization_id=None: False
+        assert adapter.resolve_for_bound_plant("plant-a", "org-a", "PT303") == []
+        adapter.is_bound = lambda plant_id, organization_id=None: True
+        rows = adapter.resolve_for_bound_plant("plant-a", "org-a", "PT303")
+        assert rows, "bound verified PCI evidence did not resolve"
+        assert any(r.get("tag") == "PT_303" for r in rows), rows
+        row = next(r for r in rows if r.get("tag") == "PT_303")
+        assert row["evidence_scope"] == "BOUND_PLANT_VERIFIED_PCI"
+        assert row["evidence_read_only"] is True
+        assert row["plant_id"] == "plant-a"
+    finally:
+        adapter.is_bound = original
+\n
