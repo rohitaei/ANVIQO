@@ -113,6 +113,7 @@ def test_alpha23_failure_prediction_api_preserves_provenance(monkeypatch):
         return expected
 
     monkeypatch.setattr("v3.production_boundary.run_production_predictive_flow", fake_flow)
+    monkeypatch.setattr(api, "jsonify", lambda value, status_code=None: (value, status_code) if status_code else value)
     old_secret = app.secret_key
     app.secret_key = "alpha23-test"
     try:
