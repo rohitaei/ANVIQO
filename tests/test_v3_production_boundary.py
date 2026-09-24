@@ -211,3 +211,85 @@ def test_alpha26_production_flow_injects_tenant_history_provider(monkeypatch):
         "organization_id": "ORG-1",
         "tag": "PT-303",
     }
+
+
+
+def test_alpha27_production_flow_uses_recorded_tenant_history_as_evidence(monkeypatch):
+    package = _package()
+    captured = {}
+
+    monkeypatch.setattr(
+        production_boundary,
+        "load_tenant_onboarding_package",
+        lambda plant_id, organization_id: package,
+    )
+
+    import failure_prediction_history as history
+    rows = [
+        {
+            "observation_id": "FPO-A",
+            "plant_id": "PLANT-A",
+            "organization_id": "ORG-1",
+            "tag": "PT-303",
+            "value": 42.0,
+            "timestamp": "2026-09-20T10:00:00Z",
+            "source_type": "LIVE_TELEMETRY",
+            "source": "read-only telemetry",
+            "provenance": "source=plant telemetry",
+            "simulation": False,
+        },
+        {
+            "observation_id": "FPO-B",
+            "plant_id": "PLANT-A",
+            "organization_id": "ORG-1",
+            "tag": "PT-303",
+            "value": 43.0,
+            "timestamp": "2026-09-20T10:01:00Z",
+            "source_type": "LIVE_TELEMETRY",
+            "source": "read-only telemetry",
+            "provenance": "source=plant telemetry",
+            "simulation": False,
+        },
+    ]
+    calls = []
+
+    def fake_history(**kwargs):
+        calls.append(kwargs)
+        return rows
+
+    monkeypatch.setattr(history, "get_tenant_observations", fake_history)
+
+    def fake_package_flow(plant_id, tag, observations, **kwargs):
+        captured["plant_id"] = plant_id
+        captured["tag"] = tag
+        captured["observations"] = observations
+        captured["window_start"] = kwargs.get("window_start")
+        captured["window_end"] = kwargs.get("window_end")
+        return {"status": "EVIDENCE_REACHED"}
+
+    monkeypatch.setattr(
+        production_boundary,
+        "run_predictive_flow_from_package",
+        fake_package_flow,
+    )
+
+    result = production_boundary.run_production_predictive_flow(
+        plant_id="PLANT-A",
+        organization_id="ORG-1",
+        tag="PT-303",
+        observations=[],
+        window_start="2026-09-20T10:00:00Z",
+        window_end="2026-09-20T10:01:00Z",
+    )
+
+    assert result["status"] == "EVIDENCE_REACHED"
+    assert captured["observations"] == rows
+    assert captured["observations"][0]["timestamp"] == "2026-09-20T10:00:00Z"
+    assert captured["observations"][0]["value"] == 42.0
+    assert captured["observations"][0]["source"] == "read-only telemetry"
+    assert captured["observations"][0]["provenance"] == "source=plant telemetry"
+    assert calls == [{
+        "plant_id": "PLANT-A",
+        "organization_id": "ORG-1",
+        "tag": "PT-303",
+    }]
