@@ -184,6 +184,32 @@ def record_tenant_observation(
     )
 
 
+def record_tenant_industrial_point(plant_id: str, organization_id: str, point: Any, source_type: str, provenance: str) -> Dict[str, Any]:
+    """Persist an existing V2 read-only IndustrialPoint as tenant history.
+
+    Adapter seam only: it does not poll PLC/SCADA, create values, or predict.
+    Simulation/demo points are explicitly rejected.
+    """
+    plant_id = str(plant_id or "").strip()
+    organization_id = str(organization_id or "").strip()
+    if not plant_id or not organization_id:
+        raise ValueError("plant_id and organization_id are required")
+    if getattr(point, "plant_id", "") != plant_id:
+        raise ValueError("IndustrialPoint plant_id does not match tenant plant")
+    mode = str(getattr(point, "mode", "") or "").upper()
+    source = str(getattr(point, "source", "") or "").strip()
+    if "SIMULATION" in mode or "DEMO" in mode or "SIMULATION" in source.upper() or "DEMO" in source.upper():
+        raise ValueError("simulation/demo IndustrialPoint is not eligible for production history")
+    return record_tenant_observation(
+        plant_id=plant_id, organization_id=organization_id,
+        tag=getattr(point, "tag", ""), value=getattr(point, "value", None),
+        timestamp=getattr(point, "timestamp", None), source_type=source_type,
+        source=source, unit=getattr(point, "unit", None) or "",
+        state=getattr(point, "state", None) or "", area=getattr(point, "area", None) or "",
+        provenance=provenance,
+    )
+
+
 def get_tenant_observations(
     plant_id: str,
     organization_id: str,
