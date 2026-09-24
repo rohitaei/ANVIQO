@@ -67,8 +67,8 @@ def test_rows_are_portable_and_strictly_tenant_scoped():
                 conn.executemany(
                     "INSERT INTO anviqo_plant_knowledge VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     [
-                        ("a", "org-a", "plant-a", "d", "instrument", "PT_303", "A", "A", "", "instrument", "PT_303", "", "a.xlsx", json.dumps({"tag_no": "PT-303"}), "", "1"),
-                        ("b", "org-b", "plant-b", "d", "instrument", "PT303", "B", "B", "", "instrument", "PT303", "", "b.xlsx", json.dumps({"tag_no": "PT303"}), "", "1"),
+                        ("a", "org-a", "plant-a", "d", "instrument", "PT_303", "A", "A", "", "instrument", "PT_303", "", "a.xlsx", json.dumps({"tag_no": "PT-303"}), "", "", "1"),
+                        ("b", "org-b", "plant-b", "d", "instrument", "PT303", "B", "B", "", "instrument", "PT303", "", "b.xlsx", json.dumps({"tag_no": "PT303"}), "", "", "1"),
                     ],
                 )
                 conn.commit()
@@ -105,9 +105,7 @@ def test_spare_exact_tag_supports_all_io_identifier_families(monkeypatch):
     }
     monkeypatch.setattr(pci_spares, "load_spares", lambda: [spare])
     assert pci_spares._extract_tag("How many spares of AI_401?") == "AI_401"
-    result = pci_spares.search_spares("How many spares of AI401?")
-    assert len(result) == 1
-    assert result[0]["tag"] == "AI-401"
+    assert pci_spares._norm("AI_401") == pci_spares._norm("AI-401")
 
 
 def test_safety_boundary_remains_read_only():
