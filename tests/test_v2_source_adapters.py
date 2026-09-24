@@ -2,7 +2,11 @@ import unittest
 
 from v2.contracts import IndustrialPoint
 from v2.data_fabric import ReadOnlyDataFabric
-from v2.source_adapters import FabricSourceRunner, PciDemoStreamAdapter
+from v2.source_adapters import (
+    FabricSourceRunner,
+    IndustrialPointSourceAdapter,
+    PciDemoStreamAdapter,
+)
 
 
 class TestPciDemoAdapter(unittest.TestCase):
@@ -38,6 +42,69 @@ class TestPciDemoAdapter(unittest.TestCase):
         self.assertFalse(health["plc_write"])
         self.assertFalse(health["scada_control"])
         self.assertTrue(health["human_decision_required"])
+
+    def test_live_adapter_accepts_tenant_scoped_read_only_point(self):
+        point = IndustrialPoint(
+            plant_id="plant-a",
+            tag="PT-303",
+            timestamp="2026-09-24T10:00:00+00:00",
+            value=47.5,
+            source="OPC-UA READ ONLY",
+            mode="LIVE",
+            quality="GOOD",
+            state="HEALTHY",
+            unit="kg/cm2",
+            area="PCI",
+        )
+        adapter = IndustrialPointSourceAdapter(
+            lambda plant_id: [point],
+            name="OPC-UA READ ONLY",
+        )
+        result = list(adapter.read("plant-a"))
+        self.assertEqual(result, [point])
+
+    def test_live_adapter_rejects_cross_plant_point(self):
+        point = IndustrialPoint(
+            plant_id="plant-b",
+            tag="PT-303",
+            timestamp="2026-09-24T10:00:00+00:00",
+            value=47.5,
+            source="OPC-UA READ ONLY",
+            mode="LIVE",
+        )
+        adapter = IndustrialPointSourceAdapter(lambda plant_id: [point])
+        with self.assertRaisesRegex(ValueError, "cross-plant"):
+            list(adapter.read("plant-a"))
+
+    def test_live_adapter_rejects_simulation_and_demo(self):
+        for source, mode in (
+            ("OPC-UA READ ONLY", "SIMULATION"),
+            ("PCI DEMO STREAM", "LIVE"),
+        ):
+            point = IndustrialPoint(
+                plant_id="plant-a",
+                tag="PT-303",
+                timestamp="2026-09-24T10:00:00+00:00",
+                value=47.5,
+                source=source,
+                mode=mode,
+            )
+            adapter = IndustrialPointSourceAdapter(lambda plant_id, p=point: [p])
+            with self.assertRaisesRegex(ValueError, "simulation/demo"):
+                list(adapter.read("plant-a"))
+
+    def test_live_adapter_requires_source_evidence(self):
+        point = IndustrialPoint(
+            plant_id="plant-a",
+            tag="PT-303",
+            timestamp="2026-09-24T10:00:00+00:00",
+            value=47.5,
+            source="",
+            mode="LIVE",
+        )
+        adapter = IndustrialPointSourceAdapter(lambda plant_id: [point])
+        with self.assertRaisesRegex(ValueError, "source"):
+            list(adapter.read("plant-a"))
 
 
 if __name__ == "__main__":
