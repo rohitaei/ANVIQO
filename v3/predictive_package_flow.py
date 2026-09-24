@@ -19,6 +19,7 @@ def run_predictive_flow_from_package(
     outcome: dict[str, Any] | None = None,
     window_start: str | None = None,
     window_end: str | None = None,
+    history_provider=None,
 ) -> dict[str, Any]:
     """Run the canonical V3 flow with real tenant-scoped package providers."""
     provider = TenantPredictiveProviderSet(package)
@@ -27,7 +28,7 @@ def run_predictive_flow_from_package(
 
     from v3.existing_predictor_adapter import make_existing_predictor
 
-    sources = provider.sources()
+    sources = provider.sources(history_provider=history_provider)
     predictor = make_existing_predictor(sources)
     return run_predictive_flow(
         plant_id,
