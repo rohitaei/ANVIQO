@@ -116,4 +116,30 @@ def run_production_predictive_flow(
     )
 
 
-__all__ = ["load_tenant_onboarding_package", "run_production_predictive_flow"]
+def fetch_production_predictive_history(
+    *,
+    plant_id: str,
+    organization_id: str,
+    tag: str,
+) -> dict[str, Any]:
+    """Expose production history through the canonical V3 tenant bridge."""
+    plant_id = str(plant_id or "").strip()
+    organization_id = str(organization_id or "").strip()
+    tag = str(tag or "").strip()
+    if not plant_id or not organization_id or not tag:
+        raise ValueError("plant_id, organization_id and tag are required")
+
+    from failure_prediction_history import get_tenant_observations
+    from v3.predictive_history_bridge import fetch_tenant_predictive_history
+
+    def provider(*, plant_id: str, tag: str):
+        return get_tenant_observations(
+            plant_id=plant_id,
+            organization_id=organization_id,
+            tag=tag,
+        )
+
+    return fetch_tenant_predictive_history(plant_id, tag, provider=provider)
+
+
+__all__ = ["load_tenant_onboarding_package", "run_production_predictive_flow", "fetch_production_predictive_history"]
