@@ -46,5 +46,15 @@ class TestANVIIntelligenceOrchestrator(unittest.TestCase):
         self.assertFalse(SAFETY["v5_intelligence_modified"])
 
 
+    def test_realtime_evidence_state_keeps_safety_boundary(self):
+        import anviqo_intelligence_fabric as fabric
+        result = fabric.build_realtime_evidence_state("PT-303 current condition", "PT-303")
+        self.assertEqual(result["version"], "ANVIQO-V2-REALTIME-EVIDENCE")
+        self.assertFalse(result["safety"]["plc_write"])
+        self.assertFalse(result["safety"]["scada_control"])
+        self.assertFalse(result["safety"]["automatic_execution"])
+        self.assertTrue(result["safety"]["human_decision_required"])
+
+
 if __name__ == "__main__":
     unittest.main()

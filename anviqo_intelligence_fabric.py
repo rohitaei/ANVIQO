@@ -190,15 +190,16 @@ def events(tag):
     m = load("event_timeline")
 
     recent = call(m, "get_recent_events")
-    events = call(m, "get_events")
+    event_rows = call(m, "get_events", tag)
+    if not isinstance(event_rows, list):
+        event_rows = []
 
     c = load("event_correlation")
-
-    correlation = call(c, "correlate_events", tag)
+    correlation = call(c, "correlate_events", tag, event_rows)
 
     return {
         "recent": recent,
-        "events": events,
+        "events": event_rows,
         "correlation": correlation,
     }
 
@@ -238,7 +239,10 @@ def maintenance(tag, query):
 def spares(tag, query):
     m = load("pci_spares")
 
-    result = call(m, "answer_spare_query", query)
+    result = call(m, "answer_spare_management", query)
+
+    if result is None:
+        result = call(m, "answer_spare_query", query)
 
     if result is None:
         result = call(m, "query_spares", query)
@@ -374,6 +378,43 @@ def build_intelligence_fabric(query: str, tag: Optional[str] = None):
         "historical_experience": memory,
         "safety": dict(SAFETY),
         "execution_status": "READ_ONLY",
+        "decision_status": "HUMAN_DECISION_REQUIRED",
+    }
+
+
+
+def build_realtime_evidence_state(query: str, tag: Optional[str] = None):
+    """
+    V2 real-time evidence composition layer.
+
+    Reuses the existing PCI live snapshot, plant health, event timeline,
+    event correlation, maintenance, spares and verified memory engines.
+    It does not create a second prediction/control engine.
+    """
+    result = build_intelligence_fabric(query, tag)
+    evidence = result["evidence"]
+    live = evidence["pci"].get("live") or {}
+    plant_health = evidence["plant"].get("health")
+    event_data = evidence["events"]
+
+    return {
+        "version": "ANVIQO-V2-REALTIME-EVIDENCE",
+        "timestamp": result["timestamp"],
+        "query": query,
+        "tag": result["tag"],
+        "plant_state": {
+            "health": plant_health,
+            "live_snapshot": live,
+            "event_count": len(event_data.get("events") or []),
+            "recent_events": event_data.get("recent"),
+        },
+        "equipment_state": evidence["equipment"],
+        "correlation": event_data.get("correlation"),
+        "maintenance": evidence["maintenance"],
+        "spares": evidence["spares"],
+        "verified_memory": result["historical_experience"],
+        "confidence": result["confidence"],
+        "safety": dict(SAFETY),
         "decision_status": "HUMAN_DECISION_REQUIRED",
     }
 
