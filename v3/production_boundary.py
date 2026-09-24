@@ -105,6 +105,15 @@ def run_production_predictive_flow(
     window_end: str | None = None,
 ) -> dict[str, Any]:
     package = load_tenant_onboarding_package(plant_id, organization_id)
+
+    def history_provider(*, plant_id: str, tag: str):
+        from failure_prediction_history import get_tenant_observations
+        return get_tenant_observations(
+            plant_id=plant_id,
+            organization_id=organization_id,
+            tag=tag,
+        )
+
     return run_predictive_flow_from_package(
         plant_id,
         tag,
@@ -113,6 +122,7 @@ def run_production_predictive_flow(
         outcome=outcome,
         window_start=window_start,
         window_end=window_end,
+        history_provider=history_provider,
     )
 
 
