@@ -1,6 +1,6 @@
 import unittest
 
-from v2.shift_report_adapter import parse_shift_report_text
+from v2.shift_report_adapter import ShiftReportSourceAdapter, parse_shift_report_text
 
 
 REPORT = """TATA METALIKS LTD.
@@ -45,6 +45,13 @@ class TestShiftReportAdapter(unittest.TestCase):
         points = list(parse_shift_report_text(REPORT, plant_id="PLANT-A"))
         self.assertTrue(all(p.mode == "HISTORICAL" for p in points))
         self.assertTrue(all(p.quality == "UNKNOWN" for p in points))
+
+    def test_alpha30_source_adapter_uses_supplied_tenant(self):
+        adapter = ShiftReportSourceAdapter(REPORT, name="TATA METALIKS REPORT")
+        points = list(adapter.read("PLANT-B"))
+        self.assertEqual(len(points), 15)
+        self.assertTrue(all(p.plant_id == "PLANT-B" for p in points))
+        self.assertTrue(all(p.source == "TATA METALIKS REPORT" for p in points))
 
 
 if __name__ == "__main__":
