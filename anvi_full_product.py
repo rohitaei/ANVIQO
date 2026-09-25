@@ -88,6 +88,20 @@ class ANVI:
 
     def plant_snapshot(self):
         try:
+            from flask import has_request_context, session
+            if has_request_context() and session.get("authenticated") and session.get("plant_id"):
+                from anvi_tenant_chat_boundary import _rows
+                plant_id = session.get("plant_id")
+                rows = _rows(plant_id, limit=2500)
+                return {
+                    "status": "OK" if rows else "NO DATA",
+                    "mode": "ONBOARDING_DATA",
+                    "source": "SELECTED_PLANT_KNOWLEDGE",
+                    "total_io": len(rows),
+                    "records": rows,
+                    "plant_id": plant_id,
+                    "safety": SAFETY,
+                }
             from pci_live_simulator import get_live_pci_snapshot
             snapshot = get_live_pci_snapshot()
             snapshot["product"] = "ANVIQO"
@@ -102,6 +116,15 @@ class ANVI:
             }
 
     def equipment(self, tag):
+        try:
+            from flask import has_request_context, session
+            if has_request_context() and session.get("authenticated") and session.get("plant_id"):
+                from anvi_tenant_chat_boundary import _rows
+                plant_id = session.get("plant_id")
+                rows = _rows(plant_id, tag=tag, limit=50)
+                return {"equipment": tag, "identity": rows[0] if rows else None, "evidence_rows": rows, "scope": "SELECTED_PLANT_ONLY", "plant_id": plant_id, "read_only": True}
+        except Exception:
+            pass
         from equipment_database import get_equipment
         return {
             "equipment": tag,
