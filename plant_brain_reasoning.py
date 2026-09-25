@@ -80,8 +80,45 @@ def build_equipment_reasoning(tag):
     }
 
 
+def _authenticated_tenant():
+    try:
+        from flask import has_request_context, session
+        if not has_request_context() or not session.get("authenticated"):
+            return None, None
+        return session.get("plant_id"), session.get("organization_id")
+    except Exception:
+        return None, None
+
+
 def build_plant_brain(area):
-    """Build Plant Brain using existing V5 equipment intelligence plus verified Plant Memory."""
+    """Build Plant Brain from selected-plant evidence for authenticated tenants."""
+    tenant_plant, tenant_org = _authenticated_tenant()
+    if tenant_plant:
+        try:
+            from anvi_tenant_chat_boundary import _rows
+            rows = _rows(tenant_plant, terms=[str(area or "")], limit=500)
+        except Exception:
+            rows = []
+        rows = [r for r in rows if isinstance(r, dict) and str(r.get("plant_id")) == str(tenant_plant)]
+        tags = []
+        for row in rows:
+            tag = row.get("tag") or row.get("equipment_tag") or row.get("asset_tag")
+            if tag and str(tag) not in tags:
+                tags.append(str(tag))
+        return {
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+            "area": area,
+            "status": "PLANT BRAIN EVIDENCE" if rows else "INSUFFICIENT EVIDENCE",
+            "area_health": {"status": "EVIDENCE_AVAILABLE" if rows else "NO DATA", "evidence_count": len(rows)},
+            "primary_equipment": {"tag": tags[0]} if tags else None,
+            "equipment_reasoning": [],
+            "evidence_rows": rows,
+            "tenant_scope": {"plant_id": tenant_plant, "organization_id": tenant_org},
+            "explanation": ("ANVIQO is using only selected-plant onboarded evidence. "
+                            "No cross-plant or bundled reference evidence is used."),
+            "product_boundary": {"read_only": True, "causation_claim": False, "human_decision_required": True},
+        }
+
     area_result = build_area_equipment_intelligence(area)
     contributors = area_result.get("contributors", [])
     equipment_reasoning = [build_equipment_reasoning(item["tag"]) for item in contributors if isinstance(item, dict) and item.get("tag")]
