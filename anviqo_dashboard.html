@@ -350,7 +350,7 @@ input,select{
 
 <div class="page" id="page-pci">
  <div class="hero"><div class="card"><div class="kicker">INSTRUMENTATION</div><h1 id="instrumentationTitle">Plant I/O & Instrumentation</h1><p id="instrumentationSubtitle">Tenant-onboarded engineering data operating in read-only mode.</p></div><div class="card brain"><div class="orb">⌁</div><b id="instrumentationBrainTitle">INSTRUMENTATION</b><small class="muted">READ-ONLY</small></div></div>
- <div class="grid2"><div class="card"><div class="card-head"><b>PCI SNAPSHOT</b></div><div class="card-body" id="pciData">Loading...</div></div><div class="card"><div class="card-head"><b>ASK ABOUT AN INSTRUMENT</b></div><div class="card-body"><button class="btn primary" onclick="go('ask')">Open ANVI</button></div></div></div>
+ <div class="grid2"><div class="card"><div class="card-head"><b>PLANT I/O SNAPSHOT</b></div><div class="card-body" id="pciData">Loading...</div></div><div class="card"><div class="card-head"><b>ASK ABOUT AN INSTRUMENT</b></div><div class="card-body"><button class="btn primary" onclick="go('ask')">Open ANVI</button></div></div></div>
 </div>
 
 <div class="page" id="page-plc">
@@ -358,7 +358,7 @@ input,select{
 </div>
 
 <div class="page" id="page-interlocks">
- <div class="card"><div class="card-head"><b>INTERLOCKS & PROCESS CONTEXT</b></div><div class="card-body"><p>Process and interlock evidence remains available through the PCI conversational layer.</p><button class="btn primary" onclick="askQuick('Explain the PCI interlocks and process context')">Ask ANVI</button></div></div>
+ <div class="card"><div class="card-head"><b>INTERLOCKS & PROCESS CONTEXT</b></div><div class="card-body"><p>Process and interlock evidence remains available through the selected plant's onboarded evidence.</p><button class="btn primary" onclick="askQuick('Explain the plant interlocks and process context')">Ask ANVI</button></div></div>
 </div>
 
 <!-- SHIFT -->
@@ -1326,9 +1326,7 @@ async function submitFieldReport(){
       d.selected_plant ||
       '';
 
-    const isMBF =
-      /mbf[- _]?2/i.test(String(plant)) ||
-      /mbf[- _]?2/i.test(document.body.innerText);
+    const isMBF = false;
 
     const count=document.getElementById('ioCount');
     const label=document.getElementById('ioLabel');
@@ -1338,10 +1336,10 @@ async function submitFieldReport(){
       count.textContent=String(total);
 
     if(label)
-      label.textContent=isMBF ? 'MBF-2 I/O' : 'I/O';
+      label.textContent='I/O';
 
     if(mode)
-      mode.textContent=isMBF ? 'PLANT DATA' : (d.mode || 'PLANT DATA');
+      mode.textContent=d.mode || 'PLANT DATA';
 
     document.querySelectorAll('*').forEach(function(el){
       if(el.children.length===0 && /PCI I\/O|1,064 PCI/i.test(el.textContent)){
