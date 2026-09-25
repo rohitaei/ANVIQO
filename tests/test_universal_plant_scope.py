@@ -46,6 +46,17 @@ class UniversalPlantScopeTests(unittest.TestCase):
         self.assertEqual(result["scope"], "SELECTED_PLANT_ONLY")
         self.assertEqual(result["plant_id"], "plant-b")
 
+    def test_authenticated_fabric_does_not_use_global_memory_store(self):
+        import anviqo_intelligence_fabric as fabric
+
+        fabric.tenant_context = lambda: ("plant-b", "org-b")
+        fabric.load = lambda name: (_ for _ in ()).throw(
+            AssertionError("global module path used: " + name)
+        )
+
+        self.assertEqual(fabric.verified_memory("TIC-101A"), [])
+
+
     def test_authenticated_fabric_does_not_use_global_plant_event_or_maintenance(self):
         import anviqo_intelligence_fabric as fabric
 
