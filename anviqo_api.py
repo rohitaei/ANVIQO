@@ -36,6 +36,23 @@ import json
 app = Flask(__name__)
 
 # ------------------------------------------------------------
+# SPARE INVENTORY STRUCTURE MIGRATION
+# ------------------------------------------------------------
+# Legacy spare workbooks may contain vertically merged Qty Available
+# cells. Normalize them once at process startup so every equipment/tag
+# has an independent inventory cell. The existing quantity is preserved
+# as the initial value; no PLC/SCADA action is involved.
+try:
+    from pci_spare_direct_excel import ensure_independent_spare_inventory
+    ensure_independent_spare_inventory()
+except Exception as exc:
+    print(
+        f"ANVIQO_SPARE_INVENTORY_MIGRATION_ERROR error={exc!r}",
+        flush=True,
+    )
+
+
+# ------------------------------------------------------------
 # SECURITY CONFIGURATION
 # ------------------------------------------------------------
 
