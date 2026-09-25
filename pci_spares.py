@@ -2143,16 +2143,40 @@ def execute_spare_mutation_v18(question, plant_id=None):
         "Qty",
     ) or 9
 
-    # A few spare sheets use horizontal merged cells. If the parsed quantity
-    # cell is a non-writable MergedCell, resolve its same-row merge owner.
+    # Some workbook rows use merged quantity cells. Never write blindly
+    # into a merged child cell: first resolve the merge owner, and only accept
+    # it when the merged range belongs unambiguously to this exact spare row.
     target = ws.cell(row=row_number, column=available_col)
     if isinstance(target, MergedCell):
         owner = None
+        matched_range = None
         for merged_range in ws.merged_cells.ranges:
             if target.coordinate in merged_range:
-                if merged_range.min_row == merged_range.max_row == row_number:
-                    owner = ws.cell(row=row_number, column=merged_range.min_col)
+                matched_range = merged_range
                 break
+
+        if matched_range is not None:
+            # Same-row merge: the left/top cell is the writable owner.
+            if matched_range.min_row == matched_range.max_row == row_number:
+                owner = ws.cell(row=row_number, column=matched_range.min_col)
+            else:
+                # Multi-row merge: accept only when the exact spare identifier
+                # appears in exactly one row of that merged block. This avoids
+                # accidentally changing a quantity shared by multiple records.
+                header_row_for_tags = header_row
+                tag_col = _get_col(headers, "Tag No", "Tag", "Tag No.")
+                if tag_col:
+                    candidate_rows = []
+                    for rr in range(matched_range.min_row, matched_range.max_row + 1):
+                        tag_value = _text(ws.cell(row=rr, column=tag_col).value)
+                        if _norm(tag_value) == _norm(identifier):
+                            candidate_rows.append(rr)
+                    if candidate_rows == [row_number]:
+                        owner = ws.cell(
+                            row=matched_range.min_row,
+                            column=matched_range.min_col
+                        )
+
         if owner is None or isinstance(owner, MergedCell):
             wb.close()
             return {
@@ -2162,7 +2186,8 @@ def execute_spare_mutation_v18(question, plant_id=None):
                 "identifier": identifier,
                 "error": (
                     f"Qty Available cell for {sheet_name} row {row_number} "
-                    "is part of a non-writable merged range. Inventory unchanged."
+                    "is part of a merged range that cannot be safely mapped "
+                    "to this exact spare record. Inventory unchanged."
                 ),
             }
         target = owner
