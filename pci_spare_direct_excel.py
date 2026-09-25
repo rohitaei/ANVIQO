@@ -216,13 +216,15 @@ def update_spare(tag, quantity, action):
 
     # Keep formulas intact while updating the workbook.
     wb = load_workbook(XLSX, data_only=False)
-    _normalize_quantity_merges(wb)
-
-    found = None
-
     normalized = _normalize_quantity_merges(wb)
     if normalized:
+        # Persist the one-cell-per-equipment migration before applying the
+        # requested transaction.
         wb.save(XLSX)
+        wb.close()
+        wb = load_workbook(XLSX, data_only=False)
+
+    found = None
 
     for ws in wb.worksheets:
         row = _find_tag(ws, tag)
@@ -299,7 +301,11 @@ def get_spare_quantity(tag):
     tag = str(tag).strip().upper()
 
     wb = load_workbook(XLSX, data_only=False)
-    _normalize_quantity_merges(wb)
+    normalized = _normalize_quantity_merges(wb)
+    if normalized:
+        wb.save(XLSX)
+        wb.close()
+        wb = load_workbook(XLSX, data_only=False)
 
     for ws in wb.worksheets:
         row = _find_tag(ws, tag)
@@ -315,8 +321,11 @@ def get_spare_quantity(tag):
         if qty_col is None:
             continue
 
-        return _number(ws.cell(row, qty_col).value)
+        value = _number(ws.cell(row, qty_col).value)
+        wb.close()
+        return value
 
+    wb.close()
     raise ValueError(
         f"Spare tag {tag} was not found in critical_spares.xlsx."
     )
