@@ -61,22 +61,27 @@ def _safe_call(fn: Callable[..., Any] | None, *args, **kwargs):
 
 
 def _tenant_only(value: Any, plant_id: str):
-    """Accept optional legacy evidence only when it explicitly belongs to plant."""
+    """Fail closed for legacy evidence that has no explicit plant ownership.
+
+    Universal tenant operation must never infer ownership from a tag, area,
+    filename or the fact that an evidence module returned a value.
+    """
     if value is None:
         return None
+
+    def owned(item):
+        if not isinstance(item, dict):
+            return False
+        tagged = item.get("plant_id")
+        return bool(tagged) and str(tagged) == str(plant_id)
+
     if isinstance(value, dict):
-        tagged = value.get("plant_id")
-        if tagged and str(tagged) != str(plant_id):
-            return None
-        return value
+        return value if owned(value) else None
+
     if isinstance(value, list):
-        out = []
-        for item in value:
-            if isinstance(item, dict) and item.get("plant_id") and str(item.get("plant_id")) != str(plant_id):
-                continue
-            out.append(item)
-        return out
-    return value
+        return [item for item in value if owned(item)]
+
+    return None
 
 
 def _module_evidence(plant_id: str, tag: str | None = None) -> dict[str, Any]:
