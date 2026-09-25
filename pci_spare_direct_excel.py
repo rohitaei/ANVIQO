@@ -95,11 +95,11 @@ def _normalize_quantity_merges(wb):
     One equipment/tag must own one independent Qty Available cell.
 
     Older spare workbooks may vertically merge Qty Available across several
-    equipment rows. That is incompatible with direct inventory mutation:
-    changing one tag would change another tag. For every unambiguous merged
-    quantity block, copy the existing owner quantity into each tagged row and
-    then unmerge the block. No new quantity is invented; the pre-existing
-    workbook quantity is preserved as the starting value for each equipment.
+    equipment rows. That is incompatible with independent inventory:
+    changing one tag must never change another tag. When a legacy quantity
+    block is unmerged, preserve the authoritative value only in the original
+    owner row and leave the other equipment rows blank (STOCK NOT RECORDED).
+    Never duplicate one quantity into multiple equipment records.
     """
     changed = False
     for ws in wb.worksheets:
@@ -144,9 +144,17 @@ def _normalize_quantity_merges(wb):
             ):
                 continue
 
+            owner_row = merged_range.min_row
             ws.unmerge_cells(str(merged_range))
+
+            # Preserve only the value that was actually present in the
+            # workbook. Do not duplicate a shared/merged quantity into
+            # multiple equipment records.
+            ws.cell(owner_row, qty_col).value = owner_value
             for rr in tagged_rows:
-                ws.cell(rr, qty_col).value = owner_value
+                if rr != owner_row:
+                    ws.cell(rr, qty_col).value = None
+
             changed = True
 
     return changed
@@ -206,9 +214,10 @@ def ensure_independent_spare_inventory():
     One-time/idempotent migration for the authoritative spare workbook.
 
     Every equipment/tag gets its own Qty Available cell. Legacy vertical
-    quantity merges are expanded using the existing owner value, then the
-    merged range is removed. No quantity is invented and no PLC/SCADA action
-    is involved.
+    quantity merges are unmerged while preserving the original owner value
+    only on the owner row; other tagged rows become independent blank cells
+    until an authoritative quantity is recorded. No quantity is duplicated
+    or invented, and no PLC/SCADA action is involved.
     """
     if not XLSX.exists():
         return {"changed": False, "file": str(XLSX)}
@@ -242,7 +251,8 @@ def update_spare(tag, quantity, action):
     if not XLSX.exists():
         raise FileNotFoundError(f"Spare workbook not found: {XLSX}")
 
-    # Keep formulas intact while updating the workbook.
+    # Normalize legacy merged inventory structure first. The mutation below
+    # must always target a physically independent quantity cell.
     wb = load_workbook(XLSX, data_only=False)
     normalized = _normalize_quantity_merges(wb)
     if normalized:
