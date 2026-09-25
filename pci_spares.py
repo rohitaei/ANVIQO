@@ -1250,34 +1250,12 @@ def _v14_load_spares():
                 spec = _v14_pick(vals, hm, "SPECIFICATION")
                 location = _v14_pick(vals, hm, "INSTALATION SITE", "INSTALLATION SITE", "LOCATION")
                 qty = _v14_pick(vals, hm, "QTY AVBL", "QTY", "AVAILABLE", "QTY ")
-                # Excel may vertically merge the Qty Available cell across
-                # adjacent spare-tag rows. openpyxl returns None for merged
-                # child cells, even though the top-left owner contains the
-                # authoritative quantity. Read the owner so every tag reports
-                # the same shared inventory value instead of "not recorded".
-                if qty is None:
-                    qty_col_idx = hm.get(_v14_norm("QTY AVBL"))
-                    if qty_col_idx is None:
-                        qty_col_idx = hm.get(_v14_norm("QTY"))
-                    if qty_col_idx is None:
-                        qty_col_idx = hm.get(_v14_norm("AVAILABLE"))
-                    if qty_col_idx is not None:
-                        current_row_1 = idx + 1
-                        current_col_1 = qty_col_idx + 1
-                        for merged_range in ws.merged_cells.ranges:
-                            if (
-                                merged_range.min_row <= current_row_1 <= merged_range.max_row
-                                and merged_range.min_col <= current_col_1 <= merged_range.max_col
-                            ):
-                                owner_row_1 = merged_range.min_row
-                                owner_col_1 = merged_range.min_col
-                                if 1 <= owner_row_1 <= len(all_rows):
-                                    owner_vals_1 = all_rows[owner_row_1 - 1]
-                                    if owner_col_1 <= len(owner_vals_1):
-                                        owner_qty_1 = owner_vals_1[owner_col_1 - 1]
-                                        if owner_qty_1 not in (None, ""):
-                                            qty = owner_qty_1
-                                break
+                # The authoritative workbook is normalized so every
+                # equipment/tag has its own independent Qty Available cell.
+                # This reader intentionally does not inspect merged ranges,
+                # because it runs in read_only mode where merged_cells is not
+                # available. If a row has no independent value, report it as
+                # STOCK NOT RECORDED rather than inventing/shared quantities.
                 required = _v14_pick(vals, hm, "QTY REQ", "QTY REQUIRED", "REQUIRED")
                 indent = _v14_pick(vals, hm, "SPARE TO BE INDENT", "SPARE TO INDENT")
                 # For Sheet1/general inventory there is no required column.
@@ -2147,7 +2125,6 @@ def execute_spare_mutation_v18(question, plant_id=None):
     row_number = int(record.get("row"))
 
     from openpyxl import load_workbook
-    from openpyxl.cell.cell import MergedCell
 
     wb = load_workbook(_V16_XLSX)
     if sheet_name not in wb.sheetnames:
@@ -2171,56 +2148,9 @@ def execute_spare_mutation_v18(question, plant_id=None):
         "Qty",
     ) or 9
 
-    # Some workbook rows use merged quantity cells. Never write blindly
-    # into a merged child cell: first resolve the merge owner, and only accept
-    # it when the merged range belongs unambiguously to this exact spare row.
+    # The workbook is normalized before this mutation, so the exact row
+    # must contain its own independent writable quantity cell.
     target = ws.cell(row=row_number, column=available_col)
-    if isinstance(target, MergedCell):
-        owner = None
-        matched_range = None
-        for merged_range in ws.merged_cells.ranges:
-            if target.coordinate in merged_range:
-                matched_range = merged_range
-                break
-
-        if matched_range is not None:
-            # Same-row merge: the left/top cell is the writable owner.
-            if matched_range.min_row == matched_range.max_row == row_number:
-                owner = ws.cell(row=row_number, column=matched_range.min_col)
-            else:
-                # Multi-row merge: accept only when the exact spare identifier
-                # appears in exactly one row of that merged block. This avoids
-                # accidentally changing a quantity shared by multiple records.
-                header_row_for_tags = header_row
-                tag_col = _get_col(headers, "Tag No", "Tag", "Tag No.")
-                if tag_col:
-                    candidate_rows = []
-                    for rr in range(matched_range.min_row, matched_range.max_row + 1):
-                        tag_value = _text(ws.cell(row=rr, column=tag_col).value)
-                        if _norm(tag_value) == _norm(identifier):
-                            candidate_rows.append(rr)
-                    if candidate_rows == [row_number]:
-                        owner = ws.cell(
-                            row=matched_range.min_row,
-                            column=matched_range.min_col
-                        )
-
-        if owner is None or isinstance(owner, MergedCell):
-            wb.close()
-            return {
-                **base,
-                "action": action,
-                "quantity": quantity,
-                "identifier": identifier,
-                "error": (
-                    f"Qty Available cell for {sheet_name} row {row_number} "
-                    "is part of a merged range that cannot be safely mapped "
-                    "to this exact spare record. Inventory unchanged."
-                ),
-            }
-        target = owner
-        available_col = target.column
-
     excel_before = target.value
 
     try:
@@ -2273,33 +2203,12 @@ def execute_spare_mutation_v18(question, plant_id=None):
     # Independent verification after write.
     verify_wb = load_workbook(_V16_XLSX, read_only=True, data_only=True)
     verify_ws = verify_wb[sheet_name]
-    # Verify the actual writable owner cell. If the quantity is a
-    # vertically merged cell, reading the child row returns None/0 even though
-    # the owner contains the value that was written.
+    # Verify the exact independent quantity cell written above.
     verify_cell = verify_ws.cell(
         row=row_number,
         column=available_col
     )
-    if isinstance(verify_cell, MergedCell):
-        owner_row = None
-        owner_col = None
-        for merged_range in verify_ws.merged_cells.ranges:
-            if (
-                merged_range.min_row <= row_number <= merged_range.max_row
-                and merged_range.min_col <= available_col <= merged_range.max_col
-            ):
-                owner_row = merged_range.min_row
-                owner_col = merged_range.min_col
-                break
-        if owner_row is not None:
-            verified_after = verify_ws.cell(
-                row=owner_row,
-                column=owner_col
-            ).value
-        else:
-            verified_after = verify_cell.value
-    else:
-        verified_after = verify_cell.value
+    verified_after = verify_cell.value
     verify_wb.close()
 
     try:
