@@ -126,6 +126,13 @@ def verified_memory(tag):
     if not tag:
         return []
 
+    # Authenticated tenants must never read the bundled/global Plant Memory.
+    # A verified tenant-memory adapter is not yet the source of truth, so
+    # fail closed rather than exposing another plant's history.
+    plant_id, _organization_id = tenant_context()
+    if plant_id:
+        return []
+
     module = load("plant_memory")
 
     records = call(module, "search_all_memory")
