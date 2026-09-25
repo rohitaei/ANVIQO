@@ -5,7 +5,7 @@ contracts. It never creates plant facts and never executes actions.
 """
 from __future__ import annotations
 
-from flask import jsonify, render_template_string, request
+from flask import jsonify, render_template_string, request, session
 
 from anviqo_spare_query_guard import app
 from phase5_human_management_intelligence import (
@@ -20,6 +20,8 @@ from phase5_live_evidence_adapter import build_live_management_evidence
 @app.route("/api/hod-management", methods=["GET", "POST"])
 def hod_management_api():
     """Build the Phase 5 HOD brief from existing evidence contracts."""
+    if not session.get("authenticated") or not session.get("organization_id"):
+        return jsonify({"status": "UNAUTHORIZED", "message": "ANVIQO authentication and organization context required", "safety_boundary": dict(SAFETY_BOUNDARY)}), 401
     if request.method == "GET":
         try:
             payload = build_live_management_evidence()
@@ -51,6 +53,8 @@ def hod_management_api():
 @app.route("/api/hod-management/decision", methods=["POST"])
 def hod_management_decision_api():
     """Record a human decision only; no approval triggers execution."""
+    if not session.get("authenticated") or not session.get("organization_id"):
+        return jsonify({"status": "UNAUTHORIZED", "message": "ANVIQO authentication and organization context required", "executed": False, "safety_boundary": dict(SAFETY_BOUNDARY)}), 401
     payload = request.get_json(silent=True) or {}
     if not isinstance(payload, dict):
         return jsonify({"status": "ERROR", "message": "JSON object required", "executed": False}), 400
