@@ -131,7 +131,7 @@ def test_authenticated_maintenance_never_reads_global_memory(monkeypatch):
         result = layer._maintenance("maintenance history for TIC-101A")
 
     assert "plant_memory_count" in result
-    assert '"plant-b"' in result
+    assert '"plant_memory_count": 1' in result
 
 
 def test_authenticated_root_cause_never_uses_global_sources(monkeypatch):
@@ -194,7 +194,7 @@ def test_authenticated_product_facade_never_uses_global_equipment_event_or_execu
         p = product_module.AnviqoProduct()
         assert p.equipment_view("TIC-101A")["plant_id"] == "plant-b"
         assert p.event_timeline("TIC-101A")["scope"] == "SELECTED_PLANT_ONLY"
-        assert p.executive_view()["evidence_count"] == 1
+        assert len(p.executive_view()["evidence_rows"]) == 1
 
 
 
