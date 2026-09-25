@@ -91,18 +91,26 @@ def _tenant_knowledge_rows(query, tag=None):
         return []
 
 def extract_tag(text: str) -> Optional[str]:
+    """Extract a plant-provided engineering identifier without fixed tag families.
+
+    Supports common forms such as PT-303, TIC_101A, P-101A and
+    AREA-01-TAG-2 while avoiding ordinary words that contain no digits.
+    """
     if not text:
         return None
 
-    m = re.search(
-        r"\b(?:PT|FT|LT|TT|DP|MCV|SOV|FSV|PCV|POSR|TCV|FV|XV)[-_ ]?\d{1,5}\b",
-        text.upper(),
+    upper = str(text).upper()
+    patterns = (
+        r"\b[A-Z0-9]{1,16}(?:[-_/][A-Z0-9]{1,16})+\b",
+        r"\b[A-Z]{1,12}[-_ ]?[A-Z0-9]{0,8}[-_ ]?\d{1,8}[A-Z]?\b",
     )
-
-    if not m:
-        return None
-
-    return m.group(0).replace("_", "-").replace(" ", "-")
+    for pattern in patterns:
+        for match in re.finditer(pattern, upper):
+            candidate = match.group(0).strip(" -_/")
+            compact = re.sub(r"[^A-Z0-9]", "", candidate)
+            if any(ch.isalpha() for ch in compact) and any(ch.isdigit() for ch in compact):
+                return candidate.replace("_", "-").replace(" ", "-")
+    return None
 
 
 def norm_tag(tag):
