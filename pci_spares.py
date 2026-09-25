@@ -1250,6 +1250,34 @@ def _v14_load_spares():
                 spec = _v14_pick(vals, hm, "SPECIFICATION")
                 location = _v14_pick(vals, hm, "INSTALATION SITE", "INSTALLATION SITE", "LOCATION")
                 qty = _v14_pick(vals, hm, "QTY AVBL", "QTY", "AVAILABLE", "QTY ")
+                # Excel may vertically merge the Qty Available cell across
+                # adjacent spare-tag rows. openpyxl returns None for merged
+                # child cells, even though the top-left owner contains the
+                # authoritative quantity. Read the owner so every tag reports
+                # the same shared inventory value instead of "not recorded".
+                if qty is None:
+                    qty_col_idx = hm.get(_v14_norm("QTY AVBL"))
+                    if qty_col_idx is None:
+                        qty_col_idx = hm.get(_v14_norm("QTY"))
+                    if qty_col_idx is None:
+                        qty_col_idx = hm.get(_v14_norm("AVAILABLE"))
+                    if qty_col_idx is not None:
+                        current_row_1 = idx + 1
+                        current_col_1 = qty_col_idx + 1
+                        for merged_range in ws.merged_cells.ranges:
+                            if (
+                                merged_range.min_row <= current_row_1 <= merged_range.max_row
+                                and merged_range.min_col <= current_col_1 <= merged_range.max_col
+                            ):
+                                owner_row_1 = merged_range.min_row
+                                owner_col_1 = merged_range.min_col
+                                if 1 <= owner_row_1 <= len(all_rows):
+                                    owner_vals_1 = all_rows[owner_row_1 - 1]
+                                    if owner_col_1 <= len(owner_vals_1):
+                                        owner_qty_1 = owner_vals_1[owner_col_1 - 1]
+                                        if owner_qty_1 not in (None, ""):
+                                            qty = owner_qty_1
+                                break
                 required = _v14_pick(vals, hm, "QTY REQ", "QTY REQUIRED", "REQUIRED")
                 indent = _v14_pick(vals, hm, "SPARE TO BE INDENT", "SPARE TO INDENT")
                 # For Sheet1/general inventory there is no required column.
@@ -2245,10 +2273,33 @@ def execute_spare_mutation_v18(question, plant_id=None):
     # Independent verification after write.
     verify_wb = load_workbook(_V16_XLSX, read_only=True, data_only=True)
     verify_ws = verify_wb[sheet_name]
-    verified_after = verify_ws.cell(
+    # Verify the actual writable owner cell. If the quantity is a
+    # vertically merged cell, reading the child row returns None/0 even though
+    # the owner contains the value that was written.
+    verify_cell = verify_ws.cell(
         row=row_number,
         column=available_col
-    ).value
+    )
+    if isinstance(verify_cell, MergedCell):
+        owner_row = None
+        owner_col = None
+        for merged_range in verify_ws.merged_cells.ranges:
+            if (
+                merged_range.min_row <= row_number <= merged_range.max_row
+                and merged_range.min_col <= available_col <= merged_range.max_col
+            ):
+                owner_row = merged_range.min_row
+                owner_col = merged_range.min_col
+                break
+        if owner_row is not None:
+            verified_after = verify_ws.cell(
+                row=owner_row,
+                column=owner_col
+            ).value
+        else:
+            verified_after = verify_cell.value
+    else:
+        verified_after = verify_cell.value
     verify_wb.close()
 
     try:
