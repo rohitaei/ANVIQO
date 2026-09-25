@@ -113,12 +113,36 @@ def _has_report_details(report):
     if not isinstance(report,dict): return False
     return any(str(report.get(k) or "").strip() for k in ("observation","finding","maintenance_action","outcome","recovery_status","spare_used","raw_report","notes"))
 
+def _authenticated_tenant():
+    """Return authenticated tenant context for report reads, or no tenant."""
+    try:
+        from flask import has_request_context, session
+        if not has_request_context() or not session.get("authenticated"):
+            return None, None
+        return session.get("plant_id"), session.get("organization_id")
+    except Exception:
+        return None, None
+
+
 def answer_field_report_query(question):
     if not _report_query(question): return None
-    import plant_memory
     tag_match=_TAG_RE.search(str(question or ""))
     tag=_normalise_tag(tag_match.group(1)) if tag_match else ""
-    results=plant_memory.search_all_memory(query=question,tag=tag,limit=10)
+
+    tenant_plant_id, tenant_org_id = _authenticated_tenant()
+
+    if tenant_plant_id:
+        # Authenticated tenants must never read bundled/global Plant Memory.
+        # The persistent tenant bridge is the authoritative source here.
+        try:
+            from field_report_persistent_bridge import _field_reports_from_neon
+            results = _field_reports_from_neon(tag=tag, limit=10)
+        except Exception:
+            results = []
+    else:
+        import plant_memory
+        results=plant_memory.search_all_memory(query=question,tag=tag,limit=10)
+
     reports=[r for r in results if r.get("source")=="technician field report" and _has_report_details(r)]
     if not reports: return None
     report=reports[0]
