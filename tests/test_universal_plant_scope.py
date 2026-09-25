@@ -128,7 +128,7 @@ def test_authenticated_maintenance_never_reads_global_memory(monkeypatch):
                 {"plant_id": plant_id, "tag": tag, "verified": True}
             ],
         )
-        result = layer._maintenance("maintenance history for TIC-101A")
+        result = layer._maintenance("maintenance history TIC-101A")
 
     assert "plant_memory_count" in result
     assert '"plant_memory_count": 1' in result
