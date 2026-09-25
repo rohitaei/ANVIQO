@@ -1,168 +1,129 @@
-from datetime import datetime
+"""Universal, evidence-first event correlation for ANVIQO.
+
+This module correlates supplied plant events without assuming PCI tags,
+instrument families, process names, or causal relationships.
+"""
 
 
-def correlate_events(
-    equipment_tag,
-    events
-):
+def _text(value):
+    return str(value or "").strip()
+
+
+def _timestamp(event):
+    for key in ("timestamp", "time", "event_time", "created_at"):
+        value = _text(event.get(key))
+        if value:
+            return value
+    return ""
+
+
+def _label(event):
+    return (
+        _text(event.get("message"))
+        or _text(event.get("description"))
+        or _text(event.get("event"))
+        or _text(event.get("event_type"))
+        or "Event"
+    )
+
+
+def _equipment(event):
+    for key in ("equipment", "equipment_tag", "tag", "asset", "asset_tag"):
+        value = _text(event.get(key))
+        if value:
+            return value
+    return ""
+
+
+def _event_type(event):
+    return _text(event.get("event_type")) or "UNCLASSIFIED"
+
+
+def correlate_events(equipment_tag, events):
+    """Build an evidence chain from arbitrary plant events.
+
+    Correlation means temporal/identity association only. This function does
+    not claim physical causation and contains no PCI-specific process rules.
     """
-    Correlate chronological equipment events
-    into a developing condition.
-    """
+    rows = [e for e in (events or []) if isinstance(e, dict)]
+    target = _text(equipment_tag)
 
-    if not events:
+    if not rows:
         return {
-            "equipment": equipment_tag,
+            "equipment": target,
             "status": "NO DATA",
             "correlation": "No events available.",
-            "chain": []
+            "chain": [],
+            "event_count": 0,
+            "evidence_basis": [],
+            "causation_claimed": False,
         }
 
-    chain = []
+    # Preserve source order; when timestamps exist, use them consistently.
+    ordered = sorted(
+        enumerate(rows),
+        key=lambda item: (_timestamp(item[1]) == "", _timestamp(item[1]), item[0]),
+    )
+    ordered_rows = [item[1] for item in ordered]
 
-    parameter_events = []
-    risk_events = []
-    health_events = []
+    scoped = []
+    target_norm = "".join(ch for ch in target.upper() if ch.isalnum())
+    for event in ordered_rows:
+        event_target = _equipment(event)
+        event_norm = "".join(ch for ch in event_target.upper() if ch.isalnum())
+        if target_norm and event_norm and event_norm != target_norm:
+            continue
+        scoped.append(event)
 
-    for event in events:
+    # If the caller supplied events already scoped to the equipment but the
+    # source rows have no equipment identity, retain them.
+    if not scoped:
+        scoped = ordered_rows
 
-        event_type = event.get(
-            "event_type",
-            ""
-        )
+    types = []
+    for event in scoped:
+        kind = _event_type(event)
+        if kind not in types:
+            types.append(kind)
 
-        if event_type == "PARAMETER_CHANGE":
-            parameter_events.append(event)
+    chain = [
+        {
+            "sequence": index + 1,
+            "timestamp": _timestamp(event) or None,
+            "event_type": _event_type(event),
+            "equipment": _equipment(event) or target or None,
+            "message": _label(event),
+        }
+        for index, event in enumerate(scoped)
+    ]
 
-        elif event_type == "RISK_CHANGE":
-            risk_events.append(event)
-
-        elif event_type == "HEALTH_CHANGE":
-            health_events.append(event)
-
-    # ---------------------------------
-    # Detect parameter relationships
-    # ---------------------------------
-
-    air_pressure_drop = False
-    valve_position_rise = False
-    temperature_rise = False
-
-    for event in parameter_events:
-
-        message = event.get(
-            "message",
-            ""
-        ).lower()
-
-        if (
-            "air pressure" in message
-            and "decreased" in message
-        ):
-            air_pressure_drop = True
-
-        if (
-            "valve position" in message
-            and "increased" in message
-        ):
-            valve_position_rise = True
-
-        if (
-            "temperature" in message
-            and "increased" in message
-        ):
-            temperature_rise = True
-
-    # ---------------------------------
-    # Build correlation chain
-    # ---------------------------------
-
-    if air_pressure_drop:
-
-        chain.append(
-            "Instrument Air Pressure decreased."
-        )
-
-    if valve_position_rise:
-
-        chain.append(
-            "Valve Position increased."
-        )
-
-    if temperature_rise:
-
-        chain.append(
-            "Temperature increased."
-        )
-
-    if risk_events:
-
-        latest_risk = risk_events[-1]
-
-        chain.append(
-            latest_risk.get(
-                "message",
-                "Risk changed."
-            )
-        )
-
-    if health_events:
-
-        latest_health = health_events[-1]
-
-        chain.append(
-            latest_health.get(
-                "message",
-                "Health changed."
-            )
-        )
-
-    # ---------------------------------
-    # Determine correlation
-    # ---------------------------------
-
-    if (
-        air_pressure_drop
-        and valve_position_rise
-        and temperature_rise
-        and risk_events
-        and health_events
-    ):
-
+    if len(scoped) >= 2:
+        status = "MULTIPLE EVENTS"
         correlation = (
-            "The parameter, risk and health events "
-            "form a correlated developing condition. "
-            "The pattern may indicate control-valve, "
-            "positioner or instrument-air deterioration."
+            "Multiple events are associated with the supplied equipment "
+            "or event scope. Review the chronological evidence chain; "
+            "physical causation is not established."
         )
-
-        status = "CORRELATED CONDITION"
-
-    elif len(chain) >= 2:
-
-        correlation = (
-            "Multiple related events detected. "
-            "Further investigation is recommended."
-        )
-
-        status = "POSSIBLE CORRELATION"
-
     else:
-
+        status = "SINGLE EVENT"
         correlation = (
-            "Insufficient related events "
-            "to establish a correlation."
+            "One event is available for the supplied equipment or event "
+            "scope. There is insufficient event evidence to establish a "
+            "relationship."
         )
-
-        status = "INSUFFICIENT EVIDENCE"
 
     return {
-        "timestamp": datetime.now().isoformat(
-            timespec="seconds"
-        ),
-        "equipment": equipment_tag,
+        "equipment": target,
         "status": status,
         "correlation": correlation,
         "chain": chain,
-        "event_count": len(events)
+        "event_count": len(scoped),
+        "event_types": types,
+        "evidence_basis": [
+            "EVENT_IDENTITY",
+            "EVENT_TYPE",
+            "EVENT_TIMESTAMP",
+            "CHRONOLOGICAL_ASSOCIATION",
+        ],
+        "causation_claimed": False,
     }
