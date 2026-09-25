@@ -56,9 +56,11 @@ def _find_tag(ws, tag):
 def _find_header(ws, names):
     wanted = {_norm(x) for x in names}
 
-    for cell in ws[1]:
-        if _norm(cell.value) in wanted:
-            return cell.column
+    # Spare sheets can have a title row before the real table header.
+    for row_no in range(1, min(ws.max_row, 10) + 1):
+        for cell in ws[row_no]:
+            if _norm(cell.value) in wanted:
+                return cell.column
 
     return None
 
@@ -197,6 +199,32 @@ def _audit(action, tag, quantity, before, after):
     _save_audit(data)
 
     return txn_id
+
+
+def ensure_independent_spare_inventory():
+    """
+    One-time/idempotent migration for the authoritative spare workbook.
+
+    Every equipment/tag gets its own Qty Available cell. Legacy vertical
+    quantity merges are expanded using the existing owner value, then the
+    merged range is removed. No quantity is invented and no PLC/SCADA action
+    is involved.
+    """
+    if not XLSX.exists():
+        return {"changed": False, "file": str(XLSX)}
+
+    wb = load_workbook(XLSX, data_only=False)
+    changed = _normalize_quantity_merges(wb)
+
+    if changed:
+        tmp = XLSX.with_suffix(".independent.tmp.xlsx")
+        wb.save(tmp)
+        wb.close()
+        tmp.replace(XLSX)
+    else:
+        wb.close()
+
+    return {"changed": changed, "file": str(XLSX)}
 
 
 def update_spare(tag, quantity, action):
