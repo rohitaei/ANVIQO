@@ -937,8 +937,33 @@ def _maintenance(q):
 
 
 def _executive(q):
-    from v57_executive_intelligence import build_executive_intelligence
+    """
+    Return executive evidence without crossing the authenticated tenant boundary.
+    The frozen V5 executive engine remains available for local/demo operation.
+    """
+    tenant_id, organization_id = _authenticated_tenant_context()
+    if tenant_id:
+        context = _build_unified_plant_evidence_context()
+        return "ANVI — Executive Intelligence:\n" + json.dumps(
+            {
+                "scope": "SELECTED_PLANT_ONLY",
+                "plant_id": tenant_id,
+                "organization_id": organization_id,
+                "evidence_status": (
+                    "AVAILABLE" if context.get("evidence_available") else "NO DATA"
+                ),
+                "evidence_count": len(context.get("equipment_evidence") or []),
+                "areas": context.get("areas", []),
+                "decision_status": "HUMAN_DECISION_REQUIRED",
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "causation_claimed": False,
+            },
+            ensure_ascii=False,
+        )
 
+    from v57_executive_intelligence import build_executive_intelligence
     result = build_executive_intelligence()
     return "ANVI — Executive Intelligence:\n" + json.dumps(
         result, ensure_ascii=False
