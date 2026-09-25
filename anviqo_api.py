@@ -104,6 +104,88 @@ def login_required(function):
     return wrapper
 
 
+@app.before_request
+def tenant_safe_legacy_api_boundary():
+    """
+    Keep legacy API routes compatible while preventing authenticated tenants
+    from reaching bundled/reference global stores.
+
+    Existing tenant-safe adapters remain the source of truth. This is a
+    routing boundary only; it does not add a new intelligence engine.
+    """
+    if not authenticated() or not session.get("plant_id"):
+        return None
+
+    path = request.path
+    plant_id = session.get("plant_id")
+    organization_id = session.get("organization_id")
+
+    if path in ("/api/pci", "/api/pci/live"):
+        try:
+            from anvi_universal_command_centre import get_live_pci_snapshot
+            from pci_live_simulator import get_live_pci_snapshot as legacy_snapshot
+            snapshot = get_live_pci_snapshot(legacy_snapshot)
+            return jsonify(snapshot)
+        except Exception as exc:
+            return jsonify({
+                "status": "NO DATA",
+                "mode": "ONBOARDING_DATA",
+                "source": "SELECTED_PLANT_KNOWLEDGE",
+                "plant_id": plant_id,
+                "organization_id": organization_id,
+                "error": type(exc).__name__,
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+            })
+
+    parts = [p for p in path.split("/") if p]
+    if len(parts) >= 3 and parts[0:2] == ["api", "equipment"]:
+        tag = parts[2]
+        try:
+            from anviqo_product import AnviqoProduct
+            product = AnviqoProduct()
+
+            if len(parts) == 3:
+                return jsonify(product.equipment_view(tag))
+            if len(parts) == 4 and parts[3] == "relationships":
+                return jsonify(product.relationships(tag))
+            if len(parts) == 4 and parts[3] == "events":
+                return jsonify(product.event_timeline(tag))
+        except Exception as exc:
+            return jsonify({
+                "status": "ERROR",
+                "equipment": tag,
+                "scope": "SELECTED_PLANT_ONLY",
+                "plant_id": plant_id,
+                "organization_id": organization_id,
+                "error": type(exc).__name__,
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+            })
+
+    if len(parts) == 3 and parts[0:2] == ["api", "plant"]:
+        area = parts[2]
+        try:
+            from plant_brain_reasoning import build_plant_brain
+            return jsonify(build_plant_brain(area))
+        except Exception as exc:
+            return jsonify({
+                "status": "ERROR",
+                "area": area,
+                "scope": "SELECTED_PLANT_ONLY",
+                "plant_id": plant_id,
+                "organization_id": organization_id,
+                "error": type(exc).__name__,
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+            })
+
+    return None
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
