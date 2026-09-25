@@ -189,27 +189,32 @@ def pci(tag, query):
 
 
 def equipment(tag):
+    """Return equipment health without crossing a tenant boundary."""
+    plant_id, organization_id = tenant_context()
+    if plant_id:
+        rows = _tenant_knowledge_rows("", tag)
+        return {
+            "latest_health": None,
+            "health_score": None,
+            "health_assessment": None,
+            "scope": "SELECTED_PLANT_ONLY",
+            "plant_id": plant_id,
+            "organization_id": organization_id,
+            "evidence_rows": rows,
+        }
+
     m = load("equipment_health")
-
     latest = call(m, "get_latest_health", tag)
-
     score = None
     assessment = None
-
     s = load("equipment_health_score")
-
     if latest is not None:
         score = call(s, "calculate_health_score", latest)
         assessment = call(s, "build_health_assessment", latest)
-
-    # Some deployments expose the health calculation through the score
-    # engine rather than the history engine.
     if score is None:
         score = call(s, "calculate_health_score", tag)
-
     if assessment is None:
         assessment = call(s, "build_health_assessment", tag)
-
     return {
         "latest_health": latest,
         "health_score": score,
@@ -218,74 +223,73 @@ def equipment(tag):
 
 
 def plant():
-    m = load("plant_health")
+    """Return plant health only from explicitly selected-plant evidence."""
+    plant_id, organization_id = tenant_context()
+    if plant_id:
+        return {
+            "health": None,
+            "intelligence": None,
+            "scope": "SELECTED_PLANT_ONLY",
+            "plant_id": plant_id,
+            "organization_id": organization_id,
+        }
 
+    m = load("plant_health")
     result = call(m, "build_plant_health")
     if result is None:
         result = call(m, "calculate_plant_health")
     if result is None:
         result = call(m, "analyze_plant")
-
     intelligence = load("plant_health_intelligence")
-    intelligence_result = call(
-        intelligence,
-        "build_plant_health_intelligence",
-    )
-
-    return {
-        "health": result,
-        "intelligence": intelligence_result,
-    }
+    intelligence_result = call(intelligence, "build_plant_health_intelligence")
+    return {"health": result, "intelligence": intelligence_result}
 
 
 def events(tag):
-    m = load("event_timeline")
+    """Return event evidence only when it is explicitly tenant-scoped."""
+    plant_id, organization_id = tenant_context()
+    if plant_id:
+        return {
+            "recent": [],
+            "events": [],
+            "correlation": None,
+            "scope": "SELECTED_PLANT_ONLY",
+            "plant_id": plant_id,
+            "organization_id": organization_id,
+        }
 
+    m = load("event_timeline")
     recent = call(m, "get_recent_events")
     event_rows = call(m, "get_events", tag)
     if not isinstance(event_rows, list):
         event_rows = []
-
     c = load("event_correlation")
     correlation = call(c, "correlate_events", tag, event_rows)
-
-    return {
-        "recent": recent,
-        "events": event_rows,
-        "correlation": correlation,
-    }
+    return {"recent": recent, "events": event_rows, "correlation": correlation}
 
 
 def maintenance(tag, query):
+    """Return maintenance evidence only when it belongs to the selected tenant."""
+    plant_id, organization_id = tenant_context()
+    if plant_id:
+        return {
+            "experience_context": None,
+            "matching_experience": [],
+            "scope": "SELECTED_PLANT_ONLY",
+            "plant_id": plant_id,
+            "organization_id": organization_id,
+        }
+
     m = load("maintenance_experience_matching")
-
-    experience = call(
-        m,
-        "build_experience_context",
-        {
-            "equipment": tag,
-            "tag": tag,
-            "query": query,
-        },
-    )
-
-    matching = call(
-        m,
-        "find_matching_experience",
-        {
-            "equipment": tag,
-            "tag": tag,
-            "query": query,
-        },
-    )
-
+    experience = call(m, "build_experience_context", {
+        "equipment": tag, "tag": tag, "query": query,
+    })
+    matching = call(m, "find_matching_experience", {
+        "equipment": tag, "tag": tag, "query": query,
+    })
     if matching is None:
         matching = []
-
-    return {
-        "experience_context": experience,
-        "matching_experience": matching,
-    }
+    return {"experience_context": experience, "matching_experience": matching}
 
 
 def spares(tag, query):
