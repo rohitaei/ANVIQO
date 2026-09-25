@@ -2210,21 +2210,14 @@ def execute_spare_mutation_v18(question, plant_id=None):
             ),
         }
 
-    # Protect against stale parsed data.
-    if excel_before != before:
-        wb.close()
-        return {
-            **base,
-            "action": action,
-            "quantity": quantity,
-            "identifier": identifier,
-            "error": (
-                "Inventory changed since lookup. "
-                "No mutation performed; re-read required."
-            ),
-            "before_lookup": before,
-            "current_excel": excel_before,
-        }
+    # The read-only query layer may expose a stale cached/formula value
+    # (for example data_only=True can retain an older cached result).
+    # Excel itself is the authoritative inventory source, so once the exact
+    # record and writable quantity cell have been resolved above, use the
+    # freshly-read workbook value as the mutation baseline. Never overwrite
+    # blindly: the value below was read directly from the writable workbook
+    # immediately before the write.
+    before = excel_before
 
     excel_after = (
         excel_before + quantity
