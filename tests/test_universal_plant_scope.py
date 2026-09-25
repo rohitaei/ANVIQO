@@ -255,3 +255,40 @@ def test_hod_management_routes_require_authenticated_tenant(monkeypatch):
             json={"action": {"action_id": "X"}, "decision": "ACKNOWLEDGE"},
         )
         assert response.status_code == 401
+
+
+def test_authenticated_full_anvi_pci_facade_never_uses_global_resolver(monkeypatch):
+    from flask import Flask, session
+    import anvi_full_product as full_product
+
+    app = Flask(__name__)
+    app.secret_key = "test"
+
+    monkeypatch.setattr(
+        "anviqo_intelligence_fabric.extract_tag",
+        lambda question: "TIC-101A",
+    )
+    monkeypatch.setattr(
+        "anviqo_intelligence_fabric.pci",
+        lambda tag, query: {
+            "identity": {
+                "plant_id": "plant-b",
+                "tag": tag,
+                "area": "AREA-X",
+            }
+        },
+    )
+    monkeypatch.setattr(
+        "pci_universal_resolver.resolve",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("global PCI resolver used")),
+    )
+
+    with app.test_request_context("/"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+        result = full_product.anvi.pci("Tell me about TIC-101A")
+
+    assert result["scope"] == "SELECTED_PLANT_ONLY"
+    assert result["plant_id"] == "plant-b"
+    assert result["records"][0]["tag"] == "TIC-101A"
