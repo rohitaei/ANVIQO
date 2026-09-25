@@ -115,3 +115,26 @@ def test_later_report_question_returns_persistent_field_evidence(monkeypatch):
     assert answer["memory_id"] == "PM-TEST-004"
     assert "Fuse replaced" in answer["answer"]
     assert answer["verification_status"] == "PENDING_VERIFICATION"
+
+
+def test_authenticated_field_report_query_never_reads_global_memory(monkeypatch):
+    from flask import Flask, session
+    import field_report_runtime as runtime
+
+    app = Flask(__name__)
+    app.secret_key = "test"
+
+    def fail_global(*args, **kwargs):
+        raise AssertionError("global Plant Memory used")
+
+    monkeypatch.setattr("plant_memory.search_all_memory", fail_global)
+    monkeypatch.setattr(
+        "field_report_persistent_bridge._field_reports_from_neon",
+        lambda tag="", limit=20: [],
+    )
+
+    with app.test_request_context("/"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+        assert runtime.answer_field_report_query("What happened to TIC-101A last time?") is None
