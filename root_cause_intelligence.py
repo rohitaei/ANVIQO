@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 VERSION = "ANVIQO-RCI-V1.3"
 SAFETY = {"control_mode":"READ_ONLY","plc_write":False,"scada_control":False,"automatic_execution":False,"human_decision_required":True}
-_EQUIPMENT_RE = re.compile(r"\b(?:PT|FT|LT|TT|DP|MCV|SOV|FSV|PCV|POSR|TCV|FV|XV|CV)\s*[-_ ]?\s*\d{1,5}\b", re.I)
+_EQUIPMENT_RE = re.compile(r"\b[A-Z0-9]{1,16}(?:[-_/][A-Z0-9]{1,16})+\b|\b[A-Z]{1,16}[-_ ]?[A-Z0-9]{0,8}[-_ ]?\d{1,8}[A-Z]?\b", re.I)
 _TEXT_KEYS = ("message","event","observation","finding","maintenance_action","outcome","confirmation_evidence","notes")
 
 
@@ -186,8 +186,49 @@ def _observed_condition(tag,query,pci,health,events,memory):
     return result
 
 
+def _authenticated_tenant():
+    try:
+        from flask import has_request_context, session
+        if not has_request_context() or not session.get("authenticated"):
+            return None, None
+        return session.get("plant_id"), session.get("organization_id")
+    except Exception:
+        return None, None
+
+
+def _tenant_evidence(tag, plant_id):
+    try:
+        from anvi_tenant_chat_boundary import _rows
+        rows = _rows(plant_id, tag=tag or None, limit=250)
+        return [r for r in rows if isinstance(r, dict) and str(r.get("plant_id")) == str(plant_id)]
+    except Exception:
+        return []
+
+
 def build_root_cause_intelligence(query:str,tag:Optional[str]=None)->Dict[str,Any]:
     query=str(query or "").strip(); tag=extract_tag(tag or query) or _norm_tag(tag or "")
+    tenant_plant, tenant_org = _authenticated_tenant()
+
+    if tenant_plant:
+        rows = _tenant_evidence(tag, tenant_plant)
+        events = [r for r in rows if any(r.get(k) for k in ("event_type","event","message","timestamp","event_time"))]
+        memory = [r for r in rows if r.get("verified") is True]
+        health = next((r for r in rows if any(k in r for k in ("health","health_score","risk_score","status"))), None)
+        identity = rows[0] if rows else None
+        live = next((r for r in rows if any(k in r for k in ("value","live_value","state","quality"))), None)
+        observed = {"tag":tag,"reported_symptom":any(x in query.lower() for x in ("abnormal","fault","failure","issue","problem","unhealthy","malfunction","stopped")),"live_state":(live or {}).get("state"),"live_value":(live or {}).get("value"),"changed":(live or {}).get("changed"),"event_active":(live or {}).get("event_active"),"mode":(live or {}).get("mode"),"source":"SELECTED_PLANT_KNOWLEDGE","evidence_basis":["SELECTED_PLANT_KNOWLEDGE"]}
+        correlation = _correlate(tag, live, events, memory, [])
+        evidence_count = len(rows)
+        status = "INSUFFICIENT_EVIDENCE" if evidence_count else "NO_EVIDENCE"
+        conclusion = ("ANVIQO found selected-plant evidence, but it does not establish a confirmed root cause. "
+                      "Review the evidence chain and make the operational decision." if evidence_count
+                      else "No usable evidence was found in the selected plant for a root-cause assessment.")
+        return {"rci_version":VERSION,"timestamp":datetime.now(timezone.utc).isoformat(),"query":query,"tag":tag,
+          "status":status,"conclusion":conclusion,"observed_condition":observed,"correlation":correlation,
+          "hypotheses":[],"evidence":{"selected_plant_rows":rows,"pci_identity":identity,"pci_live":live,"events":events,"verified_plant_memory":memory,"health":health},
+          "evidence_summary":{"selected_plant_evidence_count":evidence_count,"event_count":len(events),"verified_memory_count":len(memory),"health_available":health is not None,"pci_identity_available":identity is not None,"pci_live_available":live is not None,"current_live_state":(live or {}).get("state"),"current_live_changed":(live or {}).get("changed"),"current_live_event_active":(live or {}).get("event_active"),"correlation_status":correlation.get("status")},
+          "tenant_scope":{"plant_id":tenant_plant,"organization_id":tenant_org},"safety":dict(SAFETY),"decision_status":"HUMAN_DECISION_REQUIRED"}
+
     events=_events(tag) if tag else []; memory=_verified_memory(tag) if tag else []; health=_health(tag) if tag else None
     pci=_pci_evidence(tag,query) if tag else {"identity":None,"live":None,"answer":None}; experience,matching=_maintenance(tag,query) if tag else (None,[])
     live=pci.get("live") if isinstance(pci,dict) else None
@@ -199,18 +240,9 @@ def build_root_cause_intelligence(query:str,tag:Optional[str]=None)->Dict[str,An
     if hypotheses:
         status="HYPOTHESES_AVAILABLE"; conclusion="ANVIQO found evidence-supported hypotheses to investigate. These are not confirmed root causes."
     elif isinstance(live,dict) and live.get("state") in ("WARNING","CRITICAL"):
-        status="INSUFFICIENT_EVIDENCE"
-        state=live.get("state"); mode=live.get("mode","SIMULATION")
+        status="INSUFFICIENT_EVIDENCE"; state=live.get("state"); mode=live.get("mode","SIMULATION")
         event_text=correlation["active_event"].get("message") if isinstance(correlation.get("active_event"),dict) else None
-        if event_text:
-            conclusion=(f"{tag} is currently {state} in the PCI {mode} stream at value {live.get('value')}. "
-                        f"Correlated event evidence: {event_text} This establishes the current abnormal condition, but there is not enough explicit failure evidence to confirm a root cause. Root cause is not confirmed.")
-        elif correlation["active_event"]:
-            conclusion=(f"{tag} is currently {state} in the PCI {mode} stream at value {live.get('value')}. "
-                        "The stream reports an active event, but no event-detail record is available. This establishes the current abnormal condition, but there is not enough explicit failure evidence to confirm a root cause. Root cause is not confirmed.")
-        else:
-            conclusion=(f"{tag} is currently {state} in the PCI {mode} stream at value {live.get('value')}. "
-                        "This establishes the current abnormal condition, but there is not enough explicit failure evidence to confirm a root cause. Root cause is not confirmed.")
+        conclusion=(f"{tag} is currently {state} in the PCI {mode} stream at value {live.get('value')}. Correlated event evidence: {event_text} This establishes the current abnormal condition, but there is not enough explicit failure evidence to confirm a root cause. Root cause is not confirmed." if event_text else f"{tag} is currently {state} in the PCI {mode} stream at value {live.get('value')}. This establishes the current abnormal condition, but there is not enough explicit failure evidence to confirm a root cause. Root cause is not confirmed.")
     elif any_evidence:
         status="INSUFFICIENT_EVIDENCE"; conclusion="ANVIQO identified equipment evidence, but there is not enough explicit failure evidence to confirm a root cause."
     else:
