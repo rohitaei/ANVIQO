@@ -99,6 +99,21 @@ def test_two_plants_never_leak_command_centre_data(monkeypatch):
     assert "PT-A01" not in {p["tag"] for p in b["points"]}
 
 
+def test_active_tenant_with_no_data_never_falls_back_to_original_getter():
+    original = lambda: {"source": "legacy", "total_io": 1064}
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(adapter, "_tenant_snapshot", lambda plant_id: None)
+        app = Flask(__name__)
+        app.secret_key = "test"
+        with app.test_request_context("/"):
+            session["plant_id"] = "plant-empty"
+            snapshot = adapter.get_live_pci_snapshot(original)
+
+    assert snapshot["plant_id"] == "plant-empty"
+    assert snapshot["status"] == "NO DATA"
+    assert snapshot["total_io"] == 0
+
+
 def test_no_tenant_data_falls_back_to_original_getter():
     original = lambda: {"source": "legacy", "total_io": 1064}
     with pytest.MonkeyPatch.context() as mp:
