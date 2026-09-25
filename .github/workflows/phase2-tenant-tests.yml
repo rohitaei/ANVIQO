@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: .
+      ANVIQO_SECRET_KEY: ci-test-secret
     steps:
       - name: Checkout full history
         uses: actions/checkout@v4
