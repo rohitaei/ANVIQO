@@ -72,3 +72,35 @@ class UniversalPlantScopeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_authenticated_unified_plant_evidence_never_uses_global_simulator(monkeypatch):
+    from flask import Flask, session
+    import anvi_knowledge_layer as layer
+
+    app = Flask(__name__)
+    app.secret_key = "test"
+
+    def fail_global(*args, **kwargs):
+        raise AssertionError("global plant evidence path used")
+
+    monkeypatch.setattr(layer, "_build_area_results", fail_global)
+
+    with app.test_request_context("/"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+        monkeypatch.setattr(
+            "anvi_tenant_chat_boundary._rows",
+            lambda plant_id, terms=None, tag=None, limit=2500: [
+                {"plant_id": plant_id, "area": "AREA-X", "tag": "TIC-101A"}
+            ],
+        )
+
+        result = layer._build_unified_plant_evidence_context()
+
+    assert result["plant"] == "plant-b"
+    assert result["source"] == ["SELECTED_PLANT_KNOWLEDGE"]
+    assert result["tenant_scope"]["plant_id"] == "plant-b"
+    assert result["evidence_available"] is True
+    assert result["areas"][0]["area"] == "AREA-X"
