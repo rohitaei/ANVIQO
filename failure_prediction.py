@@ -17,7 +17,7 @@ SAFETY = {
     "automatic_execution": False,
     "human_decision_required": True,
 }
-_TAG_RE = re.compile(r"\b(?:PT|FT|LT|TT|DP|MCV|SOV|FSV|PCV|POSR|TCV|FV|XV|CV)\s*[-_ ]?\s*\d{1,5}\b", re.I)
+_TAG_RE = re.compile(r"\b[A-Z0-9]{1,16}(?:[-_/][A-Z0-9]{1,16})+\b|\b[A-Z]{1,16}[-_ ]?[A-Z0-9]{0,8}[-_ ]?\d{1,8}[A-Z]?\b", re.I)
 
 
 def _load(name: str):
@@ -71,7 +71,46 @@ def is_failure_prediction_query(query: str) -> bool:
     return any(word in q for word in prediction_words)
 
 
-def _pci(tag: str) -> Tuple[Any, Any]:
+def _authenticated_tenant() -> Tuple[Optional[str], Optional[str]]:
+    """Return authenticated tenant context; prediction must fail closed without it."""
+    try:
+        from flask import has_request_context, session
+        if not has_request_context() or not session.get("authenticated"):
+            return None, None
+        return session.get("plant_id"), session.get("organization_id")
+    except Exception:
+        return None, None
+
+
+def _tenant_rows(tag: str, plant_id: str) -> List[Dict[str, Any]]:
+    try:
+        from anvi_tenant_chat_boundary import _rows
+        return _rows(plant_id, tag=tag, limit=250)
+    except Exception:
+        return []
+
+
+def _pci(tag: str, plant_id: Optional[str] = None, organization_id: Optional[str] = None) -> Tuple[Any, Any]:
+    if plant_id:
+        try:
+            from anvi_verified_pci_adapter import resolve_for_bound_plant
+            rows = resolve_for_bound_plant(plant_id, organization_id, tag)
+            if rows:
+                identity = rows[0]
+                live = None
+                for row in rows:
+                    metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+                    if isinstance(metadata, dict) and metadata.get("value") is not None:
+                        live = dict(row)
+                        live["value"] = metadata.get("value")
+                        live["timestamp"] = metadata.get("timestamp")
+                        live["source"] = metadata.get("source") or row.get("source")
+                        break
+                return identity, live
+        except Exception:
+            pass
+        return None, None
+
     module = _load("pci_conversation")
     if module is None:
         return None, None
@@ -186,19 +225,47 @@ def _trend(observations: List[Dict[str, Any]]) -> Dict[str, Any]:
 def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str, Any]:
     query = str(query or "").strip()
     tag = extract_tag(tag or query) or str(tag or "").strip().upper()
-    identity, live = _pci(tag) if tag else (None, None)
-    history = _history(tag) if tag else []
-    memory = _memory(tag) if tag else []
-    events = _events(tag) if tag else []
-    health = _health(tag) if tag else None
-    observations = _numeric_history(history, memory, events, live)
+    plant_id, organization_id = _authenticated_tenant()
+
+    if plant_id:
+        # Authenticated production requests are strictly tenant-scoped.
+        # Do not read global PCI, memory, event, health or prediction stores.
+        tenant_rows = _tenant_rows(tag, plant_id) if tag else []
+        identity = tenant_rows[0] if tenant_rows else None
+        live = None
+        for row in tenant_rows:
+            metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+            for container in (row, metadata):
+                if isinstance(container, dict) and container.get("value") is not None:
+                    try:
+                        live = dict(row)
+                        live["value"] = float(container.get("value"))
+                        live["timestamp"] = container.get("timestamp") or row.get("created_at")
+                        live["source"] = container.get("source") or row.get("source")
+                    except (TypeError, ValueError):
+                        pass
+                    break
+            if live:
+                break
+        history = []
+        memory = []
+        events = []
+        health = None
+        observations = _numeric_history(history, memory, events, live)
+    else:
+        identity, live = _pci(tag) if tag else (None, None)
+        history = _history(tag) if tag else []
+        memory = _memory(tag) if tag else []
+        events = _events(tag) if tag else []
+        health = _health(tag) if tag else None
+        observations = _numeric_history(history, memory, events, live)
     trend = _trend(observations)
 
     evidence_basis: List[str] = []
     if live is not None:
-        evidence_basis.append("Current PCI live observation is available.")
+        evidence_basis.append("Current selected-plant live observation is available.") if plant_id else evidence_basis.append("Current PCI live observation is available.")
     if identity is not None:
-        evidence_basis.append("Authoritative PCI equipment identity is available.")
+        evidence_basis.append("Authoritative selected-plant equipment identity is available.") if plant_id else evidence_basis.append("Authoritative PCI equipment identity is available.")
     if history:
         evidence_basis.append(f"{len(history)} persisted non-simulation plant observation(s) are available.")
     if memory:
