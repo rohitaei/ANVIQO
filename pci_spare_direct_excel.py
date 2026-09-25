@@ -63,6 +63,93 @@ def _find_header(ws, names):
     return None
 
 
+
+
+def _find_header_row(ws):
+    """Locate the actual spare-table header row."""
+    wanted = {
+        "tag no", "tag", "description", "instrument",
+        "qty avbl", "qty available", "qty", "qty req",
+        "required", "location", "installation site", "instalation site",
+    }
+    best_row = 1
+    best_score = -1
+    for row_no in range(1, min(ws.max_row, 10) + 1):
+        score = 0
+        for cell in ws[row_no]:
+            value = _norm(cell.value)
+            if value in {_norm(x) for x in wanted}:
+                score += 2
+            elif any(_norm(x) in value for x in wanted):
+                score += 1
+        if score > best_score:
+            best_score = score
+            best_row = row_no
+    return best_row
+
+
+def _normalize_quantity_merges(wb):
+    """
+    One equipment/tag must own one independent Qty Available cell.
+
+    Older spare workbooks may vertically merge Qty Available across several
+    equipment rows. That is incompatible with direct inventory mutation:
+    changing one tag would change another tag. For every unambiguous merged
+    quantity block, copy the existing owner quantity into each tagged row and
+    then unmerge the block. No new quantity is invented; the pre-existing
+    workbook quantity is preserved as the starting value for each equipment.
+    """
+    changed = False
+    for ws in wb.worksheets:
+        header_row = _find_header_row(ws)
+        qty_col = _find_header(
+            ws, ["Qty avbl", "Qty available", "Qty Avbl", "Available", "Qty"]
+        )
+        if qty_col is None:
+            continue
+
+        tag_col = _find_header(ws, ["Tag No", "Tag", "Tag No."])
+        if tag_col is None:
+            continue
+
+        for merged_range in list(ws.merged_cells.ranges):
+            if not (merged_range.min_col <= qty_col <= merged_range.max_col):
+                continue
+            if merged_range.min_col != merged_range.max_col:
+                continue
+            if merged_range.max_row <= header_row:
+                continue
+
+            owner_value = ws.cell(
+                merged_range.min_row, merged_range.min_col
+            ).value
+
+            tagged_rows = []
+            for rr in range(
+                max(header_row + 1, merged_range.min_row),
+                merged_range.max_row + 1
+            ):
+                tag_value = _norm(ws.cell(rr, tag_col).value)
+                if tag_value:
+                    tagged_rows.append(rr)
+
+            # Only normalize a block when every equipment row in it has an
+            # identifiable tag. This prevents touching decorative merges.
+            if not tagged_rows:
+                continue
+            if len(tagged_rows) != (
+                merged_range.max_row - max(header_row + 1, merged_range.min_row) + 1
+            ):
+                continue
+
+            ws.unmerge_cells(str(merged_range))
+            for rr in tagged_rows:
+                ws.cell(rr, qty_col).value = owner_value
+            changed = True
+
+    return changed
+
+
 def _load_audit():
     if not AUDIT.exists():
         return {"transactions": []}
@@ -129,8 +216,13 @@ def update_spare(tag, quantity, action):
 
     # Keep formulas intact while updating the workbook.
     wb = load_workbook(XLSX, data_only=False)
+    _normalize_quantity_merges(wb)
 
     found = None
+
+    normalized = _normalize_quantity_merges(wb)
+    if normalized:
+        wb.save(XLSX)
 
     for ws in wb.worksheets:
         row = _find_tag(ws, tag)
@@ -207,6 +299,7 @@ def get_spare_quantity(tag):
     tag = str(tag).strip().upper()
 
     wb = load_workbook(XLSX, data_only=False)
+    _normalize_quantity_merges(wb)
 
     for ws in wb.worksheets:
         row = _find_tag(ws, tag)
