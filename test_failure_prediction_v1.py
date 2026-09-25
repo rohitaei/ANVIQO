@@ -69,3 +69,27 @@ def test_detector_requires_equipment_tag_and_prediction_intent():
     assert is_failure_prediction_query("Is PT303 likely to fail?")
     assert not is_failure_prediction_query("Predict the plant")
     assert not is_failure_prediction_query("What is PT-303?")
+
+
+def test_detector_accepts_non_pci_tag_family():
+    from failure_prediction import is_failure_prediction_query, extract_tag
+    assert extract_tag("Predict TIC_101A failure risk") == "TIC-101A"
+    assert is_failure_prediction_query("Predict TIC_101A failure risk")
+
+
+def test_authenticated_tenant_never_reads_global_prediction_sources(monkeypatch):
+    import failure_prediction as fp
+
+    monkeypatch.setattr(fp, "_authenticated_tenant", lambda: ("plant-b", "org-b"))
+    monkeypatch.setattr(fp, "_tenant_rows", lambda tag, plant_id: [])
+    monkeypatch.setattr(fp, "_pci", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global PCI path used")))
+    monkeypatch.setattr(fp, "_history", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global history path used")))
+    monkeypatch.setattr(fp, "_memory", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global memory path used")))
+    monkeypatch.setattr(fp, "_events", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global events path used")))
+    monkeypatch.setattr(fp, "_health", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global health path used")))
+
+    result = fp.build_failure_prediction("Predict TIC_101A failure risk")
+    assert result["status"] == "INSUFFICIENT_EVIDENCE"
+    assert result["evidence_summary"]["pci_identity_available"] is False
+    assert result["safety"]["plc_write"] is False
+    assert result["decision_status"] == "HUMAN_DECISION_REQUIRED"
