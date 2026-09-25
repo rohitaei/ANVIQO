@@ -132,3 +132,45 @@ def test_authenticated_maintenance_never_reads_global_memory(monkeypatch):
 
     assert "plant_memory_count" in result
     assert '"plant-b"' in result
+
+
+def test_authenticated_root_cause_never_uses_global_sources(monkeypatch):
+    from flask import Flask, session
+    import root_cause_intelligence as rci
+
+    app = Flask(__name__)
+    app.secret_key = "test"
+    monkeypatch.setattr(rci, "_tenant_evidence", lambda tag, plant_id: [{"plant_id": plant_id, "tag": tag, "value": 12.3, "verified": True}])
+    monkeypatch.setattr(rci, "_events", lambda tag: (_ for _ in ()).throw(AssertionError("global events used")))
+    monkeypatch.setattr(rci, "_verified_memory", lambda tag: (_ for _ in ()).throw(AssertionError("global memory used")))
+    monkeypatch.setattr(rci, "_health", lambda tag: (_ for _ in ()).throw(AssertionError("global health used")))
+    monkeypatch.setattr(rci, "_pci_evidence", lambda tag, query: (_ for _ in ()).throw(AssertionError("global PCI used")))
+
+    with app.test_request_context("/"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+        result = rci.build_root_cause_intelligence("Why is TIC-101A abnormal?")
+
+    assert result["tenant_scope"]["plant_id"] == "plant-b"
+    assert result["evidence_summary"]["selected_plant_evidence_count"] == 1
+
+
+def test_authenticated_plant_brain_uses_selected_plant_only(monkeypatch):
+    from flask import Flask, session
+    import plant_brain_reasoning as brain
+
+    app = Flask(__name__)
+    app.secret_key = "test"
+    monkeypatch.setattr(brain, "build_area_equipment_intelligence", lambda area: (_ for _ in ()).throw(AssertionError("global V5 area intelligence used")))
+    monkeypatch.setattr(brain, "_authenticated_tenant", lambda: ("plant-b", "org-b"))
+    monkeypatch.setattr("anvi_tenant_chat_boundary._rows", lambda plant_id, terms=None, tag=None, limit=500: [{"plant_id": plant_id, "area": "AREA-X", "tag": "TIC-101A"}])
+
+    with app.test_request_context("/"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+        result = brain.build_plant_brain("AREA-X")
+
+    assert result["tenant_scope"]["plant_id"] == "plant-b"
+    assert result["evidence_rows"][0]["tag"] == "TIC-101A"
