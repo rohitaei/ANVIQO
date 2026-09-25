@@ -37,6 +37,31 @@ class AnviqoProduct:
         }
 
     # ---------------------------------------------------------
+    # TENANT BOUNDARY
+    # ---------------------------------------------------------
+
+    def _authenticated_tenant(self):
+        """Return the selected authenticated tenant, or no tenant outside requests."""
+        try:
+            from flask import has_request_context, session
+            if not has_request_context() or not session.get("authenticated"):
+                return None, None
+            return session.get("plant_id"), session.get("organization_id")
+        except Exception:
+            return None, None
+
+    def _tenant_rows(self, plant_id, tag=None):
+        """Read only explicitly owned selected-plant evidence."""
+        if not plant_id:
+            return []
+        try:
+            from anvi_tenant_chat_boundary import _rows
+            rows = _rows(plant_id, tag=tag, limit=2500) if tag else _rows(plant_id, limit=2500)
+            return [row for row in rows if isinstance(row, dict) and str(row.get("plant_id")) == str(plant_id)]
+        except Exception:
+            return []
+
+    # ---------------------------------------------------------
     # SYSTEM STATUS
     # ---------------------------------------------------------
 
@@ -55,82 +80,45 @@ class AnviqoProduct:
     # ---------------------------------------------------------
 
     def equipment_view(self, equipment_tag):
-
+        plant_id, organization_id = self._authenticated_tenant()
+        if plant_id:
+            rows = self._tenant_rows(plant_id, tag=equipment_tag)
+            return {"status":"AVAILABLE" if rows else "NO DATA","equipment":equipment_tag,
+                    "identity":rows[0] if rows else None,"evidence_rows":rows,
+                    "scope":"SELECTED_PLANT_ONLY","plant_id":plant_id,"organization_id":organization_id,
+                    "read_only":True}
         try:
             from equipment_database import get_equipment
-
             equipment = get_equipment(equipment_tag)
-
-            if not equipment:
-                return {
-                    "status": "NO DATA",
-                    "equipment": equipment_tag,
-                }
-
-            return {
-                "status": "AVAILABLE",
-                "equipment": equipment_tag,
-                "identity": equipment,
-                "read_only": True,
-            }
-
+            return {"status":"AVAILABLE","equipment":equipment_tag,"identity":equipment,"read_only":True} if equipment else {"status":"NO DATA","equipment":equipment_tag}
         except Exception as exc:
-
-            return {
-                "status": "ERROR",
-                "equipment": equipment_tag,
-                "error": str(exc),
-            }
-
-    # ---------------------------------------------------------
-    # EQUIPMENT RELATIONSHIPS
-    # ---------------------------------------------------------
+            return {"status":"ERROR","equipment":equipment_tag,"error":str(exc)}
 
     def relationships(self, equipment_tag):
-
+        plant_id, organization_id = self._authenticated_tenant()
+        if plant_id:
+            rows = self._tenant_rows(plant_id, tag=equipment_tag)
+            return {"status":"EVIDENCE_AVAILABLE" if rows else "NO DATA","equipment":equipment_tag,
+                    "relationships":[],"evidence_rows":rows,"scope":"SELECTED_PLANT_ONLY",
+                    "plant_id":plant_id,"organization_id":organization_id,"causation_claim":False}
         try:
-            from equipment_relationships import (
-                build_equipment_relationships
-            )
-
-            return build_equipment_relationships(
-                equipment_tag
-            )
-
+            from equipment_relationships import build_equipment_relationships
+            return build_equipment_relationships(equipment_tag)
         except Exception as exc:
-
-            return {
-                "status": "ERROR",
-                "equipment": equipment_tag,
-                "error": str(exc),
-            }
-
-    # ---------------------------------------------------------
-    # EVENT TIMELINE
-    # ---------------------------------------------------------
+            return {"status":"ERROR","equipment":equipment_tag,"error":str(exc)}
 
     def event_timeline(self, equipment_tag):
-
+        plant_id, organization_id = self._authenticated_tenant()
+        if plant_id:
+            rows = self._tenant_rows(plant_id, tag=equipment_tag)
+            return {"status":"EVIDENCE_AVAILABLE" if rows else "NO DATA","equipment":equipment_tag,
+                    "events":[],"evidence_rows":rows,"scope":"SELECTED_PLANT_ONLY",
+                    "plant_id":plant_id,"organization_id":organization_id,"causation_claim":False}
         try:
-            from event_timeline import (
-                build_event_timeline
-            )
-
-            return build_event_timeline(
-                equipment_tag
-            )
-
+            from event_timeline import build_event_timeline
+            return build_event_timeline(equipment_tag)
         except Exception as exc:
-
-            return {
-                "status": "ERROR",
-                "equipment": equipment_tag,
-                "error": str(exc),
-            }
-
-    # ---------------------------------------------------------
-    # PLANT BRAIN
-    # ---------------------------------------------------------
+            return {"status":"ERROR","equipment":equipment_tag,"error":str(exc)}
 
     def plant_brain(self, area):
 
@@ -162,22 +150,17 @@ class AnviqoProduct:
     # ---------------------------------------------------------
 
     def executive_view(self):
-
+        plant_id, organization_id = self._authenticated_tenant()
+        if plant_id:
+            rows = self._tenant_rows(plant_id)
+            return {"status":"EVIDENCE_AVAILABLE" if rows else "NO DATA","scope":"SELECTED_PLANT_ONLY",
+                    "plant_id":plant_id,"organization_id":organization_id,"evidence_rows":rows,
+                    "decision_status":"HUMAN_DECISION_REQUIRED","read_only":True}
         try:
-            from v57_executive_intelligence import (
-                build_executive_intelligence
-            )
-
-            result = build_executive_intelligence()
-
-            return result
-
+            from v57_executive_intelligence import build_executive_intelligence
+            return build_executive_intelligence()
         except Exception as exc:
-
-            return {
-                "status": "ERROR",
-                "error": str(exc),
-            }
+            return {"status":"ERROR","error":str(exc)}
 
     # ---------------------------------------------------------
     # SAFETY
