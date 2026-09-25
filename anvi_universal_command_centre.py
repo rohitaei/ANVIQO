@@ -120,9 +120,38 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
 def get_live_pci_snapshot(original_getter):
     """Compatibility wrapper used by legacy /api/pci and /api/pci/live."""
     plant_id = _active_plant()
-    snapshot = _tenant_snapshot(plant_id)
-    if snapshot is not None:
-        return snapshot
+
+    # Once a tenant is selected, never fall back to the bootstrap/demo
+    # simulator. An empty tenant must remain empty rather than showing
+    # another plant's evidence.
+    if plant_id:
+        snapshot = _tenant_snapshot(plant_id)
+        if snapshot is not None:
+            return snapshot
+        return {
+            "status": "NO DATA",
+            "mode": "ONBOARDING_DATA",
+            "source": "ANVIQO TENANT PLANT KNOWLEDGE",
+            "total_io": 0,
+            "healthy": 0,
+            "warning": 0,
+            "critical": 0,
+            "critical_count": 0,
+            "changed": 0,
+            "active_events": [],
+            "plant_health_score": None,
+            "health_status": "NO DATA",
+            "area_count": 0,
+            "areas": [],
+            "points": [],
+            "records": [],
+            "plant_id": plant_id,
+            "safety": dict(SAFETY),
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+        }
+
     return original_getter()
 
 
