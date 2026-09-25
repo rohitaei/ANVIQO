@@ -37,6 +37,63 @@ class TestANVIIntelligenceOrchestrator(unittest.TestCase):
         self.assertTrue(result["decision"]["required"])
         self.assertFalse(result["decision"]["automatic_action"])
 
+
+    def test_intelligence_fabric_uses_selected_plant_for_engineering_evidence(self):
+        import anviqo_intelligence_fabric as fabric
+        original_context = fabric.tenant_context
+        original_rows = fabric._tenant_knowledge_rows
+        original_loader = fabric.load
+        try:
+            fabric.tenant_context = lambda: ("plant-universal-a", "org-universal")
+            fabric._tenant_knowledge_rows = lambda query, tag=None: [{
+                "plant_id": "plant-universal-a",
+                "organization_id": "org-universal",
+                "tag": tag or "PT-101",
+                "name": "Pressure transmitter",
+            }]
+            def forbidden_global_loader(name):
+                if name == "pci_conversation":
+                    raise AssertionError("global PCI conversation path used for tenant request")
+                return original_loader(name)
+            fabric.load = forbidden_global_loader
+            result = fabric.pci("PT-101", "Tell me about PT-101")
+            self.assertEqual(result["scope"], "SELECTED_PLANT_ONLY")
+            self.assertEqual(result["plant_id"], "plant-universal-a")
+            self.assertEqual(result["organization_id"], "org-universal")
+            self.assertEqual(result["identity"]["plant_id"], "plant-universal-a")
+        finally:
+            fabric.tenant_context = original_context
+            fabric._tenant_knowledge_rows = original_rows
+            fabric.load = original_loader
+
+    def test_intelligence_fabric_spares_do_not_use_global_pci_inventory_for_tenant(self):
+        import anviqo_intelligence_fabric as fabric
+        original_context = fabric.tenant_context
+        original_rows = fabric._tenant_knowledge_rows
+        original_loader = fabric.load
+        try:
+            fabric.tenant_context = lambda: ("plant-universal-b", "org-universal")
+            fabric._tenant_knowledge_rows = lambda query, tag=None: [{
+                "plant_id": "plant-universal-b",
+                "organization_id": "org-universal",
+                "tag": tag or "PT-202",
+                "name": "Pressure transmitter spare",
+                "content": "spare stock 2",
+            }]
+            def forbidden_global_loader(name):
+                if name == "pci_spares":
+                    raise AssertionError("global PCI spare inventory used for tenant request")
+                return original_loader(name)
+            fabric.load = forbidden_global_loader
+            result = fabric.spares("PT-202", "spare for PT-202")
+            self.assertEqual(result["scope"], "SELECTED_PLANT_ONLY")
+            self.assertEqual(result["plant_id"], "plant-universal-b")
+            self.assertEqual(result["records"][0]["tag"], "PT-202")
+        finally:
+            fabric.tenant_context = original_context
+            fabric._tenant_knowledge_rows = original_rows
+            fabric.load = original_loader
+
     def test_safety_contract_is_frozen(self):
         self.assertTrue(SAFETY["read_only"])
         self.assertFalse(SAFETY["plc_write"])
