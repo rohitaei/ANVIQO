@@ -20,6 +20,29 @@ from datetime import datetime
 VERSION = "ANVIQO PRODUCT V1.0"
 
 
+def _authenticated_tenant():
+    """Return selected authenticated tenant, or no tenant outside a request."""
+    try:
+        from flask import has_request_context, session
+        if not has_request_context() or not session.get("authenticated"):
+            return None, None
+        return session.get("plant_id"), session.get("organization_id")
+    except Exception:
+        return None, None
+
+
+def _tenant_rows(plant_id, tag=None, limit=2500):
+    """Read only explicitly owned evidence for the selected tenant."""
+    if not plant_id:
+        return []
+    try:
+        from anvi_tenant_chat_boundary import _rows
+        rows = _rows(plant_id, tag=tag, limit=limit)
+        return [r for r in (rows or []) if isinstance(r, dict) and str(r.get("plant_id")) == str(plant_id)]
+    except Exception:
+        return []
+
+
 class AnviqoProduct:
 
     def __init__(self):
