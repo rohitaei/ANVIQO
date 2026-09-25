@@ -347,6 +347,54 @@ def _build_unified_plant_evidence_context():
     }
 
     # --------------------------------------------------------
+    # Authenticated tenant boundary
+    # --------------------------------------------------------
+    # The bundled PCI simulator/V5 local stores are reference/demo evidence.
+    # They must never become the source for an authenticated tenant.
+    try:
+        from flask import has_request_context, session
+        if has_request_context() and session.get("authenticated"):
+            plant_id = session.get("plant_id")
+            organization_id = session.get("organization_id")
+            if not plant_id:
+                return context
+
+            from anvi_tenant_chat_boundary import _rows
+
+            tenant_rows = _rows(plant_id, limit=2500)
+            context["plant"] = plant_id
+            context["mode"] = "ONBOARDING_DATA"
+            context["source"] = ["SELECTED_PLANT_KNOWLEDGE"]
+            context["tenant_scope"] = {
+                "plant_id": plant_id,
+                "organization_id": organization_id,
+            }
+
+            if isinstance(tenant_rows, list):
+                context["equipment_evidence"] = tenant_rows
+                context["areas"] = []
+                seen_areas = set()
+                for row in tenant_rows:
+                    if not isinstance(row, dict):
+                        continue
+                    area = row.get("area") or row.get("area_name")
+                    if area and str(area) not in seen_areas:
+                        seen_areas.add(str(area))
+                        context["areas"].append({
+                            "area": area,
+                            "status": "EVIDENCE_AVAILABLE",
+                            "health_score": None,
+                            "evidence_rows": 0,
+                        })
+                context["area_count"] = len(context["areas"])
+                context["evidence_available"] = bool(tenant_rows)
+
+            return context
+    except Exception as exc:
+        context["tenant_scope_error"] = type(exc).__name__
+        return context
+
+    # --------------------------------------------------------
     # Existing PCI live evidence
     # --------------------------------------------------------
     try:
