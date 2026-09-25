@@ -195,3 +195,46 @@ def test_authenticated_product_facade_never_uses_global_equipment_event_or_execu
         assert p.equipment_view("TIC-101A")["plant_id"] == "plant-b"
         assert p.event_timeline("TIC-101A")["scope"] == "SELECTED_PLANT_ONLY"
         assert p.executive_view()["evidence_count"] == 1
+
+
+
+def test_authenticated_product_facade_never_uses_global_equipment_relationships_events_or_hod(monkeypatch):
+    from flask import Flask, session
+    from anviqo_product import AnviqoProduct
+
+    app = Flask(__name__)
+    app.secret_key = "test"
+    product = AnviqoProduct()
+
+    monkeypatch.setattr(
+        "anvi_tenant_chat_boundary._rows",
+        lambda plant_id, terms=None, tag=None, limit=2500: [
+            {"plant_id": plant_id, "tag": tag or "TIC-101A", "area": "AREA-X"}
+        ],
+    )
+    monkeypatch.setattr(
+        "equipment_database.get_equipment",
+        lambda tag: (_ for _ in ()).throw(AssertionError("global equipment used")),
+    )
+    monkeypatch.setattr(
+        "equipment_relationships.build_equipment_relationships",
+        lambda tag: (_ for _ in ()).throw(AssertionError("global relationships used")),
+    )
+    monkeypatch.setattr(
+        "event_timeline.build_event_timeline",
+        lambda tag: (_ for _ in ()).throw(AssertionError("global events used")),
+    )
+    monkeypatch.setattr(
+        "v57_executive_intelligence.build_executive_intelligence",
+        lambda: (_ for _ in ()).throw(AssertionError("global HOD intelligence used")),
+    )
+
+    with app.test_request_context("/"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+
+        assert product.equipment_view("TIC-101A")["scope"] == "SELECTED_PLANT_ONLY"
+        assert product.relationships("TIC-101A")["scope"] == "SELECTED_PLANT_ONLY"
+        assert product.event_timeline("TIC-101A")["scope"] == "SELECTED_PLANT_ONLY"
+        assert product.executive_view()["scope"] == "SELECTED_PLANT_ONLY"
