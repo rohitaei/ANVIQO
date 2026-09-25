@@ -292,3 +292,49 @@ def test_authenticated_full_anvi_pci_facade_never_uses_global_resolver(monkeypat
     assert result["scope"] == "SELECTED_PLANT_ONLY"
     assert result["plant_id"] == "plant-b"
     assert result["records"][0]["tag"] == "TIC-101A"
+
+
+def test_legacy_api_boundary_uses_selected_plant_for_authenticated_requests(monkeypatch):
+    from flask import Flask, session
+    import anviqo_api as api
+
+    app = api.app
+
+    monkeypatch.setattr(
+        "anvi_universal_command_centre.get_live_pci_snapshot",
+        lambda original: {
+            "status": "NO DATA",
+            "plant_id": "plant-b",
+            "source": "SELECTED_PLANT_KNOWLEDGE",
+            "total_io": 0,
+        },
+    )
+    monkeypatch.setattr(
+        "pci_live_simulator.get_live_pci_snapshot",
+        lambda: (_ for _ in ()).throw(AssertionError("global simulator used")),
+    )
+
+    class FakeProduct:
+        def equipment_view(self, tag):
+            return {"scope": "SELECTED_PLANT_ONLY", "plant_id": "plant-b", "equipment": tag}
+        def relationships(self, tag):
+            return {"scope": "SELECTED_PLANT_ONLY", "plant_id": "plant-b", "equipment": tag}
+        def event_timeline(self, tag):
+            return {"scope": "SELECTED_PLANT_ONLY", "plant_id": "plant-b", "equipment": tag}
+
+    monkeypatch.setattr("anviqo_product.AnviqoProduct", FakeProduct)
+
+    with app.test_request_context("/api/pci"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+        response = api.tenant_safe_legacy_api_boundary()
+        assert response.get_json()["plant_id"] == "plant-b"
+
+    with app.test_request_context("/api/equipment/TIC-101A/events"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+        response = api.tenant_safe_legacy_api_boundary()
+        assert response.get_json()["scope"] == "SELECTED_PLANT_ONLY"
+        assert response.get_json()["plant_id"] == "plant-b"
