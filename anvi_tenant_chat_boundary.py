@@ -314,8 +314,13 @@ def _tenant_answer(q,rows,plant):
     return _natural_knowledge_answer(text,rows,plant)
 
 def _legacy_onboarding_question(q):
+    """Detect generic plant-data questions without naming a reference plant."""
     low=str(q or "").lower()
-    return any(term in low for term in ("mbf-2","mbf2","plc i/o","plc io","cable schedule","onboarded data","onboarding data","instrument","pressure","temperature","flow","level"))
+    return any(term in low for term in (
+        "plc i/o", "plc io", "cable schedule", "onboarded data",
+        "onboarding data", "instrument", "pressure", "temperature",
+        "flow", "level", "tag", "terminal", "junction box", "panel",
+    ))
 
 def install():
     try:
