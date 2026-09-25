@@ -182,7 +182,7 @@ def test_authenticated_product_facade_never_uses_global_equipment_event_or_execu
 
     app = Flask(__name__)
     app.secret_key = "test"
-    monkeypatch.setattr(product_module, "_tenant_rows", lambda plant_id, tag=None, limit=2500: [{"plant_id": plant_id, "tag": tag or "TIC-101A", "event_type": "TEST"}])
+    monkeypatch.setattr(product_module.AnviqoProduct, "_tenant_rows", lambda self, plant_id, tag=None, limit=2500: [{"plant_id": plant_id, "tag": tag or "TIC-101A", "event_type": "TEST"}])
     monkeypatch.setattr("equipment_database.get_equipment", lambda *a, **k: (_ for _ in ()).throw(AssertionError("global equipment used")))
     monkeypatch.setattr("event_timeline.build_event_timeline", lambda *a, **k: (_ for _ in ()).throw(AssertionError("global events used")))
     monkeypatch.setattr("v57_executive_intelligence.build_executive_intelligence", lambda *a, **k: (_ for _ in ()).throw(AssertionError("global executive used")))
