@@ -29,7 +29,7 @@ class ANVI:
     def status(self):
         return {
             "product": self.product,
-            "version": self.version,
+            "version": VERSION,
             "status": "READY",
             "intelligence_core": "V5 FROZEN",
             "timestamp": datetime.now().isoformat(timespec="seconds"),
@@ -73,6 +73,63 @@ class ANVI:
             }
 
     def pci(self, question):
+        try:
+            from flask import has_request_context, session
+            if has_request_context() and session.get("authenticated"):
+                plant_id = session.get("plant_id")
+                if not plant_id:
+                    return {
+                        "status": "NO PLANT CONTEXT",
+                        "count": 0,
+                        "records": [],
+                        "scope": "SELECTED_PLANT_ONLY",
+                        "read_only": True,
+                        "plc_write": False,
+                        "scada_control": False,
+                        "human_decision_required": True,
+                    }
+
+                from anviqo_intelligence_fabric import extract_tag, pci as fabric_pci
+                tag = extract_tag(question)
+                evidence = fabric_pci(tag, question)
+                rows = []
+                if isinstance(evidence, dict):
+                    candidate = evidence.get("evidence_rows")
+                    if isinstance(candidate, list):
+                        rows = candidate
+                    elif isinstance(evidence.get("identity"), dict):
+                        rows = [evidence["identity"]]
+
+                return {
+                    "mode": "SELECTED_PLANT_KNOWLEDGE",
+                    "count": len(rows),
+                    "records": rows,
+                    "evidence": "selected plant onboarded evidence",
+                    "scope": "SELECTED_PLANT_ONLY",
+                    "plant_id": plant_id,
+                    "organization_id": session.get("organization_id"),
+                    "read_only": True,
+                    "plc_write": False,
+                    "scada_control": False,
+                    "human_decision_required": True,
+                }
+        except Exception:
+            try:
+                from flask import has_request_context, session
+                if has_request_context() and session.get("authenticated"):
+                    return {
+                        "status": "TENANT EVIDENCE UNAVAILABLE",
+                        "count": 0,
+                        "records": [],
+                        "scope": "SELECTED_PLANT_ONLY",
+                        "read_only": True,
+                        "plc_write": False,
+                        "scada_control": False,
+                        "human_decision_required": True,
+                    }
+            except Exception:
+                pass
+
         from pci_universal_resolver import resolve
         rows, mode = resolve(question)
 
