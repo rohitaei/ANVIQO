@@ -690,6 +690,35 @@ def _plant(q):
     """
     return _plant_evidence_answer(q)
 
+def _authenticated_tenant_context():
+    """Return authenticated tenant identity, or no tenant outside a request."""
+    try:
+        from flask import has_request_context, session
+        if not has_request_context() or not session.get("authenticated"):
+            return None, None
+        return session.get("plant_id"), session.get("organization_id")
+    except Exception:
+        return None, None
+
+
+def _tenant_memory(tag, plant_id):
+    """Read verified historical memory only from the selected tenant."""
+    if not tag or not plant_id:
+        return []
+
+    try:
+        from anvi_tenant_chat_boundary import _rows
+        rows = _rows(plant_id, tag=tag, limit=250)
+        return [
+            row for row in rows
+            if isinstance(row, dict)
+            and str(row.get("plant_id")) == str(plant_id)
+            and row.get("verified") is True
+        ]
+    except Exception:
+        return []
+
+
 def _maintenance(q):
     ql = q.lower()
 
@@ -727,7 +756,12 @@ def _maintenance(q):
     # ========================================================
     plant_memory_records = []
 
-    if tag:
+    tenant_plant_id, _tenant_org_id = _authenticated_tenant_context()
+
+    if tenant_plant_id:
+        # Authenticated tenants must never read the bundled/global memory store.
+        plant_memory_records = _tenant_memory(tag, tenant_plant_id)
+    elif tag:
         try:
             from plant_memory import search_memory
 
@@ -767,7 +801,9 @@ def _maintenance(q):
     verified_memory = []
 
     try:
-        if tag:
+        if tenant_plant_id:
+            verified_memory = _tenant_memory(tag, tenant_plant_id)
+        elif tag:
             import plant_memory
 
             # --------------------------------------------------------
