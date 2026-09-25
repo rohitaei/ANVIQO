@@ -104,3 +104,31 @@ def test_authenticated_unified_plant_evidence_never_uses_global_simulator(monkey
     assert result["tenant_scope"]["plant_id"] == "plant-b"
     assert result["evidence_available"] is True
     assert result["areas"][0]["area"] == "AREA-X"
+
+
+def test_authenticated_maintenance_never_reads_global_memory(monkeypatch):
+    from flask import Flask, session
+    import anvi_knowledge_layer as layer
+
+    app = Flask(__name__)
+    app.secret_key = "test"
+
+    def fail_global(*args, **kwargs):
+        raise AssertionError("global Plant Memory used")
+
+    monkeypatch.setattr("plant_memory.search_memory", fail_global)
+
+    with app.test_request_context("/"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+        monkeypatch.setattr(
+            "anvi_tenant_chat_boundary._rows",
+            lambda plant_id, terms=None, tag=None, limit=250: [
+                {"plant_id": plant_id, "tag": tag, "verified": True}
+            ],
+        )
+        result = layer._maintenance("maintenance history for TIC-101A")
+
+    assert "plant_memory_count" in result
+    assert '"plant-b"' in result
