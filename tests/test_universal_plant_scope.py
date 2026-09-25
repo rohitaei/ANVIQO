@@ -238,3 +238,20 @@ def test_authenticated_product_facade_never_uses_global_equipment_relationships_
         assert product.relationships("TIC-101A")["scope"] == "SELECTED_PLANT_ONLY"
         assert product.event_timeline("TIC-101A")["scope"] == "SELECTED_PLANT_ONLY"
         assert product.executive_view()["scope"] == "SELECTED_PLANT_ONLY"
+
+
+
+def test_hod_management_routes_require_authenticated_tenant(monkeypatch):
+    from flask import Flask
+    import phase5_command_centre_runtime as runtime
+
+    app = runtime.app
+    with app.test_client() as client:
+        response = client.get("/api/hod-management")
+        assert response.status_code == 401
+
+        response = client.post(
+            "/api/hod-management/decision",
+            json={"action": {"action_id": "X"}, "decision": "ACKNOWLEDGE"},
+        )
+        assert response.status_code == 401
