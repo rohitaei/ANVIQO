@@ -338,3 +338,35 @@ def test_legacy_api_boundary_uses_selected_plant_for_authenticated_requests(monk
         response = api.tenant_safe_legacy_api_boundary()
         assert response.get_json()["scope"] == "SELECTED_PLANT_ONLY"
         assert response.get_json()["plant_id"] == "plant-b"
+
+
+def test_authenticated_knowledge_executive_never_uses_global_v57(monkeypatch):
+    from flask import Flask, session
+    import anvi_knowledge_layer as layer
+
+    app = Flask(__name__)
+    app.secret_key = "test"
+
+    monkeypatch.setattr(
+        "v57_executive_intelligence.build_executive_intelligence",
+        lambda: (_ for _ in ()).throw(AssertionError("global V5.7 executive used")),
+    )
+    monkeypatch.setattr(
+        layer,
+        "_build_unified_plant_evidence_context",
+        lambda: {
+            "evidence_available": True,
+            "equipment_evidence": [{"plant_id": "plant-b", "tag": "TIC-101A"}],
+            "areas": [{"area": "AREA-X"}],
+        },
+    )
+
+    with app.test_request_context("/"):
+        session["authenticated"] = True
+        session["plant_id"] = "plant-b"
+        session["organization_id"] = "org-b"
+        result = layer._executive("management status")
+
+    assert '"plant-b"' in result
+    assert '"SELECTED_PLANT_ONLY"' in result
+    assert "HUMAN_DECISION_REQUIRED" in result
