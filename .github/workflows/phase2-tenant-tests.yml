@@ -34,6 +34,12 @@ jobs:
       - name: Run Phase 2 tenant tests
         run: pytest -q test_phase2_tenant_foundation.py test_phase2_api_boundary.py test_universal_command_centre_tenant.py
 
+      - name: Run universal plant-scope regression tests
+        run: pytest -q tests/test_universal_plant_scope.py
+
+      - name: Run event-correlation regression tests
+        run: pytest -q tests/test_event_correlation.py
+
       - name: Run field report and spare regression tests
         run: pytest -q test_field_report_spare_sync.py test_field_report_query_routing.py test_universal_io_spares.py
 
