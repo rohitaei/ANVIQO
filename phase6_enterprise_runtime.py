@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from flask import jsonify, request, session
 
-from phase5_command_centre_runtime import app
+from anviqo_spare_query_guard import app
 from anvi_tenant_store import authorize, create_plant, _connect, _placeholder
 
 ENTERPRISE_SAFETY = {
