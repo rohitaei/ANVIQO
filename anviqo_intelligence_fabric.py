@@ -51,6 +51,45 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
+
+def tenant_context():
+    """Return the authenticated tenant context when ANVI runs inside the web app."""
+    try:
+        from flask import session
+        if not session.get("authenticated"):
+            return None, None
+        plant_id = str(session.get("plant_id") or "").strip()
+        organization_id = str(session.get("organization_id") or "").strip()
+        if not plant_id:
+            return None, organization_id or None
+        return plant_id, organization_id or None
+    except Exception:
+        return None, None
+
+
+def _tenant_knowledge_rows(query, tag=None):
+    """Read only the selected plant's onboarded knowledge.
+
+    This is the universal path for newly onboarded plants. It deliberately
+    does not fall back to the bundled PCI database or another plant.
+    """
+    plant_id, organization_id = tenant_context()
+    if not plant_id:
+        return []
+    try:
+        import anvi_chat_stability_v2 as stability
+        if tag:
+            return stability._pci_resolve_rows(plant_id, organization_id, query)
+        terms = stability._terms(query)
+        return stability._query_rows(
+            plant_id,
+            organization_id,
+            terms=terms,
+            limit=120,
+        )
+    except Exception:
+        return []
+
 def extract_tag(text: str) -> Optional[str]:
     if not text:
         return None
@@ -111,28 +150,33 @@ def verified_memory(tag):
 
 
 def pci(tag, query):
+    """Return engineering evidence without crossing the selected plant boundary."""
+    plant_id, organization_id = tenant_context()
+
+    # Authenticated tenant requests must use the tenant-scoped evidence
+    # adapter. Never call the bundled PCI conversation/database as a global
+    # fallback for another plant.
+    if plant_id:
+        rows = _tenant_knowledge_rows(query, tag)
+        return {
+            "identity": rows[0] if rows else None,
+            "live": None,
+            "answer": None,
+            "scope": "SELECTED_PLANT_ONLY",
+            "plant_id": plant_id,
+            "organization_id": organization_id,
+        }
+
+    # Preserve the existing local/demo behavior outside an authenticated
+    # tenant session. This path is not used as a tenant fallback.
     m = load("pci_conversation")
-
     result = {
-        "identity": None,
-        "live": None,
-        "answer": None,
+        "identity": call(m, "find_tag", tag),
+        "live": call(m, "get_live_pci_snapshot"),
+        "answer": call(m, "answer", query),
     }
-
-    result["identity"] = call(m, "find_tag", tag)
-
-    # The live simulator may require no tag or may return a complete
-    # plant snapshot. Preserve whatever the existing engine provides.
-    result["live"] = call(m, "get_live_pci_snapshot")
-
-    # Use the authoritative conversational PCI answer as fallback context.
-    result["answer"] = call(m, "answer", query)
-
-    # If find_tag returns no direct identity, search the authoritative
-    # PCI database through the existing search interface.
     if result["identity"] is None:
         result["identity"] = call(m, "search", tag)
-
     return result
 
 
@@ -237,16 +281,35 @@ def maintenance(tag, query):
 
 
 def spares(tag, query):
+    """Resolve spare evidence inside the selected plant when authenticated."""
+    plant_id, organization_id = tenant_context()
+
+    if plant_id:
+        rows = _tenant_knowledge_rows(query, tag)
+        spare_rows = []
+        for row in rows:
+            text_blob = " ".join(
+                str(row.get(k) or "")
+                for k in ("name", "service", "asset_type", "tag", "source", "content")
+            ).lower()
+            meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+            text_blob += " " + " ".join(str(v).lower() for v in meta.values())
+            if any(term in text_blob for term in ("spare", "stock", "qty", "inventory", "part number")):
+                spare_rows.append(row)
+        return {
+            "scope": "SELECTED_PLANT_ONLY",
+            "plant_id": plant_id,
+            "organization_id": organization_id,
+            "records": spare_rows,
+        }
+
+    # Preserve local/demo behavior outside an authenticated tenant session.
     m = load("pci_spares")
-
     result = call(m, "answer_spare_management", query)
-
     if result is None:
         result = call(m, "answer_spare_query", query)
-
     if result is None:
         result = call(m, "query_spares", query)
-
     return result
 
 
