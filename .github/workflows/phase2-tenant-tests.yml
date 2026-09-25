@@ -17,6 +17,8 @@ jobs:
     env:
       PYTHONPATH: .
       ANVIQO_SECRET_KEY: ci-test-secret
+      ANVIQO_ADMIN_USER: ci-admin
+      ANVIQO_ADMIN_PASSWORD: ci-password
     steps:
       - name: Checkout full history
         uses: actions/checkout@v4
