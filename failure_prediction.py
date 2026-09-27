@@ -61,7 +61,7 @@ def extract_tag(text: str) -> Optional[str]:
     # Prefer the compact engineering-identifier form so a natural-language
     # verb such as "Predict" cannot become a false tag prefix.
     compact = re.search(
-        r"\\b[A-Z]{1,16}[-_ ]?[A-Z0-9]{0,8}[-_ ]?\\d{1,8}[A-Z]?\\b",
+        r"\\b[A-Z]{1,16}[-_]\\d{1,8}[A-Z]?\\b",
         value,
         re.I,
     )
