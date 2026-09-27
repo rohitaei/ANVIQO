@@ -57,10 +57,21 @@ def _variants(tag: str) -> List[str]:
 
 
 def extract_tag(text: str) -> Optional[str]:
-    match = _TAG_RE.search(str(text or ""))
+    value = str(text or "")
+    # Prefer the compact engineering-identifier form so a natural-language
+    # verb such as "Predict" cannot become a false tag prefix.
+    compact = re.search(
+        r"\\b[A-Z]{1,16}[-_ ]?[A-Z0-9]{0,8}[-_ ]?\\d{1,8}[A-Z]?\\b",
+        value,
+        re.I,
+    )
+    if compact:
+        return re.sub(r"\\s*[-_ ]\\s*", "-", compact.group(0).upper())
+
+    match = _TAG_RE.search(value)
     if not match:
         return None
-    return re.sub(r"\s*[-_ ]\s*", "-", match.group(0).upper())
+    return re.sub(r"\\s*[-_ ]\\s*", "-", match.group(0).upper())
 
 
 def is_failure_prediction_query(query: str) -> bool:
