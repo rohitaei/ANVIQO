@@ -132,6 +132,7 @@ def test_authenticated_maintenance_never_reads_global_memory(monkeypatch):
 
     assert "plant_memory_count" in result
     assert '"plant_memory_count": 1' in result
+    assert '"equipment": "TIC-101A"' in result
 
 
 def test_authenticated_root_cause_never_uses_global_sources(monkeypatch):
