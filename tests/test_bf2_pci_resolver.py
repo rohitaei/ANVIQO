@@ -80,4 +80,3 @@ def test_verified_pci_adapter_is_plant_bound():
         assert row["plant_id"] == "plant-a"
     finally:
         adapter.is_bound = original
-\n
