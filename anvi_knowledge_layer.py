@@ -729,6 +729,16 @@ def _maintenance(q):
 
     tag, item = _tag_from_question(q)
 
+    # If tenant evidence is being evaluated and the frozen resolver has no
+    # identity row, retain the generic engineering identifier from the
+    # question instead of losing the selected-plant maintenance context.
+    if not tag:
+        try:
+            from anviqo_intelligence_fabric import extract_tag
+            tag = extract_tag(q)
+        except Exception:
+            tag = None
+
     if tag:
         pattern_source = " ".join([
             str(item.get("description", "")) if item else "",
