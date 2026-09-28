@@ -16,6 +16,12 @@ from flask import make_response, redirect, request, session, url_for, jsonify
 
 from anviqo_spare_query_guard import app
 
+# V2 Command Centre event/change stream routes.
+try:
+    import v2_command_centre_runtime
+except Exception:
+    pass
+
 VERSION = "ANVIQO-FP-DEMO-DASHBOARD-V1.4-PREDICTION-PAGE"
 
 SAFETY = {
