@@ -200,9 +200,15 @@ try:
                                             str(plant_id), str(org_id), "pci-master-v1", "pci-master-v1", batch
                                         )
                                         pci_records += added
+                                        if _errors:
+                                            print(f"ANVIQO_PCI_BOOTSTRAP_BATCH_ERROR start={start} errors={_errors[:3]}", flush=True)
                                     if rows:
                                         pci_seeded += 1
-                                        print(f"ANVIQO_PCI_BOOTSTRAP_RECONCILE existing={knowledge} source_rows={len(rows)}", flush=True)
+                                        with _anvi_store._connect() as verify_conn:
+                                            verify_cur = verify_conn.cursor()
+                                            verify_cur.execute("SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p, (str(plant_id), str(org_id)))
+                                            verify_count = int(verify_cur.fetchone()[0] or 0)
+                                        print(f"ANVIQO_PCI_BOOTSTRAP_RECONCILE existing={knowledge} source_rows={len(rows)} attempted={pci_records} final={verify_count}", flush=True)
                         except Exception as exc:
                             print(f"ANVIQO_PCI_BOOTSTRAP_RESTORE_ERROR error={exc!r}", flush=True)
                 print(f"ANVIQO_AUTO_RECOVERY_IMPORTS plants_checked={len(candidates)} docs_plants={docs_plants} empty_with_docs={empty_with_docs} queued={queued} pci_seeded={pci_seeded} pci_records={pci_records}", flush=True)
