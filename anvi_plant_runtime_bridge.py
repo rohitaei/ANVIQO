@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-import threading
 from pathlib import Path
 from flask import redirect, Response
 
@@ -96,26 +95,3 @@ __all__ = [
     "add_plant_user_management_nav",
 ]
 
-
-# __ANVIQO_EMBEDDED_IMPORT_WORKER__
-# Safe fallback for the production web service: the durable queue remains in
-# PostgreSQL, but the importer can be consumed by the web process when the
-# separate worker is missing its database wiring. This does not alter V5,
-# tenant isolation, PCI data, or the existing worker service.
-def _start_embedded_import_worker() -> None:
-    if os.getenv("ANVIQO_EMBEDDED_IMPORT_WORKER", "").strip().lower() not in {"1", "true", "yes", "on"}:
-        return
-    try:
-        import anvi_ingestion_worker as _worker
-        thread = threading.Thread(
-            target=_worker._worker_loop,
-            daemon=True,
-            name="anviqo-embedded-import-worker",
-        )
-        thread.start()
-        print("ANVIQO EMBEDDED IMPORT WORKER: STARTED", flush=True)
-    except Exception as exc:
-        print("ANVIQO EMBEDDED IMPORT WORKER: FAILED", repr(exc), flush=True)
-
-
-_start_embedded_import_worker()
