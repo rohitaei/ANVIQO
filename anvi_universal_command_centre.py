@@ -67,10 +67,17 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
     # Tenant evidence/identity remains authoritative; this only supplies
     # simulated value, health, change and event state. No PLC/SCADA action.
     simulator = None
+    simulation_enabled = False
     try:
-        import pci_live_simulator as simulator
+        from flask import has_request_context, session
+        organization_id = str(session.get("organization_id") or "").strip() if has_request_context() else ""
+        import anvi_verified_pci_adapter as pci_adapter
+        simulation_enabled = pci_adapter.is_bound(plant_id, organization_id or None)
+        if simulation_enabled:
+            import pci_live_simulator as simulator
     except Exception:
         simulator = None
+        simulation_enabled = False
     healthy = warning = critical = changed = active_events = 0
     for row in rows:
         record_type, external_id, name, area, service, asset_type, tag, parent_id, source, metadata, content = row
@@ -95,7 +102,7 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
             "mode": "ONBOARDING",
             "metadata": metadata,
         }
-        if simulator is not None:
+        if simulation_enabled and simulator is not None:
             try:
                 sim_record = {
                     "tag": point["tag"],
