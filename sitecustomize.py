@@ -146,5 +146,42 @@ try:
     if os.environ.get("ANVIQO_WEB_LOCAL_WORKER") == "1":
         _anvi_import._start_local_worker()
         print("ANVIQO_IMPORT_WORKER auto-start enabled", flush=True)
+    # ANVIQO_AUTO_RECOVERY_IMPORTS: recover uploaded plant documents when tenant knowledge is empty.
+    # This is idempotent: existing QUEUED/RUNNING jobs are reused and plants
+    # that already have knowledge records are untouched.
+    if os.environ.get("ANVIQO_WEB_LOCAL_WORKER") == "1":
+        def _recover_empty_plant_imports():
+            try:
+                _anvi_import._job_schema()
+                p = _anvi_store._placeholder()
+                with _anvi_store._connect() as conn:
+                    cur = conn.cursor()
+                    cur.execute(
+                        "SELECT p.plant_id,p.organization_id,u.user_id,r.name "
+                        "FROM anviqo_plants p "
+                        "JOIN anviqo_memberships m ON m.plant_id=p.plant_id AND m.organization_id=p.organization_id "
+                        "JOIN anviqo_users u ON u.user_id=m.user_id "
+                        "JOIN anviqo_roles r ON r.role_id=m.role_id "
+                        "WHERE p.status='ACTIVE' AND m.status='ACTIVE' AND r.name IN ('OWNER','ADMIN') "
+                        "ORDER BY p.created_at"
+                    )
+                    candidates = cur.fetchall()
+                queued = 0
+                for plant_id, org_id, user_id, role in candidates:
+                    actor = {"user_id": str(user_id), "organization_id": str(org_id), "plant_id": str(plant_id), "role": str(role), "username": ""}
+                    with _anvi_store._connect() as conn:
+                        cur = conn.cursor()
+                        cur.execute("SELECT COUNT(*) FROM anviqo_plant_documents WHERE plant_id=" + p + " AND organization_id=" + p, (plant_id, org_id))
+                        docs = int(cur.fetchone()[0] or 0)
+                        cur.execute("SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p, (plant_id, org_id))
+                        knowledge = int(cur.fetchone()[0] or 0)
+                    if docs > 0 and knowledge == 0:
+                        result = _anvi_import.enqueue_import(str(plant_id), actor)
+                        if not result.get("existing"):
+                            queued += 1
+                print(f"ANVIQO_AUTO_RECOVERY_IMPORTS queued={queued}", flush=True)
+            except Exception as exc:
+                print(f"ANVIQO_AUTO_RECOVERY_IMPORTS_ERROR error={exc!r}", flush=True)
+        threading.Thread(target=_recover_empty_plant_imports, name="anviqo-import-recovery", daemon=True).start()
 except Exception as exc:
     print(f"ANVIQO_IMPORT_RUNTIME_HOOK_ERROR error={exc!r}", flush=True)
