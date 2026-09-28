@@ -188,19 +188,21 @@ try:
                         result = _anvi_import.enqueue_import(str(plant_id), actor)
                         if not result.get("existing"):
                             queued += 1
-                    elif docs == 0 and knowledge == 0 and plant_slug == "primary-plant" and org_slug == "anviqo-customer":
+                    elif plant_slug == "primary-plant" and org_slug == "anviqo-customer" and knowledge < 1064:
                         try:
                             import anvi_verified_pci_adapter as _pci_adapter
                             if _pci_adapter.is_bound(str(plant_id), str(org_id)):
                                 rows = _pci_adapter._registry_rows()
-                                for start in range(0, len(rows), 25):
-                                    batch = rows[start:start + 25]
-                                    added, _errors = _anvi_import._safe_insert_batch(
-                                        str(plant_id), str(org_id), "pci-master-v1", "pci-master-v1", batch
-                                    )
-                                    pci_records += added
-                                if rows:
-                                    pci_seeded += 1
+                                if len(rows) > knowledge:
+                                    for start in range(0, len(rows), 25):
+                                        batch = rows[start:start + 25]
+                                        added, _errors = _anvi_import._safe_insert_batch(
+                                            str(plant_id), str(org_id), "pci-master-v1", "pci-master-v1", batch
+                                        )
+                                        pci_records += added
+                                    if rows:
+                                        pci_seeded += 1
+                                        print(f"ANVIQO_PCI_BOOTSTRAP_RECONCILE existing={knowledge} source_rows={len(rows)}", flush=True)
                         except Exception as exc:
                             print(f"ANVIQO_PCI_BOOTSTRAP_RESTORE_ERROR error={exc!r}", flush=True)
                 print(f"ANVIQO_AUTO_RECOVERY_IMPORTS plants_checked={len(candidates)} docs_plants={docs_plants} empty_with_docs={empty_with_docs} queued={queued} pci_seeded={pci_seeded} pci_records={pci_records}", flush=True)
