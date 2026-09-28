@@ -152,11 +152,29 @@ def install() -> bool:
                 return original(question)
             rows = _tenant_rows(plant_id)
             if not rows:
-                return original(question)
+                return {
+                    "answer": "No verified knowledge records are available for the currently selected plant. I will not use another plant's data as a fallback.",
+                    "domain": "tenant_isolation",
+                    "evidence": "selected plant knowledge only",
+                    "count": 0,
+                    "records": [],
+                    **SAFETY,
+                    "tenant_isolation": True,
+                    "plant_id": plant_id,
+                }
             guarded = _tenant_pci_answer(question, rows)
             if guarded is not None:
                 return guarded
-            return original(question)
+            return {
+                "answer": "I can only answer from verified knowledge for the currently selected plant. I could not find sufficient matching evidence in that plant's knowledge, and I will not use another plant's data as a fallback.",
+                "domain": "tenant_isolation",
+                "evidence": "selected plant knowledge only",
+                "count": 0,
+                "records": [],
+                **SAFETY,
+                "tenant_isolation": True,
+                "plant_id": plant_id,
+            }
 
         tenant_aware_ask._anviqo_tenant_guard = True
         tenant_aware_ask._anviqo_original = original
