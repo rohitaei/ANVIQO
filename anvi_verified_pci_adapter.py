@@ -160,7 +160,7 @@ def _registry_rows():
             digest = hashlib.sha1(
                 json.dumps(physical, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")
             ).hexdigest()[:12]
-            external_id = f"{tag}__PHYS_{digest}"
+            # Keep every verified source row addressable. The physical digest\n            # separates different I/O instances; the ordinal also preserves\n            # exact duplicate source rows instead of collapsing them.\n            external_id = f"{tag}__PHYS_{digest}_{ordinal}"
         rows.append({
             "tag": tag,
             "external_id": external_id,
