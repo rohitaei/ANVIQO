@@ -158,8 +158,9 @@ try:
                 with _anvi_store._connect() as conn:
                     cur = conn.cursor()
                     cur.execute(
-                        "SELECT p.plant_id,p.organization_id,u.user_id,r.name "
+                        "SELECT p.plant_id,p.organization_id,p.slug,o.slug,u.user_id,r.name "
                         "FROM anviqo_plants p "
+                        "JOIN anviqo_organizations o ON o.organization_id=p.organization_id "
                         "JOIN anviqo_memberships m ON m.plant_id=p.plant_id AND m.organization_id=p.organization_id "
                         "JOIN anviqo_users u ON u.user_id=m.user_id "
                         "JOIN anviqo_roles r ON r.role_id=m.role_id "
@@ -170,7 +171,9 @@ try:
                 queued = 0
                 docs_plants = 0
                 empty_with_docs = 0
-                for plant_id, org_id, user_id, role in candidates:
+                pci_seeded = 0
+                pci_records = 0
+                for plant_id, org_id, plant_slug, org_slug, user_id, role in candidates:
                     actor = {"user_id": str(user_id), "organization_id": str(org_id), "plant_id": str(plant_id), "role": str(role), "username": ""}
                     with _anvi_store._connect() as conn:
                         cur = conn.cursor()
@@ -185,7 +188,22 @@ try:
                         result = _anvi_import.enqueue_import(str(plant_id), actor)
                         if not result.get("existing"):
                             queued += 1
-                print(f"ANVIQO_AUTO_RECOVERY_IMPORTS plants_checked={len(candidates)} docs_plants={docs_plants} empty_with_docs={empty_with_docs} queued={queued}", flush=True)
+                    elif docs == 0 and knowledge == 0 and plant_slug == "primary-plant" and org_slug == "anviqo-customer":
+                        try:
+                            import anvi_verified_pci_adapter as _pci_adapter
+                            if _pci_adapter.is_bound(str(plant_id), str(org_id)):
+                                rows = _pci_adapter._registry_rows()
+                                for start in range(0, len(rows), 25):
+                                    batch = rows[start:start + 25]
+                                    added, _errors = _anvi_import._safe_insert_batch(
+                                        str(plant_id), str(org_id), "pci-master-v1", "pci-master-v1", batch
+                                    )
+                                    pci_records += added
+                                if rows:
+                                    pci_seeded += 1
+                        except Exception as exc:
+                            print(f"ANVIQO_PCI_BOOTSTRAP_RESTORE_ERROR error={exc!r}", flush=True)
+                print(f"ANVIQO_AUTO_RECOVERY_IMPORTS plants_checked={len(candidates)} docs_plants={docs_plants} empty_with_docs={empty_with_docs} queued={queued} pci_seeded={pci_seeded} pci_records={pci_records}", flush=True)
             except Exception as exc:
                 print(f"ANVIQO_AUTO_RECOVERY_IMPORTS_ERROR error={exc!r}", flush=True)
         threading.Thread(target=_recover_empty_plant_imports, name="anviqo-import-recovery", daemon=True).start()
