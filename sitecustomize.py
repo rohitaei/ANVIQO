@@ -153,6 +153,7 @@ try:
         def _recover_empty_plant_imports():
             try:
                 _anvi_import._job_schema()
+                _anvi_import._knowledge_schema()
                 p = _anvi_store._placeholder()
                 with _anvi_store._connect() as conn:
                     cur = conn.cursor()
