@@ -63,6 +63,15 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
 
     points: list[dict[str, Any]] = []
     areas: dict[str, dict[str, Any]] = {}
+    # Reuse the existing PCI simulator for the explicitly simulated PCI tenant.
+    # Tenant evidence/identity remains authoritative; this only supplies
+    # simulated value, health, change and event state. No PLC/SCADA action.
+    simulator = None
+    try:
+        import pci_live_simulator as simulator
+    except Exception:
+        simulator = None
+    healthy = warning = critical = changed = active_events = 0
     for row in rows:
         record_type, external_id, name, area, service, asset_type, tag, parent_id, source, metadata, content = row
         if isinstance(metadata, str):
@@ -86,25 +95,67 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
             "mode": "ONBOARDING",
             "metadata": metadata,
         }
+        if simulator is not None:
+            try:
+                sim_record = {
+                    "tag": point["tag"],
+                    "description": point["name"],
+                    "area": point["area"],
+                    "io_type": metadata.get("io_type") or metadata.get("I/O") or point["asset_type"],
+                    "plc_address": metadata.get("plc_address") or metadata.get("plc"),
+                    "panel": metadata.get("panel"),
+                }
+                sim = simulator.simulate_point(sim_record)
+                point.update({
+                    "status": sim["state"],
+                    "state": sim["state"],
+                    "mode": "SIMULATION",
+                    "value": sim["value"],
+                    "changed": sim["changed"],
+                    "event_active": sim["event_active"],
+                    "timestamp": sim["timestamp"],
+                    "simulation_source": sim["source"],
+                })
+            except Exception:
+                pass
         points.append(point)
+        state = point["state"]
+        if state == "HEALTHY":
+            healthy += 1
+        elif state == "WARNING":
+            warning += 1
+        elif state == "CRITICAL":
+            critical += 1
+        if point.get("changed"):
+            changed += 1
+        if point.get("event_active"):
+            active_events += 1
         area_name = str(area or "GENERAL") or "GENERAL"
         bucket = areas.setdefault(area_name, {"name": area_name, "count": 0, "healthy": 0, "warning": 0, "critical": 0})
         bucket["count"] += 1
+        if state == "HEALTHY":
+            bucket["healthy"] += 1
+        elif state == "WARNING":
+            bucket["warning"] += 1
+        elif state == "CRITICAL":
+            bucket["critical"] += 1
 
     area_list = list(areas.values())
+    is_simulation = bool(points) and any(p.get("mode") == "SIMULATION" for p in points)
+    plant_score = ((healthy + warning * 0.5) / len(points)) * 100 if points and is_simulation else None
     return {
         "status": "OK",
-        "mode": "ONBOARDING_DATA",
-        "source": "ANVIQO TENANT PLANT KNOWLEDGE",
+        "mode": "SIMULATION" if is_simulation else "ONBOARDING_DATA",
+        "source": "PCI DEMO STREAM" if is_simulation else "ANVIQO TENANT PLANT KNOWLEDGE",
         "total_io": len(points),
-        "healthy": 0,
-        "warning": 0,
-        "critical": 0,
-        "critical_count": 0,
-        "changed": 0,
-        "active_events": [],
-        "plant_health_score": None,
-        "health_status": "DATA_ONLY",
+        "healthy": healthy if is_simulation else 0,
+        "warning": warning if is_simulation else 0,
+        "critical": critical if is_simulation else 0,
+        "critical_count": critical if is_simulation else 0,
+        "changed": changed if is_simulation else 0,
+        "active_events": active_events if is_simulation else [],
+        "plant_health_score": round(plant_score, 2) if plant_score is not None else None,
+        "health_status": "SIMULATED" if is_simulation else "DATA_ONLY",
         "area_count": len(area_list),
         "areas": area_list,
         "points": points,
