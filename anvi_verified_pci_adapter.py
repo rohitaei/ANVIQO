@@ -113,9 +113,6 @@ def _registry_rows():
     points are not collapsed by tenant uniqueness.
     """
     from pci_registry import load_records
-    import hashlib
-    import json
-
     rows = []
     seen = {}
     for row_index, r in enumerate(load_records(), start=1):
@@ -147,20 +144,12 @@ def _registry_rows():
         seen[base_key] = ordinal
         external_id = tag
         if ordinal > 1:
-            physical = {
-                "tag": tag, "source": source,
-                "io_type": metadata["io_type"],
-                "plc_address": metadata["plc_address"],
-                "panel": metadata["panel"],
-                "tb": metadata["tb"],
-                "tb_no": metadata["tb_no"],
-                "jb": metadata["jb"],
-                "jb_no": metadata["jb_no"],
-            }
-            digest = hashlib.sha1(
-                json.dumps(physical, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")
-            ).hexdigest()[:12]
-            # Keep every verified source row addressable. The physical digest\n            # separates different I/O instances; the ordinal also preserves\n            # exact duplicate source rows instead of collapsing them.\n            external_id = f"{tag}__PHYS_{digest}_{ordinal}"
+            # Use the immutable source-row ordinal for repeated tags. This is
+            # deliberately stronger than a physical-field digest: even two
+            # source rows that are identical in every field remain separate.
+            # The first occurrence keeps its historical tag-based external_id;
+            # repeated occurrences receive a deterministic source-row identity.
+            external_id = f"{tag}__SRCROW_{row_index}"
         rows.append({
             "tag": tag,
             "external_id": external_id,
