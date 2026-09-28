@@ -208,7 +208,29 @@ try:
                                             verify_cur = verify_conn.cursor()
                                             verify_cur.execute("SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p, (str(plant_id), str(org_id)))
                                             verify_count = int(verify_cur.fetchone()[0] or 0)
-                                        print(f"ANVIQO_PCI_BOOTSTRAP_RECONCILE existing={knowledge} source_rows={len(rows)} attempted={pci_records} final={verify_count}", flush=True)
+                                        try:
+                                            generated_keys = {(str(row.get("external_id") or ""), str(row.get("source") or "")) for row in rows}
+                                            duplicate_keys = len(rows) - len(generated_keys)
+                                            with _anvi_store._connect() as diag_conn:
+                                                diag_cur = diag_conn.cursor()
+                                                if _anvi_store._is_sqlite():
+                                                    diag_cur.execute("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='anviqo_plant_knowledge'")
+                                                else:
+                                                    diag_cur.execute("SELECT indexname,indexdef FROM pg_indexes WHERE tablename='anviqo_plant_knowledge'")
+                                                index_defs = diag_cur.fetchall()
+                                                if _anvi_store._is_sqlite():
+                                                    diag_indexes = [str(x[0]) for x in index_defs]
+                                                else:
+                                                    diag_indexes = [str(x[1]) for x in index_defs]
+                                                diag_cur.execute("SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p + " AND source=" + p, (str(plant_id), str(org_id), "pci-master-v1"))
+                                                pci_source_count = int(diag_cur.fetchone()[0] or 0)
+                                        except Exception as diag_exc:
+                                            duplicate_keys = -1
+                                            diag_indexes = [f"DIAG_ERROR:{diag_exc!r}"]
+                                            pci_source_count = -1
+                                        print(f"ANVIQO_PCI_BOOTSTRAP_RECONCILE existing={knowledge} source_rows={len(rows)} generated_unique={len(generated_keys) if 'generated_keys' in locals() else -1} duplicate_keys={duplicate_keys} attempted={pci_records} final={verify_count} pci_source_count={pci_source_count}", flush=True)
+                                        for idxdef in diag_indexes:
+                                            print(f"ANVIQO_PCI_KNOWLEDGE_INDEX {idxdef}", flush=True)
                         except Exception as exc:
                             print(f"ANVIQO_PCI_BOOTSTRAP_RESTORE_ERROR error={exc!r}", flush=True)
                 print(f"ANVIQO_AUTO_RECOVERY_IMPORTS plants_checked={len(candidates)} docs_plants={docs_plants} empty_with_docs={empty_with_docs} queued={queued} pci_seeded={pci_seeded} pci_records={pci_records}", flush=True)
