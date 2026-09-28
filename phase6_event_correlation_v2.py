@@ -12,6 +12,7 @@ from flask import jsonify, request
 from phase6_enterprise_runtime import app, _require_auth, _actor
 from phase5_live_evidence_adapter import build_live_management_evidence
 from event_correlation import correlate_events
+from v2_command_centre_stream import build_command_centre_stream
 
 V2_GOVERNANCE = {
     "read_only": True,
@@ -124,20 +125,23 @@ def command_centre_event_correlation():
         }), 400
 
     try:
-        from anviqo_product import AnviqoProduct
-        timeline = AnviqoProduct().event_timeline(equipment)
-        events = timeline.get("events") if isinstance(timeline, dict) else []
+        stream = build_command_centre_stream(query=equipment, tag=equipment)
+        events = stream.get("events") if isinstance(stream, dict) else []
         events = events if isinstance(events, list) else []
-        correlation = correlate_events(equipment, events)
+        correlation = stream.get("correlation") if isinstance(stream, dict) else None
+        if not isinstance(correlation, dict):
+            correlation = correlate_events(equipment, events)
         return jsonify({
             "status": "EVIDENCE_AVAILABLE" if events else "NO EVENT DETAIL",
             "equipment": equipment,
             "plant_id": actor["plant_id"],
             "organization_id": actor["organization_id"],
             "scope": "SELECTED_PLANT_ONLY",
-            "timeline_source": "EXISTING_EVENT_TIMELINE",
+            "timeline_source": "TENANT_SCOPED_COMMAND_CENTRE_STREAM",
+            "events": events,
+            "changes": stream.get("changes", []) if isinstance(stream, dict) else [],
             "correlation": correlation,
-            "evidence_rule": "Correlation is temporal/identity association only; physical causation is not established.",
+            "evidence_rule": "Only explicit selected-plant event evidence is correlated; physical causation is not established.",
             "governance": dict(V2_GOVERNANCE),
         })
     except Exception as exc:
