@@ -118,12 +118,15 @@ def _registry_rows():
 
     rows = []
     seen = {}
-    for r in load_records():
-        tag = str(r.get("tag") or "").strip()
-        if not tag:
-            continue
+    for row_index, r in enumerate(load_records(), start=1):
+        raw_tag = str(r.get("tag") or "").strip()
+        # A few verified source rows have no conventional tag. Preserve them
+        # rather than dropping source records: use the documented Fox PLC tag
+        # when present, otherwise a deterministic source-row identity.
+        tag = raw_tag or str(r.get("fox_plc_tag") or "").strip() or f"SOURCE_ROW_{row_index}"
         source = str(r.get("source_sheet") or "pci_instrument_database.json").strip()
         metadata = {
+            "fox_plc_tag": r.get("fox_plc_tag", ""),
             "io_type": r.get("io_type", ""),
             "plc_address": r.get("plc_address", ""),
             "panel": r.get("panel", ""),
