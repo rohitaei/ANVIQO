@@ -106,12 +106,23 @@ def is_bound(plant_id: str, organization_id: str | None = None) -> bool:
 
 
 def _registry_rows():
+    """Return every verified PCI source row with a stable physical identity.
+
+    Normal tags keep their historical external_id. Repeated tag names in the
+    same source sheet receive a deterministic physical suffix so distinct I/O
+    points are not collapsed by tenant uniqueness.
+    """
     from pci_registry import load_records
+    import hashlib
+    import json
+
     rows = []
+    seen = {}
     for r in load_records():
         tag = str(r.get("tag") or "").strip()
         if not tag:
             continue
+        source = str(r.get("source_sheet") or "pci_instrument_database.json").strip()
         metadata = {
             "io_type": r.get("io_type", ""),
             "plc_address": r.get("plc_address", ""),
@@ -126,17 +137,36 @@ def _registry_rows():
             "criticality": r.get("criticality", ""),
             "process_role": r.get("process_role", ""),
             "field_elec": r.get("field_elec", ""),
-            "source_sheet": r.get("source_sheet", ""),
+            "source_sheet": source,
         }
+        base_key = (tag, source)
+        ordinal = seen.get(base_key, 0) + 1
+        seen[base_key] = ordinal
+        external_id = tag
+        if ordinal > 1:
+            physical = {
+                "tag": tag, "source": source,
+                "io_type": metadata["io_type"],
+                "plc_address": metadata["plc_address"],
+                "panel": metadata["panel"],
+                "tb": metadata["tb"],
+                "tb_no": metadata["tb_no"],
+                "jb": metadata["jb"],
+                "jb_no": metadata["jb_no"],
+            }
+            digest = hashlib.sha1(
+                json.dumps(physical, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")
+            ).hexdigest()[:12]
+            external_id = f"{tag}__PHYS_{digest}"
         rows.append({
             "tag": tag,
-            "external_id": tag,
+            "external_id": external_id,
             "name": r.get("description", ""),
             "area": r.get("area", ""),
             "service": r.get("description", ""),
             "asset_type": "instrument",
             "record_type": "PCI_VERIFIED",
-            "source": r.get("source_sheet") or "pci_instrument_database.json",
+            "source": source,
             "content": r.get("description", ""),
             "metadata": {k: v for k, v in metadata.items() if v not in (None, "")},
         })
