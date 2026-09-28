@@ -168,6 +168,8 @@ try:
                     )
                     candidates = cur.fetchall()
                 queued = 0
+                docs_plants = 0
+                empty_with_docs = 0
                 for plant_id, org_id, user_id, role in candidates:
                     actor = {"user_id": str(user_id), "organization_id": str(org_id), "plant_id": str(plant_id), "role": str(role), "username": ""}
                     with _anvi_store._connect() as conn:
@@ -176,11 +178,14 @@ try:
                         docs = int(cur.fetchone()[0] or 0)
                         cur.execute("SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p, (plant_id, org_id))
                         knowledge = int(cur.fetchone()[0] or 0)
+                    if docs > 0:
+                        docs_plants += 1
                     if docs > 0 and knowledge == 0:
+                        empty_with_docs += 1
                         result = _anvi_import.enqueue_import(str(plant_id), actor)
                         if not result.get("existing"):
                             queued += 1
-                print(f"ANVIQO_AUTO_RECOVERY_IMPORTS queued={queued}", flush=True)
+                print(f"ANVIQO_AUTO_RECOVERY_IMPORTS plants_checked={len(candidates)} docs_plants={docs_plants} empty_with_docs={empty_with_docs} queued={queued}", flush=True)
             except Exception as exc:
                 print(f"ANVIQO_AUTO_RECOVERY_IMPORTS_ERROR error={exc!r}", flush=True)
         threading.Thread(target=_recover_empty_plant_imports, name="anviqo-import-recovery", daemon=True).start()
