@@ -188,7 +188,7 @@ try:
                         result = _anvi_import.enqueue_import(str(plant_id), actor)
                         if not result.get("existing"):
                             queued += 1
-                    elif plant_slug == "primary-plant" and org_slug == "anviqo-customer" and knowledge < 1064:
+                    elif os.environ.get("ANVIQO_ENABLE_LEGACY_PCI_SEED", "0") == "1" and plant_slug == "primary-plant" and org_slug == "anviqo-customer" and knowledge < 1064:
                         try:
                             import anvi_verified_pci_adapter as _pci_adapter
                             if _pci_adapter.is_bound(str(plant_id), str(org_id)):
