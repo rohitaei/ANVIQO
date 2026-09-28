@@ -147,8 +147,8 @@ try:
         _anvi_import._start_local_worker()
         print("ANVIQO_IMPORT_WORKER auto-start enabled", flush=True)
     # ANVIQO_AUTO_RECOVERY_IMPORTS: recover uploaded plant documents when tenant knowledge is empty.
-    # This is idempotent: existing QUEUED/RUNNING jobs are reused and plants
-    # that already have knowledge records are untouched.
+    # The bundled PCI registry is reference-only and must never be seeded into
+    # authenticated tenant knowledge. Workspace uploads are authoritative.
     if os.environ.get("ANVIQO_WEB_LOCAL_WORKER") == "1":
         def _recover_empty_plant_imports():
             try:
@@ -171,69 +171,46 @@ try:
                 queued = 0
                 docs_plants = 0
                 empty_with_docs = 0
-                pci_seeded = 0
-                pci_records = 0
+                legacy_removed = 0
                 for plant_id, org_id, plant_slug, org_slug, user_id, role in candidates:
-                    actor = {"user_id": str(user_id), "organization_id": str(org_id), "plant_id": str(plant_id), "role": str(role), "username": ""}
+                    # Delete only legacy rows created by the old PCI bootstrap.
+                    # Uploaded/document-derived tenant knowledge is untouched.
                     with _anvi_store._connect() as conn:
                         cur = conn.cursor()
-                        cur.execute("SELECT COUNT(*) FROM anviqo_plant_documents WHERE plant_id=" + p + " AND organization_id=" + p, (plant_id, org_id))
+                        cur.execute(
+                            "DELETE FROM anviqo_plant_knowledge WHERE plant_id=" + p +
+                            " AND organization_id=" + p + " AND source=" + p,
+                            (str(plant_id), str(org_id), "pci-master-v1"),
+                        )
+                        legacy_removed += int(cur.rowcount or 0)
+                        cur.execute(
+                            "SELECT COUNT(*) FROM anviqo_plant_documents WHERE plant_id=" + p +
+                            " AND organization_id=" + p,
+                            (plant_id, org_id),
+                        )
                         docs = int(cur.fetchone()[0] or 0)
-                        cur.execute("SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p, (plant_id, org_id))
+                        cur.execute(
+                            "SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p +
+                            " AND organization_id=" + p,
+                            (plant_id, org_id),
+                        )
                         knowledge = int(cur.fetchone()[0] or 0)
                     if docs > 0:
                         docs_plants += 1
                     if docs > 0 and knowledge == 0:
                         empty_with_docs += 1
-                        result = _anvi_import.enqueue_import(str(plant_id), actor)
+                        result = _anvi_import.enqueue_import(str(plant_id), {
+                            "user_id": str(user_id), "organization_id": str(org_id),
+                            "plant_id": str(plant_id), "role": str(role), "username": ""
+                        })
                         if not result.get("existing"):
                             queued += 1
-                    elif os.environ.get("ANVIQO_ENABLE_LEGACY_PCI_SEED", "0") == "1" and plant_slug == "primary-plant" and org_slug == "anviqo-customer" and knowledge < 1064:
-                        try:
-                            import anvi_verified_pci_adapter as _pci_adapter
-                            if _pci_adapter.is_bound(str(plant_id), str(org_id)):
-                                rows = _pci_adapter._registry_rows()
-                                if len(rows) > knowledge:
-                                    for start in range(0, len(rows), 25):
-                                        batch = rows[start:start + 25]
-                                        added, _errors = _anvi_import._safe_insert_batch(
-                                            str(plant_id), str(org_id), "pci-master-v1", "pci-master-v1", batch
-                                        )
-                                        pci_records += added
-                                        if _errors:
-                                            print(f"ANVIQO_PCI_BOOTSTRAP_BATCH_ERROR start={start} errors={_errors[:3]}", flush=True)
-                                    if rows:
-                                        pci_seeded += 1
-                                        with _anvi_store._connect() as verify_conn:
-                                            verify_cur = verify_conn.cursor()
-                                            verify_cur.execute("SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p, (str(plant_id), str(org_id)))
-                                            verify_count = int(verify_cur.fetchone()[0] or 0)
-                                        try:
-                                            generated_keys = {(str(row.get("external_id") or ""), str(row.get("source") or "")) for row in rows}
-                                            duplicate_keys = len(rows) - len(generated_keys)
-                                            with _anvi_store._connect() as diag_conn:
-                                                diag_cur = diag_conn.cursor()
-                                                if _anvi_store._is_sqlite():
-                                                    diag_cur.execute("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='anviqo_plant_knowledge'")
-                                                else:
-                                                    diag_cur.execute("SELECT indexname,indexdef FROM pg_indexes WHERE tablename='anviqo_plant_knowledge'")
-                                                index_defs = diag_cur.fetchall()
-                                                if _anvi_store._is_sqlite():
-                                                    diag_indexes = [str(x[0]) for x in index_defs]
-                                                else:
-                                                    diag_indexes = [str(x[1]) for x in index_defs]
-                                                diag_cur.execute("SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p + " AND source=" + p, (str(plant_id), str(org_id), "pci-master-v1"))
-                                                pci_source_count = int(diag_cur.fetchone()[0] or 0)
-                                        except Exception as diag_exc:
-                                            duplicate_keys = -1
-                                            diag_indexes = [f"DIAG_ERROR:{diag_exc!r}"]
-                                            pci_source_count = -1
-                                        print(f"ANVIQO_PCI_BOOTSTRAP_RECONCILE existing={knowledge} source_rows={len(rows)} generated_unique={len(generated_keys) if 'generated_keys' in locals() else -1} duplicate_keys={duplicate_keys} attempted={pci_records} final={verify_count} pci_source_count={pci_source_count}", flush=True)
-                                        for idxdef in diag_indexes:
-                                            print(f"ANVIQO_PCI_KNOWLEDGE_INDEX {idxdef}", flush=True)
-                        except Exception as exc:
-                            print(f"ANVIQO_PCI_BOOTSTRAP_RESTORE_ERROR error={exc!r}", flush=True)
-                print(f"ANVIQO_AUTO_RECOVERY_IMPORTS plants_checked={len(candidates)} docs_plants={docs_plants} empty_with_docs={empty_with_docs} queued={queued} pci_seeded={pci_seeded} pci_records={pci_records}", flush=True)
+                print(
+                    f"ANVIQO_AUTO_RECOVERY_IMPORTS plants_checked={len(candidates)} "
+                    f"docs_plants={docs_plants} empty_with_docs={empty_with_docs} "
+                    f"queued={queued} legacy_pci_removed={legacy_removed} "
+                    f"pci_seeded=0 pci_records=0", flush=True,
+                )
             except Exception as exc:
                 print(f"ANVIQO_AUTO_RECOVERY_IMPORTS_ERROR error={exc!r}", flush=True)
         threading.Thread(target=_recover_empty_plant_imports, name="anviqo-import-recovery", daemon=True).start()
