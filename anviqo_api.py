@@ -907,6 +907,29 @@ def plant_snapshot():
 
 
 # ------------------------------------------------------------
+# PLC READ-ONLY SIMULATION ADAPTER
+# ------------------------------------------------------------
+
+@app.route("/api/plc/demo")
+@login_required
+def plc_demo_snapshot():
+    """Return PLC-shaped observations for the safe simulation/demo path."""
+    try:
+        from plc_readonly_adapter import build_simulation_snapshot
+        plant_id = session.get("plant_id") or "DEMO_PLANT"
+        return jsonify(build_simulation_snapshot(plant_id=plant_id))
+    except Exception as exc:
+        return jsonify({
+            "status": "ERROR",
+            "mode": "SIMULATION",
+            "message": str(exc),
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+        }), 500
+
+
+# ------------------------------------------------------------
 # SERVER
 # ------------------------------------------------------------
 
