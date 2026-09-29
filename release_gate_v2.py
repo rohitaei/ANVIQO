@@ -18,7 +18,8 @@ required=[
 "anvi_knowledge_layer.py","pci_spares.py","pci_conversation.py",
 "pci_live_simulator.py","anvi_field_report.py","anvi_voice.py",
 "plant_memory.py","event_correlation.py","event_timeline.py",
-"plant_health.py","plant_brain_reasoning.py"
+"plant_health.py","plant_brain_reasoning.py",
+"plc_readonly_adapter.py"
 ]
 for f in required:
     if os.path.isfile(f): ok("Core file: "+f)
