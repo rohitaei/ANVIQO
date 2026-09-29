@@ -15,6 +15,7 @@ from phase5_human_management_intelligence import (
     record_human_decision,
 )
 from phase5_live_evidence_adapter import build_live_management_evidence
+from anvi_tenant_chat_boundary import _session_context
 
 
 @app.route("/api/hod-management", methods=["GET", "POST"])
@@ -22,6 +23,19 @@ def hod_management_api():
     """Build the Phase 5 HOD brief from existing evidence contracts."""
     if not session.get("authenticated") or not session.get("organization_id"):
         return jsonify({"status": "UNAUTHORIZED", "message": "ANVIQO authentication and organization context required", "safety_boundary": dict(SAFETY_BOUNDARY)}), 401
+
+    # Reuse the canonical tenant resolver. A single active authorized
+    # membership may establish context; multiple/no memberships fail closed.
+    plant_id, organization_id, context_source = _session_context()
+    if not plant_id or not organization_id:
+        return jsonify({
+            "status": "NO_TENANT_CONTEXT",
+            "message": "No valid selected/authorized plant context is available. No cross-plant or global fallback is used.",
+            "context_source": context_source,
+            "safety_boundary": dict(SAFETY_BOUNDARY),
+            "evidence_available": False,
+        }), 403
+
     if request.method == "GET":
         try:
             payload = build_live_management_evidence()
