@@ -149,7 +149,15 @@ try:
     # ANVIQO_AUTO_RECOVERY_IMPORTS: recover uploaded plant documents when tenant knowledge is empty.
     # The bundled PCI registry is reference-only and must never be seeded into
     # authenticated tenant knowledge. Workspace uploads are authoritative.
-    if os.environ.get("ANVIQO_WEB_LOCAL_WORKER") == "1":
+    # Python executes sitecustomize during pip installation too; psycopg is not
+    # guaranteed to exist yet. Defer recovery until the runtime dependency is present.
+    _psycopg_ready = False
+    try:
+        import importlib.util
+        _psycopg_ready = importlib.util.find_spec("psycopg") is not None
+    except Exception:
+        _psycopg_ready = False
+    if os.environ.get("ANVIQO_WEB_LOCAL_WORKER") == "1" and _psycopg_ready:
         def _recover_empty_plant_imports():
             try:
                 _anvi_import._job_schema()
