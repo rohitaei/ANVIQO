@@ -19,14 +19,41 @@ def build_live_management_evidence():
     changed = evidence.get("changed", 0)
     events = evidence.get("active_events", 0)
 
-    # These are labels from the existing plant-health contract, not a new
-    # prediction/risk engine. Keep the simulator state explicit in the UI.
-    if score is None:
+    # These are labels from the existing evidence contract, not a new
+    # prediction/risk engine. Keep simulator and onboarding evidence explicit.
+    tenant_rows = evidence.get("equipment_evidence")
+    tenant_evidence = (
+        isinstance(tenant_rows, list)
+        and str(evidence.get("mode", "")).upper() == "ONBOARDING_DATA"
+        and bool(tenant_rows)
+    )
+    if tenant_evidence:
+        situation = "ONBOARDING EVIDENCE"
+    elif score is None:
         situation = "NO DATA"
     elif str(evidence.get("mode", "")).upper() == "SIMULATION":
         situation = "DEMO / SIMULATION"
     else:
         situation = "READ-ONLY PLANT EVIDENCE"
+
+    # Tenant evidence metrics are descriptive counts only. They do not infer
+    # health, risk, causation, or priority from imported rows.
+    evidence_row_count = len(tenant_rows) if isinstance(tenant_rows, list) else 0
+    equipment_ids = set()
+    tag_ids = set()
+    for row in tenant_rows if isinstance(tenant_rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        for key in ("equipment", "equipment_id", "equipment_tag", "service"):
+            value = row.get(key)
+            if value not in (None, ""):
+                equipment_ids.add(str(value).strip())
+                break
+        for key in ("tag", "external_id", "instrument_tag"):
+            value = row.get(key)
+            if value not in (None, ""):
+                tag_ids.add(str(value).strip())
+                break
 
     changes = []
     if critical:
@@ -52,6 +79,11 @@ def build_live_management_evidence():
             "changed": changed,
             "active_events": events,
             "area_count": evidence.get("area_count"),
+            "evidence_row_count": evidence_row_count,
+            "equipment_identity_count": len(equipment_ids),
+            "tag_identity_count": len(tag_ids),
+            "evidence_available": bool(evidence.get("evidence_available")),
+            "tenant_scope": evidence.get("tenant_scope"),
             "mode": evidence.get("mode", "READ_ONLY"),
         },
     )
