@@ -233,13 +233,37 @@ def plant():
     """Return plant health only from explicitly selected-plant evidence."""
     plant_id, organization_id = tenant_context()
     if plant_id:
-        return {
-            "health": None,
-            "intelligence": None,
-            "scope": "SELECTED_PLANT_ONLY",
-            "plant_id": plant_id,
-            "organization_id": organization_id,
-        }
+        # Reuse the existing V5.7 live-evidence adapter. This keeps the
+        # Intelligence Fabric as an orchestration layer, not a second
+        # plant-health engine, while preserving selected-plant scope.
+        try:
+            from phase5_live_evidence_adapter import build_live_management_evidence
+            live = build_live_management_evidence()
+            context = live.get("evidence_context") or {}
+            return {
+                "health": {
+                    "score": context.get("plant_health_score"),
+                    "healthy": context.get("healthy", 0),
+                    "warning": context.get("warning", 0),
+                    "critical": context.get("critical", 0),
+                    "changed": context.get("changed", 0),
+                    "active_events": context.get("active_events", 0),
+                    "mode": context.get("mode", "READ_ONLY"),
+                },
+                "intelligence": live.get("executive"),
+                "scope": "SELECTED_PLANT_ONLY",
+                "plant_id": plant_id,
+                "organization_id": organization_id,
+            }
+        except Exception as exc:
+            return {
+                "health": None,
+                "intelligence": None,
+                "scope": "SELECTED_PLANT_ONLY",
+                "plant_id": plant_id,
+                "organization_id": organization_id,
+                "evidence_error": type(exc).__name__,
+            }
 
     m = load("plant_health")
     result = call(m, "build_plant_health")
@@ -256,14 +280,31 @@ def events(tag):
     """Return event evidence only when it is explicitly tenant-scoped."""
     plant_id, organization_id = tenant_context()
     if plant_id:
-        return {
-            "recent": [],
-            "events": [],
-            "correlation": None,
-            "scope": "SELECTED_PLANT_ONLY",
-            "plant_id": plant_id,
-            "organization_id": organization_id,
-        }
+        # Reuse the V2 tenant-scoped command-centre stream. No global event
+        # timeline or legacy memory is permitted for an authenticated plant.
+        try:
+            from v2_command_centre_stream import build_command_centre_stream
+            stream = build_command_centre_stream(query=tag or "", tag=tag or None)
+            return {
+                "recent": stream.get("events", []),
+                "events": stream.get("events", []),
+                "correlation": stream.get("correlation"),
+                "changes": stream.get("changes", []),
+                "scope": "SELECTED_PLANT_ONLY",
+                "plant_id": plant_id,
+                "organization_id": organization_id,
+            }
+        except Exception as exc:
+            return {
+                "recent": [],
+                "events": [],
+                "correlation": None,
+                "changes": [],
+                "scope": "SELECTED_PLANT_ONLY",
+                "plant_id": plant_id,
+                "organization_id": organization_id,
+                "evidence_error": type(exc).__name__,
+            }
 
     m = load("event_timeline")
     recent = call(m, "get_recent_events")
