@@ -200,10 +200,13 @@ def equipment(tag):
     plant_id, organization_id = tenant_context()
     if plant_id:
         rows = _tenant_knowledge_rows("", tag)
+        # Tenant knowledge is authoritative evidence. Do not synthesize
+        # health telemetry that the tenant has not onboarded.
         return {
             "latest_health": None,
             "health_score": None,
             "health_assessment": None,
+            "identity": rows[0] if rows else None,
             "scope": "SELECTED_PLANT_ONLY",
             "plant_id": plant_id,
             "organization_id": organization_id,
@@ -320,12 +323,29 @@ def maintenance(tag, query):
     """Return maintenance evidence only when it belongs to the selected tenant."""
     plant_id, organization_id = tenant_context()
     if plant_id:
+        # Reuse onboarded tenant evidence for maintenance context only.
+        # No new maintenance reasoning or cross-plant fallback is introduced.
+        rows = _tenant_knowledge_rows(query, tag)
+        maintenance_rows = []
+        for row in rows:
+            blob = " ".join(
+                str(row.get(k) or "")
+                for k in ("name", "service", "asset_type", "tag", "source", "content")
+            ).lower()
+            meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+            blob += " " + " ".join(str(v).lower() for v in meta.values())
+            if any(term in blob for term in (
+                "maintenance", "maintain", "repair", "inspection",
+                "calibration", "overhaul", "replacement", "failure",
+            )):
+                maintenance_rows.append(row)
         return {
             "experience_context": None,
-            "matching_experience": [],
+            "matching_experience": maintenance_rows,
             "scope": "SELECTED_PLANT_ONLY",
             "plant_id": plant_id,
             "organization_id": organization_id,
+            "evidence_status": "EVIDENCE_AVAILABLE" if maintenance_rows else "NO_MAINTENANCE_EVIDENCE",
         }
 
     m = load("maintenance_experience_matching")
@@ -420,6 +440,10 @@ def evidence_confidence(e):
     if e["equipment"].get("latest_health") is not None:
         score += 10
         sources.append("EQUIPMENT_HEALTH")
+
+    if e["equipment"].get("identity") is not None or e["equipment"].get("evidence_rows"):
+        score += 10
+        sources.append("EQUIPMENT_IDENTITY_EVIDENCE")
 
     if e["equipment"].get("health_score") is not None:
         score += 5
