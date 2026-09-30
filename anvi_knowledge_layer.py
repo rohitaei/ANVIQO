@@ -4332,6 +4332,30 @@ def _anviqo_authoritative_core(question):
                 }
 
         # ============================================================
+        # V2 WHAT-CHANGED PRE-GATE
+        # ============================================================
+        # PCI semantic collection must NEVER consume an explicit
+        # What Changed / simulation-change request first. The dedicated
+        # V2 route below owns these intents.
+        what_changed_intent = any(x in ql for x in [
+            "what changed",
+            "what has changed",
+            "show changes",
+            "recent change",
+            "recent changes",
+            "any change",
+            "any changes",
+            "show simulated change",
+            "simulated change",
+            "simulation change",
+            "simulate change",
+            "show simulation",
+        ]) or (
+            ("simulation" in ql or "simulated" in ql)
+            and "change" in ql
+        )
+
+        # ============================================================
         # 0. PCI SEMANTIC COLLECTION QUERY — BEFORE EXACT TAG CONTEXT
         # ============================================================
         # IMPORTANT:
@@ -4343,7 +4367,7 @@ def _anviqo_authoritative_core(question):
         # exact-tag context. Otherwise a database tag such as "DI"
         # can hijack the question.
 
-        if _is_pci_question(q):
+        if _is_pci_question(q) and not what_changed_intent:
             try:
                 import pci_conversation as pc
                 semantic_result = pc.answer(q)
