@@ -490,6 +490,41 @@ def _answer(text):
         except Exception:
             pass
 
+    # Broad What Changed is a Command Centre evidence request.
+    # Read only the selected plant's process-local simulation evidence.
+    if low_text in ("what changed", "what has changed", "show changes", "recent changes"):
+        try:
+            from v2_simulation_state import get as get_simulation_evidence
+            evidence = get_simulation_evidence(pid)
+            changes = [x for x in evidence if isinstance(x,dict) and x.get("type") == "VALUE_CHANGE"]
+            events = [x for x in evidence if isinstance(x,dict) and x.get("type") == "STATE_CHANGE"]
+            if changes or events:
+                lines = ["ANVI — What Changed (SIMULATION)",
+                         f"Verified recent changes/events in the selected plant: {len(changes) + len(events)}."]
+                for item in changes[:8]:
+                    equipment = item.get("equipment") or "Unknown equipment"
+                    previous = item.get("previous")
+                    current = item.get("current")
+                    pct = item.get("percentage_change")
+                    text_line = f"{equipment} changed from {previous} to {current}"
+                    if pct is not None:
+                        text_line += f" ({pct}% change)"
+                    lines.append(text_line + ".")
+                for item in events[:8]:
+                    lines.append(f"{item.get('equipment','Unknown equipment')}: {item.get('description','Condition/state change detected')}.")
+                lines.append("Evidence source: ANVIQO V2 simulation event stream. This is simulation evidence, not live plant telemetry.")
+                lines.append("Safety: ANVI is read-only; no PLC/SCADA write. Human decision required.")
+                return _safe("\\n".join(lines), domain="event_correlation",
+                             evidence_status="EVIDENCE_AVAILABLE", evidence_mode="SIMULATION",
+                             evidence=evidence, plant_id=pid, plant_name=plant.get("name"))
+            return _safe(
+                "ANVI — What Changed (SIMULATION)\\nNo verified simulation change/event evidence is currently recorded for the selected plant.\\nRun a simulation observation first; ANVI will not invent a change.\\nSafety: ANVI is read-only; no PLC/SCADA write. Human decision required.",
+                domain="event_correlation", evidence_status="NO_EVIDENCE", evidence_mode="SIMULATION",
+                plant_id=pid, plant_name=plant.get("name")
+            )
+        except Exception:
+            pass
+
     # V2 What Changed / simulation requests are command-intent requests,
     # not generic tenant identity lookups. This universal tenant engine sits
     # above the core router in production, so explicitly delegate these
