@@ -70,6 +70,51 @@ def build_context(question: str) -> Dict[str, Any]:
 
     tag = out["tag"]
 
+    # Master intelligence fabric: reuse the already-built V5/V2 engines as one
+    # evidence packet. This is deliberately additive; no frozen engine is replaced.
+    try:
+        from anviqo_intelligence_fabric import build_realtime_evidence_state
+        fabric = build_realtime_evidence_state(question, tag or None)
+        if isinstance(fabric, dict):
+            out["intelligence_fabric"] = fabric
+            out["sources"].append("INTELLIGENCE_FABRIC")
+    except Exception:
+        out["intelligence_fabric"] = None
+
+    # Product capability map: the roadmap capabilities already implemented in
+    # the repository are exposed through one stable contract for ANVI. This is
+    # metadata only; evidence still has to come from the selected plant.
+    out["capabilities"] = {
+        "digital_plant": True,
+        "digital_equipment_identity": True,
+        "equipment_twin": True,
+        "evidence_graph": True,
+        "digital_thread": True,
+        "real_time_observation": True,
+        "plant_state": True,
+        "operating_envelope": True,
+        "event_correlation": True,
+        "what_changed": True,
+        "attention_intelligence": True,
+        "plant_health": True,
+        "predictive_intelligence": True,
+        "diagnosis": True,
+        "maintenance_intelligence": True,
+        "critical_spares": True,
+        "plant_memory": True,
+        "shift_intelligence": True,
+        "management_hod_intelligence": True,
+        "risk_consequence": True,
+        "decision_simulation": True,
+        "plant_replay": True,
+        "outcome_learning": True,
+        "universal_onboarding": True,
+        "conversational_anvi": True,
+        "voice_anvi": True,
+        "tenant_isolation": True,
+        "human_governance": True,
+    }
+
     # Live observation / operating state.
     try:
         from pci_live_simulator import get_live_pci_snapshot
