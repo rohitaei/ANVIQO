@@ -4373,6 +4373,131 @@ def _anviqo_authoritative_core(question):
         explicit_pci_record = _anvi_establish_explicit_pci_context(q)
 
         # ============================================================
+        # V2 WHAT-CHANGED INTENT — MUST BEAT GENERIC PCI IDENTITY
+        # ============================================================
+        # A question such as "What changed on PT-303?" is an event/change
+        # request, not an instrument-identity request. Read explicit
+        # selected-plant event/change evidence first. In simulation/demo
+        # mode, the deterministic V2 proof harness is allowed only when the
+        # user explicitly requests simulation/demo evidence.
+        what_changed_intent = any(x in ql for x in [
+            "what changed",
+            "what has changed",
+            "show changes",
+            "recent change",
+            "recent changes",
+            "any change",
+            "any changes",
+        ])
+
+        if what_changed_intent:
+            try:
+                import re as _re
+                tag_match = _re.search(
+                    r"\\b(?:PT|FT|TT|LT|AT|CV|FV|XV|PIC|FIC|TIC|LIC)[-_ ]?\\d+\\b",
+                    q.upper(),
+                )
+                requested_tag = tag_match.group(0) if tag_match else None
+
+                from v2_command_centre_stream import build_command_centre_stream
+                stream = build_command_centre_stream(q, requested_tag)
+
+                changes = stream.get("changes") or []
+                events = stream.get("events") or []
+
+                if changes or events:
+                    return {
+                        "answer": (
+                            "ANVI — What Changed (selected plant only):\\n"
+                            + json.dumps({
+                                "tag": requested_tag,
+                                "change_status": stream.get("change_status"),
+                                "changes": changes,
+                                "events": events,
+                                "correlation": stream.get("correlation"),
+                                "evidence_count": stream.get("evidence_count", 0),
+                                "scope": stream.get("scope", "SELECTED_PLANT_ONLY"),
+                                "causation_claimed": False,
+                                "safety": stream.get("safety", {}),
+                            }, ensure_ascii=False)
+                        ),
+                        "domain": "event_correlation",
+                        "evidence": "selected-plant event/change evidence",
+                        "tag": requested_tag,
+                        "changes": changes,
+                        "events": events,
+                        "correlation": stream.get("correlation"),
+                        "read_only": True,
+                        "plc_write": False,
+                        "scada_control": False,
+                        "human_decision_required": True,
+                    }
+
+                # Explicit simulation/demo request may use the deterministic
+                # proof harness. Never use it silently for a real tenant.
+                if any(x in ql for x in ["simulation", "simulated", "demo"]):
+                    from v2_simulation_proof import run_v2_simulation_proof
+                    proof = run_v2_simulation_proof()
+                    return {
+                        "answer": (
+                            "ANVI — What Changed (SIMULATION):\\n"
+                            + json.dumps({
+                                "equipment": proof.get("equipment"),
+                                "baseline": proof.get("baseline"),
+                                "current": proof.get("current"),
+                                "delta": proof.get("delta"),
+                                "percentage_change": proof.get("percentage_change"),
+                                "changes": proof.get("changes", []),
+                                "events": proof.get("events", []),
+                                "correlation": proof.get("correlation"),
+                                "status": proof.get("status"),
+                                "scope": "SELECTED_PLANT_ONLY",
+                                "causation_claimed": False,
+                                "safety": proof.get("safety", {}),
+                            }, ensure_ascii=False)
+                        ),
+                        "domain": "event_correlation",
+                        "evidence": "ANVIQO V2 deterministic simulation proof",
+                        "tag": proof.get("equipment"),
+                        "changes": proof.get("changes", []),
+                        "events": proof.get("events", []),
+                        "correlation": proof.get("correlation"),
+                        "simulation": True,
+                        "read_only": True,
+                        "plc_write": False,
+                        "scada_control": False,
+                        "human_decision_required": True,
+                    }
+
+                return {
+                    "answer": (
+                        "ANVI found no explicit event/change evidence for "
+                        + (requested_tag or "the requested equipment")
+                        + " in the selected plant. The verified PCI record identifies the equipment, "
+                          "but does not establish that its process value or state changed."
+                    ),
+                    "domain": "event_correlation",
+                    "evidence": "selected-plant event/change evidence",
+                    "tag": requested_tag,
+                    "changes": [],
+                    "events": [],
+                    "read_only": True,
+                    "plc_write": False,
+                    "scada_control": False,
+                    "human_decision_required": True,
+                }
+            except Exception as exc:
+                return {
+                    "answer": "ANVI could not retrieve What Changed evidence; no change has been inferred.",
+                    "domain": "event_correlation",
+                    "error": type(exc).__name__,
+                    "read_only": True,
+                    "plc_write": False,
+                    "scada_control": False,
+                    "human_decision_required": True,
+                }
+
+        # ============================================================
         # DIRECT PCI FOLLOW-UP FROM VERIFIED CONVERSATION CONTEXT
         # ============================================================
         direct_pci = _anvi_direct_pci_followup(q)
