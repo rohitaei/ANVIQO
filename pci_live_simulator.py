@@ -18,6 +18,7 @@ import time
 from datetime import datetime, timezone
 
 PCI_DB = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
     "database", "pci", "pci_instrument_database.json"
 )
 
