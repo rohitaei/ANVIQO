@@ -337,6 +337,32 @@ def install():
         plant=_plant(plant_id)
         if not plant or (organization_id and plant.get("organization_id")!=organization_id):
             return _safe_response("The authorized plant context is invalid. ANVI will not access plant data.",blocked=True,reason="INVALID_PLANT_CONTEXT")
+        # V2 change/simulation requests must reach the authoritative
+        # What Changed / Event Correlation route before generic tenant-tag
+        # identity lookup. The V2 route enforces the same selected-plant
+        # session boundary and remains read-only.
+        ql=str(q or "").strip().lower()
+        v2_change_request = any(term in ql for term in (
+            "what changed",
+            "what has changed",
+            "show changes",
+            "recent change",
+            "recent changes",
+            "any change",
+            "any changes",
+            "show simulated change",
+            "simulated change",
+            "simulation change",
+            "simulate change",
+            "show simulation",
+        )) or (
+            ("simulation" in ql or "simulated" in ql)
+            and "change" in ql
+        )
+
+        if v2_change_request:
+            return original(q,*args,**kwargs)
+
         candidate=_candidate_tag(q)
         rows=_rows(plant_id,tag=candidate) if candidate else _rows(plant_id,terms=_question_terms(q))
         if _legacy(plant) and not _legacy_onboarding_question(q): return original(q,*args,**kwargs)
