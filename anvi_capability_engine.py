@@ -142,12 +142,14 @@ def _selected_plant() -> tuple[str, str]:
         return "", ""
 
 def resolve(cap_id: str) -> Optional[Dict[str, Any]]:
-    target = _slug(cap_id).upper().replace("_", "-")
+    # Normalize the incoming identifier and the generated identifier using the
+    # same canonical slug so both underscore- and hyphen-separated forms resolve.
+    target = _slug(cap_id).upper()
     for f in FAMILIES:
         for s in SUBJECTS:
             for o in OPERATIONS:
                 row = {"id": capability_id(f, s, o), "family": f, "subject": s, "operation": o}
-                if row["id"] == target:
+                if _slug(row["id"]).upper() == target:
                     return row
     return None
 
