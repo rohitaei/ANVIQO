@@ -73,7 +73,7 @@ def _evidence(question):
     # Merge the orchestrated context before the legacy collectors.
     for key in ("live_observation", "requested_point", "attention_points", "knowledge",
                 "events", "equipment_identity", "relationships", "diagnosis",
-                "maintenance_matches", "spare", "state_summary", "intelligence_fabric", "capabilities"):
+                "maintenance_matches", "spare", "state_summary", "intelligence_fabric", "capabilities", "capability_engine"):
         if full_context.get(key) is not None:
             evidence[key] = full_context.get(key)
 
