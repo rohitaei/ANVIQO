@@ -56,6 +56,45 @@ def install():
     def wrapped(question, *args, **kwargs):
         text = str(question or "").strip()
         try:
+            # V2 What Changed / simulation requests must bypass the generic
+            # orchestration wrapper as well. This wrapper can sit above the
+            # tenant/V2 layers in the final bootstrap order, so sending the
+            # request through investigate(current) can re-enter a generic
+            # tenant identity handler before the authoritative V2 route.
+            low_text = text.lower()
+            v2_change_request = any(term in low_text for term in (
+                "what changed",
+                "what has changed",
+                "show changes",
+                "recent change",
+                "recent changes",
+                "any change",
+                "any changes",
+                "show simulated change",
+                "simulated change",
+                "simulation change",
+                "simulate change",
+                "show simulation",
+            )) or (
+                ("simulation" in low_text or "simulated" in low_text)
+                and "change" in low_text
+            )
+            if v2_change_request:
+                try:
+                    import anvi_chat_stability_v2 as _v2
+                    return _v2._answer(text)
+                except Exception as exc:
+                    return {
+                        "answer": "ANVI could not retrieve What Changed evidence; no change has been inferred.",
+                        "domain": "event_correlation",
+                        "reason": "V2_CHANGE_ROUTING_ERROR",
+                        "error": type(exc).__name__,
+                        "read_only": True,
+                        "plc_write": False,
+                        "scada_control": False,
+                        "human_decision_required": True,
+                    }
+
             # Resolve membership at the request boundary, then pass the same
             # authoritative context into the intelligence envelope. The UI is
             # not a plant selector and stale session context is never trusted.
