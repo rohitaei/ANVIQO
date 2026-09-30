@@ -23,8 +23,26 @@ jobs:
           python-version: '3.11'
       - name: Install test dependencies
         run: python -m pip install --upgrade pip pytest flask openpyxl
-      - name: Compile all Python modules
-        run: python -m compileall -q .
+      - name: Compile production Python modules
+        run: |
+          python - <<'PY'
+          import pathlib, py_compile
+          excluded = ("backup", "before_", ".anviqo_backup", ".anviqo_backups", "integration_backup")
+          failures = []
+          for p in pathlib.Path(".").rglob("*.py"):
+              s = str(p).replace("\\", "/").lower()
+              if any(x in s for x in excluded):
+                  continue
+              try:
+                  py_compile.compile(str(p), doraise=True)
+              except Exception as exc:
+                  failures.append((str(p), str(exc)))
+          if failures:
+              for path, err in failures:
+                  print(path, err)
+              raise SystemExit(1)
+          print("Production Python compilation PASS") 
+          PY
       - name: Capability and safety regression
         run: pytest -q tests/test_anvi_capability_engine.py
       - name: Core intelligence regression
