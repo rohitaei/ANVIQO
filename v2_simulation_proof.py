@@ -26,6 +26,15 @@ def _load_pt303():
 
 
 def run_v2_simulation_proof(plant_id: str = ""):
+    # Use the authenticated selected plant when the caller does not
+    # explicitly provide a tenant id.
+    if not plant_id:
+        try:
+            from flask import has_request_context, session
+            if has_request_context() and session.get("authenticated"):
+                plant_id = str(session.get("plant_id") or "").strip()
+        except Exception:
+            plant_id = ""
     now = datetime.now(timezone.utc)
     before = 42.0
     after = 68.0
