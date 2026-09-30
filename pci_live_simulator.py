@@ -23,6 +23,11 @@ PCI_DB = os.path.join(
 )
 
 _rng = random.Random(20260813)
+# Keep one deterministic simulation snapshot stable briefly so conversational
+# questions in the same observation window see the same plant state.
+_SNAPSHOT_CACHE = None
+_SNAPSHOT_CACHE_AT = 0.0
+_SNAPSHOT_CACHE_TTL = 15.0
 
 
 def load_pci_records():
