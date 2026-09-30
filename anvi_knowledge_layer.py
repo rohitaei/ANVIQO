@@ -4268,6 +4268,27 @@ def _anviqo_authoritative_core(question):
                 "human_decision_required": True,
             }
 
+        # V2 WHAT-CHANGED INTENT MUST BE KNOWN BEFORE PCI IDENTITY.
+        # Otherwise a request such as "Show simulated change on PT-303"
+        # is consumed by the generic verified-tag identity response.
+        v2_what_changed_request = any(x in ql for x in [
+            "what changed",
+            "what has changed",
+            "show changes",
+            "recent change",
+            "recent changes",
+            "any change",
+            "any changes",
+            "show simulated change",
+            "simulated change",
+            "simulation change",
+            "simulate change",
+            "show simulation",
+        ]) or (
+            ("simulation" in ql or "simulated" in ql)
+            and "change" in ql
+        )
+
         # VERIFIED PCI TAG — RESOLVE CONTEXT, DO NOT RETURN YET
         # ============================================================
 
@@ -4304,7 +4325,7 @@ def _anviqo_authoritative_core(question):
             # IMPORTANT:
             # Do NOT return the normal PCI identity response here when the
             # question is troubleshooting-related.
-            if _anvi_troubleshooting_question(q):
+            if _anvi_troubleshooting_question(q) or v2_what_changed_request:
                 # Fall through to the authoritative troubleshooting route
                 # below. The PCI record is already stored as conversation
                 # context and will be available there.
@@ -4337,23 +4358,7 @@ def _anviqo_authoritative_core(question):
         # PCI semantic collection must NEVER consume an explicit
         # What Changed / simulation-change request first. The dedicated
         # V2 route below owns these intents.
-        what_changed_intent = any(x in ql for x in [
-            "what changed",
-            "what has changed",
-            "show changes",
-            "recent change",
-            "recent changes",
-            "any change",
-            "any changes",
-            "show simulated change",
-            "simulated change",
-            "simulation change",
-            "simulate change",
-            "show simulation",
-        ]) or (
-            ("simulation" in ql or "simulated" in ql)
-            and "change" in ql
-        )
+        what_changed_intent = v2_what_changed_request
 
         # ============================================================
         # 0. PCI SEMANTIC COLLECTION QUERY — BEFORE EXACT TAG CONTEXT
