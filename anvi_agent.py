@@ -279,6 +279,19 @@ def _fallback_answer(question, evidence):
 
 def ask(question):
     evidence = _evidence(question)
+
+    # Evidence-critical engineering questions must use the deterministic
+    # evidence path first. Do not let an LLM turn available telemetry into
+    # a generic "no evidence" answer.
+    q = str(question or "").lower()
+    ident = _identifier(question)
+    if ident and any(x in q for x in ("why", "warning", "alarm", "changed", "change", "status", "condition")):
+        deterministic = _fallback_answer(question, evidence)
+        if deterministic and not deterministic.startswith("I do not have enough verified"):
+            answer = deterministic
+            answer += "\n\nSafety: ANVI is read-only. PLC WRITE BLOCKED. SCADA CONTROL BLOCKED. HUMAN DECISION REQUIRED."
+            return answer, None, evidence
+
     answer, error = _call_openai(question, evidence)
     if not answer:
         answer = _fallback_answer(question, evidence)
