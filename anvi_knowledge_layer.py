@@ -4443,33 +4443,34 @@ def _anviqo_authoritative_core(question):
                 events = stream.get("events") or []
 
                 if changes or events:
-                    return {
-                        "answer": (
-                            "ANVI — What Changed (selected plant only):\\n"
-                            + json.dumps({
-                                "tag": requested_tag,
-                                "change_status": stream.get("change_status"),
-                                "changes": changes,
-                                "events": events,
-                                "correlation": stream.get("correlation"),
-                                "evidence_count": stream.get("evidence_count", 0),
-                                "scope": stream.get("scope", "SELECTED_PLANT_ONLY"),
-                                "causation_claimed": False,
-                                "safety": stream.get("safety", {}),
-                            }, ensure_ascii=False)
-                        ),
-                        "domain": "event_correlation",
-                        "evidence": "selected-plant event/change evidence",
-                        "tag": requested_tag,
-                        "changes": changes,
-                        "events": events,
-                        "correlation": stream.get("correlation"),
-                        "read_only": True,
-                        "plc_write": False,
-                        "scada_control": False,
-                        "human_decision_required": True,
-                    }
+                    change = changes[0] if changes else {}
+                    equipment = requested_tag or change.get("equipment") or "the equipment"
+                    parameter = change.get("parameter") or "process value"
+                    previous = change.get("previous")
+                    current = change.get("current")
+                    pct = change.get("percentage_change")
+                    direction = str(change.get("direction") or "").upper()
+                    state_event = next((
+                        (e for e in events if str(e.get("event_type") or "").upper() == "STATE_CHANGE"),
+                        None,
+                    )
+                    state_text = str(state_event.get("message") or "").strip() if state_event else ""
+                    lines = [f"ANVI — What Changed: {equipment}"]
+                    if previous is not None and current is not None:
+                        direction_text = "increased" if direction == "INCREASE" else ("decreased" if direction == "DECREASE" else "changed")
+                        value_line = f"{parameter} {direction_text} from {previous} to {current}"
+                        if pct is not None: value_line += f" ({pct}% change)"
+                        lines.append(value_line + ".")
+                    if "WARNING" in state_text.upper(): lines.append("Current condition: WARNING.")
+                    if state_text: lines.append("ANVI detected: " + state_text.rstrip(".") + ".")
+                    lines.append("Evidence: verified selected-plant event/change evidence.")
+                    lines.append("Physical cause is not established by this evidence.")
+                    lines.append("Recommended check: verify the field instrument reading and actual process condition.")
+                    lines.append("Control action: none — ANVI did not write to PLC/SCADA.")
+                    lines.append("Human decision required.")
 
+                    return {
+                        "answer": "\\n".join(lines),
                 # Explicit simulation/demo request may use the deterministic
                 # proof harness. Never use it silently for a real tenant.
                 if any(x in ql for x in ["simulation", "simulated", "demo"]):
