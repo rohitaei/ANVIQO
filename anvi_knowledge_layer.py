@@ -4474,7 +4474,7 @@ def _anviqo_authoritative_core(question):
                 # proof harness. Never use it silently for a real tenant.
                 if any(x in ql for x in ["simulation", "simulated", "demo"]):
                     from v2_simulation_proof import run_v2_simulation_proof
-                    proof = run_v2_simulation_proof()
+                    proof = run_v2_simulation_proof(plant_id=locals().get("plant_id") or locals().get("pid") or "")
                     return {
                         "answer": (
                             "ANVI — What Changed (SIMULATION):\\n"
