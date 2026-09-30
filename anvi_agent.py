@@ -53,6 +53,14 @@ def _evidence(question):
     if not pid:
         return {"plant_context": "MISSING", "safety": _safety()}
 
+    # Unified orchestration layer: collect existing intelligence engines into one
+    # selected-plant context packet. Existing deterministic routes remain authoritative.
+    try:
+        from anvi_full_intelligence import build_context
+        full_context = build_context(question)
+    except Exception:
+        full_context = {}
+
     evidence = {
         "plant_context": {
             "plant_id": pid,
@@ -61,6 +69,13 @@ def _evidence(question):
         },
         "safety": _safety(),
     }
+
+    # Merge the orchestrated context before the legacy collectors.
+    for key in ("live_observation", "requested_point", "attention_points", "knowledge",
+                "events", "equipment_identity", "relationships", "diagnosis",
+                "maintenance_matches", "spare", "state_summary"):
+        if full_context.get(key) is not None:
+            evidence[key] = full_context.get(key)
 
     try:
         from pci_live_simulator import get_live_pci_snapshot
