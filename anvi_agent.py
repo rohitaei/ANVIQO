@@ -240,6 +240,30 @@ def _fallback_answer(question, evidence):
         return "No explicit verified recent change/event evidence is available for the selected plant."
 
     if ident:
+        normalized_ident = re.sub(r"[-_ ]", "", ident).lower()
+        matching_events = [
+            e for e in events
+            if normalized_ident == re.sub(r"[-_ ]", "", str(e.get("equipment") or "")).lower()
+        ]
+        if matching_events and any(x in q for x in ("why", "warning", "alarm", "changed", "change", "status", "condition")):
+            value_change = next(
+                (e for e in matching_events if str(e.get("type") or e.get("event_type") or "").upper() == "VALUE_CHANGE"),
+                None,
+            )
+            state_change = next(
+                (e for e in matching_events if str(e.get("type") or e.get("event_type") or "").upper() == "STATE_CHANGE"),
+                None,
+            )
+            lines = [f"Verified simulation evidence for {ident}."]
+            if value_change and value_change.get("previous") is not None and value_change.get("current") is not None:
+                lines.append(f"Observed value change: {value_change.get('previous')} -> {value_change.get('current')}.")
+            if state_change:
+                lines.append("Observed condition change: WARNING.")
+            lines.append("This evidence establishes a simulated value/condition change, not the physical root cause.")
+            lines.append("Recommended check: verify the field instrument reading and actual process condition.")
+            return "\n".join(lines)
+
+    if ident:
         key = re.sub(r"[-_ ]", "", ident).lower()
         for r in records:
             vals = [r.get("tag"), r.get("external_id"), r.get("name"), r.get("content")]
