@@ -457,6 +457,41 @@ def ask_anvi():
     try:
         q=(request.get_json(silent=True) or {}).get("question","").strip()
 
+        # V2 What Changed / simulation is an explicit command intent. Route it
+        # at the API entry point before every generic tenant/PCI identity path.
+        # This prevents any wrapper installation order from consuming
+        # engineering-tag requests such as "Show simulated change on PT-303".
+        ql=q.lower()
+        v2_change_request = any(term in ql for term in (
+            "what changed",
+            "what has changed",
+            "show changes",
+            "recent change",
+            "recent changes",
+            "any change",
+            "any changes",
+            "show simulated change",
+            "simulated change",
+            "simulation change",
+            "simulate change",
+            "show simulation",
+        )) or (("simulation" in ql or "simulated" in ql) and "change" in ql)
+        if v2_change_request:
+            try:
+                from anvi_knowledge_layer import _anviqo_authoritative_core
+                return _anviqo_authoritative_core(q)
+            except Exception as exc:
+                return {
+                    "answer": "ANVI could not retrieve What Changed evidence; no change has been inferred.",
+                    "domain": "event_correlation",
+                    "reason": "V2_CHANGE_ROUTING_ERROR",
+                    "error": type(exc).__name__,
+                    "read_only": True,
+                    "plc_write": False,
+                    "scada_control": False,
+                    "human_decision_required": True,
+                }
+
         # Direct conversational spare mutations must be handled by the existing
         # V1.8 inventory engine before normal knowledge routing. Recognize
         # engineering identifiers independently of the legacy spare parser.
