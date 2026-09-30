@@ -558,6 +558,28 @@ def ask_anvi():
                         "human_decision_required": True,
                         "answer": f"Available spares for {identifier}: {int(r.get('qty_available') or 0)}."}
 
+        try:
+            from anvi_agent import ask as agent_ask
+            agent_answer, agent_error, agent_evidence = agent_ask(q)
+            if agent_answer:
+                return {
+                    "answer": agent_answer,
+                    "domain": "anvi_agent",
+                    "agent": "ANVI",
+                    "evidence_status": "EVIDENCE_AVAILABLE" if (
+                        agent_evidence.get("knowledge_records")
+                        or agent_evidence.get("simulation")
+                        or agent_evidence.get("recent_simulation_events")
+                    ) else "LIMITED_EVIDENCE",
+                    "plant_id": session.get("plant_id"),
+                    "read_only": True,
+                    "plc_write": False,
+                    "scada_control": False,
+                    "human_decision_required": True,
+                }
+        except Exception:
+            pass
+
         return knowledge_ask(q)
     except Exception as e:
         return {
