@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ANVIQO
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 1 --bind 0.0.0.0:$PORT --access-logfile - --error-logfile - failure_prediction_dashboard_runtime:app
+    healthCheckPath: /health
+    autoDeployTrigger: commit
