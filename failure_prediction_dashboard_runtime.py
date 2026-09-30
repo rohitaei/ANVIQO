@@ -198,6 +198,34 @@ if "dashboard" in app.view_functions:
     app.view_functions["dashboard"] = _dashboard_direct
 
 
+class _RenderHealthFirstMiddleware:
+    """Answer Render health probes before Flask request hooks run.
+
+    This is only for platform health detection. All non-health requests are
+    passed unchanged to the existing Flask application.
+    """
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        path = environ.get("PATH_INFO", "")
+        method = environ.get("REQUEST_METHOD", "GET").upper()
+        if path == "/health" and method == "GET":
+            body = b'{"status":"ok","service":"ANVIQO","health_check":true}'
+            start_response(
+                "200 OK",
+                [
+                    ("Content-Type", "application/json"),
+                    ("Content-Length", str(len(body))),
+                    ("Cache-Control", "no-store"),
+                ],
+            )
+            return [body]
+        return self.wsgi_app(environ, start_response)
+
+app.wsgi_app = _RenderHealthFirstMiddleware(app.wsgi_app)
+
+
 # Render was saved with a trailing space in the health-check path. Keep a
 # compatibility endpoint so the running service can become healthy immediately
 # while the dashboard setting is corrected to /health. This endpoint is
