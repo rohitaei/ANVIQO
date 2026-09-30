@@ -81,6 +81,15 @@ def build_context(question: str) -> Dict[str, Any]:
     except Exception:
         out["intelligence_fabric"] = None
 
+    # Universal capability engine: exactly 5,000 addressable contracts,
+    # with runtime coverage derived from real backing modules.
+    try:
+        from anvi_capability_engine import manifest as capability_manifest
+        out["capability_engine"] = capability_manifest()
+        out["sources"].append("UNIVERSAL_CAPABILITY_ENGINE")
+    except Exception:
+        out["capability_engine"] = None
+
     # Product capability map: the roadmap capabilities already implemented in
     # the repository are exposed through one stable contract for ANVI. This is
     # metadata only; evidence still has to come from the selected plant.
