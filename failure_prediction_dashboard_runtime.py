@@ -27,14 +27,6 @@ def __getattr__(name):
     return getattr(_load(), name)
 
 
-def __dir__():
-    names = set(globals())
-    try:
-        names.update(dir(_load()))
-    except Exception:
-        pass
-    return sorted(names)
-
 
 def _health(environ, start_response):
     body = b'{"status":"ok","service":"ANVIQO","health_check":true}'
