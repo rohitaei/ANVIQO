@@ -181,11 +181,84 @@ def _call_openai(question, evidence):
         return None, type(exc).__name__
 
 
+
+def _fallback_answer(question, evidence):
+    """Deterministic conversational fallback when the external LLM is unavailable."""
+    q = str(question or "").lower()
+    sim = evidence.get("simulation") or {}
+    events = evidence.get("recent_simulation_events") or []
+    records = evidence.get("knowledge_records") or []
+    ident = _identifier(question)
+
+    if evidence.get("plant_context") == "MISSING":
+        return "I need a valid selected plant before I can answer plant-specific questions."
+
+    if any(x in q for x in ("plant health", "plant status", "health of the plant", "how is the plant")):
+        if sim:
+            return ("Current selected-plant health is " + str(sim.get("plant_health_score")) +
+                    " / 100. I/O status: " + str(sim.get("healthy")) + " healthy, " +
+                    str(sim.get("warning")) + " warning, " + str(sim.get("critical")) +
+                    " critical. Active events: " + str(sim.get("active_events")) +
+                    ". Changed points: " + str(sim.get("changed")) +
+                    ". This is simulation evidence, not a live plant measurement.")
+        return "I do not have verified current plant-health evidence for the selected plant."
+
+    if any(x in q for x in ("active alarm", "active alarms", "alarms now", "show alarms")):
+        active = [p for p in (sim.get("active_points") or []) if p.get("event_active")]
+        if active:
+            lines = ["Current active alarm/event points in the available selected-plant evidence:"]
+            for p in active[:15]:
+                line = "- " + str(p.get("tag")) + ": " + str(p.get("state") or "ACTIVE")
+                if p.get("value") is not None: line += ", value " + str(p.get("value"))
+                if p.get("area"): line += ", " + str(p.get("area"))
+                lines.append(line)
+            return "\\n".join(lines)
+        return "No verified active alarm/event points were available in the selected-plant evidence."
+
+    if any(x in q for x in ("critical equipment", "critical points", "critical tags")):
+        critical = [p for p in (sim.get("active_points") or []) if str(p.get("state", "")).upper() == "CRITICAL"]
+        if critical:
+            return "Critical points in the available evidence:\\n" + "\\n".join(
+                "- " + str(p.get("tag")) + ": " + str(p.get("value")) +
+                (" (" + str(p.get("area")) + ")" if p.get("area") else "")
+                for p in critical[:15]
+            )
+        return "No verified critical points were available in the selected-plant evidence."
+
+    if any(x in q for x in ("what changed", "recent change", "recent changes", "changed recently")):
+        if events:
+            lines = ["Recent verified simulation changes:"]
+            for e in events[-10:]:
+                if isinstance(e, dict):
+                    label = e.get("tag") or e.get("equipment") or "point"
+                    kind = e.get("event_type") or e.get("type") or "change"
+                    transition = ""
+                    if e.get("previous_value") is not None and e.get("current_value") is not None:
+                        transition = " (" + str(e.get("previous_value")) + " -> " + str(e.get("current_value")) + ")"
+                    lines.append("- " + str(label) + ": " + str(kind) + transition)
+            return "\\n".join(lines)
+        return "No explicit verified recent change/event evidence is available for the selected plant."
+
+    if ident:
+        key = re.sub(r"[-_ ]", "", ident).lower()
+        for r in records:
+            vals = [r.get("tag"), r.get("external_id"), r.get("name"), r.get("content")]
+            if any(key in re.sub(r"[-_ ]", "", str(v or "")).lower() for v in vals):
+                details = []
+                for label, field in (("Tag","tag"),("Name","name"),("Area","area"),("Service","service"),("Asset type","asset_type"),("Source","source")):
+                    if r.get(field): details.append(label + ": " + str(r.get(field)))
+                return "Verified selected-plant information for " + ident + ":\\n" + "\\n".join("- " + x for x in details)
+
+    if records:
+        return "I found " + str(len(records)) + " verified selected-plant knowledge record(s), but the available evidence is not sufficient for a more specific conclusion."
+    return "I do not have enough verified selected-plant evidence to answer that reliably."
+
 def ask(question):
     evidence = _evidence(question)
     answer, error = _call_openai(question, evidence)
     if not answer:
-        return None, error, evidence
+        answer = _fallback_answer(question, evidence)
+        error = error or "FALLBACK"
 
     answer += "\n\nSafety: ANVI is read-only. PLC WRITE BLOCKED. SCADA CONTROL BLOCKED. HUMAN DECISION REQUIRED."
     return answer, None, evidence
