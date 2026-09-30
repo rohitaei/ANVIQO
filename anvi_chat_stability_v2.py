@@ -388,6 +388,43 @@ def _answer(text):
     plant=_plant(pid,oid)
     if not plant or str(plant.get("status","")).upper()!="ACTIVE":
         return _safe("The authenticated plant membership is not active or the plant record is unavailable. ANVI will not use another plant's data as a fallback.",blocked=True,reason="INVALID_PLANT_CONTEXT",plant_id=pid)
+    # V2 What Changed / simulation requests are command-intent requests,
+    # not generic tenant identity lookups. This universal tenant engine sits
+    # above the core router in production, so explicitly delegate these
+    # requests to the authoritative V2 route before _exact_answer(). This
+    # preserves tenant context while preventing PT/FT/etc. identity matching
+    # from consuming a change request.
+    low_text = str(text or "").strip().lower()
+    v2_change_request = any(term in low_text for term in (
+        "what changed",
+        "what has changed",
+        "show changes",
+        "recent change",
+        "recent changes",
+        "any change",
+        "any changes",
+        "show simulated change",
+        "simulated change",
+        "simulation change",
+        "simulate change",
+        "show simulation",
+    )) or (
+        ("simulation" in low_text or "simulated" in low_text)
+        and "change" in low_text
+    )
+
+    if v2_change_request:
+        try:
+            from anvi_knowledge_layer import _anviqo_authoritative_core
+            return _anviqo_authoritative_core(text)
+        except Exception as exc:
+            return _safe(
+                "ANVI could not retrieve What Changed evidence; no change has been inferred.",
+                reason="V2_CHANGE_ROUTING_ERROR",
+                error_type=type(exc).__name__,
+                plant_id=pid,
+            )
+
     candidate=_candidate(text)
     if candidate:
         # PCI resolver is the primary identity engine. If it cannot map a
