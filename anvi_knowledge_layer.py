@@ -4450,7 +4450,7 @@ def _anviqo_authoritative_core(question):
                     current = change.get("current")
                     pct = change.get("percentage_change")
                     direction = str(change.get("direction") or "").upper()
-                    state_event = next((
+                    state_event = next(
                         (e for e in events if str(e.get("event_type") or "").upper() == "STATE_CHANGE"),
                         None,
                     )
@@ -4483,66 +4483,6 @@ def _anviqo_authoritative_core(question):
                     }
 
                 # Explicit simulation/demo request may use the deterministic
-                # proof harness. Never use it silently for a real tenant.
-                if any(x in ql for x in ["simulation", "simulated", "demo"]):
-                    from v2_simulation_proof import run_v2_simulation_proof
-                    proof = run_v2_simulation_proof(
-                        plant_id=locals().get("plant_id")
-                        or locals().get("pid")
-                        or ""
-                    )
-                    return {
-                        "answer": proof.get("answer") or (
-                            "ANVI — Simulated Change: PT-303\\n"
-                            f"PT-303 increased from {proof.get('baseline')} to {proof.get('current')} "
-                            f"({proof.get('percentage_change')}% increase).\\n"
-                            "Current simulated condition: WARNING.\\n"
-                            "ANVI detected a value change and a condition change to WARNING.\\n"
-                            "This is simulation evidence, not a live plant measurement.\\n"
-                            "Recommended check: verify the field transmitter reading and actual process condition.\\n"
-                            "Safety: ANVI did not write to PLC or SCADA. Human decision required."
-                        ),
-                        "domain": "event_correlation",
-                        "evidence": "ANVIQO V2 deterministic simulation proof",
-                        "tag": proof.get("equipment"),
-                        "changes": proof.get("changes", []),
-                        "events": proof.get("events", []),
-                        "correlation": proof.get("correlation"),
-                        "simulation": True,
-                        "read_only": True,
-                        "plc_write": False,
-                        "scada_control": False,
-                        "human_decision_required": True,
-                    }
-
-                # proof harness. Never use it silently for a real tenant.
-                if any(x in ql for x in ["simulation", "simulated", "demo"]):
-                    from v2_simulation_proof import run_v2_simulation_proof
-                    proof = run_v2_simulation_proof(plant_id=locals().get("plant_id") or locals().get("pid") or "")
-                    return {
-                        "answer": proof.get("answer") or (
-                            "ANVI — Simulated Change: PT-303\\n"
-                            f"PT-303 increased from {proof.get('baseline')} to {proof.get('current')} "
-                            f"({proof.get('percentage_change')}% increase).\\n"
-                            "Current simulated condition: WARNING.\\n"
-                            "ANVI detected a value change and a condition change to WARNING.\\n"
-                            "This is simulation evidence, not a live plant measurement.\\n"
-                            "Recommended check: verify the field transmitter reading and actual process condition.\\n"
-                            "Safety: ANVI did not write to PLC or SCADA. Human decision required."
-                        ),
-                        "domain": "event_correlation",
-                        "evidence": "ANVIQO V2 deterministic simulation proof",
-                        "tag": proof.get("equipment"),
-                        "changes": proof.get("changes", []),
-                        "events": proof.get("events", []),
-                        "correlation": proof.get("correlation"),
-                        "simulation": True,
-                        "read_only": True,
-                        "plc_write": False,
-                        "scada_control": False,
-                        "human_decision_required": True,
-                    }
-
                 return {
                     "answer": (
                         "ANVI found no explicit event/change evidence for "
