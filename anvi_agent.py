@@ -67,6 +67,17 @@ def _evidence(question):
         snap = get_live_pci_snapshot() or {}
         if str(snap.get("mode", "")).upper() == "SIMULATION":
             points = snap.get("points") or []
+            requested = _identifier(question)
+            requested_norm = re.sub(r"[-_ ]", "", requested).lower()
+            requested_point = next(
+                (
+                    p for p in points
+                    if isinstance(p, dict)
+                    and requested_norm
+                    and requested_norm == re.sub(r"[-_ ]", "", str(p.get("tag") or "")).lower()
+                ),
+                None,
+            )
             evidence["simulation"] = {
                 "mode": snap.get("mode"),
                 "source": snap.get("source"),
@@ -78,6 +89,13 @@ def _evidence(question):
                 "active_events": snap.get("active_events"),
                 "plant_health_score": snap.get("plant_health_score"),
                 "areas": snap.get("areas", []),
+                "requested_point": (
+                    {
+                        k: requested_point.get(k)
+                        for k in ("tag","description","area","value","state","event_active","changed","io_type","plc_address")
+                    }
+                    if requested_point else None
+                ),
                 "active_points": [
                     {
                         k: p.get(k)
@@ -86,7 +104,7 @@ def _evidence(question):
                     for p in points
                     if isinstance(p, dict) and (
                         p.get("event_active") or p.get("changed") or
-                        str(p.get("state","")).upper() == "CRITICAL"
+                        str(p.get("state","")).upper() in ("WARNING","CRITICAL")
                     )
                 ][:40],
             }
@@ -188,6 +206,7 @@ def _fallback_answer(question, evidence):
     sim = evidence.get("simulation") or {}
     events = evidence.get("recent_simulation_events") or []
     records = evidence.get("knowledge_records") or []
+    requested_point = sim.get("requested_point") or {}
     ident = _identifier(question)
 
     if evidence.get("plant_context") == "MISSING":
@@ -238,6 +257,20 @@ def _fallback_answer(question, evidence):
                     lines.append("- " + str(label) + ": " + str(kind) + transition)
             return "\\n".join(lines)
         return "No explicit verified recent change/event evidence is available for the selected plant."
+
+    if ident and requested_point and any(x in q for x in ("why", "warning", "alarm", "status", "condition", "changed", "change")):
+        state = str(requested_point.get("state") or "").upper()
+        if state in ("WARNING", "CRITICAL") or requested_point.get("event_active") or requested_point.get("changed"):
+            lines = ["Verified simulation evidence for " + ident + "."]
+            if requested_point.get("value") is not None:
+                lines.append("Current simulated value: " + str(requested_point.get("value")) + ".")
+            if state:
+                lines.append("Current simulated condition: " + state + ".")
+            if requested_point.get("changed"):
+                lines.append("The simulator marks this point as changed.")
+            lines.append("This establishes the simulated condition, but it does not establish the physical root cause.")
+            lines.append("Recommended check: verify the field transmitter reading and actual process condition.")
+            return "\n".join(lines)
 
     if ident:
         normalized_ident = re.sub(r"[-_ ]", "", ident).lower()
