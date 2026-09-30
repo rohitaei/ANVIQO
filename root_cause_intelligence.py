@@ -216,6 +216,34 @@ def build_root_cause_intelligence(query:str,tag:Optional[str]=None)->Dict[str,An
         health = next((r for r in rows if any(k in r for k in ("health","health_score","risk_score","status"))), None)
         identity = rows[0] if rows else None
         live = next((r for r in rows if any(k in r for k in ("value","live_value","state","quality"))), None)
+
+        # In DEMO/SIMULATION mode, merge the existing V2 simulation evidence
+        # into the selected-plant diagnostic context. This does not broaden
+        # tenant scope: the simulation state is keyed by the authenticated
+        # selected plant and remains read-only.
+        try:
+            from pci_live_simulator import get_live_pci_snapshot
+            sim_snapshot = get_live_pci_snapshot() or {}
+            if str(sim_snapshot.get("mode") or "").upper() == "SIMULATION":
+                wanted = _norm_tag(tag)
+                sim_points = sim_snapshot.get("points") or []
+                sim_live = next(
+                    (p for p in sim_points if isinstance(p, dict) and _norm_tag(p.get("tag")) == wanted),
+                    None,
+                )
+                if sim_live is not None:
+                    live = {**(live or {}), **sim_live}
+                    rows = [*rows, {**sim_live, "plant_id": tenant_plant, "source": "PCI_LIVE_SIMULATOR"}]
+                try:
+                    from v2_simulation_state import get as get_simulation_evidence
+                    sim_events = get_simulation_evidence(tenant_plant, tag=tag)
+                    if sim_events:
+                        events.extend(sim_events)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         observed = {"tag":tag,"reported_symptom":any(x in query.lower() for x in ("abnormal","fault","failure","issue","problem","unhealthy","malfunction","stopped")),"live_state":(live or {}).get("state"),"live_value":(live or {}).get("value"),"changed":(live or {}).get("changed"),"event_active":(live or {}).get("event_active"),"mode":(live or {}).get("mode"),"source":"SELECTED_PLANT_KNOWLEDGE","evidence_basis":["SELECTED_PLANT_KNOWLEDGE"]}
         correlation = _correlate(tag, live, events, memory, [])
         evidence_count = len(rows)
