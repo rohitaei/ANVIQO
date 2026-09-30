@@ -388,6 +388,108 @@ def _answer(text):
     plant=_plant(pid,oid)
     if not plant or str(plant.get("status","")).upper()!="ACTIVE":
         return _safe("The authenticated plant membership is not active or the plant record is unavailable. ANVI will not use another plant's data as a fallback.",blocked=True,reason="INVALID_PLANT_CONTEXT",plant_id=pid)
+
+    # V2 demo evidence views. These reuse the existing PCI simulator and
+    # remain read-only; they do not create a second control/reasoning engine.
+    low_text = str(text or "").strip().lower()
+
+    if any(x in low_text for x in (
+        "what is the current plant health", "current plant health",
+        "health of the plant", "overall plant health", "plant health"
+    )):
+        try:
+            from pci_live_simulator import get_live_pci_snapshot
+            snap = get_live_pci_snapshot() or {}
+            if str(snap.get("mode","")).upper() == "SIMULATION":
+                score = snap.get("plant_health_score")
+                if score is None:
+                    assessment = "INSUFFICIENT EVIDENCE"
+                elif float(score) >= 90:
+                    assessment = "BROADLY HEALTHY"
+                elif float(score) >= 80:
+                    assessment = "HEALTHY WITH ATTENTION AREAS"
+                elif float(score) >= 60:
+                    assessment = "DEGRADED"
+                else:
+                    assessment = "CRITICAL"
+                answer = (
+                    "ANVI — Current Plant Health (SIMULATION)\\n"
+                    f"Overall condition: {assessment}.\\n"
+                    f"Health score: {score}%.\\n"
+                    f"Healthy: {snap.get('healthy',0)} | Warning: {snap.get('warning',0)} | Critical: {snap.get('critical',0)}.\\n"
+                    f"Changed points: {snap.get('changed',0)} | Active simulated events: {snap.get('active_events',0)}.\\n"
+                    "Evidence source: PCI DEMO STREAM. This is simulation data, not live plant telemetry.\\n"
+                    "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required."
+                )
+                return _safe(answer, domain="plant_health", evidence_status="EVIDENCE_AVAILABLE",
+                    evidence_mode="SIMULATION", plant_id=pid, plant_name=plant.get("name"))
+
+        except Exception:
+            pass
+
+    if any(x in low_text for x in (
+        "show active alarms", "active alarms",
+        "current active alarms", "show alarms"
+    )):
+        try:
+            from pci_live_simulator import get_live_pci_snapshot
+            snap = get_live_pci_snapshot() or {}
+            points = [
+                p for p in (snap.get("points") or [])
+                if isinstance(p,dict) and p.get("event_active")
+                and str(p.get("state","")).upper() in ("WARNING","CRITICAL")
+            ]
+            points.sort(key=lambda p: (str(p.get("state","")).upper() != "CRITICAL", str(p.get("tag",""))))
+            lines = [
+                "ANVI — Active Alarms (SIMULATION)",
+                f"Active simulated alarms/events: {len(points)}."
+            ]
+            for p in points[:12]:
+                lines.append(
+                    f"{p.get('tag','UNKNOWN')} — {p.get('state','UNKNOWN')} — "
+                    f"{p.get('description','No description')} — Area: {p.get('area','UNKNOWN')}."
+                )
+            if not points:
+                lines.append("No active simulated alarm/event points were detected in this snapshot.")
+            lines.append("Evidence source: PCI DEMO STREAM. This is simulation data, not live alarm history.")
+            lines.append("Safety: ANVI is read-only; no PLC/SCADA write. Human decision required.")
+            return _safe("\\n".join(lines), domain="alarms", evidence_status="EVIDENCE_AVAILABLE",
+                evidence_mode="SIMULATION", count=len(points), evidence=points[:12],
+                plant_id=pid, plant_name=plant.get("name"))
+        except Exception:
+            pass
+
+    if any(x in low_text for x in (
+        "show critical equipment", "critical equipment",
+        "which equipment is critical"
+    )):
+        try:
+            from pci_live_simulator import get_live_pci_snapshot
+            snap = get_live_pci_snapshot() or {}
+            points = [
+                p for p in (snap.get("points") or [])
+                if isinstance(p,dict) and str(p.get("state","")).upper()=="CRITICAL"
+            ]
+            points.sort(key=lambda p: str(p.get("tag","")))
+            lines = [
+                "ANVI — Critical Equipment (SIMULATION)",
+                f"Equipment currently in simulated CRITICAL state: {len(points)}."
+            ]
+            for p in points[:15]:
+                lines.append(
+                    f"{p.get('tag','UNKNOWN')} — {p.get('description','No description')} "
+                    f"— Area: {p.get('area','UNKNOWN')} — Value: {p.get('value','N/A')}."
+                )
+            if not points:
+                lines.append("No equipment is in simulated CRITICAL state in this snapshot.")
+            lines.append("Evidence source: PCI DEMO STREAM. Critical here means current simulated condition, not permanent equipment criticality.")
+            lines.append("Safety: ANVI is read-only; no PLC/SCADA write. Human decision required.")
+            return _safe("\\n".join(lines), domain="critical_equipment", evidence_status="EVIDENCE_AVAILABLE",
+                evidence_mode="SIMULATION", count=len(points), evidence=points[:15],
+                plant_id=pid, plant_name=plant.get("name"))
+        except Exception:
+            pass
+
     # V2 What Changed / simulation requests are command-intent requests,
     # not generic tenant identity lookups. This universal tenant engine sits
     # above the core router in production, so explicitly delegate these
