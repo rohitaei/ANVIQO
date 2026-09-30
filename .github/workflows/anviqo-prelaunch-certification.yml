@@ -44,6 +44,8 @@ jobs:
           print("Production Python compilation PASS") 
           PY
       - name: Capability and safety regression
+        env:
+          PYTHONPATH: .
         run: pytest -q tests/test_anvi_capability_engine.py
       - name: Core intelligence regression
         run: >
