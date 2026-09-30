@@ -245,6 +245,23 @@ def _fallback_answer(question, evidence):
             e for e in events
             if normalized_ident == re.sub(r"[-_ ]", "", str(e.get("equipment") or "")).lower()
         ]
+        if not matching_events and any(x in q for x in ("why", "warning", "alarm", "status", "condition")):
+            normalized_points = [
+                p for p in (sim.get("active_points") or [])
+                if normalized_ident == re.sub(r"[-_ ]", "", str(p.get("tag") or "")).lower()
+            ]
+            if normalized_points:
+                point = normalized_points[0]
+                state = str(point.get("state") or "").upper()
+                if state in ("WARNING", "CRITICAL") or point.get("event_active") or point.get("changed"):
+                    lines = [f"Verified simulation evidence for {ident}."]
+                    if point.get("value") is not None:
+                        lines.append(f"Current simulated value: {point.get('value')}.")
+                    if state:
+                        lines.append(f"Current simulated condition: {state}.")
+                    lines.append("The available evidence establishes the simulated condition, but does not establish the physical root cause.")
+                    lines.append("Recommended check: verify the field instrument reading and actual process condition.")
+                    return "\n".join(lines)
         if matching_events and any(x in q for x in ("why", "warning", "alarm", "changed", "change", "status", "condition")):
             value_change = next(
                 (e for e in matching_events if str(e.get("type") or e.get("event_type") or "").upper() == "VALUE_CHANGE"),
