@@ -78,6 +78,32 @@ def phase2_root_cause_query_bridge():
             actor = _actor()
             if not authorize(actor, "plant:read", actor["organization_id"], actor["plant_id"]):
                 return jsonify({"status": "FORBIDDEN", "message": "plant:read permission is required for Root Cause Intelligence.", "read_only": True, "plc_write": False, "scada_control": False}) , 403
+            # In DEMO/SIMULATION mode, let the conversational ANVI evidence
+            # adapter answer tag-specific questions from the same selected-plant
+            # simulation stream. This prevents the legacy RCI bridge from
+            # hiding valid simulation evidence behind a NO_EVIDENCE result.
+            try:
+                from anvi_agent import ask as agent_ask
+                agent_answer, agent_error, agent_evidence = agent_ask(question)
+                sim = (agent_evidence or {}).get("simulation") or {}
+                point = sim.get("requested_point") or {}
+                point_state = str(point.get("state") or "").upper()
+                if point and (point_state in ("WARNING", "CRITICAL") or point.get("event_active") or point.get("changed")):
+                    return jsonify({
+                        "answer": agent_answer,
+                        "domain": "anvi_agent",
+                        "agent": "ANVI",
+                        "evidence_status": "EVIDENCE_AVAILABLE",
+                        "rci": build_root_cause_intelligence(question),
+                        "plant_id": actor["plant_id"],
+                        "read_only": True,
+                        "plc_write": False,
+                        "scada_control": False,
+                        "human_decision_required": True,
+                    })
+            except Exception:
+                pass
+
             result = build_root_cause_intelligence(question)
             return jsonify({
                 "answer": result["conclusion"],
