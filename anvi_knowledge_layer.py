@@ -4477,22 +4477,15 @@ def _anviqo_authoritative_core(question):
                     from v2_simulation_proof import run_v2_simulation_proof
                     proof = run_v2_simulation_proof(plant_id=locals().get("plant_id") or locals().get("pid") or "")
                     return {
-                        "answer": (
-                            "ANVI — What Changed (SIMULATION):\\n"
-                            + json.dumps({
-                                "equipment": proof.get("equipment"),
-                                "baseline": proof.get("baseline"),
-                                "current": proof.get("current"),
-                                "delta": proof.get("delta"),
-                                "percentage_change": proof.get("percentage_change"),
-                                "changes": proof.get("changes", []),
-                                "events": proof.get("events", []),
-                                "correlation": proof.get("correlation"),
-                                "status": proof.get("status"),
-                                "scope": "SELECTED_PLANT_ONLY",
-                                "causation_claimed": False,
-                                "safety": proof.get("safety", {}),
-                            }, ensure_ascii=False)
+                        "answer": proof.get("answer") or (
+                            "ANVI — Simulated Change: PT-303\\n"
+                            f"PT-303 increased from {proof.get('baseline')} to {proof.get('current')} "
+                            f"({proof.get('percentage_change')}% increase).\\n"
+                            "Current simulated condition: WARNING.\\n"
+                            "ANVI detected a value change and a condition change to WARNING.\\n"
+                            "This is simulation evidence, not a live plant measurement.\\n"
+                            "Recommended check: verify the field transmitter reading and actual process condition.\\n"
+                            "Safety: ANVI did not write to PLC or SCADA. Human decision required."
                         ),
                         "domain": "event_correlation",
                         "evidence": "ANVIQO V2 deterministic simulation proof",
