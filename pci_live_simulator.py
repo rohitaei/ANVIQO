@@ -185,7 +185,12 @@ def simulate_snapshot():
 
 
 def get_live_pci_snapshot():
-    return simulate_snapshot()
+    global _SNAPSHOT_CACHE, _SNAPSHOT_CACHE_AT
+    now = time.monotonic()
+    if _SNAPSHOT_CACHE is None or (now - _SNAPSHOT_CACHE_AT) >= _SNAPSHOT_CACHE_TTL:
+        _SNAPSHOT_CACHE = simulate_snapshot()
+        _SNAPSHOT_CACHE_AT = now
+    return _SNAPSHOT_CACHE
 
 
 if __name__ == "__main__":
