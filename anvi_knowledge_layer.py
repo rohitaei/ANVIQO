@@ -4482,7 +4482,55 @@ def _anviqo_authoritative_core(question):
                         "human_decision_required": True,
                     }
 
-                # Explicit simulation/demo request may use the deterministic
+                # Explicit simulation/demo request uses the deterministic
+                # V2 proof harness. It records evidence only in the selected
+                # plant's process-local simulation state and never touches
+                # PLC/SCADA or production history.
+                if any(term in ql for term in (
+                    "show simulated change",
+                    "simulated change",
+                    "simulation change",
+                    "simulate change",
+                    "show simulation",
+                )):
+                    from v2_simulation_proof import run_v2_simulation_proof
+                    proof = run_v2_simulation_proof(
+                        plant_id=locals().get("plant_id") or locals().get("pid") or ""
+                    )
+                    sim_changes = proof.get("changes") or []
+                    sim_events = proof.get("events") or []
+                    change = sim_changes[0] if sim_changes else {}
+                    before = change.get("previous")
+                    after = change.get("current")
+                    pct = change.get("percentage_change")
+                    lines = [f"ANVI — Simulated Change: {requested_tag or proof.get('equipment') or 'PT-303'}"]
+                    if before is not None and after is not None:
+                        direction_text = "increased" if str(change.get("direction") or "").upper() == "INCREASE" else "changed"
+                        value_line = f"PT-303 {direction_text} from {before} to {after}"
+                        if pct is not None:
+                            value_line += f" ({pct}% change)"
+                        lines.append(value_line + ".")
+                    lines.extend([
+                        "Current simulated condition: WARNING.",
+                        "ANVI detected a value change and a condition change to WARNING.",
+                        "This is simulation evidence, not a live plant measurement.",
+                        "Recommended check: verify the field transmitter reading and actual process condition.",
+                        "Safety: ANVI did not write to PLC or SCADA. Human decision required.",
+                    ])
+                    return {
+                        "answer": "\\n".join(lines),
+                        "domain": "event_correlation",
+                        "evidence": "ANVIQO V2 simulation evidence",
+                        "tag": proof.get("equipment") or requested_tag,
+                        "changes": sim_changes,
+                        "events": sim_events,
+                        "simulation": True,
+                        "read_only": True,
+                        "plc_write": False,
+                        "scada_control": False,
+                        "human_decision_required": True,
+                    }
+
                 return {
                     "answer": (
                         "ANVI found no explicit event/change evidence for "
