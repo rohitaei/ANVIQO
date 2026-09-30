@@ -259,6 +259,21 @@ def build_context(question: str) -> Dict[str, Any]:
         except Exception:
             pass
 
+    # Phase 4 cross-domain intelligence: energy, production impact, safety,
+    # maintenance planning and reliability. Inputs remain evidence-backed.
+    try:
+        from phase4_advanced_intelligence import build_phase4_snapshot
+        out["phase4"] = build_phase4_snapshot({
+            "energy": out.get("energy", {}),
+            "production_impact": out.get("production_impact", {}),
+            "safety": out.get("safety_evidence", {}),
+            "maintenance": {"candidates": out.get("attention_points", [])},
+            "reliability": {"prediction_history": out.get("prediction_history", [])},
+        })
+        out["sources"].append("PHASE4_ADVANCED_INTELLIGENCE")
+    except Exception:
+        out["phase4"] = None
+
     # Compact, deterministic state summary for downstream reasoning.
     point = out.get("requested_point") or {}
     live = out.get("live_observation") or {}
