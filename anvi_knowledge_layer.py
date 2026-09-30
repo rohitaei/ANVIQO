@@ -4388,13 +4388,21 @@ def _anviqo_authoritative_core(question):
             "recent changes",
             "any change",
             "any changes",
-        ])
+            "show simulated change",
+            "simulated change",
+            "simulation change",
+            "simulate change",
+            "show simulation",
+        ]) or (
+            ("simulation" in ql or "simulated" in ql)
+            and "change" in ql
+        )
 
         if what_changed_intent:
             try:
                 import re as _re
                 tag_match = _re.search(
-                    r"\\b(?:PT|FT|TT|LT|AT|CV|FV|XV|PIC|FIC|TIC|LIC)[-_ ]?\\d+\\b",
+                    r"\b(?:PT|FT|TT|LT|AT|CV|FV|XV|PIC|FIC|TIC|LIC)[-_ ]?\d+\b",
                     q.upper(),
                 )
                 requested_tag = tag_match.group(0) if tag_match else None
