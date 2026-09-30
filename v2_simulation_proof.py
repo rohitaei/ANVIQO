@@ -25,7 +25,7 @@ def _load_pt303():
     raise LookupError("PT-303 is not present in PCI identity database")
 
 
-def run_v2_simulation_proof():
+def run_v2_simulation_proof(plant_id: str = ""):
     now = datetime.now(timezone.utc)
     before = 42.0
     after = 68.0
@@ -68,6 +68,13 @@ def run_v2_simulation_proof():
     }]
 
     correlation = correlate_events(tag, events)
+
+    if plant_id:
+        try:
+            from v2_simulation_state import record
+            record(plant_id, events, changes)
+        except Exception:
+            pass
 
     checks = {
         "simulation_mode": True,
