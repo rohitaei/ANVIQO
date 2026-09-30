@@ -121,6 +121,12 @@ def build_command_centre_stream(query: str = "", tag: str | None = None) -> dict
         if isinstance(row, dict) and _text(row.get("plant_id")) == plant_id
     ]
 
+    try:
+        from v2_simulation_state import get as get_simulation_evidence
+        rows.extend(get_simulation_evidence(plant_id, tag=tag))
+    except Exception:
+        pass
+
     events = [_event(row) for row in rows if _is_explicit_event(row)]
     changes = [_change(row) for row in rows if _is_explicit_change(row)]
 
