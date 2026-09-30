@@ -361,7 +361,25 @@ def install():
         )
 
         if v2_change_request:
-            return original(q,*args,**kwargs)
+            # This module is installed by sitecustomize at Python startup and
+            # captures the underlying ask_anvi function. Do NOT delegate to
+            # that captured function for V2 requests: later wrappers may sit
+            # above/below it and re-enter generic tenant identity routing.
+            # Route directly to the authoritative V2 core at the first
+            # tenant boundary so wrapper installation order cannot change the
+            # meaning of a What Changed / simulation request.
+            try:
+                from anvi_knowledge_layer import _anviqo_authoritative_core
+                return _anviqo_authoritative_core(q)
+            except Exception as exc:
+                return _safe_response(
+                    "ANVI could not retrieve What Changed evidence; no change has been inferred.",
+                    blocked=False,
+                    reason="V2_CHANGE_ROUTING_ERROR",
+                    evidence_status="NO_CHANGE_INFERRED",
+                    plant_id=plant["plant_id"],
+                    plant_name=plant.get("name"),
+                )
 
         candidate=_candidate_tag(q)
         rows=_rows(plant_id,tag=candidate) if candidate else _rows(plant_id,terms=_question_terms(q))
