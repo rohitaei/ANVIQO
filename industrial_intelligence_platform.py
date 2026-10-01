@@ -212,7 +212,7 @@ def explainable_health(evidence_items: Iterable[Dict[str,Any]]):
 
 def benchmarking(plants: Iterable[Dict[str,Any]]):
     rows=[dict(x) for x in plants]
-    return {"module":"fleet_benchmarking","comparisons":rows,
+    return {"module":"fleet_benchmarking","records":len(rows),"comparisons":rows,
             "definition_warning":"Only compare governed, like-for-like metrics with adequate data quality.","safety":SAFETY}
 
 def digital_twin(identity: Dict[str,Any], condition=None, history=None, prediction=None):
@@ -240,7 +240,8 @@ def simulate_gateway(tags: Iterable[Dict[str,Any]]):
     now=datetime.now(timezone.utc).isoformat()
     return {"mode":"SIMULATION","protocol":"ADAPTER_CONTRACT","read_only":True,
             "plc_write":False,"scada_control":False,"timestamp":now,
-            "observations":[{**dict(t),"timestamp":t.get("timestamp",now),"quality":t.get("quality","GOOD")} for t in tags]}
+            "observations":[{**dict(t),"timestamp":t.get("timestamp",now),"quality":t.get("quality","GOOD")} for t in tags],
+            "safety":SAFETY}
 
 def run_industrial_intelligence(payload: Dict[str,Any]):
     p=payload or {}

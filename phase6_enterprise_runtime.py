@@ -110,3 +110,7 @@ def enterprise_plant(plant_id: str):
 
 import phase6_enterprise_command_centre_v2  # noqa: E402,F401
 import phase6_enterprise_command_centre_v3  # noqa: E402,F401
+
+# Register authentication/provisioning only after this module has a live app
+# object. This preserves the existing route contract without circular imports.
+import anvi_plant_runtime_bridge  # noqa: E402,F401

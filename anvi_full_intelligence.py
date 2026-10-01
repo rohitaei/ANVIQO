@@ -125,10 +125,53 @@ def build_context(question: str) -> Dict[str, Any]:
     }
 
     # Live observation / operating state.
+    # Use the universal selected-plant Command Centre adapter first. It is
+    # the same source used by the dashboard, so ANVI cannot show a different
+    # value for the same tag merely because the request came from chat.
     try:
-        from pci_live_simulator import get_live_pci_snapshot
-        snap = get_live_pci_snapshot() or {}
-        if str(snap.get("mode") or "").upper() == "SIMULATION":
+        from anvi_universal_command_centre import get_live_pci_snapshot as tenant_snapshot
+        from pci_live_simulator import get_live_pci_snapshot as legacy_snapshot
+        snap = tenant_snapshot(legacy_snapshot) or {}
+        points = snap.get("points") or []
+        if points:
+            out["live_observation"] = {
+                k: snap.get(k)
+                for k in (
+                    "mode", "source", "total_io", "healthy", "warning",
+                    "critical", "changed", "active_events", "plant_health_score",
+                    "areas", "health_status", "timestamp",
+                )
+            }
+            if tag:
+                wanted = _norm(tag)
+                p = next(
+                    (x for x in points if isinstance(x, dict) and _norm(x.get("tag")) == wanted),
+                    None,
+                )
+                if p:
+                    out["requested_point"] = {
+                        k: p.get(k) for k in (
+                            "tag", "description", "area", "service", "value",
+                            "state", "changed", "event_active", "io_type",
+                            "plc_address", "source", "timestamp", "mode",
+                        )
+                    }
+            out["attention_points"] = [
+                {
+                    k: p.get(k) for k in (
+                        "tag", "description", "area", "value", "state",
+                        "changed", "event_active", "io_type", "plc_address",
+                        "source", "timestamp", "mode",
+                    )
+                }
+                for p in points
+                if isinstance(p, dict) and (
+                    p.get("changed") or p.get("event_active") or
+                    str(p.get("state") or "").upper() in ("WARNING", "CRITICAL")
+                )
+            ][:50]
+            out["sources"].append("SELECTED_PLANT_COMMAND_CENTRE")
+        elif str(snap.get("mode") or "").upper() == "SIMULATION":
             out["live_observation"] = {
                 k: snap.get(k)
                 for k in (
@@ -244,18 +287,20 @@ def build_context(question: str) -> Dict[str, Any]:
             out["maintenance_matches"] = []
 
         try:
-            from pci_spares import _v18_bf2_exact
-            rows = _v18_bf2_exact(tag, pid)
-            if rows:
-                r = rows[0]
-                out["spare"] = {
-                    "tag": tag,
-                    "available": int(r.get("qty_available") or 0),
-                    "instrument": r.get("instrument"),
-                    "area": r.get("area"),
-                    "source": r.get("source"),
-                }
-                out["sources"].append("SPARE_REGISTRY")
+            import pci_spares
+            # Reuse the authoritative existing spare engine. This exposes its
+            # read result to ANVI without creating a second spare engine.
+            spare_result = pci_spares.answer_spare_management(tag)
+            if isinstance(spare_result, dict):
+                records = spare_result.get("records") or []
+                if records:
+                    out["spare"] = {
+                        "tag": tag,
+                        "records": records[:20],
+                        "count": len(records),
+                        "source": spare_result.get("evidence") or "critical_spares.xlsx",
+                    }
+                    out["sources"].append("SPARE_REGISTRY")
         except Exception:
             pass
 
