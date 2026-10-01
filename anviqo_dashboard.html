@@ -196,6 +196,26 @@ input,select{
  .topbar{padding:0 10px}
  .top-title b{font-size:12px}
 }
+
+/* V2 MOBILE COMMAND CENTRE */
+.mobile-app-home{display:none}
+@media(max-width:900px){
+  #content{padding-bottom:86px}
+  .mobile-app-home{position:fixed;display:grid;grid-template-columns:repeat(5,1fr);left:0;right:0;bottom:0;height:68px;padding:7px 8px calc(7px + env(safe-area-inset-bottom));background:#06131b;border-top:1px solid var(--line);z-index:1500;box-shadow:0 -10px 30px #0008}
+  .mobile-nav-item{border:0;background:transparent;color:#7895a3;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:18px}
+  .mobile-nav-item small{font-size:8px;letter-spacing:.3px}
+  .mobile-nav-item.active{background:#0d3544;color:#fff}
+  .mobile-nav-item.active span{color:var(--cyan)}
+  .mobile-anvi{margin-top:-13px;background:#0b2732;border:1px solid var(--cyan);box-shadow:0 0 18px #0b5362}
+  .mobile-anvi span{font-size:23px;color:var(--cyan)}
+  .mobile-anvi small{color:#e8f6fa}
+  .safe{margin-bottom:12px}
+}
+@media(max-width:430px){
+  .mobile-app-home{height:64px}
+  .mobile-nav-item{font-size:16px}
+  .mobile-nav-item small{font-size:7px}
+}
 </style>
 </head>
 
@@ -276,6 +296,13 @@ input,select{
 </header>
 
 <section id="content">
+<div class="mobile-app-home" aria-label="ANVIQO mobile navigation">
+  <button class="mobile-nav-item active" data-mobile-page="overview"><span>⌂</span><small>Home</small></button>
+  <button class="mobile-nav-item" data-mobile-page="alarms"><span>◉</span><small>Alarms</small></button>
+  <button class="mobile-nav-item mobile-anvi" data-mobile-page="ask"><span>✦</span><small>ANVI</small></button>
+  <button class="mobile-nav-item" data-mobile-page="critical"><span>◆</span><small>Equipment</small></button>
+  <button class="mobile-nav-item" data-mobile-page="safety"><span>🛡</span><small>Safety</small></button>
+</div>
 
 <!-- OVERVIEW -->
 <div class="page active" id="page-overview">
@@ -1397,5 +1424,27 @@ async function submitFieldReport(){
 .app-install span{display:flex;flex-direction:column;gap:3px;font-size:10px}.app-install small{color:var(--muted);font-size:8px}
 @media(max-width:600px){.app-install{left:10px;right:10px;bottom:10px}.app-install .btn.primary{flex:1}}
 </style>
-</body>
+<script>
+/* Mobile navigation maps directly to existing desktop pages — no second intelligence layer. */
+(function(){
+  function syncMobile(page){
+    document.querySelectorAll(".mobile-nav-item").forEach(function(b){
+      b.classList.toggle("active",b.getAttribute("data-mobile-page")===page);
+    });
+  }
+  document.addEventListener("click",function(e){
+    const b=e.target.closest(".mobile-nav-item");
+    if(!b)return;
+    const page=b.getAttribute("data-mobile-page");
+    if(typeof window.go==="function") window.go(page);
+    syncMobile(page);
+    const shade=document.getElementById("mobileShade"), side=document.getElementById("sidebar");
+    if(shade)shade.classList.remove("show"); if(side)side.classList.remove("open");
+  });
+  const originalGo=window.go;
+  if(typeof originalGo==="function"){
+    window.go=function(page){ originalGo(page); syncMobile(page); };
+  }
+})();
+</script>\n</body>
 </html>
