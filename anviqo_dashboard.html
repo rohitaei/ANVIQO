@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ANVIQO Command Centre</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#071018">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ANVIQO">
 
 <style>
 *{box-sizing:border-box}
@@ -195,6 +201,12 @@ input,select{
 
 <body>
 <div id="mobileShade"></div>
+
+<div id="appInstallBanner" class="app-install" hidden>
+  <span><b>ANVIQO APP</b><small>Install for quick access on this device</small></span>
+  <button class="btn primary" id="installAppBtn">Install</button>
+  <button class="btn" id="dismissInstallBtn" aria-label="Dismiss">×</button>
+</div>
 
 <div id="app">
 
@@ -1355,5 +1367,35 @@ async function submitFieldReport(){
 })();
 </script>
 
+<script>
+/* ANVIQO App Shell: one responsive app for mobile, tablet and PC. */
+(function(){
+  let deferredPrompt=null;
+  const banner=document.getElementById("appInstallBanner");
+  const install=document.getElementById("installAppBtn");
+  const dismiss=document.getElementById("dismissInstallBtn");
+  window.addEventListener("beforeinstallprompt",function(e){
+    e.preventDefault(); deferredPrompt=e;
+    if(banner) banner.hidden=false;
+  });
+  if(install) install.addEventListener("click",async function(){
+    if(!deferredPrompt)return;
+    deferredPrompt.prompt();
+    try{await deferredPrompt.userChoice;}catch(_){ }
+    deferredPrompt=null; if(banner)banner.hidden=true;
+  });
+  if(dismiss) dismiss.addEventListener("click",function(){if(banner)banner.hidden=true;});
+  window.addEventListener("appinstalled",function(){if(banner)banner.hidden=true; deferredPrompt=null;});
+  if("serviceWorker" in navigator){
+    window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js",{scope:"/"}).catch(function(e){console.warn("ANVIQO app shell:",e);});});
+  }
+})();
+</script>
+<style>
+.app-install{position:fixed;right:18px;bottom:18px;z-index:2000;display:flex;align-items:center;gap:10px;padding:12px 14px;background:#0b1c25;border:1px solid var(--cyan);border-radius:12px;box-shadow:0 12px 35px #0009}
+.app-install[hidden]{display:none}
+.app-install span{display:flex;flex-direction:column;gap:3px;font-size:10px}.app-install small{color:var(--muted);font-size:8px}
+@media(max-width:600px){.app-install{left:10px;right:10px;bottom:10px}.app-install .btn.primary{flex:1}}
+</style>
 </body>
 </html>

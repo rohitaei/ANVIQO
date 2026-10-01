@@ -1,0 +1,15 @@
+{
+  "name":"ANVIQO Industrial Intelligence",
+  "short_name":"ANVIQO",
+  "description":"THINK • PREDICT • PROTECT — 24/7 Human Assist",
+  "start_url":"/",
+  "scope":"/",
+  "display":"standalone",
+  "background_color":"#071018",
+  "theme_color":"#071018",
+  "orientation":"any",
+  "categories":["business","productivity","utilities"],
+  "icons":[
+    {"src":"/anviqo-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
