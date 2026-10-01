@@ -178,14 +178,27 @@ class SiemensS7ReadOnlyAdapter:
         if area == "DB":
             return bytes(client.db_read(spec.db_number, spec.byte_offset, size))
 
-        snap7 = self._snap7()
-        area_map = {
-            "M": snap7.types.Areas.MK,
-            "I": snap7.types.Areas.PE,
-            "PE": snap7.types.Areas.PE,
-            "Q": snap7.types.Areas.PA,
-            "PA": snap7.types.Areas.PA,
-        }
+        # Test/injected clients do not need python-snap7 installed. The
+        # production path still resolves the official snap7 area constants.
+        try:
+            snap7 = self._snap7()
+            area_map = {
+                "M": snap7.types.Areas.MK,
+                "I": snap7.types.Areas.PE,
+                "PE": snap7.types.Areas.PE,
+                "Q": snap7.types.Areas.PA,
+                "PA": snap7.types.Areas.PA,
+            }
+        except RuntimeError:
+            if self._client is None:
+                raise
+            area_map = {
+                "M": "M",
+                "I": "I",
+                "PE": "PE",
+                "Q": "Q",
+                "PA": "PA",
+            }
         return bytes(client.read_area(area_map[area], 0, spec.byte_offset, size))
 
     def read_one(self, spec: S7Tag, quality: str = "GOOD") -> Dict[str, Any]:
