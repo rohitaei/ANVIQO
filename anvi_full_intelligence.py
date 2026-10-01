@@ -125,10 +125,53 @@ def build_context(question: str) -> Dict[str, Any]:
     }
 
     # Live observation / operating state.
+    # Use the universal selected-plant Command Centre adapter first. It is
+    # the same source used by the dashboard, so ANVI cannot show a different
+    # value for the same tag merely because the request came from chat.
     try:
-        from pci_live_simulator import get_live_pci_snapshot
-        snap = get_live_pci_snapshot() or {}
-        if str(snap.get("mode") or "").upper() == "SIMULATION":
+        from anvi_universal_command_centre import get_live_pci_snapshot as tenant_snapshot
+        from pci_live_simulator import get_live_pci_snapshot as legacy_snapshot
+        snap = tenant_snapshot(legacy_snapshot) or {}
+        points = snap.get("points") or []
+        if points:
+            out["live_observation"] = {
+                k: snap.get(k)
+                for k in (
+                    "mode", "source", "total_io", "healthy", "warning",
+                    "critical", "changed", "active_events", "plant_health_score",
+                    "areas", "health_status", "timestamp",
+                )
+            }
+            if tag:
+                wanted = _norm(tag)
+                p = next(
+                    (x for x in points if isinstance(x, dict) and _norm(x.get("tag")) == wanted),
+                    None,
+                )
+                if p:
+                    out["requested_point"] = {
+                        k: p.get(k) for k in (
+                            "tag", "description", "area", "service", "value",
+                            "state", "changed", "event_active", "io_type",
+                            "plc_address", "source", "timestamp", "mode",
+                        )
+                    }
+            out["attention_points"] = [
+                {
+                    k: p.get(k) for k in (
+                        "tag", "description", "area", "value", "state",
+                        "changed", "event_active", "io_type", "plc_address",
+                        "source", "timestamp", "mode",
+                    )
+                }
+                for p in points
+                if isinstance(p, dict) and (
+                    p.get("changed") or p.get("event_active") or
+                    str(p.get("state") or "").upper() in ("WARNING", "CRITICAL")
+                )
+            ][:50]
+            out["sources"].append("SELECTED_PLANT_COMMAND_CENTRE")
+        elif str(snap.get("mode") or "").upper() == "SIMULATION":
             out["live_observation"] = {
                 k: snap.get(k)
                 for k in (
