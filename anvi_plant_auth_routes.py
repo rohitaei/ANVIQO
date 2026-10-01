@@ -6,6 +6,7 @@ remain unchanged. Provisioning is organization-scoped and least-privilege.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from flask import jsonify, request, session, Response, redirect
 from werkzeug.routing import Rule
@@ -86,14 +87,29 @@ def admin_plants():
 
 def admin_create_plant():
     if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
-    body = request.get_json(silent=True) or {}; name = str(body.get("name", "")).strip(); slug = str(body.get("slug", "")).strip().lower()
-    if not name or not slug: return jsonify({"status": "INVALID", "message": "Plant name and plant slug are required"}), 400
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", "")).strip()
+    slug = str(body.get("slug", "")).strip().lower()
+    if not name or not slug:
+        return jsonify({"status": "INVALID", "message": "Plant name and plant slug are required"}), 400
+    if len(name) > 160:
+        return jsonify({"status": "INVALID", "message": "Plant name must be 160 characters or fewer"}), 400
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug) or len(slug) > 80:
+        return jsonify({"status": "INVALID", "message": "Plant slug must use lowercase letters, numbers and single hyphens only (max 80 characters)"}), 400
+    actor = _actor()
     try:
-        plant_id = store.create_plant(_actor()["organization_id"], name, slug)
-        try: store.record_audit(_actor(), "CREATE_PLANT", "PLANT", plant_id, {"name": name, "slug": slug})
-        except Exception: pass
-        return jsonify({"status": "OK", "plant_id": plant_id, "name": name, "slug": slug}), 201
-    except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 400
+        plant_id = store.create_plant(actor["organization_id"], name, slug)
+        universal_onboarding.ensure_plant(plant_id)
+        try:
+            store.record_audit(actor, "CREATE_PLANT", "PLANT", plant_id, {"name": name, "slug": slug, "onboarding_status": "CREATED"})
+        except Exception:
+            pass
+        return jsonify({"status": "OK", "plant_id": plant_id, "name": name, "slug": slug, "onboarding_status": "CREATED", "next": "/admin/onboarding"}), 201
+    except Exception as exc:
+        message = str(exc)
+        if "UNIQUE" in message.upper() or "duplicate" in message.lower():
+            return jsonify({"status": "CONFLICT", "message": "A plant with this slug already exists in your organization"}), 409
+        return jsonify({"status": "ERROR", "message": message}), 400
 
 def admin_delete_plant(plant_id: str):
     if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
