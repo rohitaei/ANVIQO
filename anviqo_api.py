@@ -880,38 +880,60 @@ def plant(area):
 @app.route("/api/maintenance")
 @login_required
 def maintenance():
+    """Selected-plant maintenance + spare evidence; never a hard-coded demo list."""
+    try:
+        from anvi_tenant_context_autofix import resolve as resolve_context
+        pid, oid, source = resolve_context()
+        if not pid:
+            return jsonify({"status":"NO PLANT","items":[],"spares":[],"scope":"SELECTED_PLANT_ONLY",**SAFETY})
 
-    return jsonify({
+        # Reuse tenant knowledge as the universal source for onboarded maintenance/spare evidence.
+        from anvi_chat_stability_v2 import _query_rows
+        rows = _query_rows(pid, oid, terms=["maintenance"], limit=120)
+        spare_rows = _query_rows(pid, oid, terms=["spare"], limit=120)
 
-        "status": "MANAGEMENT REVIEW",
+        def meta(row, *keys):
+            m=row.get("metadata") if isinstance(row.get("metadata"),dict) else {}
+            wanted={str(k).lower().replace("_","").replace(" ","") for k in keys}
+            for k,v in m.items():
+                nk=str(k).lower().replace("_","").replace(" ","")
+                if nk in wanted and v not in (None,""): return v
+            return None
 
-        "items": [
+        spares=[]
+        for row in spare_rows:
+            tag=row.get("tag") or row.get("external_id") or row.get("name")
+            if not tag: continue
+            q=meta(row,"qty_available","qty","available","stock","quantity")
+            minimum=meta(row,"minimum_stock","minimum","qty_required","required_quantity")
+            try: qn=float(q) if q not in (None,"") else None
+            except Exception: qn=None
+            try: mn=float(minimum) if minimum not in (None,"") else None
+            except Exception: mn=None
+            spares.append({"tag":tag,"equipment":row.get("name") or row.get("service"),"area":row.get("area"),"qty_available":qn,"minimum_stock":mn,"source":row.get("source")})
 
-            {
+        # The bundled critical-spare workbook is exposed only when the selected plant
+        # has an explicit verified PCI dataset binding; it is never a global fallback.
+        try:
+            from anvi_verified_pci_adapter import is_bound
+            if is_bound(pid, oid):
+                import pci_spares
+                legacy = pci_spares.load_spares()
+                for row in legacy:
+                    row=dict(row); row["evidence_scope"]="BOUND_PLANT_VERIFIED_PCI"; spares.append(row)
+        except Exception:
+            pass
 
-                "equipment": "CV-101",
-
-                "priority": 84.7,
-
-                "decision":
-                    "MAINTENANCE REVIEW REQUIRED",
-
-                "recommendation":
-                    "Controlled maintenance review "
-                    "and process verification.",
-
-                "human_authorization_required":
-                    True
-
-            }
-
-        ],
-
-        "automatic_execution": False,
-
-        "read_only": True
-
-    })
+        low=[x for x in spares if x.get("qty_available") is not None and x.get("minimum_stock") is not None and x["qty_available"]<=x["minimum_stock"]]
+        return jsonify({
+            "status":"OK" if (rows or spares) else "NO DATA",
+            "scope":"SELECTED_PLANT_ONLY","plant_id":pid,"organization_id":oid,
+            "items":[{"equipment":r.get("tag") or r.get("external_id") or r.get("name"),"area":r.get("area"),"source":r.get("source"),"evidence":r.get("content") or r.get("service") or r.get("name")} for r in rows[:50]],
+            "spares":spares[:200],"critical_spares":len(spares),"low_stock":len(low),
+            "maintenance_items":len(rows),"human_decision_required":True,**SAFETY
+        })
+    except Exception as exc:
+        return jsonify({"status":"ERROR","message":type(exc).__name__,"scope":"SELECTED_PLANT_ONLY",**SAFETY}),400
 
 
 # ------------------------------------------------------------
