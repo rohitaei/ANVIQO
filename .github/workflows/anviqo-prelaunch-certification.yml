@@ -58,8 +58,8 @@ jobs:
           test_root_cause_conversational_v1.py
           test_failure_prediction_v1.py
           test_failure_prediction_history_v1_1.py
-          tests/test_failure_prediction_demo_api.py
-          tests/test_failure_prediction_demo_loader.py
+          test_failure_prediction_demo_api.py
+          test_failure_prediction_demo_loader.py
       - name: Universal and tenant regression
         run: >
           pytest -q
