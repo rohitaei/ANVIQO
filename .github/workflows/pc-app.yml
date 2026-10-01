@@ -2,9 +2,8 @@ name: ANVIQO PC Release
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -19,16 +18,14 @@ jobs:
           node-version: 22
       - run: cd electron && npm install
       - run: cd electron && npm run dist
-      - name: Create release if needed
+      - name: Prepare stable Windows name
+        shell: bash
+        run: cp electron/dist/*.exe ANVIQO-Windows.exe
+      - name: Upload Windows app to published release
         shell: bash
         env:
-          GH_TOKEN: ${R}
-        run: gh release view "${R}" >/dev/null 2>&1 || gh release create "${R}" --generate-notes
-      - name: Upload Windows app to release
-        shell: bash
-        env:
-          GH_TOKEN: ${R}
-        run: gh release upload "${R}" electron/dist/*.exe --clobber
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" ANVIQO-Windows.exe --clobber
 
   build-linux:
     runs-on: ubuntu-latest
@@ -39,7 +36,9 @@ jobs:
           node-version: 22
       - run: cd electron && npm install
       - run: cd electron && npm run dist
-      - name: Upload Linux app to release
+      - name: Prepare stable Linux name
+        run: cp electron/dist/*.AppImage ANVIQO-Linux.AppImage
+      - name: Upload Linux app to published release
         env:
-          GH_TOKEN: ${R}
-        run: gh release upload "${R}" electron/dist/*.AppImage --clobber
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" ANVIQO-Linux.AppImage --clobber
