@@ -2,6 +2,10 @@ name: ANVIQO PC App
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/pc-app.yml'
+      - 'electron/**'
 
 jobs:
   build-windows:
