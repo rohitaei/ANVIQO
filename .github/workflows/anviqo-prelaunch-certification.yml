@@ -41,7 +41,7 @@ jobs:
               for path, err in failures:
                   print(path, err)
               raise SystemExit(1)
-          print("Production Python compilation PASS") 
+          print("Production Python compilation PASS")
           PY
       - name: Capability and safety regression
         env:
@@ -52,13 +52,13 @@ jobs:
           pytest -q
           test_phase2_v5_freeze.py
           tests/test_event_correlation.py
-          tests/test_root_cause_intelligence_v1.py
-          tests/test_root_cause_correlation_v1_3.py
-          tests/test_root_cause_conversational_v1.py
-          tests/test_failure_prediction_v1.py
-          tests/test_failure_prediction_history_v1_1.py
-          tests/test_failure_prediction_demo_api.py
-          tests/test_failure_prediction_demo_loader.py
+          test_root_cause_intelligence_v1.py
+          test_root_cause_correlation_v1_3.py
+          test_root_cause_conversational_v1.py
+          test_failure_prediction_v1.py
+          test_failure_prediction_history_v1_1.py
+          test_failure_prediction_demo_api.py
+          test_failure_prediction_demo_loader.py
       - name: Universal and tenant regression
         run: >
           pytest -q
