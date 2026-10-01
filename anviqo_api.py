@@ -972,72 +972,26 @@ def management():
 @app.route("/api/plant_snapshot")
 @login_required
 def plant_snapshot():
-
-    return jsonify({
-
-        "timestamp":
-            datetime.now().isoformat(
-                timespec="seconds"
-            ),
-
-        "plant": {
-
-            "area": "MBF",
-
-            "status": "ATTENTION",
-
-            "primary_equipment":
-                "CV-101"
-
-        },
-
-        "equipment": [
-
-            {
-                "tag": "CV-101",
-                "priority": 84.7,
-                "status": "URGENT"
-            },
-
-            {
-                "tag": "CV-102",
-                "priority": 71.4,
-                "status": "HIGH"
-            },
-
-            {
-                "tag": "PT-201",
-                "priority": 63.2,
-                "status": "WARNING"
-            }
-
-        ],
-
-        "events": [
-
-            "CV-101 ↔ CV-102",
-
-            "CV-102 ↔ PT-201"
-
-        ],
-
-        "maintenance": {
-
-            "equipment": "CV-101",
-
-            "decision":
-                "MAINTENANCE REVIEW REQUIRED"
-
-        },
-
-        "safety": SAFETY,
-
-        "authenticated": True,
-
-        "role":
-            session.get("role", "ADMIN")
-
-    })
+    """Universal selected-plant snapshot assembled from existing intelligence."""
+    try:
+        from anvi_full_intelligence import build_context
+        ctx=build_context("current plant situation")
+        live=ctx.get("live_observation") or {}
+        return jsonify({
+            "timestamp":live.get("timestamp"),
+            "plant":ctx.get("plant"),
+            "live_observation":live,
+            "attention_points":(ctx.get("attention_points") or [])[:50],
+            "events":(ctx.get("events") or [])[:50],
+            "knowledge_count":len(ctx.get("knowledge") or []),
+            "evidence_sources":ctx.get("sources") or [],
+            "scope":"SELECTED_PLANT_ONLY",
+            **SAFETY,
+            "authenticated":True,
+            "role":session.get("role","ADMIN"),
+        })
+    except Exception as exc:
+        return jsonify({"status":"ERROR","message":type(exc).__name__,"scope":"SELECTED_PLANT_ONLY",**SAFETY}),400
 
 
 # ------------------------------------------------------------
