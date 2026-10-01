@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from flask import jsonify, request, session, Response, redirect
+from flask import jsonify, request, session, Response, redirect\nfrom werkzeug.routing import Rule
 
 from phase6_enterprise_runtime import app
 import anvi_tenant_store as store
@@ -51,7 +51,6 @@ def _user_in_actor_org(username: str) -> bool:
         cur = conn.cursor(); cur.execute(f"SELECT 1 FROM anviqo_users u JOIN anviqo_memberships m ON m.user_id=u.user_id WHERE u.external_username={p} AND m.organization_id={p} AND m.status='ACTIVE' LIMIT 1", (username, actor["organization_id"]))
         return cur.fetchone() is not None
 
-@app.before_request
 def plant_login_interceptor():
     if request.path != "/login": return None
     plant_auth.init_auth_schema()
@@ -67,7 +66,6 @@ def plant_login_interceptor():
     except Exception: pass
     return redirect("/")
 
-@app.get("/api/session/context")
 def session_context():
     if not session.get("authenticated"): return jsonify({"status": "UNAUTHORIZED"}), 401
     return jsonify({"status": "OK", "username": session.get("username", ""), "role": session.get("role", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "plant_name": session.get("plant_name", ""), "plant_slug": session.get("plant_slug", "")})
@@ -76,12 +74,8 @@ def _serve_admin_page():
     if not _admin(): return redirect("/login")
     return _html_page(_ADMIN_PAGE)
 
-@app.get("/admin/users")
-@app.get("/admin/plant-users")
-@app.get("/account/create")
 def admin_users_page(): return _serve_admin_page()
 
-@app.get("/api/admin/plants")
 def admin_plants():
     if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
     actor = _actor(); p = store._placeholder()
@@ -89,7 +83,6 @@ def admin_plants():
         cur = conn.cursor(); cur.execute(f"SELECT plant_id,name,slug,status FROM anviqo_plants WHERE organization_id={p} ORDER BY name", (actor["organization_id"],)); rows = cur.fetchall()
     return jsonify({"status": "OK", "plants": [{"plant_id": r[0], "name": r[1], "slug": r[2], "status": r[3]} for r in rows]})
 
-@app.post("/api/admin/plants")
 def admin_create_plant():
     if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
     body = request.get_json(silent=True) or {}; name = str(body.get("name", "")).strip(); slug = str(body.get("slug", "")).strip().lower()
@@ -101,7 +94,6 @@ def admin_create_plant():
         return jsonify({"status": "OK", "plant_id": plant_id, "name": name, "slug": slug}), 201
     except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 400
 
-@app.delete("/api/admin/plants/<plant_id>")
 def admin_delete_plant(plant_id: str):
     if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
     if not plant_id.strip(): return jsonify({"status": "INVALID", "message": "plant_id is required"}), 400
@@ -119,7 +111,6 @@ def admin_delete_plant(plant_id: str):
     except ValueError as exc: return jsonify({"status": "INVALID", "message": str(exc)}), 400
     except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 500
 
-@app.post("/api/admin/plant-users")
 def create_plant_user():
     if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
     body = request.get_json(silent=True) or {}; username = str(body.get("username", "")).strip(); display_name = str(body.get("display_name", username)).strip(); password = str(body.get("password", "")); plant_id = str(body.get("plant_id", "")).strip(); role = str(body.get("role", "OPERATOR")).upper().strip()
@@ -136,7 +127,6 @@ def create_plant_user():
         return jsonify({"status": "OK", "user_id": user_id, "username": username, "plant_id": plant_id, "role": role, "password_stored_as": "scrypt_hash"}), 201
     except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 400
 
-@app.post("/api/admin/plant-user-password")
 def change_plant_user_password():
     if not _admin(): return jsonify({"status": "FORBIDDEN", "message": "Organization ADMIN/OWNER access required"}), 403
     body=request.get_json(silent=True) or {}; username=str(body.get("username","")).strip(); password=str(body.get("password",""))
@@ -145,10 +135,31 @@ def change_plant_user_password():
     try: plant_auth.set_password(username,password); return jsonify({"status":"OK","username":username})
     except Exception as exc: return jsonify({"status":"ERROR","message":str(exc)}),400
 
-@app.get("/api/my-plants")
 def my_plants():
     if not session.get("authenticated"): return jsonify({"status":"UNAUTHORIZED"}),401
     return jsonify({"status":"OK","plants":plant_auth.list_user_plants(session.get("username",""))})
+
+
+def _register_auth_routes():
+ routes=[
+  ("session_context","/api/session/context",["GET"],session_context),
+  ("admin_users_page","/admin/users",["GET"],admin_users_page),
+  ("admin_users_page_plant_users","/admin/plant-users",["GET"],admin_users_page),
+  ("admin_users_page_create","/account/create",["GET"],admin_users_page),
+  ("admin_plants","/api/admin/plants",["GET"],admin_plants),
+  ("admin_create_plant","/api/admin/plants",["POST"],admin_create_plant),
+  ("admin_delete_plant","/api/admin/plants/<plant_id>",["DELETE"],admin_delete_plant),
+  ("create_plant_user","/api/admin/plant-users",["POST"],create_plant_user),
+  ("change_plant_user_password","/api/admin/plant-user-password",["POST"],change_plant_user_password),
+  ("my_plants","/api/my-plants",["GET"],my_plants),
+  ("plant_login","/login",["GET","POST"],plant_login_interceptor),
+ ]
+ for endpoint,path,methods,view in routes:
+  ep=endpoint
+  if ep not in app.view_functions: app.view_functions[ep]=view
+  if not any(r.endpoint==ep and r.rule==path for r in app.url_map.iter_rules()): app.url_map.add(Rule(path,methods=methods,endpoint=ep))
+
+_register_auth_routes()
 
 plant_ingestion.register(app)
 
