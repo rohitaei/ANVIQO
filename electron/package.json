@@ -1,0 +1,7 @@
+{
+  "name": "anviqo-pc",
+  "version": "2.0.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": { "start": "electron ." }
+}
