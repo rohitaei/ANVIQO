@@ -47,7 +47,7 @@ jobs:
       - name: Capability and safety regression
         env:
           PYTHONPATH: .
-        run: pytest -q tests/test_anvi_capability_engine.py test_anvi_s7_readonly.py test_anvi_edge_ingest.py test_anvi_edge_spool.py
+        run: pytest -q tests/test_anvi_capability_engine.py test_anvi_s7_readonly.py test_anvi_edge_ingest.py test_anvi_edge_spool.py test_anvi_edge_runtime.py
       - name: Core intelligence regression
         run: >
           pytest -q
