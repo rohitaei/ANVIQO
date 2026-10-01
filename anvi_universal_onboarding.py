@@ -9,6 +9,7 @@ import hashlib, os, uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from flask import jsonify, request, Response
+from werkzeug.routing import Rule
 import anvi_tenant_store as store
 from phase6_enterprise_runtime import app
 _ALLOWED_EXT={"pdf","docx","xlsx","xls","csv","json","txt","png","jpg","jpeg","log"}
@@ -44,13 +45,11 @@ def ensure_plant(plant_id):
   cur=conn.cursor();cur.execute(f"SELECT plant_id FROM anviqo_plant_onboarding WHERE plant_id={p}",(plant_id,))
   if cur.fetchone():return
   cur.execute(f"INSERT INTO anviqo_plant_onboarding(plant_id,organization_id,created_at,updated_at) VALUES({p},{p},{p},{p})",(plant_id,a["organization_id"],_now(),_now()))
-@app.get("/admin/onboarding")
 def onboarding_page():
  if not _admin():return Response("ANVIQO onboarding requires OWNER/ADMIN access",status=403,mimetype="text/plain")
  html=Path(__file__).with_name("anvi_plant_data_upload.html")
  if not html.is_file():return Response("Plant data upload page unavailable",status=500,mimetype="text/plain")
  return Response(html.read_text(encoding="utf-8"),status=200,mimetype="text/html")
-@app.get("/api/admin/onboarding/plant/<plant_id>")
 def onboarding_status(plant_id):
  if not _plant_ok(plant_id):return jsonify({"status":"FORBIDDEN"}),403
  ensure_plant(plant_id);p=_placeholder();a=_actor()
@@ -59,7 +58,6 @@ def onboarding_status(plant_id):
   cur.execute(f"SELECT document_id,filename,content_type,size_bytes,sha256,created_at FROM anviqo_plant_documents WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC",(plant_id,a["organization_id"]));docs=[dict(r) if hasattr(r,"keys") else {"document_id":r[0],"filename":r[1],"content_type":r[2],"size_bytes":r[3],"sha256":r[4],"created_at":r[5]} for r in cur.fetchall()]
  keys=["name","slug","industry","location","description","status","updated_at"];plant=dict(zip(keys,row)) if row else {}
  return jsonify({"status":"OK","plant":plant,"documents":docs,"governance":{"v5_intelligence_modified":False,"plc_write":False,"scada_control":False,"human_decision_required":True}})
-@app.post("/api/admin/onboarding/plant/<plant_id>/profile")
 def update_onboarding_profile(plant_id):
  if not _plant_ok(plant_id):return jsonify({"status":"FORBIDDEN"}),403
  ensure_plant(plant_id);body=request.get_json(silent=True) or {};industry=str(body.get("industry","")).strip();location=str(body.get("location","")).strip();description=str(body.get("description","")).strip();p=_placeholder();a=_actor()
@@ -67,7 +65,6 @@ def update_onboarding_profile(plant_id):
  try:store.record_audit(a,"UPDATE_ONBOARDING","PLANT",plant_id,{"status":"DATA_UPLOADED"})
  except Exception:pass
  return jsonify({"status":"OK","plant_id":plant_id,"onboarding_status":"DATA_UPLOADED"})
-@app.post("/api/admin/onboarding/plant/<plant_id>/documents")
 def upload_onboarding_document(plant_id):
  if not _plant_ok(plant_id):return jsonify({"status":"FORBIDDEN"}),403
  init_schema();uploaded=request.files.getlist("files")
@@ -90,6 +87,19 @@ def upload_onboarding_document(plant_id):
  try:store.record_audit(a,"UPLOAD_PLANT_DOCUMENT","PLANT",plant_id,{"documents":[r["filename"] for r in results]})
  except Exception:pass
  return jsonify({"status":"OK","plant_id":plant_id,"documents":results,"message":"Source documents stored. Use Make Available to ANVI for direct import."}),201
+
+def _register_onboarding_routes():
+ routes=[
+  ("onboarding_page","/admin/onboarding",["GET"],onboarding_page),
+  ("onboarding_status","/api/admin/onboarding/plant/<plant_id>",["GET"],onboarding_status),
+  ("update_onboarding_profile","/api/admin/onboarding/plant/<plant_id>/profile",["POST"],update_onboarding_profile),
+  ("upload_onboarding_document","/api/admin/onboarding/plant/<plant_id>/documents",["POST"],upload_onboarding_document),
+ ]
+ for endpoint,path,methods,view in routes:
+  if endpoint not in app.view_functions: app.view_functions[endpoint]=view
+  if not any(r.endpoint==endpoint and r.rule==path for r in app.url_map.iter_rules()): app.url_map.add(Rule(path,methods=methods,endpoint=endpoint))
+
+_register_onboarding_routes()
 
 init_schema()
 try:
