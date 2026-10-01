@@ -1,11 +1,13 @@
-name: ANVIQO PC App
+name: ANVIQO PC Release
 
 on:
   workflow_dispatch:
   push:
-    paths:
-      - '.github/workflows/pc-app.yml'
-      - 'electron/**'
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build-windows:
@@ -17,10 +19,16 @@ jobs:
           node-version: 22
       - run: cd electron && npm install
       - run: cd electron && npm run dist
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ANVIQO-Windows
-          path: electron/dist/*
+      - name: Create release if needed
+        shell: bash
+        env:
+          GH_TOKEN: ${R}
+        run: gh release view "${R}" >/dev/null 2>&1 || gh release create "${R}" --generate-notes
+      - name: Upload Windows app to release
+        shell: bash
+        env:
+          GH_TOKEN: ${R}
+        run: gh release upload "${R}" electron/dist/*.exe --clobber
 
   build-linux:
     runs-on: ubuntu-latest
@@ -31,7 +39,7 @@ jobs:
           node-version: 22
       - run: cd electron && npm install
       - run: cd electron && npm run dist
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ANVIQO-Linux
-          path: electron/dist/*
+      - name: Upload Linux app to release
+        env:
+          GH_TOKEN: ${R}
+        run: gh release upload "${R}" electron/dist/*.AppImage --clobber
