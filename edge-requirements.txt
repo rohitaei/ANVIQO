@@ -1,0 +1,2 @@
+# Plant-side only. Do NOT add this dependency to the ANVIQO Cloud runtime.
+python-snap7>=2.0,<3
