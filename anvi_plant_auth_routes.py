@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from flask import jsonify, request, session, Response, redirect\nfrom werkzeug.routing import Rule
+from flask import jsonify, request, session, Response, redirect
+from werkzeug.routing import Rule
 
 from phase6_enterprise_runtime import app
 import anvi_tenant_store as store
