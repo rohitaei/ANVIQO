@@ -1,4 +1,5 @@
 name: ANVIQO Pre-Launch Certification
+# Certification workflow: production compile + intelligence + tenant + enterprise regression.
 
 on:
   push:
