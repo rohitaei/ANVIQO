@@ -33,4 +33,4 @@ jobs:
       - name: Upload APK to published release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" ANVIQO-Android.apk --clobber
+        run: gh release upload V2.0.0 ANVIQO-Android.apk --clobber
