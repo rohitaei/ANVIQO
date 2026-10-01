@@ -11,7 +11,7 @@ The script performs one authenticated session, asks all 30 launch questions,
 checks safety/evidence/scope invariants, and prints a PASS/PARTIAL/FAIL report.
 No PLC or SCADA write operation is attempted.
 """
-import json, os, re, ssl, sys, urllib.parse, urllib.request, http.cookiejar
+import json, os, re, ssl, sys, time, urllib.parse, urllib.request, http.cookiejar
 
 QUESTIONS = [
     "What is the current plant health?",
@@ -64,12 +64,20 @@ def request_json(opener, url, method="GET", data=None):
         body = json.dumps(data).encode()
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
-    with opener.open(req, timeout=45) as r:
-        raw = r.read().decode("utf-8", "replace")
+    try:
+        with opener.open(req, timeout=45) as r:
+            raw = r.read().decode("utf-8", "replace")
+            try:
+                return r.status, json.loads(raw), dict(r.headers)
+            except Exception:
+                return r.status, {"raw": raw}, dict(r.headers)
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode("utf-8", "replace")
         try:
-            return r.status, json.loads(raw)
+            payload = json.loads(raw)
         except Exception:
-            return r.status, {"raw": raw}
+            payload = {"raw": raw}
+        return exc.code, payload, dict(exc.headers or {})
 
 def login(opener, base, user, password):
     data = urllib.parse.urlencode({"username": user, "password": password}).encode()
@@ -153,18 +161,37 @@ def main():
         return 1
 
     results = []
+    inter_question_delay = float(os.environ.get("ANVIQO_TEST_DELAY", "2.0"))
+    max_retries = int(os.environ.get("ANVIQO_TEST_RETRIES", "4"))
+    retryable = {429, 502, 503, 504}
     for i, question in enumerate(QUESTIONS, 1):
         try:
-            code, result = request_json(
-                opener, base + "/api/ask", "POST", {"question": question}
-            )
-            if code != 200:
-                result = {"http_status": code, "response": result}
+            last_code = None
+            last_result = None
+            for attempt in range(max_retries + 1):
+                code, result, headers = request_json(
+                    opener, base + "/api/ask", "POST", {"question": question}
+                )
+                last_code, last_result = code, result
+                if code not in retryable or attempt >= max_retries:
+                    break
+                retry_after = headers.get("Retry-After")
+                try:
+                    wait = max(1.0, float(retry_after)) if retry_after else 2.0 * (2 ** attempt)
+                except Exception:
+                    wait = 2.0 * (2 ** attempt)
+                print(f"    HTTP {code}; retrying in {wait:.1f}s ({attempt + 1}/{max_retries})")
+                time.sleep(min(wait, 20.0))
+            result = last_result
+            if last_code != 200:
+                result = {"http_status": last_code, "response": result}
             status, issues = inspect_answer(question, result)
             results.append((i, status, question, result, issues))
             print(f"{i:02d}. {status:<7} {question}")
             if issues:
                 print("    " + ", ".join(issues))
+            if i < len(QUESTIONS):
+                time.sleep(max(0.0, inter_question_delay))
         except Exception as exc:
             results.append((i, "FAIL", question, {}, [type(exc).__name__]))
             print(f"{i:02d}. FAIL    {question}")
