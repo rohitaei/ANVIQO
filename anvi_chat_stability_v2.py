@@ -441,7 +441,6 @@ def _answer(text):
         "current active alarms", "show alarms"
     )):
         try:
-            _selected_live_snapshot()
             snap = _selected_live_snapshot() or {}
             points = [
                 p for p in (snap.get("points") or [])
