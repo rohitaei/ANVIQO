@@ -943,31 +943,26 @@ def maintenance():
 @app.route("/api/management")
 @login_required
 def management():
-
-    return jsonify({
-
-        "status": "READY",
-
-        "priority": {
-
-            "level": "P1 — URGENT",
-
-            "equipment": "CV-101",
-
-            "score": 84.7
-
-        },
-
-        "decision":
-            "MAINTENANCE REVIEW REQUIRED",
-
-        "human_decision_required":
-            True,
-
-        "automatic_authorization":
-            False
-
-    })
+    """Selected-plant management evidence; no synthetic equipment or score."""
+    try:
+        from anvi_full_intelligence import build_context
+        ctx=build_context("management decision current plant situation")
+        live=ctx.get("live_observation") or {}
+        attention=ctx.get("attention_points") or []
+        return jsonify({
+            "status":"READY" if ctx.get("sources") else "NO DATA",
+            "scope":"SELECTED_PLANT_ONLY",
+            "plant":ctx.get("plant"),
+            "plant_health_score":live.get("plant_health_score"),
+            "attention_points":attention[:20],
+            "knowledge_count":len(ctx.get("knowledge") or []),
+            "evidence_sources":ctx.get("sources") or [],
+            "decision":"HUMAN REVIEW REQUIRED" if attention else "NO VERIFIED PRIORITY IDENTIFIED",
+            "human_decision_required":True,
+            **SAFETY,
+        })
+    except Exception as exc:
+        return jsonify({"status":"ERROR","message":type(exc).__name__,"scope":"SELECTED_PLANT_ONLY",**SAFETY}),400
 
 
 # ------------------------------------------------------------
