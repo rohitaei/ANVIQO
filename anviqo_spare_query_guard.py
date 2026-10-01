@@ -71,5 +71,6 @@ def _reconcile_command_bridge():
 
 
 # Plant login, tenant-scoped account provisioning and plant-user management
-# are registered on this same production Flask app.
-import anvi_plant_runtime_bridge  # noqa: E402,F401
+# are registered by the enterprise runtime after the Flask app has been
+# imported. Keeping this module free of the bridge import prevents the
+# phase6_enterprise_runtime <-> auth-route circular import.
