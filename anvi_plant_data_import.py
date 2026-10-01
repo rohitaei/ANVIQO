@@ -8,6 +8,7 @@ from __future__ import annotations
 import csv, hashlib, io, json, re, threading, time, uuid, zipfile
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
+from werkzeug.routing import Rule
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
 
@@ -263,29 +264,39 @@ def get_import_status(plant_id, actor):
         except Exception: res = {}
     return {"job_id": jid, "status": st, "job_status": st, "message": msg, "result": res or {}, "created_at": str(cr), "started_at": str(ss) if ss else None, "finished_at": str(ff) if ff else None, "updated_at": str(up) if up else None, "plant_id": plant_id, "mode": "WEB_LOCAL_ASYNC", "import_version": VERSION}
 
+def _plant_belongs_to_actor_org(plant_id, organization_id):
+    if not plant_id or not organization_id: return False
+    p=_p()
+    with store._connect() as conn:
+        cur=conn.cursor(); cur.execute("SELECT 1 FROM anviqo_plants WHERE plant_id="+p+" AND organization_id="+p+" AND status='ACTIVE' LIMIT 1",(plant_id,organization_id))
+        return cur.fetchone() is not None
+
 def register(app):
     from flask import jsonify, session
     _start_local_worker()
-    @app.post("/api/admin/onboarding/plant/<plant_id>/import")
     def import_route(plant_id):
         actor = {"user_id": session.get("user_id", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "role": session.get("role", ""), "username": session.get("username", "")}
         try: return jsonify(enqueue_import(plant_id, actor)), 200
         except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc), "mode": "WEB_LOCAL_ASYNC", "safety": dict(SAFETY)}), 400
-    @app.get("/api/admin/onboarding/plant/<plant_id>/import-status")
     def import_status_route(plant_id):
         actor = {"user_id": session.get("user_id", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "role": session.get("role", ""), "username": session.get("username", "")}
         if not actor.get("user_id") or actor.get("role") not in {"OWNER", "ADMIN"}: return jsonify({"status": "FORBIDDEN"}), 403
+        if not _plant_belongs_to_actor_org(plant_id, actor.get("organization_id")): return jsonify({"status": "FORBIDDEN"}), 403
         try: return jsonify(get_import_status(plant_id, actor)), 200
         except Exception as exc: return jsonify({"status": "ERROR", "message": str(exc)}), 400
-    @app.get("/api/admin/onboarding/plant/<plant_id>/knowledge-summary")
     def knowledge_summary(plant_id):
         actor = {"user_id": session.get("user_id", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "role": session.get("role", ""), "username": session.get("username", "")}
         if not actor.get("user_id") or actor.get("role") not in {"OWNER", "ADMIN"}: return jsonify({"status": "FORBIDDEN"}), 403
+        if not _plant_belongs_to_actor_org(plant_id, actor.get("organization_id")): return jsonify({"status": "FORBIDDEN"}), 403
         p = _p()
         with store._connect() as conn:
             cur = conn.cursor(); cur.execute("SELECT record_type,COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p + " GROUP BY record_type ORDER BY COUNT(*) DESC", (plant_id, actor["organization_id"])); groups = [{"record_type": r[0], "count": r[1]} for r in cur.fetchall()]
             cur.execute("SELECT COUNT(*) FROM anviqo_plant_knowledge WHERE plant_id=" + p + " AND organization_id=" + p, (plant_id, actor["organization_id"])); total = cur.fetchone()[0]
         return jsonify({"status": "OK", "plant_id": plant_id, "total_records": total, "by_type": groups, "mode": "WEB_LOCAL_ASYNC", "safety": dict(SAFETY)})
+    routes=[("direct_import_route","/api/admin/onboarding/plant/<plant_id>/import",["POST"],import_route),("direct_import_status_route","/api/admin/onboarding/plant/<plant_id>/import-status",["GET"],import_status_route),("direct_knowledge_summary_route","/api/admin/onboarding/plant/<plant_id>/knowledge-summary",["GET"],knowledge_summary)]
+    for endpoint,path,methods,view in routes:
+        if endpoint not in app.view_functions: app.view_functions[endpoint]=view
+        if not any(r.endpoint==endpoint and r.rule==path for r in app.url_map.iter_rules()): app.url_map.add(Rule(path,methods=methods,endpoint=endpoint))
     return app
 
 __all__ = ["import_plant_data", "enqueue_import", "get_import_status", "_job_schema", "register"]
