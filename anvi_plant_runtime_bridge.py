@@ -23,17 +23,16 @@ print(
 )
 
 # Reuse the hardened authentication logic on the actual production Flask app.
-app.before_request(auth.plant_login_interceptor)
+# Direct list registration keeps imports safe even when this bridge is loaded after
+# the Flask application has already served a request.
+from werkzeug.routing import Rule
 
+if auth.plant_login_interceptor not in app.before_request_funcs.setdefault(None, []):
+    app.before_request_funcs[None].append(auth.plant_login_interceptor)
 
-@app.get("/api/session/context")
 def deployed_session_context():
     return auth.session_context()
 
-
-@app.get("/admin/users")
-@app.get("/admin/plant-users")
-@app.get("/account/create")
 def deployed_admin_users_page():
     if not auth._admin():
         return redirect("/login")
@@ -45,30 +44,18 @@ def deployed_admin_users_page():
     response.headers["Pragma"] = "no-cache"
     return response
 
-
-@app.get("/api/admin/plants")
 def deployed_admin_plants():
     return auth.admin_plants()
 
-
-@app.post("/api/admin/plant-users")
 def deployed_create_plant_user():
     return auth.create_plant_user()
 
-
-@app.post("/api/admin/plant-user-password")
 def deployed_change_plant_user_password():
     return auth.change_plant_user_password()
 
-
-@app.get("/api/my-plants")
 def deployed_my_plants():
     return auth.my_plants()
 
-
-# Add a real navigation link to the existing Command Centre SYSTEM section.
-# The destination remains server-authorized; non-admin users are redirected.
-@app.after_request
 def add_plant_user_management_nav(response):
     content_type = (response.headers.get("Content-Type") or "").lower()
     if "text/html" not in content_type:
@@ -83,6 +70,25 @@ def add_plant_user_management_nav(response):
     except Exception:
         pass
     return response
+
+if add_plant_user_management_nav not in app.after_request_funcs.setdefault(None, []):
+    app.after_request_funcs[None].append(add_plant_user_management_nav)
+
+_routes = [
+    ("deployed_session_context", "/api/session/context", ["GET"], deployed_session_context),
+    ("deployed_admin_users_page", "/admin/users", ["GET"], deployed_admin_users_page),
+    ("deployed_admin_users_page_plant_users", "/admin/plant-users", ["GET"], deployed_admin_users_page),
+    ("deployed_admin_users_page_create", "/account/create", ["GET"], deployed_admin_users_page),
+    ("deployed_admin_plants", "/api/admin/plants", ["GET"], deployed_admin_plants),
+    ("deployed_create_plant_user", "/api/admin/plant-users", ["POST"], deployed_create_plant_user),
+    ("deployed_change_plant_user_password", "/api/admin/plant-user-password", ["POST"], deployed_change_plant_user_password),
+    ("deployed_my_plants", "/api/my-plants", ["GET"], deployed_my_plants),
+]
+for _endpoint, _path, _methods, _view in _routes:
+    if _endpoint not in app.view_functions:
+        app.view_functions[_endpoint] = _view
+    if not any(r.endpoint == _endpoint and r.rule == _path for r in app.url_map.iter_rules()):
+        app.url_map.add(Rule(_path, methods=_methods, endpoint=_endpoint))
 
 
 __all__ = [
