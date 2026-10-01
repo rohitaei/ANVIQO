@@ -66,6 +66,10 @@ def add_plant_user_management_nav(response):
         link = '<a id="plantUserManagementNav" href="/account/create" style="display:block;padding:10px 14px;color:inherit;text-decoration:none;cursor:pointer;">🏭 Plant &amp; User Management</a>'
         if marker in html and 'id="plantUserManagementNav"' not in html:
             html = html.replace(marker, marker + "\n" + link, 1)
+        onboarding_link = '<a id="universalPlantOnboardingNav" href="/admin/onboarding" style="display:block;padding:10px 14px;color:inherit;text-decoration:none;cursor:pointer;">📥 Universal Plant Onboarding</a>'
+        if marker in html and 'id="universalPlantOnboardingNav"' not in html:
+            html = html.replace(marker, marker + "\n" + onboarding_link, 1)
+        if html != response.get_data(as_text=True):
             response.set_data(html)
     except Exception:
         pass
