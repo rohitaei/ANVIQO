@@ -2,9 +2,8 @@ name: ANVIQO Android Release APK
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -27,13 +26,9 @@ jobs:
       - run: npx cap add android
       - run: npx cap sync android
       - run: cd android && ./gradlew assembleDebug
-      - name: Prepare APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk ANVIQO-${R}-android-debug.apk
-      - name: Create release if needed
+      - name: Prepare stable APK name
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ANVIQO-Android.apk
+      - name: Upload APK to published release
         env:
-          GH_TOKEN: ${R}
-        run: gh release view "${R}" >/dev/null 2>&1 || gh release create "${R}" --generate-notes
-      - name: Upload APK to release
-        env:
-          GH_TOKEN: ${R}
-        run: gh release upload "${R}" ANVIQO-${R}-android-debug.apk --clobber
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" ANVIQO-Android.apk --clobber
