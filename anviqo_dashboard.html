@@ -755,34 +755,35 @@ function escapeHtml(s){
 }
 
 async function askAPI(q){
- const r=await fetch('/api/ask',{
-  method:'POST',
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({question:q,query:q,message:q})
- });
- if(r.status===401){location.href='/login';throw Error('auth')}
-
- const text=await r.text();
- let data;
-
- try{
-  data=JSON.parse(text);
- }catch(e){
-  if(r.ok){
-   return {answer:text};
+ let lastError='';
+ for(let attempt=0;attempt<4;attempt++){
+  try{
+   const r=await fetch('/api/ask',{
+    method:'POST',
+    credentials:'same-origin',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({question:q,query:q,message:q})
+   });
+   if(r.status===401){location.href='/login';throw Error('auth')}
+   const text=await r.text();
+   let data;
+   try{data=JSON.parse(text)}catch(e){
+    if(r.ok)return {answer:text};
+    throw Error('ANVI API returned HTTP '+r.status+': '+text.slice(0,500));
+   }
+   if(!r.ok){
+    const err=Error(data.answer||data.error||data.message||('ANVI API HTTP '+r.status));
+    if([429,502,503,504].includes(r.status))throw err;
+    throw err;
+   }
+   return typeof data==='string'?{answer:data}:data;
+  }catch(e){
+   lastError=e&&e.message?e.message:String(e);
+   if(lastError==='auth')throw e;
+   if(attempt<3)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
   }
-  throw Error('ANVI API returned HTTP '+r.status+': '+text.slice(0,500));
  }
-
- if(!r.ok){
-   throw Error(data.answer||data.error||data.message||('ANVI API HTTP '+r.status));
- }
-
- if(typeof data==='string'){
-   return {answer:data};
- }
-
- return data;
+ throw Error(lastError||'ANVI service unavailable');
 }
 
 function addMsg(text,type){
@@ -890,27 +891,25 @@ async function loadSpares(){
     const r=await fetch('/api/maintenance');
     const d=await r.json();
 
-    const text =
-      d.answer ||
-      d.response ||
-      d.message ||
-      'Maintenance intelligence is available through ANVI.';
-
-    box.innerHTML='<div style="white-space:pre-wrap;line-height:1.8">'+
-      escapeHtml(text)+'</div>';
-
-    const raw=JSON.stringify(d).toLowerCase();
-
-    const critical=(raw.match(/critical/g)||[]).length;
-    const low=(raw.match(/low stock|low-stock/g)||[]).length;
+    const text = d.status==='NO DATA'
+      ? 'No maintenance or spare evidence has been onboarded for the selected plant yet.'
+      : (d.message || 'Selected-plant maintenance and spare evidence loaded.');
+    const lines=[text];
+    if(d.maintenance_items!==undefined) lines.push('Maintenance evidence records: '+d.maintenance_items);
+    if(d.critical_spares!==undefined) lines.push('Spare records: '+d.critical_spares);
+    if(d.low_stock!==undefined) lines.push('Low-stock items: '+d.low_stock);
+    if(Array.isArray(d.spares) && d.spares.length){
+      lines.push('Recent spare evidence:');
+      d.spares.slice(0,12).forEach(x=>lines.push((x.tag||x.equipment||'Unknown')+' — available: '+(x.qty_available==null?'not recorded':x.qty_available)+(x.minimum_stock!=null?' / minimum: '+x.minimum_stock:'')));
+    }
+    box.innerHTML='<div style="white-space:pre-wrap;line-height:1.8">'+escapeHtml(lines.join('\\n'))+'</div>';
 
     const c=document.getElementById('sparesCritical');
     const l=document.getElementById('sparesLow');
     const m=document.getElementById('sparesMaintenance');
-
-    if(c)c.textContent=critical||'0';
-    if(l)l.textContent=low||'0';
-    if(m)m.textContent='READY';
+    if(c)c.textContent=d.critical_spares??'0';
+    if(l)l.textContent=d.low_stock??'0';
+    if(m)m.textContent=d.maintenance_items??'0';
 
   }catch(e){
     box.innerHTML='<div class="empty">Maintenance intelligence unavailable. Use Ask ANVI for evidence-backed maintenance queries.</div>';
