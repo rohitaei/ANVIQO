@@ -49,10 +49,20 @@ def _tag_variants(tag:str)->List[str]:
 
 
 def extract_tag(text:str)->Optional[str]:
-    m=_EQUIPMENT_RE.search(str(text or ""))
+    raw=str(text or "").upper()
+    # Prefer canonical industrial tag forms (e.g. PT-303, PT_303, PT303).
+    # Avoid consuming question words such as "IS" before an underscore tag.
+    candidates=re.findall(r"\b[A-Z]{1,16}(?:[-_ ]?\d{1,8}[A-Z]?)\b", raw)
+    for candidate in candidates:
+        normalized=re.sub(r"\s*[-_ ]\s*","-",candidate)
+        if re.fullmatch(r"[A-Z]{1,16}-\d{1,8}[A-Z]?", normalized):
+            return normalized
+    m=_EQUIPMENT_RE.search(raw)
     if not m: return None
-    return re.sub(r"\s*[-_ ]\s*","-",m.group(0).upper())
-
+    value=re.sub(r"\s*[-_ ]\s*","-",m.group(0))
+    if value.startswith("IS-PT-") and re.match(r"^IS-PT-\d", value):
+        value=value[3:]
+    return value
 
 def _verified_memory(tag:str)->List[Dict[str,Any]]:
     records=_call(_load("plant_memory"),"search_all_memory",query="",limit=1000)
