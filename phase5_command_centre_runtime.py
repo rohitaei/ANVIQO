@@ -6,6 +6,7 @@ contracts. It never creates plant facts and never executes actions.
 from __future__ import annotations
 
 from flask import jsonify, render_template_string, request, session
+from werkzeug.routing import Rule
 
 from anviqo_spare_query_guard import app
 from phase5_human_management_intelligence import (
@@ -18,7 +19,6 @@ from phase5_live_evidence_adapter import build_live_management_evidence
 from anvi_tenant_chat_boundary import _session_context
 
 
-@app.route("/api/hod-management", methods=["GET", "POST"])
 def hod_management_api():
     """Build the Phase 5 HOD brief from existing evidence contracts."""
     if not session.get("authenticated") or not session.get("organization_id"):
@@ -64,7 +64,6 @@ def hod_management_api():
     return jsonify(result)
 
 
-@app.route("/api/hod-management/decision", methods=["POST"])
 def hod_management_decision_api():
     """Record a human decision only; no approval triggers execution."""
     if not session.get("authenticated") or not session.get("organization_id"):
@@ -92,6 +91,20 @@ async function load(){try{const r=await fetch('/api/hod-management');const d=awa
 </script></body></html>"""
 
 
-@app.route("/management")
 def management_view():
     return render_template_string(MANAGEMENT_HTML)
+
+
+def _register_routes():
+    routes = [
+        ("hod_management_api", "/api/hod-management", ["GET", "POST"], hod_management_api),
+        ("hod_management_decision_api", "/api/hod-management/decision", ["POST"], hod_management_decision_api),
+        ("management_view", "/management", ["GET"], management_view),
+    ]
+    for endpoint, path, methods, view in routes:
+        if endpoint not in app.view_functions:
+            app.view_functions[endpoint] = view
+        if not any(r.endpoint == endpoint and r.rule == path for r in app.url_map.iter_rules()):
+            app.url_map.add(Rule(path, methods=methods, endpoint=endpoint))
+
+_register_routes()
