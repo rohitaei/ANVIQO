@@ -257,10 +257,16 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
                     break
             if live:
                 break
-        history = []
+        try:
+            from anvi_edge_evidence import _rows as _edge_rows
+            edge_rows = _edge_rows(plant_id, organization_id, tag, limit=500)
+        except Exception:
+            edge_rows = []
+        history = [{"observation_id": r.get("observation_id"), "source": r.get("source") or "ANVIQO_EDGE", "timestamp": r.get("timestamp"), "value": r.get("value")} for r in edge_rows if r.get("value") is not None]
         memory = []
         events = []
         health = None
+        live = edge_rows[0] if edge_rows else None
         observations = _numeric_history(history, memory, events, live)
     else:
         identity, live = _pci(tag) if tag else (None, None)

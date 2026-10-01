@@ -462,6 +462,17 @@ def edge_observations():
     from anvi_edge_ingest import ingest_request
     return ingest_request()
 
+@app.route("/api/edge/state", methods=["GET"])
+@login_required
+def edge_state():
+    """Return only selected-plant edge evidence; no cross-plant fallback."""
+    try:
+        from anvi_edge_evidence import state
+        tag = request.args.get("tag") or None
+        return jsonify(state(session.get("plant_id") or "", session.get("organization_id") or "", tag))
+    except Exception as exc:
+        return jsonify({"status":"ERROR","message":type(exc).__name__,"scope":"SELECTED_PLANT_ONLY","read_only":True,"plc_write":False,"scada_control":False}), 400
+
 @app.route("/api/industrial-intelligence", methods=["POST"])
 @login_required
 def industrial_intelligence():
