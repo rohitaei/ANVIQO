@@ -579,6 +579,28 @@ def ask_anvi():
                         "human_decision_required": True,
                         "answer": f"Available spares for {identifier}: {int(r.get('qty_available') or 0)}."}
 
+        # Data-first routing: the existing tenant boundary is the
+        # authoritative conversational path for engineering and inventory
+        # questions. Do this before the general ANVI agent so the LLM cannot
+        # bypass spare routing or mix a second telemetry source into the answer.
+        data_intent = any(x in ql for x in (
+            "spare", "spares", "inventory", "stock", "indent",
+            "instrument", "pressure", "temperature", "flow", "level",
+            "plc", "i/o", "equipment", "alarm", "event", "plant health",
+            "health", "shift report", "maintenance", "what changed",
+        ))
+        if data_intent:
+            try:
+                from anvi_chat_stability_v2 import _answer as tenant_answer
+                routed = tenant_answer(q)
+                if isinstance(routed, dict) and (
+                    routed.get("evidence_status") in ("EVIDENCE_AVAILABLE", "NO_EVIDENCE")
+                    or routed.get("blocked")
+                ):
+                    return routed
+            except Exception:
+                pass
+
         try:
             from anvi_agent import ask as agent_ask
             agent_answer, agent_error, agent_evidence = agent_ask(q)
