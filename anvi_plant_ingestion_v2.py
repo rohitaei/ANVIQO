@@ -103,30 +103,27 @@ def process_one():
 
 def register(app):
     init_schema()
+    from flask import jsonify, request
+    from werkzeug.routing import Rule
 
-    @app.post("/api/admin/onboarding/plant/<plant_id>/ingest", endpoint="anvi_clean_ingest_start")
     def start(plant_id):
-        from flask import jsonify
         a = actor()
         if not ok(plant_id, a):
             return jsonify({"status": "FORBIDDEN", "message": "OWNER/ADMIN access to this plant is required"}), 403
         queued = enqueue(plant_id, a)
-        # Reliable path: execute the newly queued job in this request. This removes
-        # the dependency on a second Render service, polling race, or lost dispatch.
         if queued.get("job_status") == "QUEUED":
             result = process_one()
             return jsonify({**queued, **result, "mode": "DIRECT"}), 200
         return jsonify({**queued, "mode": "DIRECT_ALREADY_RUNNING"}), 202
 
-    @app.get("/api/admin/onboarding/plant/<plant_id>/ingest/status", endpoint="anvi_clean_ingest_status")
     def status(plant_id):
-        from flask import jsonify
         a = actor()
         if not ok(plant_id, a):
             return jsonify({"status": "FORBIDDEN", "message": "OWNER/ADMIN access to this plant is required"}), 403
         ph = p()
         with store._connect() as c:
-            q = c.cursor(); q.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM {TABLE} WHERE plant_id={ph} AND organization_id={ph} ORDER BY created_at DESC LIMIT 1", (plant_id, a["organization_id"]))
+            q = c.cursor()
+            q.execute(f"SELECT job_id,status,message,result_json,created_at,started_at,finished_at,updated_at FROM {TABLE} WHERE plant_id={ph} AND organization_id={ph} ORDER BY created_at DESC LIMIT 1", (plant_id, a["organization_id"]))
             r = q.fetchone()
         if not r:
             reconcile_legacy_ui(plant_id, a)
@@ -138,12 +135,19 @@ def register(app):
         reconcile_legacy_ui(plant_id, a)
         return jsonify({"job_id": jid, "status": st, "job_status": st, "message": msg, "result": res or {}, "created_at": str(cr), "started_at": str(ss) if ss else None, "finished_at": str(ff) if ff else None, "updated_at": str(up) if up else None, "ingestion_version": VERSION})
 
-    # Retained only as a compatibility fallback for the existing worker. The
-    # onboarding button no longer depends on it.
-    @app.post("/api/internal/ingestion/dispatch", endpoint="anvi_clean_ingest_dispatch")
     def dispatch():
-        from flask import jsonify, request
         expected = os.environ.get("ANVI_INGESTION_DISPATCH_TOKEN", "").strip()
         if not expected or request.headers.get("X-ANVI-INGESTION-TOKEN", "").strip() != expected:
             return jsonify({"status": "FORBIDDEN", "message": "Invalid ingestion dispatch authorization"}), 403
         return jsonify(process_one())
+
+    routes = [
+        ("anvi_clean_ingest_start", "/api/admin/onboarding/plant/<plant_id>/ingest", ["POST"], start),
+        ("anvi_clean_ingest_status", "/api/admin/onboarding/plant/<plant_id>/ingest/status", ["GET"], status),
+        ("anvi_clean_ingest_dispatch", "/api/internal/ingestion/dispatch", ["POST"], dispatch),
+    ]
+    for endpoint, path, methods, view in routes:
+        if endpoint not in app.view_functions:
+            app.view_functions[endpoint] = view
+        if not any(r.endpoint == endpoint and r.rule == path for r in app.url_map.iter_rules()):
+            app.url_map.add(Rule(path, methods=methods, endpoint=endpoint))
