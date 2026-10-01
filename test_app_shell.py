@@ -10,5 +10,4 @@ def test_anviqo_app_shell_assets():
     assert manifest["name"]=="ANVIQO Industrial Intelligence"
     assert manifest["display"]=="standalone"
     assert manifest["start_url"]=="/"
-    assert "plc_write" not in sw.lower() or True
-    assert 'if(req.pathname.startsWith("/api/")) return;' in sw
+    assert 'if(url.pathname.startsWith("/api/")) return;' in sw
