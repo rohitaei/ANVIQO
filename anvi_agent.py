@@ -78,9 +78,10 @@ def _evidence(question):
             evidence[key] = full_context.get(key)
 
     try:
-        from pci_live_simulator import get_live_pci_snapshot
-        snap = get_live_pci_snapshot() or {}
-        if str(snap.get("mode", "")).upper() == "SIMULATION":
+        from anvi_universal_command_centre import get_live_pci_snapshot as tenant_snapshot
+        from pci_live_simulator import get_live_pci_snapshot as legacy_snapshot
+        snap = tenant_snapshot(legacy_snapshot) or {}
+        if snap.get("points"):
             points = snap.get("points") or []
             requested = _identifier(question)
             requested_norm = re.sub(r"[-_ ]", "", requested).lower()
