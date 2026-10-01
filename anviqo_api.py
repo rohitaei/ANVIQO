@@ -476,15 +476,106 @@ def edge_state():
 @app.route("/api/industrial-intelligence", methods=["POST"])
 @login_required
 def industrial_intelligence():
+    """Run unified intelligence using authenticated selected-plant evidence."""
     try:
         payload = request.get_json(silent=True) or {}
+        pid = session.get("plant_id")
+        oid = session.get("organization_id")
+        if not pid:
+            return jsonify({
+                "status": "NO_SELECTED_PLANT",
+                "message": "Select a plant before requesting industrial intelligence.",
+                "plant_scope": None,
+                "organization_scope": oid,
+                "safety": INDUSTRIAL_SAFETY,
+            }), 400
+
+        if not any(payload.get(k) for k in (
+            "alarms","process_values","sensor_samples","reliability_events",
+            "events","maintenance","spares","shift","field","health_evidence"
+        )):
+            try:
+                from anvi_chat_stability_v2 import _query_rows
+                rows = _query_rows(
+                    pid, oid,
+                    terms=["alarm","pressure","temperature","flow","level","maintenance","spare"],
+                    limit=500,
+                )
+            except Exception:
+                rows = []
+
+            def meta(row, *keys):
+                m = row.get("metadata") if isinstance(row, dict) else {}
+                if not isinstance(m, dict):
+                    return None
+                wanted = {
+                    str(k).lower().replace("_","").replace("-","").replace(" ","")
+                    for k in keys
+                }
+                for k, v in m.items():
+                    nk = str(k).lower().replace("_","").replace("-","").replace(" ","")
+                    if nk in wanted and v not in (None, ""):
+                        return v
+                return None
+
+            evidence = []
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                tag = row.get("tag") or row.get("external_id") or row.get("name") or meta(
+                    row, "instrument_tag","loop_tag","tag_name"
+                )
+                value = meta(row, "value","process_value","current_value","pv")
+                state = meta(row, "state","status","alarm_state","condition")
+                evidence.append({
+                    "tag": tag,
+                    "equipment": tag,
+                    "value": value,
+                    "state": state,
+                    "quality": meta(row, "quality","signal_quality"),
+                    "area": row.get("area"),
+                    "service": row.get("service") or row.get("name"),
+                    "source": row.get("source"),
+                    "timestamp": row.get("created_at"),
+                })
+
+            payload = dict(payload)
+            payload.setdefault("process_values", [x for x in evidence if x.get("value") is not None])
+            payload.setdefault("sensor_samples", [x for x in evidence if x.get("value") is not None])
+            payload.setdefault("alarms", [
+                x for x in evidence
+                if str(x.get("state") or "").upper() in ("ACTIVE","WARNING","CRITICAL","ALARM")
+            ])
+            payload.setdefault("events", evidence)
+            payload.setdefault("health_evidence", evidence)
+            payload.setdefault("maintenance", [
+                x for x in evidence if "maint" in str(x.get("service") or "").lower()
+            ])
+            payload.setdefault("spares", [
+                x for x in evidence if "spare" in str(x.get("service") or "").lower()
+            ])
+            payload.setdefault("field", [])
+            payload.setdefault("gateway_tags", [x for x in evidence if x.get("tag")])
+            payload.setdefault("shift", {
+                "abnormal_equipment": payload["alarms"],
+                "alarms": payload["alarms"],
+                "maintenance": payload["maintenance"],
+            })
+            payload.setdefault("incident_events", payload["events"])
+
         result = run_industrial_intelligence(payload)
-        result["plant_scope"] = session.get("plant_id")
-        result["organization_scope"] = session.get("organization_id")
+        result["plant_scope"] = pid
+        result["organization_scope"] = oid
+        result["evidence_source"] = "SELECTED_PLANT_TENANT_KNOWLEDGE"
         return jsonify(result)
     except Exception as exc:
-        return jsonify({"status":"ERROR","message":str(exc),"safety":INDUSTRIAL_SAFETY,
-                        "plant_scope":session.get("plant_id"),"organization_scope":session.get("organization_id")}), 400
+        return jsonify({
+            "status":"ERROR",
+            "message":str(exc),
+            "safety":INDUSTRIAL_SAFETY,
+            "plant_scope":session.get("plant_id"),
+            "organization_scope":session.get("organization_id"),
+        }), 400
 
 @app.route("/api/ask", methods=["POST"])
 @login_required
