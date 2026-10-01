@@ -1,11 +1,11 @@
 {
-  "plant_id": "YOUR_PLANT",
-  "gateway_id": "ANVI-EDGE-01",
   "plc": {
-    "ip": "192.168.1.10",
+    "ip": "192.168.0.10",
     "rack": 0,
-    "slot": 1
+    "slot": 1,
+    "timeout_s": 5
   },
+  "update_interval_s": 2,
   "tags": [
     {
       "tag": "PT-303",
@@ -22,18 +22,6 @@
       "byte_offset": 20,
       "bit_offset": 0,
       "data_type": "BOOL"
-    },
-    {
-      "tag": "PT-402",
-      "area": "PE",
-      "byte_offset": 260,
-      "data_type": "INT",
-      "scale": 0.1,
-      "offset": 0.0
     }
-  ],
-  "outbound": {
-    "cloud_url": "https://anviqo.onrender.com/api/edge/observations",
-    "tls_required": true
-  }
+  ]
 }
