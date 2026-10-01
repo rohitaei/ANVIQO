@@ -287,18 +287,20 @@ def build_context(question: str) -> Dict[str, Any]:
             out["maintenance_matches"] = []
 
         try:
-            from pci_spares import _v18_bf2_exact
-            rows = _v18_bf2_exact(tag, pid)
-            if rows:
-                r = rows[0]
-                out["spare"] = {
-                    "tag": tag,
-                    "available": int(r.get("qty_available") or 0),
-                    "instrument": r.get("instrument"),
-                    "area": r.get("area"),
-                    "source": r.get("source"),
-                }
-                out["sources"].append("SPARE_REGISTRY")
+            import pci_spares
+            # Reuse the authoritative existing spare engine. This exposes its
+            # read result to ANVI without creating a second spare engine.
+            spare_result = pci_spares.answer_spare_management(tag)
+            if isinstance(spare_result, dict):
+                records = spare_result.get("records") or []
+                if records:
+                    out["spare"] = {
+                        "tag": tag,
+                        "records": records[:20],
+                        "count": len(records),
+                        "source": spare_result.get("evidence") or "critical_spares.xlsx",
+                    }
+                    out["sources"].append("SPARE_REGISTRY")
         except Exception:
             pass
 
