@@ -222,10 +222,21 @@ def create_user(username: str, display_name: str = "") -> str:
     init_schema(); user_id = _id("user"); p = _placeholder()
     with _connect() as conn:
         cur = conn.cursor()
+        # Always name the columns. CI/production databases may contain
+        # additional nullable/defaulted user columns from later schema
+        # evolution; positional INSERT must not depend on a fixed column count.
         if _is_sqlite():
-            cur.execute(f"INSERT INTO anviqo_users VALUES({p},{p},{p},'ACTIVE',{p})", (user_id,username,display_name or username,_now()))
+            cur.execute(
+                f"INSERT INTO anviqo_users(user_id,external_username,display_name,status,created_at) "
+                f"VALUES({p},{p},{p},'ACTIVE',{p})",
+                (user_id, username, display_name or username, _now()),
+            )
         else:
-            cur.execute(f"INSERT INTO anviqo_users(user_id,external_username,display_name) VALUES({p},{p},{p})", (user_id,username,display_name or username))
+            cur.execute(
+                f"INSERT INTO anviqo_users(user_id,external_username,display_name) "
+                f"VALUES({p},{p},{p})",
+                (user_id, username, display_name or username),
+            )
     return user_id
 
 
