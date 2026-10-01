@@ -1,0 +1,33 @@
+name: ANVIQO PC App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cd electron && npm install
+      - run: cd electron && npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ANVIQO-Windows
+          path: electron/dist/*
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cd electron && npm install
+      - run: cd electron && npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ANVIQO-Linux
+          path: electron/dist/*
