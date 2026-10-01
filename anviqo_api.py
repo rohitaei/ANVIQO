@@ -34,6 +34,12 @@ import json
 
 
 app = Flask(__name__)
+# ------------------------------------------------------------
+# UNIFIED INDUSTRIAL INTELLIGENCE PLATFORM
+# Remaining V2-V5 domains use the frozen evidence/safety foundation.
+# ------------------------------------------------------------
+from industrial_intelligence_platform import run_industrial_intelligence, SAFETY as INDUSTRIAL_SAFETY
+
 
 # ------------------------------------------------------------
 # SPARE INVENTORY STRUCTURE MIGRATION
@@ -447,6 +453,21 @@ def field_report():
             "safety": SAFETY,
         }), 400
 
+
+
+
+@app.route("/api/industrial-intelligence", methods=["POST"])
+@login_required
+def industrial_intelligence():
+    try:
+        payload = request.get_json(silent=True) or {}
+        result = run_industrial_intelligence(payload)
+        result["plant_scope"] = session.get("plant_id")
+        result["organization_scope"] = session.get("organization_id")
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"status":"ERROR","message":str(exc),"safety":INDUSTRIAL_SAFETY,
+                        "plant_scope":session.get("plant_id"),"organization_scope":session.get("organization_id")}), 400
 
 @app.route("/api/ask", methods=["POST"])
 @login_required
