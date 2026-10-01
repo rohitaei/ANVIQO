@@ -212,7 +212,7 @@ def explainable_health(evidence_items: Iterable[Dict[str,Any]]):
 
 def benchmarking(plants: Iterable[Dict[str,Any]]):
     rows=[dict(x) for x in plants]
-    return {"module":"fleet_benchmarking","comparisons":rows,
+    return {"module":"fleet_benchmarking","records":len(rows),"comparisons":rows,
             "definition_warning":"Only compare governed, like-for-like metrics with adequate data quality.","safety":SAFETY}
 
 def digital_twin(identity: Dict[str,Any], condition=None, history=None, prediction=None):
