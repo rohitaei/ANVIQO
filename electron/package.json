@@ -3,5 +3,19 @@
   "version": "2.0.0",
   "private": true,
   "main": "main.js",
-  "scripts": { "start": "electron ." }
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.anviqo.industrial",
+    "productName": "ANVIQO",
+    "files": ["main.js", "package.json"],
+    "win": { "target": "portable" },
+    "linux": { "target": "AppImage" }
+  }
 }
