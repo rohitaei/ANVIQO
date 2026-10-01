@@ -456,6 +456,12 @@ def field_report():
 
 
 
+
+@app.route("/api/edge/observations", methods=["POST"])
+def edge_observations():
+    from anvi_edge_ingest import ingest_request
+    return ingest_request()
+
 @app.route("/api/industrial-intelligence", methods=["POST"])
 @login_required
 def industrial_intelligence():
