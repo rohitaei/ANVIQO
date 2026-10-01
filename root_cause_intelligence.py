@@ -49,7 +49,14 @@ def _tag_variants(tag:str)->List[str]:
 
 
 def extract_tag(text:str)->Optional[str]:
-    m=_EQUIPMENT_RE.search(str(text or ""))
+    # Prefer an explicit instrument/equipment identifier containing digits.
+    # The broader equipment regex can otherwise consume a leading question
+    # phrase such as "is PT-303" as one match.
+    value = str(text or "")
+    explicit = re.findall(r"\b[A-Z]{1,12}(?:[-_/ ]?\d{1,8})(?:[A-Z])?\b", value, flags=re.I)
+    if explicit:
+        return re.sub(r"\s*[-_ ]\s*","-", explicit[-1].upper())
+    m=_EQUIPMENT_RE.search(value)
     if not m: return None
     return re.sub(r"\s*[-_ ]\s*","-",m.group(0).upper())
 
