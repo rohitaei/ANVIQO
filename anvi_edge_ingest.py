@@ -16,6 +16,48 @@ from flask import jsonify, request
 
 from anvi_tenant_store import enabled as tenant_store_enabled, record_audit
 
+def _store_observations(identity, observations):
+    """Persist received edge evidence in the existing tenant database."""
+    from anvi_tenant_store import _connect, _is_sqlite, _placeholder, init_schema
+    init_schema()
+    p = _placeholder()
+    with _connect() as conn:
+        cur = conn.cursor()
+        if _is_sqlite():
+            cur.execute("""CREATE TABLE IF NOT EXISTS anviqo_edge_observations (
+                observation_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL,
+                gateway_id TEXT NOT NULL, tag TEXT NOT NULL, value TEXT, timestamp TEXT NOT NULL,
+                quality TEXT NOT NULL, source TEXT NOT NULL, protocol TEXT NOT NULL,
+                received_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )""")
+        else:
+            cur.execute("""CREATE TABLE IF NOT EXISTS anviqo_edge_observations (
+                observation_id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, plant_id TEXT NOT NULL,
+                gateway_id TEXT NOT NULL, tag TEXT NOT NULL, value TEXT, timestamp TEXT NOT NULL,
+                quality TEXT NOT NULL, source TEXT NOT NULL, protocol TEXT NOT NULL,
+                received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )""")
+        import uuid
+        inserted = 0
+        for item in observations:
+            values = (
+                "edge_" + uuid.uuid4().hex,
+                identity["organization_id"], identity["plant_id"], identity["gateway_id"],
+                str(item.get("tag", "")),
+                json.dumps(item.get("value"), ensure_ascii=False),
+                str(item.get("timestamp", "")),
+                str(item.get("quality", "UNKNOWN")),
+                str(item.get("source", "SIEMENS_S7")),
+                str(item.get("protocol", "SIEMENS_S7")),
+            )
+            placeholders = ",".join([p] * 10)
+            cur.execute(
+                f"INSERT INTO anviqo_edge_observations(observation_id,organization_id,plant_id,gateway_id,tag,value,timestamp,quality,source,protocol) VALUES({placeholders})",
+                values,
+            )
+            inserted += 1
+        return inserted
+
 
 def _gateway_registry() -> dict[str, Any]:
     raw = os.getenv("ANVI_EDGE_GATEWAYS_JSON", "").strip()
@@ -91,12 +133,13 @@ def ingest_request():
         "plant_id": identity["plant_id"],
     }
     try:
+        stored = _store_observations(identity, normalized)
         audit_id = record_audit(
             actor,
             "EDGE_OBSERVATIONS_RECEIVED",
             "EDGE_GATEWAY",
             identity["gateway_id"],
-            {"observation_count": len(normalized), "protocol": "SIEMENS_S7", "read_only": True},
+            {"observation_count": len(normalized), "stored": stored, "protocol": "SIEMENS_S7", "read_only": True},
         )
     except Exception:
         return jsonify({"status": "ERROR", "message": "audit persistence failed"}), 503
@@ -107,6 +150,7 @@ def ingest_request():
     return jsonify({
         "status": "ACCEPTED",
         "accepted": len(normalized),
+        "stored": stored,
         "gateway_id": identity["gateway_id"],
         "plant_id": identity["plant_id"],
         "organization_id": identity["organization_id"],
