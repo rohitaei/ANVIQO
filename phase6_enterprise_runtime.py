@@ -7,6 +7,7 @@ intelligence is not modified. This is governance/context only.
 from __future__ import annotations
 
 from flask import jsonify, request, session
+from werkzeug.routing import Rule
 
 from anviqo_spare_query_guard import app
 from anvi_tenant_store import authorize, create_plant, _connect, _placeholder
@@ -54,7 +55,6 @@ def _require_auth():
     return None
 
 
-@app.route("/api/enterprise/context")
 def enterprise_context():
     denied = _require_auth()
     if denied:
@@ -70,7 +70,6 @@ def enterprise_context():
     return jsonify({"status": "OK", "organization": dict(org) if org else None, "active_plant_id": actor["plant_id"], "role": actor["role"], "plants": plants, "governance": dict(ENTERPRISE_SAFETY)})
 
 
-@app.route("/api/enterprise/plants", methods=["POST"])
 def enterprise_create_plant():
     denied = _require_auth()
     if denied:
@@ -90,7 +89,6 @@ def enterprise_create_plant():
         return jsonify({"status": "ERROR", "message": str(exc), "created": False, "governance": dict(ENTERPRISE_SAFETY)}), 400
 
 
-@app.route("/api/enterprise/plant/<plant_id>")
 def enterprise_plant(plant_id: str):
     denied = _require_auth()
     if denied:
@@ -108,6 +106,24 @@ def enterprise_plant(plant_id: str):
     return jsonify({"status": "OK", "plant": dict(row), "governance": dict(ENTERPRISE_SAFETY)})
 
 
+
+def _register_enterprise_routes():
+    routes = [
+        ("enterprise_context", "/api/enterprise/context", ["GET"], enterprise_context),
+        ("enterprise_create_plant", "/api/enterprise/plants", ["POST"], enterprise_create_plant),
+        ("enterprise_plant", "/api/enterprise/plant/<plant_id>", ["GET"], enterprise_plant),
+    ]
+    existing = {r.rule for r in app.url_map.iter_rules()}
+    for endpoint, rule, methods, view in routes:
+        if rule in existing:
+            continue
+        # Register directly on Flask's routing map so repeated test imports
+        # remain safe even when the shared app has already served a request.
+        app.view_functions.setdefault(endpoint, view)
+        app.url_map.add(Rule(rule, endpoint=endpoint, methods=methods))
+        existing.add(rule)
+
+_register_enterprise_routes()
 
 # Route adapters are imported by the active runtime entrypoint before serving.
 # Keeping this base module free of late route registration avoids Flask setup
