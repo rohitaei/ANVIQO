@@ -1,6 +1,12 @@
 name: ANVIQO Android APK
 
 on:
+  push:
+    paths:
+      - 'package.json'
+      - 'capacitor.config.ts'
+      - 'anviqo_dashboard.html'
+      - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 
 jobs:
