@@ -217,7 +217,12 @@ input,select{
   .mobile-nav-item small{font-size:7px}
 }
 </style>
-</head>
+<style>
+.download-app-card{margin:10px 14px 0;padding:12px 15px;border:1px solid var(--cyan);border-radius:12px;background:#0b202a;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.download-app-card b{display:block;font-size:11px;color:var(--cyan);letter-spacing:1px}.download-app-card small{display:block;color:var(--muted);font-size:8px;margin-top:3px}
+.download-app-actions{display:flex;gap:7px;flex-wrap:wrap}.download-app-actions a{text-decoration:none}
+@media(max-width:600px){.download-app-card{margin:8px 10px 0}.download-app-actions{width:100%}.download-app-actions a{flex:1;text-align:center}}
+</style></head>
 
 <body>
 <div id="mobileShade"></div>
@@ -228,6 +233,13 @@ input,select{
   <button class="btn" id="dismissInstallBtn" aria-label="Dismiss">×</button>
 </div>
 
+<div class="download-app-card" role="region" aria-label="Download ANVIQO App">
+<div><b>ANVIQO APP</b><small>Install ANVIQO on your phone or Windows PC</small></div>
+<div class="download-app-actions">
+<a class="btn primary" href="https://github.com/rohitaei/ANVIQO/releases/latest/download/ANVIQO-Android.apk">📱 Download Android APK</a>
+<a class="btn primary" href="https://github.com/rohitaei/ANVIQO/releases/latest/download/ANVIQO-Windows.exe">💻 Download Windows</a>
+<a class="btn" href="https://github.com/rohitaei/ANVIQO/releases/latest">All Downloads</a>
+</div></div>
 <div id="app">
 
 <aside id="sidebar">
