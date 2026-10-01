@@ -70,6 +70,16 @@ def _safe(answer,**extra):
     p={"answer":answer,**SAFETY}; p.update(extra); return p
 
 
+def _selected_live_snapshot():
+    """Return live evidence only for the authenticated selected plant."""
+    try:
+        from anvi_universal_command_centre import get_live_pci_snapshot
+        from pci_live_simulator import get_live_pci_snapshot as legacy_snapshot
+        return get_live_pci_snapshot(legacy_snapshot) or {}
+    except Exception:
+        return {}
+
+
 def _meta_value(meta, *aliases):
     if not isinstance(meta, dict):
         return ""
@@ -398,8 +408,7 @@ def _answer(text):
         "health of the plant", "overall plant health", "plant health"
     )):
         try:
-            from pci_live_simulator import get_live_pci_snapshot
-            snap = get_live_pci_snapshot() or {}
+            snap = _selected_live_snapshot()
             if str(snap.get("mode","")).upper() == "SIMULATION":
                 score = snap.get("plant_health_score")
                 if score is None:

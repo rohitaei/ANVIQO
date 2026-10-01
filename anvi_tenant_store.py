@@ -223,7 +223,10 @@ def create_user(username: str, display_name: str = "") -> str:
     with _connect() as conn:
         cur = conn.cursor()
         if _is_sqlite():
-            cur.execute(f"INSERT INTO anviqo_users VALUES({p},{p},{p},'ACTIVE',{p})", (user_id,username,display_name or username,_now()))
+            cur.execute(
+                f"INSERT INTO anviqo_users(user_id,external_username,display_name,status,created_at) VALUES({p},{p},{p},'ACTIVE',{p})",
+                (user_id,username,display_name or username,_now()),
+            )
         else:
             cur.execute(f"INSERT INTO anviqo_users(user_id,external_username,display_name) VALUES({p},{p},{p})", (user_id,username,display_name or username))
     return user_id

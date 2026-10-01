@@ -99,6 +99,40 @@ def enterprise_command_centre_v4_view():
     return render_template_string(ENTERPRISE_V4_HTML)
 
 
+@app.route("/api/enterprise/portfolio")
+def enterprise_portfolio_v4_api():
+    """Return portfolio metadata while evaluating evidence only for the selected plant."""
+    denied = _require_auth()
+    if denied:
+        return denied
+    actor = _actor()
+    plants = _v4_plants(actor)
+    selected = actor.get("plant_id")
+    for plant in plants:
+        if plant["plant_id"] == selected:
+            plant["intelligence_scope"] = "ACTIVE_CONTEXT"
+            plant["evidence"] = {
+                "evidence_status": "AVAILABLE" if selected else "NO_ACTIVE_PLANT",
+                "plant_id": selected,
+            }
+        else:
+            plant["intelligence_scope"] = "CONTEXT_ONLY"
+            plant["evidence"] = {
+                "evidence_status": "NOT_EVALUATED",
+                "reason": "Not the selected active plant; no cross-plant intelligence is fabricated.",
+            }
+    return jsonify({
+        "status": "OK",
+        "organization_id": actor.get("organization_id"),
+        "active_plant_id": selected,
+        "plant_count": len(plants),
+        "evaluated_plant_count": sum(1 for p in plants if p["intelligence_scope"] == "ACTIVE_CONTEXT" and selected),
+        "plants": plants,
+        "aggregation_policy": "metadata_all_plants_active_context_evidence_only",
+        "governance": dict(ENTERPRISE_V4_GOVERNANCE),
+    })
+
+
 # V2 already registered /enterprise. Replace only its presentation function;
 # the route and all existing V2 intelligence APIs remain intact.
 app.view_functions["enterprise_command_centre_view"] = enterprise_command_centre_v4_view
