@@ -10,14 +10,6 @@
   "theme_color": "#050b13",
   "background_color": "#050b13",
   "description": "ANVIQO is the intelligence layer for the industrial plant — THINK • PREDICT • PROTECT.",
-  "icons": [
-    {
-      "src": "/anviqo-app-icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Open ANVIQO",
