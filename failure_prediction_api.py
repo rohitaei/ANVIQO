@@ -52,7 +52,11 @@ def failure_prediction_query_bridge():
         if not _can_read(actor):
             return jsonify({"status":"FORBIDDEN","message":"plant:read permission is required for Failure Prediction.","read_only":True,"plc_write":False,"scada_control":False}), 403
         result = build_failure_prediction(question)
-        return jsonify({"answer": result["prediction"], "domain":"failure_prediction", "failure_prediction":result, "read_only":True, "plc_write":False, "scada_control":False, "human_decision_required":True})
+        answer = result["prediction"]
+        footer = "PLC WRITE BLOCKED. SCADA CONTROL BLOCKED. HUMAN DECISION REQUIRED."
+        if footer not in str(answer).upper():
+            answer = str(answer).rstrip() + "\n\nSafety: " + footer
+        return jsonify({"answer": answer, "domain":"failure_prediction", "failure_prediction":result, "read_only":True, "plc_write":False, "scada_control":False, "human_decision_required":True})
     except Exception:
         return None
 
