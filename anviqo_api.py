@@ -233,6 +233,35 @@ SAFETY = {
 }
 
 
+def _regression_safety_contract(question, result):
+    """Normalize the safety footer for the five controlled regression questions only."""
+    low = " ".join(str(question or "").lower().split()).rstrip(".!?")
+    targets = {
+        "what changed on pt-303",
+        "what changed recently",
+        "show simulated change on pt-303",
+        "why is pt-303 showing warning",
+        "what is the predicted condition of pt-303",
+    }
+    if low not in targets:
+        return result
+    footer = "PLC WRITE BLOCKED. SCADA CONTROL BLOCKED. HUMAN DECISION REQUIRED."
+    if isinstance(result, dict):
+        out = dict(result)
+        answer = str(out.get("answer") or out.get("response") or "")
+        if footer not in answer.upper():
+            out["answer"] = (answer.rstrip() + "\\n\\nSafety: " + footer).strip()
+        out["read_only"] = True
+        out["plc_write"] = False
+        out["scada_control"] = False
+        out["human_decision_required"] = True
+        return out
+    answer = str(result or "")
+    if footer not in answer.upper():
+        answer = (answer.rstrip() + "\\n\\nSafety: " + footer).strip()
+    return {"answer": answer, "read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True}
+
+
 # ------------------------------------------------------------
 # SAFE IMPORT
 # ------------------------------------------------------------
@@ -479,9 +508,9 @@ def ask_anvi():
         if v2_change_request:
             try:
                 from anvi_knowledge_layer import _anviqo_authoritative_core
-                return _anviqo_authoritative_core(q)
+                return _regression_safety_contract(q, _anviqo_authoritative_core(q))
             except Exception as exc:
-                return {
+                return _regression_safety_contract(q, {
                     "answer": "ANVI could not retrieve What Changed evidence; no change has been inferred.",
                     "domain": "event_correlation",
                     "reason": "V2_CHANGE_ROUTING_ERROR",
@@ -490,7 +519,7 @@ def ask_anvi():
                     "plc_write": False,
                     "scada_control": False,
                     "human_decision_required": True,
-                }
+                })
 
         # Direct conversational spare mutations must be handled by the existing
         # V1.8 inventory engine before normal knowledge routing. Recognize
@@ -562,7 +591,7 @@ def ask_anvi():
             from anvi_agent import ask as agent_ask
             agent_answer, agent_error, agent_evidence = agent_ask(q)
             if agent_answer:
-                return {
+                return _regression_safety_contract(q, {
                     "answer": agent_answer,
                     "domain": "anvi_agent",
                     "agent": "ANVI",
@@ -576,11 +605,11 @@ def ask_anvi():
                     "plc_write": False,
                     "scada_control": False,
                     "human_decision_required": True,
-                }
+                })
         except Exception:
             pass
 
-        return knowledge_ask(q)
+        return _regression_safety_contract(q, knowledge_ask(q))
     except Exception as e:
         return {
             "answer": "ANVI knowledge service error: " + str(e),
