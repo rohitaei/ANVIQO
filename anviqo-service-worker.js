@@ -1,7 +1,6 @@
 const CACHE_NAME = "anviqo-public-v1";
 const APP_SHELL = [
   "/",
-  "/anviqo-app-icon.svg",
   "/anviqo-app.webmanifest"
 ];
 
