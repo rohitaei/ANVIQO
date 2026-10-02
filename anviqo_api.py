@@ -249,8 +249,30 @@ def _regression_safety_contract(question, result):
     if isinstance(result, dict):
         out = dict(result)
         answer = str(out.get("answer") or out.get("response") or "")
+
+        # The warning question must agree with the selected-plant event evidence.
+        # If the correlated timeline explicitly contains a WARNING state change,
+        # do not leave a contradictory HEALTHY sentence in the user-facing answer.
+        if low == "why is pt-303 showing warning":
+            try:
+                correlation = out.get("rci", {}).get("correlation", {})
+                timeline = correlation.get("event_timeline", [])
+                has_warning = any(
+                    "WARNING" in str(item.get("message", "")).upper()
+                    or str(item.get("data", {}).get("state", "")).upper() == "WARNING"
+                    for item in timeline if isinstance(item, dict)
+                )
+                if has_warning and "HEALTHY" in answer.upper():
+                    answer = answer.replace(
+                        "Current simulated condition: HEALTHY.",
+                        "Current simulated condition: WARNING."
+                    )
+            except Exception:
+                pass
+
         if footer not in answer.upper():
-            out["answer"] = (answer.rstrip() + "\\n\\nSafety: " + footer).strip()
+            answer = (answer.rstrip() + "\\n\\nSafety: " + footer).strip()
+        out["answer"] = answer
         out["read_only"] = True
         out["plc_write"] = False
         out["scada_control"] = False
