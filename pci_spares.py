@@ -1859,10 +1859,10 @@ def _v18_quantity(q):
     # This prevents digits inside an equipment tag (PT-303, MCV-205, etc.)
     # from ever becoming the requested quantity.
     action_match = re.search(
-        r"\\b(?:add|receive|received|increase|put|use|used|consume|consumed|"
-        r"issue|issued|remove|decrease|withdraw|taken)\\b\\s+"
+        r"\b(?:add|receive|received|increase|put|use|used|consume|consumed|"
+        r"issue|issued|remove|decrease|withdraw|taken)\b\s+"
         r"(one|a|an|two|three|four|five|six|seven|eight|nine|ten|"
-        r"\\d+)\\b",
+        r"\\d+)\b",
         q,
         re.I,
     )
@@ -1881,8 +1881,8 @@ def _v18_quantity(q):
 
     # Explicit quantity markers are accepted anywhere in the request.
     patterns = [
-        r"\\b(\\d+)\\s*(?:nos?|numbers?|pcs?|pieces?|qty|quantity)\\b",
-        r"\\b(\\d+)\\s+(?:spares?|units?)\\b",
+        r"\b(\\d+)\\s*(?:nos?|numbers?|pcs?|pieces?|qty|quantity)\b",
+        r"\b(\\d+)\\s+(?:spares?|units?)\b",
     ]
     for pattern in patterns:
         m = re.search(pattern, q, re.I)
