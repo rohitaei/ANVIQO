@@ -1881,8 +1881,8 @@ def _v18_quantity(q):
 
     # Explicit quantity markers are accepted anywhere in the request.
     patterns = [
-        r"\b(\\d+)\\s*(?:nos?|numbers?|pcs?|pieces?|qty|quantity)\b",
-        r"\b(\\d+)\\s+(?:spares?|units?)\b",
+        r"\b(\d+)\s*(?:nos?|numbers?|pcs?|pieces?|qty|quantity)\b",
+        r"\b(\d+)\s+(?:spares?|units?)\b",
     ]
     for pattern in patterns:
         m = re.search(pattern, q, re.I)
