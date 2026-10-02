@@ -1862,7 +1862,7 @@ def _v18_quantity(q):
         r"\b(?:add|receive|received|increase|put|use|used|consume|consumed|"
         r"issue|issued|remove|decrease|withdraw|taken)\b\s+"
         r"(one|a|an|two|three|four|five|six|seven|eight|nine|ten|"
-        r"\\d+)\b",
+        r"\d+)\b",
         q,
         re.I,
     )
