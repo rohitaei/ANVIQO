@@ -501,13 +501,13 @@ h1 span{
     <a href="#anvi">ANVI</a>
     <a href="#safety">Safety</a>
 
-    <button
+    <a
       id="install-app-btn"
       class="install-app"
-      type="button"
-      aria-label="Install ANVIQO app">
-      ↥ GET ANVIQO APP
-    </button>
+      href="https://github.com/rohitaei/ANVIQO/releases/tag/anviqo-android-latest"
+      aria-label="Download ANVIQO Android app">
+      ↓ DOWNLOAD ANVIQO APP
+    </a>
 
     <a
       class="login"
@@ -558,12 +558,12 @@ h1 span{
         EXPLORE ANVIQO
       </a>
 
-      <button
+      <a
         id="install-app-hero"
         class="primary"
-        type="button">
-        ↥ INSTALL ANVIQO APP
-      </button>
+        href="https://github.com/rohitaei/ANVIQO/releases/tag/anviqo-android-latest">
+        ↓ DOWNLOAD ANVIQO APP
+      </a>
 
     </div>
 
@@ -924,74 +924,10 @@ h1 span{
 
 <script>
 (function () {
-  const installButtons = [
-    document.getElementById("install-app-btn"),
-    document.getElementById("install-app-hero")
-  ].filter(Boolean);
-  const note = document.getElementById("install-app-note");
-  let deferredPrompt = null;
-
-  function isStandalone() {
-    return window.matchMedia("(display-mode: standalone)").matches ||
-           window.navigator.standalone === true;
-  }
-
-  function setInstalledState() {
-    installButtons.forEach((button) => {
-      button.classList.add("hidden");
-      button.setAttribute("aria-hidden", "true");
-    });
-    if (note) {
-      note.classList.remove("show");
-      note.textContent = "";
-    }
-  }
-
-  function showManualInstallHelp() {
-    if (!note) return;
-    note.innerHTML = "<strong>Install ANVIQO:</strong> on Android Chrome, open the browser menu (⋮) and choose <strong>Add to Home screen</strong> or <strong>Install app</strong>. On iPhone/iPad Safari, use <strong>Share → Add to Home Screen</strong>.";
-    note.classList.add("show");
-  }
-
-  async function installApp() {
-    if (!deferredPrompt) {
-      showManualInstallHelp();
-      return;
-    }
-    deferredPrompt.prompt();
-    const result = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    if (result && result.outcome === "accepted") {
-      setInstalledState();
-    }
-  }
-
-  if (isStandalone()) {
-    setInstalledState();
-  }
-
-  installButtons.forEach((button) => {
-    button.addEventListener("click", installApp);
+  const url = "https://github.com/rohitaei/ANVIQO/releases/tag/anviqo-android-latest";
+  document.querySelectorAll("#install-app-btn,#install-app-hero").forEach(function (el) {
+    el.addEventListener("click", function () { window.location.href = url; });
   });
-
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
-    installButtons.forEach((button) => button.classList.remove("hidden"));
-    if (note) {
-      note.classList.remove("show");
-      note.textContent = "";
-    }
-  });
-
-  window.addEventListener("appinstalled", setInstalledState);
-
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/anviqo-service-worker.js", { scope: "/" })
-        .catch((error) => console.warn("ANVIQO service worker registration failed", error));
-    });
-  }
 })();
 </script>
 
