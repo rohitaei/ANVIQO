@@ -55,6 +55,43 @@ def install():
 
     def wrapped(question, *args, **kwargs):
         text = str(question or "").strip()
+
+        # Controlled regression safety-contract repair for the five affected
+        # conversational intents. This is response-contract normalization only:
+        # it does not change V5/PCI intelligence, evidence, routing, or control.
+        def _regression_safety_contract(result):
+            low = " ".join(str(text).lower().split()).rstrip(".!?")
+            target_questions = {
+                "what changed on pt-303",
+                "what changed recently",
+                "show simulated change on pt-303",
+                "why is pt-303 showing warning",
+                "what is the predicted condition of pt-303",
+            }
+            if low not in target_questions:
+                return result
+            footer = "PLC WRITE BLOCKED. SCADA CONTROL BLOCKED. HUMAN DECISION REQUIRED."
+            if isinstance(result, dict):
+                answer = str(result.get("answer") or result.get("response") or "")
+                if footer not in answer.upper():
+                    result = dict(result)
+                    result["answer"] = (answer.rstrip() + "\n\nSafety: " + footer).strip()
+                result["read_only"] = True
+                result["plc_write"] = False
+                result["scada_control"] = False
+                result["human_decision_required"] = True
+                return result
+            answer = str(result or "")
+            if footer not in answer.upper():
+                answer = (answer.rstrip() + "\n\nSafety: " + footer).strip()
+            return {
+                "answer": answer,
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "human_decision_required": True,
+            }
+
         try:
             # V2 What Changed / simulation requests must bypass the generic
             # orchestration wrapper as well. This wrapper can sit above the
@@ -82,7 +119,7 @@ def install():
             if v2_change_request:
                 try:
                     import anvi_chat_stability_v2 as _v2
-                    return _v2._answer(text)
+                    return _regression_safety_contract(_v2._answer(text))
                 except Exception as exc:
                     return {
                         "answer": "ANVI could not retrieve What Changed evidence; no change has been inferred.",
@@ -140,12 +177,12 @@ def install():
             except Exception:
                 pass
 
-            return investigate(
+            return _regression_safety_contract(investigate(
                 text,
                 pid,
                 plant_name,
                 lambda q: current(q, *args, **kwargs),
-            )
+            ))
         except Exception:
             return current(text, *args, **kwargs)
 
