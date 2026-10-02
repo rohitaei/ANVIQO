@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<title>ANVIQO | Industrial Intelligence</title>
+<title>ANVIQO | Industrial Intelligence</title>\n\n<link rel="manifest" href="/anviqo-app.webmanifest">
+<meta name="theme-color" content="#050b13">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ANVIQO">
 
 <meta name="description"
 content="ANVIQO is an industrial intelligence layer that helps plants understand equipment, events, plant health, engineering evidence and operational decisions.">
@@ -451,7 +456,33 @@ h1 span{
   }
 
 }
-</style>
+
+.install-app{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 15px;
+  border:1px solid #36d7e8;
+  border-radius:7px;
+  background:#071722;
+  color:#36d7e8!important;
+  font-size:12px!important;
+  font-weight:900!important;
+  letter-spacing:.5px;
+}
+.install-app:hover{background:#0d2533;}
+.install-app.hidden{display:none;}
+.install-note{
+  display:none;
+  margin-top:12px;
+  max-width:560px;
+  color:#8197aa;
+  font-size:12px;
+  line-height:1.6;
+}
+.install-note.show{display:block;}
+.install-note strong{color:#b7c9d6;}
+\n</style>
 </head>
 
 <body>
@@ -469,6 +500,14 @@ h1 span{
     <a href="#capabilities">Capabilities</a>
     <a href="#anvi">ANVI</a>
     <a href="#safety">Safety</a>
+
+    <button
+      id="install-app-btn"
+      class="install-app"
+      type="button"
+      aria-label="Install ANVIQO app">
+      ↥ GET ANVIQO APP
+    </button>
 
     <a
       class="login"
@@ -519,7 +558,16 @@ h1 span{
         EXPLORE ANVIQO
       </a>
 
+      <button
+        id="install-app-hero"
+        class="primary"
+        type="button">
+        ↥ INSTALL ANVIQO APP
+      </button>
+
     </div>
+
+    <div id="install-app-note" class="install-note" aria-live="polite"></div>
 
     <div class="trust">
 
@@ -873,6 +921,79 @@ h1 span{
 </div>
 
 </footer>
+
+<script>
+(function () {
+  const installButtons = [
+    document.getElementById("install-app-btn"),
+    document.getElementById("install-app-hero")
+  ].filter(Boolean);
+  const note = document.getElementById("install-app-note");
+  let deferredPrompt = null;
+
+  function isStandalone() {
+    return window.matchMedia("(display-mode: standalone)").matches ||
+           window.navigator.standalone === true;
+  }
+
+  function setInstalledState() {
+    installButtons.forEach((button) => {
+      button.classList.add("hidden");
+      button.setAttribute("aria-hidden", "true");
+    });
+    if (note) {
+      note.classList.remove("show");
+      note.textContent = "";
+    }
+  }
+
+  function showManualInstallHelp() {
+    if (!note) return;
+    note.innerHTML = "<strong>Install ANVIQO:</strong> on Android Chrome, open the browser menu (⋮) and choose <strong>Add to Home screen</strong> or <strong>Install app</strong>. On iPhone/iPad Safari, use <strong>Share → Add to Home Screen</strong>.";
+    note.classList.add("show");
+  }
+
+  async function installApp() {
+    if (!deferredPrompt) {
+      showManualInstallHelp();
+      return;
+    }
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (result && result.outcome === "accepted") {
+      setInstalledState();
+    }
+  }
+
+  if (isStandalone()) {
+    setInstalledState();
+  }
+
+  installButtons.forEach((button) => {
+    button.addEventListener("click", installApp);
+  });
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    installButtons.forEach((button) => button.classList.remove("hidden"));
+    if (note) {
+      note.classList.remove("show");
+      note.textContent = "";
+    }
+  });
+
+  window.addEventListener("appinstalled", setInstalledState);
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/anviqo-service-worker.js", { scope: "/" })
+        .catch((error) => console.warn("ANVIQO service worker registration failed", error));
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
