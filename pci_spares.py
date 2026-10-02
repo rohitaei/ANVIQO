@@ -1881,9 +1881,9 @@ def _v18_quantity(q):
     # Quantity must be taken from an explicit quantity word, never from
     # the numeric part of the equipment tag.
     for word, value in word_quantities.items():
-        if re.search(r"\\b" + re.escape(word) + r"\\b", q, re.I):
+        if re.search(r"\b" + re.escape(word) + r"\b", q, re.I):
             if re.search(
-                r"\\b(?:spare|spares|unit|units|piece|pieces|nos|numbers)\\b",
+                r"\b(?:spare|spares|unit|units|piece|pieces|nos|numbers)\b",
                 q,
                 re.I,
             ):
