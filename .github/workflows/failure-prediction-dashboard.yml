@@ -1,5 +1,8 @@
 name: Failure Prediction Dashboard
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [main]
@@ -22,3 +25,38 @@ jobs:
           ANVIQO_ADMIN_USER: dashboard-test-admin
           ANVIQO_ADMIN_PASSWORD: dashboard-test-password
         run: pytest -q test_failure_prediction_demo_loader.py test_failure_prediction_demo_api.py test_failure_prediction_dashboard_v1.py
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build ANVIQO APK
+        working-directory: android-app
+        run: gradle --no-daemon assembleDebug
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ANVIQO-Android-APK
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Publish latest Android release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android-app/app/build/outputs/apk/debug/app-debug.apk ANVIQO.apk
+          gh release delete anviqo-android-latest --yes --cleanup-tag || true
+          gh release create anviqo-android-latest ANVIQO.apk             --target "${GITHUB_SHA}"             --title "ANVIQO Android App"             --notes "Latest ANVIQO Android APK. WebView app for https://anviqoai.com/"
