@@ -1,0 +1,33 @@
+{
+  "name": "ANVIQO — Industrial Intelligence",
+  "short_name": "ANVIQO",
+  "id": "/?anviqo-app",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "portrait-primary",
+  "theme_color": "#050b13",
+  "background_color": "#050b13",
+  "description": "ANVIQO is the intelligence layer for the industrial plant — THINK • PREDICT • PROTECT.",
+  "icons": [
+    {
+      "src": "/anviqo-app-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open ANVIQO",
+      "short_name": "ANVIQO",
+      "url": "/"
+    },
+    {
+      "name": "Enter Command Centre",
+      "short_name": "Command Centre",
+      "url": "https://anviqo.onrender.com/login"
+    }
+  ]
+}
