@@ -1855,17 +1855,38 @@ def _v18_action(q):
 def _v18_quantity(q):
     q = str(q or "").strip()
 
+    # Explicit numeric quantities first. Never extract the digits from
+    # an equipment identifier such as PT-303 as the quantity.
     patterns = [
         r"\b(\d+)\s*(?:nos?|numbers?|pcs?|pieces?|qty|quantity)\b",
-        r"\b(?:add|receive|received|increase|put|use|used|consume|consumed|issue|issued|remove|decrease|withdraw|taken)\s+(\d+)\b",
         r"\b(\d+)\s+(?:spares?|units?)\b",
+        r"\b(?:add|receive|received|increase|put|use|used|consume|consumed|issue|issued|remove|decrease|withdraw|taken)\s+(\d+)\b",
     ]
+
+    # Natural-language quantities used by operators.
+    word_quantities = {
+        "one": 1, "a": 1, "an": 1,
+        "two": 2, "three": 3, "four": 4, "five": 5,
+        "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    }
 
     for pattern in patterns:
         m = re.search(pattern, q, re.I)
         if m:
             value = int(m.group(1))
             if value > 0:
+                return value
+
+    # "Use one PT-303 spare" / "add two PT-303 spares".
+    # Quantity must be taken from an explicit quantity word, never from
+    # the numeric part of the equipment tag.
+    for word, value in word_quantities.items():
+        if re.search(r"\\b" + re.escape(word) + r"\\b", q, re.I):
+            if re.search(
+                r"\\b(?:spare|spares|unit|units|piece|pieces|nos|numbers)\\b",
+                q,
+                re.I,
+            ):
                 return value
 
     return None
@@ -2113,6 +2134,11 @@ def execute_spare_mutation_v18(question, plant_id=None):
                     f"Available: {before}; requested: {quantity}. "
                     "Inventory unchanged."
                 ),
+                "answer": (
+                    f"I could not use {quantity} spare(s) of {identifier}. "
+                    f"Only {before} are available, so inventory was not changed. "
+                    "PLC WRITE BLOCKED. SCADA CONTROL BLOCKED. HUMAN DECISION REQUIRED."
+                ),
             }
 
     else:
@@ -2238,6 +2264,13 @@ def execute_spare_mutation_v18(question, plant_id=None):
         **base,
         "ok": True,
         "executed": True,
+        "answer": (
+            f"{'Added' if action == 'ADD' else 'Used'} {quantity} spare(s) "
+            f"of {identifier}. Available stock changed from {excel_before} "
+            f"to {verified_after}. "
+            "Inventory action completed and verified. "
+            "PLC WRITE BLOCKED. SCADA CONTROL BLOCKED. HUMAN DECISION REQUIRED."
+        ),
         "action": action,
         "quantity": quantity,
         "identifier": identifier,
