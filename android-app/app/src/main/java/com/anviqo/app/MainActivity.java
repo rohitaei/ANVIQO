@@ -95,19 +95,21 @@ public class MainActivity extends Activity {
         EditText p = new EditText(this); p.setHint("Password"); p.setTextColor(TEXT); p.setHintTextColor(MUTED);
         p.setInputType(0x81); root.addView(p, new LinearLayout.LayoutParams(-1,56));
 
+        final Button[] loginButton = new Button[1];
         Button login = button("Sign in to ANVI", v -> {
             String user=u.getText().toString().trim(), pass=p.getText().toString();
             if(user.isEmpty() || pass.isEmpty()) { Toast.makeText(this,"Enter username and password",Toast.LENGTH_SHORT).show(); return; }
-            login.setEnabled(false); statusText("Connecting to ANVIQO…");
+            loginButton[0].setEnabled(false); statusText("Connecting to ANVIQO…");
             executor.execute(() -> {
                 final String result = loginRequest(user, pass);
                 runOnUiThread(() -> {
-                    login.setEnabled(true);
+                    loginButton[0].setEnabled(true);
                     if("OK".equals(result)) { loggedIn=true; showChat(); }
                     else Toast.makeText(this,result,Toast.LENGTH_LONG).show();
                 });
             });
         });
+        loginButton[0] = login;
         login.setBackgroundColor(CYAN); login.setTextColor(BG);
         root.addView(login, new LinearLayout.LayoutParams(-1,56));
         root.addView(tv("Secure session • read-only intelligence • no PLC/SCADA control",11,MUTED));
