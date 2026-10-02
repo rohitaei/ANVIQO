@@ -44,9 +44,14 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Build ANVIQO APK
+      - name: Build ANVIQO Android app
         working-directory: android-app
         run: gradle --no-daemon assembleDebug
+      - name: Verify APK
+        run: |
+          test -s android-app/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android-app/app/build/outputs/apk/debug/app-debug.apk
+          unzip -t android-app/app/build/outputs/apk/debug/app-debug.apk >/dev/null
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -59,4 +64,4 @@ jobs:
         run: |
           cp android-app/app/build/outputs/apk/debug/app-debug.apk ANVIQO.apk
           gh release delete anviqo-android-latest --yes --cleanup-tag || true
-          gh release create anviqo-android-latest ANVIQO.apk             --target "${GITHUB_SHA}"             --title "ANVIQO Android App"             --notes "Latest ANVIQO Android APK. WebView app for https://anviqoai.com/"
+          gh release create anviqo-android-latest ANVIQO.apk --target "${GITHUB_SHA}" --title "ANVIQO Android App v1.1.0" --notes "ANVIQO native mobile command-centre with live ANVIQO intelligence connection. Safety boundary: read-only, human governed."
