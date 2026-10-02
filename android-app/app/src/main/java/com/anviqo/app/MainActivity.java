@@ -56,6 +56,7 @@ public class MainActivity extends Activity {
     private TextView status, plant;
     private ExecutorService executor = Executors.newSingleThreadExecutor();
     private java.net.CookieManager cookieManager;
+    private String sessionCookie = "";
     private SpeechRecognizer speech;
     private boolean loggedIn = false;
 
@@ -124,8 +125,14 @@ public class MainActivity extends Activity {
             String body="username="+URLEncoder.encode(user,"UTF-8")+"&password="+URLEncoder.encode(pass,"UTF-8");
             try(OutputStream os=c.getOutputStream()){os.write(body.getBytes("UTF-8"));}
             int code=c.getResponseCode();
-            if(code==302 || code==303) return "OK";
-            return "Login failed ("+code+")";
+            if(code==302 || code==303) {
+                String setCookie=c.getHeaderField("Set-Cookie");
+                if(setCookie!=null && !setCookie.isEmpty()) sessionCookie=setCookie.split(";",2)[0];
+                return "OK";
+            }
+            BufferedReader er=new BufferedReader(new InputStreamReader(c.getErrorStream()!=null?c.getErrorStream():c.getInputStream(),"UTF-8"));
+            StringBuilder eb=new StringBuilder(); String el; while((el=er.readLine())!=null)eb.append(el);
+            return "Login failed ("+code+"): "+(eb.length()>0?eb.toString():"Invalid username or password");
         } catch(Exception e){ return "Connection failed: "+e.getMessage(); }
     }
 
@@ -186,6 +193,7 @@ public class MainActivity extends Activity {
             HttpURLConnection c=(HttpURLConnection)new java.net.URL(BASE+"/api/ask").openConnection();
             c.setRequestMethod("POST"); c.setDoOutput(true); c.setConnectTimeout(30000); c.setReadTimeout(60000);
             c.setRequestProperty("Content-Type","application/json; charset=UTF-8");
+            if(!sessionCookie.isEmpty()) c.setRequestProperty("Cookie",sessionCookie);
             JSONObject o=new JSONObject(); o.put("question",q);
             try(OutputStream os=c.getOutputStream()){os.write(o.toString().getBytes("UTF-8"));}
             int code=c.getResponseCode();
@@ -248,7 +256,7 @@ public class MainActivity extends Activity {
         WebView w=new WebView(this); WebSettings s=w.getSettings(); s.setJavaScriptEnabled(true); s.setDomStorageEnabled(true); s.setDatabaseEnabled(true);
         w.setWebViewClient(new WebViewClient());
         syncWebCookies();
-        w.loadUrl(BASE+"/");
+        w.loadUrl(BASE+"/dashboard");
         r.addView(w,new LinearLayout.LayoutParams(-1,0,1));
         r.addView(tv("Admin workspace • existing ANVIQO controls • human governed",9,MUTED));
         setContentView(r);
