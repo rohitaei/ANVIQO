@@ -1,5 +1,25 @@
 plugins { id 'com.android.application' }
 
-android { namespace 'com.anviqo.app'; compileSdk 35
-    defaultConfig { applicationId 'com.anviqo.app'; minSdk 23; targetSdk 35; versionCode 3; versionName '1.0.2' }
+android {
+    namespace 'com.anviqo.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.anviqo.ai.mobile'
+        minSdk 23
+        targetSdk 35
+        versionCode 4
+        versionName '1.0.3'
+    }
+
+    buildTypes {
+        release {
+            // Signed with the standard Android debug key for this demo build so
+            // the APK is directly installable. A permanent production keystore
+            // will be used for the public release later.
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
 }
