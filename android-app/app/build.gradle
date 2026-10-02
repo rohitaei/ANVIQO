@@ -8,15 +8,12 @@ android {
         applicationId 'com.anviqo.ai.mobile'
         minSdk 23
         targetSdk 35
-        versionCode 4
-        versionName '1.0.3'
+        versionCode 5
+        versionName '1.1.0'
     }
 
     buildTypes {
         release {
-            // Signed with the standard Android debug key for this demo build so
-            // the APK is directly installable. A permanent production keystore
-            // will be used for the public release later.
             signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
