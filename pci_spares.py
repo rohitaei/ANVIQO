@@ -1855,38 +1855,40 @@ def _v18_action(q):
 def _v18_quantity(q):
     q = str(q or "").strip()
 
-    # Explicit numeric quantities first. Never extract the digits from
-    # an equipment identifier such as PT-303 as the quantity.
+    # Parse the quantity immediately following the inventory action.
+    # This prevents digits inside an equipment tag (PT-303, MCV-205, etc.)
+    # from ever becoming the requested quantity.
+    action_match = re.search(
+        r"\\b(?:add|receive|received|increase|put|use|used|consume|consumed|"
+        r"issue|issued|remove|decrease|withdraw|taken)\\b\\s+"
+        r"(one|a|an|two|three|four|five|six|seven|eight|nine|ten|"
+        r"\\d+)\\b",
+        q,
+        re.I,
+    )
+    if action_match:
+        token = action_match.group(1).lower()
+        word_quantities = {
+            "one": 1, "a": 1, "an": 1,
+            "two": 2, "three": 3, "four": 4, "five": 5,
+            "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+        }
+        if token in word_quantities:
+            return word_quantities[token]
+        value = int(token)
+        if value > 0:
+            return value
+
+    # Explicit quantity markers are accepted anywhere in the request.
     patterns = [
-        r"\b(\d+)\s*(?:nos?|numbers?|pcs?|pieces?|qty|quantity)\b",
-        r"\b(\d+)\s+(?:spares?|units?)\b",
-        r"\b(?:add|receive|received|increase|put|use|used|consume|consumed|issue|issued|remove|decrease|withdraw|taken)\s+(\d+)\b",
+        r"\\b(\\d+)\\s*(?:nos?|numbers?|pcs?|pieces?|qty|quantity)\\b",
+        r"\\b(\\d+)\\s+(?:spares?|units?)\\b",
     ]
-
-    # Natural-language quantities used by operators.
-    word_quantities = {
-        "one": 1, "a": 1, "an": 1,
-        "two": 2, "three": 3, "four": 4, "five": 5,
-        "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
-    }
-
     for pattern in patterns:
         m = re.search(pattern, q, re.I)
         if m:
             value = int(m.group(1))
             if value > 0:
-                return value
-
-    # "Use one PT-303 spare" / "add two PT-303 spares".
-    # Quantity must be taken from an explicit quantity word, never from
-    # the numeric part of the equipment tag.
-    for word, value in word_quantities.items():
-        if re.search(r"\b" + re.escape(word) + r"\b", q, re.I):
-            if re.search(
-                r"\b(?:spare|spares|unit|units|piece|pieces|nos|numbers)\b",
-                q,
-                re.I,
-            ):
                 return value
 
     return None
