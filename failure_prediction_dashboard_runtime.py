@@ -18,7 +18,7 @@ _FULL_MODULE = "failure_prediction_dashboard_full"
 _PUBLIC_HOME = Path("anviqo_public_website_index.html")
 _PUBLIC_MANIFEST = Path("anviqo-app.webmanifest")
 _PUBLIC_SERVICE_WORKER = Path("anviqo-service-worker.js")
-_APK_URL = "https://github.com/rohitaei/ANVIQO/releases/download/V2.0.0/ANVIQO-Android.apk"
+_APK_URL = "https://github.com/rohitaei/ANVIQO/releases/download/anviqo-android-latest/ANVIQO.apk"
 _full = None
 
 
