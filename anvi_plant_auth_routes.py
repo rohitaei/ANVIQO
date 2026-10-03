@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from flask import jsonify, request, session, Response, redirect
 
-from phase6_enterprise_runtime import app
+from anviqo_spare_query_guard import app
 import anvi_tenant_store as store
 import anvi_plant_auth as plant_auth
 import anvi_cleanup_test_accounts as cleanup_test_accounts
