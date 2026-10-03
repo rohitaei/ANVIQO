@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from flask import jsonify, request, Response
 import anvi_tenant_store as store
-from phase6_enterprise_runtime import app
+from anviqo_spare_query_guard import app
 _ALLOWED_EXT={"pdf","docx","xlsx","xls","csv","json","txt","png","jpg","jpeg","log"}
 _MAX_BYTES=int(os.getenv("ANVIQO_ONBOARDING_MAX_BYTES",str(25*1024*1024)))
 def _now(): return datetime.now(timezone.utc).isoformat()
