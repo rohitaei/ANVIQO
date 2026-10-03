@@ -1,4 +1,4 @@
-name: Build ANVIQO Android APK
+name: Build ANVI Chat Android App
 
 on:
   workflow_dispatch:
@@ -40,16 +40,18 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Build APK
+      - name: Build APK and Play Store AAB
         working-directory: android-app
-        run: gradle --no-daemon assembleRelease
+        run: gradle --no-daemon assembleRelease bundleRelease
       - name: Publish APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ANVIQO-Android-APK
-          path: android-app/app/build/outputs/apk/release/app-release.apk
+          path: |
+            android-app/app/build/outputs/apk/release/app-release.apk
+            android-app/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
-      - name: Verify APK
+      - name: Verify APK and AAB
         working-directory: android-app
         run: |
           APK="app/build/outputs/apk/release/app-release.apk"
@@ -57,11 +59,14 @@ jobs:
           unzip -t "$APK" >/dev/null
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
           stat -c "APK_SIZE_BYTES=%s" "$APK"
+          test -s "app/build/outputs/bundle/release/app-release.aab"
+          stat -c "AAB_SIZE_BYTES=%s" "app/build/outputs/bundle/release/app-release.aab"
 
       - name: Publish latest GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp android-app/app/build/outputs/apk/release/app-release.apk ANVIQO.apk
+          cp android-app/app/build/outputs/apk/release/app-release.apk ANVI-Chat.apk
+          cp android-app/app/build/outputs/bundle/release/app-release.aab ANVI-Chat.aab
           gh release delete anviqo-android-latest --yes --cleanup-tag || true
-          gh release create anviqo-android-latest ANVIQO.apk --target "$GITHUB_SHA" --title "ANVIQO Chat Android App v2.0.1" --notes "Native ANVI Chat app connected to the existing ANVIQO intelligence layer. Read-only, evidence-first, human governed. No PLC write or SCADA control."
+          gh release create anviqo-android-latest ANVI-Chat.apk ANVI-Chat.aab --target "$GITHUB_SHA" --title "ANVI Chat v1.0.0" --notes "Native ANVI Chat app connected to the existing ANVIQO intelligence layer. Read-only, evidence-first, human governed. No PLC write or SCADA control."
