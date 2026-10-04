@@ -23,6 +23,7 @@ VOICE_CAPABILITIES = {
     "real_plc_write_enabled": False,
     "real_scada_control_enabled": False,
     "human_approval_required": True,
+    "human_decision_required": True,
 }
 
 
