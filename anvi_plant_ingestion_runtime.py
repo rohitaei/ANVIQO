@@ -148,8 +148,10 @@ def register(app):
   if not a.get('user_id') or not plant_id:return jsonify({'status':'UNAUTHORIZED'}),401
   q=str(request.args.get('q','')).strip().lower();limit=min(max(int(request.args.get('limit','50')),1),100)
   with store._connect() as conn:
-   cur=conn.cursor();sql=f"SELECT record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content FROM anviqo_plant_knowledge WHERE plant_id={_p()}";args=[plant_id]
+   cur=conn.cursor();sql=f"SELECT record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content FROM anviqo_plant_knowledge WHERE plant_id={_p()} AND organization_id={_p()}";args=[plant_id,a.get("organization_id","")]
    if q:sql+=f" AND (LOWER(name) LIKE {_p()} OR LOWER(area) LIKE {_p()} OR LOWER(service) LIKE {_p()} OR LOWER(tag) LIKE {_p()} OR LOWER(content) LIKE {_p()})";like=f'%{q}%';args += [like]*5
+   if not a.get("organization_id"):
+    return jsonify({"status":"FORBIDDEN","message":"Organization context is required"}),403
    cur.execute(sql+' ORDER BY created_at DESC LIMIT '+str(limit),args);rows=cur.fetchall()
   out=[]
   for r in rows:
