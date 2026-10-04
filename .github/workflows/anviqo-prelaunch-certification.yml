@@ -74,6 +74,10 @@ jobs:
         run: >-
           pytest -q test_phase6_enterprise_foundation_v1.py
           test_phase6_enterprise_command_centre_v2.py
+      - name: Integrated product completion gate
+        env:
+          PYTHONPATH: .
+        run: pytest -q tests/test_integrated_product_completion.py
       - name: Release gate
         env:
           PYTHONPATH: .
