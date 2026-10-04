@@ -40,3 +40,39 @@ def test_production_runtime_imports_plant_auth_routes(monkeypatch):
     assert "/api/session/context" in paths
     assert "/api/my-plants" in paths
     assert "/api/admin/plant-users" in paths
+
+
+def test_authenticated_plant_selection_enforces_scope(monkeypatch):
+    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", "sqlite:///:memory:")
+    monkeypatch.setenv("ANVIQO_ADMIN_USER", "admin-test")
+    monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "admin-password")
+    monkeypatch.setenv("ANVIQO_SECRET_KEY", "test-secret")
+
+    import anvi_tenant_store as store
+    store.ensure_bootstrap("admin-test")
+    org_id = store.create_organization("Selection Org", "selection-org")
+    plant_a = store.create_plant(org_id, "Plant A", "plant-a")
+    plant_b = store.create_plant(org_id, "Plant B", "plant-b")
+
+    from anvi_plant_auth_routes import app
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess.update({
+            "authenticated": True,
+            "username": "admin-test",
+            "user_id": "bootstrap-admin-test",
+            "organization_id": org_id,
+            "role": "ADMIN",
+            "plant_id": plant_a,
+        })
+
+    selected = client.post("/api/select-plant", json={"plant_id": plant_b})
+    assert selected.status_code == 200
+    assert selected.get_json()["plant_id"] == plant_b
+    assert selected.get_json()["scope"] == "SELECTED_PLANT_ONLY"
+
+    with client.session_transaction() as sess:
+        assert sess["plant_id"] == plant_b
+
+    denied = client.post("/api/select-plant", json={"plant_id": "plant-from-other-org"})
+    assert denied.status_code == 403
