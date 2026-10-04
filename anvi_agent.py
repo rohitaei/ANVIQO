@@ -77,10 +77,20 @@ def _evidence(question):
         if full_context.get(key) is not None:
             evidence[key] = full_context.get(key)
 
+    # The legacy PCI simulator is a demo stream for the designated demo plant.
+    # Never expose that global demo dataset to a newly onboarded plant.
     try:
-        from pci_live_simulator import get_live_pci_snapshot
-        snap = get_live_pci_snapshot() or {}
-        if str(snap.get("mode", "")).upper() == "SIMULATION":
+        from flask import session
+        simulation_slug = str(session.get("plant_slug") or "").strip().lower()
+        demo_slug = os.environ.get("ANVIQO_SIMULATION_PLANT_SLUG", "primary-plant").strip().lower()
+    except Exception:
+        simulation_slug = ""
+        demo_slug = "primary-plant"
+    if simulation_slug and simulation_slug == demo_slug:
+        try:
+            from pci_live_simulator import get_live_pci_snapshot
+            snap = get_live_pci_snapshot() or {}
+            if str(snap.get("mode", "")).upper() == "SIMULATION":
             points = snap.get("points") or []
             requested = _identifier(question)
             requested_norm = re.sub(r"[-_ ]", "", requested).lower()
@@ -123,8 +133,13 @@ def _evidence(question):
                     )
                 ][:40],
             }
-    except Exception as exc:
-        evidence["simulation_error"] = type(exc).__name__
+        except Exception as exc:
+            evidence["simulation_error"] = type(exc).__name__
+    else:
+        evidence["simulation"] = {
+            "mode": "NOT_AVAILABLE",
+            "reason": "SELECTED_PLANT_HAS_NO_DEMO_SIMULATION",
+        }
 
     try:
         from anvi_chat_stability_v2 import _query_rows, _terms
