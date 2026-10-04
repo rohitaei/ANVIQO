@@ -181,6 +181,10 @@ def simulate_snapshot():
         "area_count": len(areas),
         "areas": list(areas.values()),
         "points": points,
+        "read_only": True,
+        "plc_write": False,
+        "scada_control": False,
+        "human_decision_required": True,
     }
 
 
