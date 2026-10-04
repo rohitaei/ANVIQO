@@ -7,6 +7,13 @@ PostgreSQL tenant store remains the single source of truth.
 from __future__ import annotations
 import csv, hashlib, io, json, re, threading, time, uuid, zipfile
 from dataclasses import asdict, is_dataclass
+
+SAFETY = {
+    "read_only": True,
+    "plc_write": False,
+    "scada_control": False,
+    "human_decision_required": True,
+}
 from datetime import datetime, timezone
 import anvi_tenant_store as store
 from universal_onboarding import normalize_record, SAFETY
