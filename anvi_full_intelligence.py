@@ -124,11 +124,21 @@ def build_context(question: str) -> Dict[str, Any]:
         "human_governance": True,
     }
 
-    # Live observation / operating state.
+    # Live observation / operating state. The legacy PCI simulator is a demo
+    # stream for the designated demo plant only; a fresh onboarded plant must
+    # not inherit that plant's simulated evidence.
     try:
-        from pci_live_simulator import get_live_pci_snapshot
-        snap = get_live_pci_snapshot() or {}
-        if str(snap.get("mode") or "").upper() == "SIMULATION":
+        from flask import session
+        simulation_slug = str(session.get("plant_slug") or "").strip().lower()
+        demo_slug = __import__("os").environ.get("ANVIQO_SIMULATION_PLANT_SLUG", "primary-plant").strip().lower()
+    except Exception:
+        simulation_slug = ""
+        demo_slug = "primary-plant"
+    if simulation_slug and simulation_slug == demo_slug:
+        try:
+            from pci_live_simulator import get_live_pci_snapshot
+            snap = get_live_pci_snapshot() or {}
+            if str(snap.get("mode") or "").upper() == "SIMULATION":
             out["live_observation"] = {
                 k: snap.get(k)
                 for k in (
@@ -166,8 +176,10 @@ def build_context(question: str) -> Dict[str, Any]:
                 )
             ][:50]
             out["sources"].append("PCI_LIVE_SIMULATOR")
-    except Exception:
-        pass
+        except Exception:
+            pass
+    else:
+        out["live_observation"] = None
 
     # Persistent selected-plant knowledge.
     try:
