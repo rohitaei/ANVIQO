@@ -145,6 +145,63 @@ def change_plant_user_password():
     try: plant_auth.set_password(username,password); return jsonify({"status":"OK","username":username})
     except Exception as exc: return jsonify({"status":"ERROR","message":str(exc)}),400
 
+@app.post("/api/select-plant")
+def select_plant():
+    """Set the authenticated user's authoritative ANVI plant context."""
+    if not session.get("authenticated"):
+        return jsonify({"status": "UNAUTHORIZED"}), 401
+
+    body = request.get_json(silent=True) or {}
+    plant_id = str(body.get("plant_id", "")).strip()
+    if not plant_id:
+        return jsonify({"status": "INVALID", "message": "plant_id is required"}), 400
+
+    actor = _actor()
+    if actor["role"] in {"OWNER", "ADMIN"}:
+        allowed = _plant_belongs_to_actor_org(plant_id)
+    else:
+        allowed = any(
+            str(p.get("plant_id", "")) == plant_id
+            for p in plant_auth.list_user_plants(actor["username"])
+        )
+    if not allowed:
+        return jsonify({"status": "FORBIDDEN", "message": "Plant is not available to this user"}), 403
+
+    p = store._placeholder()
+    with store._connect() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT plant_id,name,slug FROM anviqo_plants "
+            f"WHERE plant_id={p} AND organization_id={p} AND status='ACTIVE' LIMIT 1",
+            (plant_id, actor["organization_id"]),
+        )
+        row = cur.fetchone()
+
+    if not row:
+        return jsonify({"status": "NOT_FOUND", "message": "Active plant not found"}), 404
+
+    session["plant_id"] = row[0]
+    session["plant_name"] = row[1]
+    session["plant_slug"] = row[2]
+
+    try:
+        store.record_audit(
+            actor, "SELECT_PLANT", "PLANT", row[0],
+            {"plant_name": row[1], "plant_slug": row[2]},
+        )
+    except Exception:
+        pass
+
+    return jsonify({
+        "status": "OK",
+        "plant_id": row[0],
+        "plant_name": row[1],
+        "plant_slug": row[2],
+        "scope": "SELECTED_PLANT_ONLY",
+        "organization_id": actor["organization_id"],
+    })
+
+
 @app.get("/api/my-plants")
 def my_plants():
     if not session.get("authenticated"): return jsonify({"status":"UNAUTHORIZED"}),401
