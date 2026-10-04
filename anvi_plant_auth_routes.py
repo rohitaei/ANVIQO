@@ -59,13 +59,13 @@ def plant_login_interceptor():
     username = request.form.get("username", "").strip(); password = request.form.get("password", ""); plant_slug = request.form.get("plant_slug", "").strip().lower()
     admin_user = os.environ.get("ANVIQO_ADMIN_USER", ""); admin_password = os.environ.get("ANVIQO_ADMIN_PASSWORD", "")
     if username == admin_user and password == admin_password:
-        context = store.ensure_bootstrap(username); session.clear(); session.update({"authenticated": True, "username": username, "role": "ADMIN", **(context or {})}); return redirect("/")
+        context = store.ensure_bootstrap(username); session.clear(); session.update({"authenticated": True, "username": username, "role": "ADMIN", **(context or {})}); return redirect("/dashboard")
     identity = plant_auth.authenticate(username, password, plant_slug)
     if not identity: return _html_page(_LOGIN_PAGE)
     session.clear(); session.update({"authenticated": True, **identity})
     try: store.record_audit(identity, "LOGIN", "PLANT", identity["plant_id"], {"auth_version": plant_auth.AUTH_VERSION})
     except Exception: pass
-    return redirect("/")
+    return redirect("/dashboard")
 
 @app.get("/api/session/context")
 def session_context():
