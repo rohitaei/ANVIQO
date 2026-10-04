@@ -96,7 +96,10 @@ def application(environ, start_response):
         return _public_file(_PUBLIC_HOME, "text/html; charset=utf-8", start_response)
     # Authenticated login redirects here so the public landing page remains public.
     if path == "/dashboard":
-        return _load().app.wsgi_app(environ, start_response)
+        dashboard_environ = dict(environ)
+        dashboard_environ["PATH_INFO"] = "/"
+        dashboard_environ["RAW_URI"] = "/"
+        return _load().app.wsgi_app(dashboard_environ, start_response)
     if method == "GET" and path == "/anviqo-app.webmanifest":
         return _public_file(_PUBLIC_MANIFEST, "application/manifest+json; charset=utf-8", start_response)
     if method == "GET" and path == "/anviqo-service-worker.js":
