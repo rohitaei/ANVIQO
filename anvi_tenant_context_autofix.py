@@ -93,6 +93,98 @@ def _install_live_answer_patch():
                 "slug": session.get("plant_slug") or "",
                 "status": "ACTIVE",
             }
+            # V2 Command Centre intents must be handled before the generic
+            # knowledge search. These questions ask for the selected plant's
+            # live/simulated intelligence, not for a matching text record.
+            # The snapshot is tenant-scoped and cannot fall back to another plant.
+            try:
+                snapshot = stability._selected_pci_snapshot()
+                low_intent = str(text or "").strip().lower()
+                if any(x in low_intent for x in (
+                    "current plant health", "what is the current plant health",
+                    "plant health", "overall plant health", "health of the plant"
+                )):
+                    if str(snapshot.get("mode", "")).upper() == "SIMULATION":
+                        score = snapshot.get("plant_health_score")
+                        if score is not None:
+                            if float(score) >= 90: condition = "BROADLY HEALTHY"
+                            elif float(score) >= 80: condition = "HEALTHY WITH ATTENTION AREAS"
+                            elif float(score) >= 60: condition = "DEGRADED"
+                            else: condition = "CRITICAL"
+                        else:
+                            condition = "INSUFFICIENT EVIDENCE"
+                        return stability._safe(
+                            "ANVI — Current Plant Health (SIMULATION)\\n"
+                            f"Overall condition: {condition}.\\n"
+                            f"Health score: {score}%.\\n"
+                            f"Healthy: {snapshot.get('healthy', 0)} | Warning: {snapshot.get('warning', 0)} | Critical: {snapshot.get('critical', 0)}.\\n"
+                            f"Changed points: {snapshot.get('changed', 0)} | Active simulated events: {snapshot.get('active_events', 0)}.\\n"
+                            "Evidence source: PCI DEMO STREAM. This is simulation data, not live plant telemetry.\\n"
+                            "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required.",
+                            domain="plant_health", evidence_status="EVIDENCE_AVAILABLE",
+                            evidence_mode="SIMULATION", plant_id=pid, plant_name=plant.get("name")
+                        )
+                if any(x in low_intent for x in (
+                    "show active alarms", "active alarms", "current active alarms", "show alarms"
+                )):
+                    points = [
+                        p for p in (snapshot.get("points") or [])
+                        if isinstance(p, dict) and p.get("event_active")
+                        and str(p.get("state", "")).upper() in ("WARNING", "CRITICAL")
+                    ]
+                    lines = [
+                        "ANVI — Active Alarms (SIMULATION)",
+                        f"Active simulated alarms/events: {len(points)}."
+                    ]
+                    for p in sorted(points, key=lambda p: (
+                        str(p.get("state", "")).upper() != "CRITICAL",
+                        str(p.get("tag", ""))
+                    ))[:12]:
+                        lines.append(
+                            f"{p.get('tag', 'UNKNOWN')} — {p.get('state', 'UNKNOWN')} — "
+                            f"{p.get('description') or p.get('name') or 'No description'} — "
+                            f"Area: {p.get('area') or 'UNKNOWN'}."
+                        )
+                    if not points:
+                        lines.append("No active simulated alarm/event points were detected in this snapshot.")
+                    lines += [
+                        "Evidence source: PCI DEMO STREAM. This is simulation data, not live alarm history.",
+                        "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required."
+                    ]
+                    return stability._safe(
+                        "\\n".join(lines), domain="alarms",
+                        evidence_status="EVIDENCE_AVAILABLE", evidence_mode="SIMULATION",
+                        plant_id=pid, plant_name=plant.get("name")
+                    )
+                if any(x in low_intent for x in (
+                    "show critical equipment", "critical equipment", "critical points", "critical tags"
+                )):
+                    points = [
+                        p for p in (snapshot.get("points") or [])
+                        if isinstance(p, dict) and str(p.get("state", "")).upper() == "CRITICAL"
+                    ]
+                    lines = [
+                        "ANVI — Critical Equipment / Points (SIMULATION)",
+                        f"Critical points: {len(points)}."
+                    ]
+                    for p in points[:15]:
+                        lines.append(
+                            f"{p.get('tag', 'UNKNOWN')} — {p.get('value', 'N/A')} — "
+                            f"{p.get('description') or p.get('name') or 'No description'} — "
+                            f"Area: {p.get('area') or 'UNKNOWN'}."
+                        )
+                    if not points:
+                        lines.append("No critical points were detected in this snapshot.")
+                    lines += [
+                        "Evidence source: PCI DEMO STREAM. This is simulation data, not live equipment telemetry.",
+                        "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required."
+                    ]
+                    return stability._safe(
+                        "\\n".join(lines), domain="critical_equipment",
+                        evidence_status="EVIDENCE_AVAILABLE", evidence_mode="SIMULATION",
+                        plant_id=pid, plant_name=plant.get("name")
+                    )
+
             # Reuse the authoritative critical-spares intelligence before the
             # plant-knowledge resolver. This keeps "spares of MCV" and exact
             # spare-tag questions on the existing spare engine instead of
