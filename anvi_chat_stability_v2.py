@@ -330,6 +330,21 @@ def _io_kind(row):
     return "Other"
 
 
+def _selected_pci_snapshot():
+    """Return the authoritative snapshot for the authenticated selected plant.
+
+    Chat must use the same tenant-scoped adapter as the dashboard. The legacy
+    simulator is passed only as the adapter's explicitly bound source; it is
+    never exposed directly to conversational requests.
+    """
+    try:
+        from pci_live_simulator import get_live_pci_snapshot as legacy_snapshot
+        from anvi_universal_command_centre import get_live_pci_snapshot
+        return get_live_pci_snapshot(legacy_snapshot) or {}
+    except Exception:
+        return {}
+
+
 def _exact_answer(text,rows,plant):
     requested=_candidate(text)
     if not requested:return None
@@ -398,8 +413,7 @@ def _answer(text):
         "health of the plant", "overall plant health", "plant health"
     )):
         try:
-            from pci_live_simulator import get_live_pci_snapshot
-            snap = get_live_pci_snapshot() or {}
+            snap = _selected_pci_snapshot()
             if str(snap.get("mode","")).upper() == "SIMULATION":
                 score = snap.get("plant_health_score")
                 if score is None:
