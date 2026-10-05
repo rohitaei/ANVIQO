@@ -11,7 +11,7 @@ from anvi_v2_evidence_graph import build_evidence_graph
 from anvi_v2_prediction_validation import PredictionOutcome, PredictionMetric, AnomalyAssessment, drift_signal
 from anvi_v2_causal_reasoning import build_hypothesis
 from anvi_v2_global_capability_contracts import TenantRef, IntegrationRequest, DigitalTwinState, WhatIfScenario, ResilienceCheck, safety_contract, assert_tenant
-from anvi_v2_integration_gateway import dispatch
+from anvi_v2_integration_gateway import dispatch, IntegrationEnvelope
 from anvi_v2_audit_contract import AuditLedger, AuditRecord
 from anvi_v2_pov_contract import pov_gate_status
 
@@ -81,10 +81,10 @@ class V2MonthSoak:
             scenario = WhatIfScenario(tenant,f"whatif-{tenant.plant_id}",{"pressure_setpoint":pts[-1].value+5},{"risk":"SIMULATED"},("simulation only",))
             assert twin.source=="SIMULATION" and scenario.assumptions
 
-            result = dispatch(IntegrationRequest(tenant,"CMMS","CREATE_WORK_ORDER",{"asset":"MILL-1"},True))
+            result = dispatch(IntegrationEnvelope(tenant,"CMMS","CREATE_WORK_ORDER",{"asset":"MILL-1"},True))
             assert result["dry_run"] and not result["automatic_execution"]
             try:
-                dispatch(IntegrationRequest(tenant,"S7","WRITE",{"tag":"PT_303","value":0},False))
+                dispatch(IntegrationEnvelope(tenant,"S7","WRITE",{"tag":"PT_303","value":0},False))
                 self.errors.append("OT write was not blocked")
             except PermissionError: self.stats["write_blocks"] += 1
 
