@@ -114,16 +114,55 @@ def _install_live_answer_patch():
                         else:
                             condition = "INSUFFICIENT EVIDENCE"
                         return stability._safe(
-                            "ANVI — Current Plant Health (SIMULATION)\\n"
-                            f"Overall condition: {condition}.\\n"
-                            f"Health score: {score}%.\\n"
-                            f"Healthy: {snapshot.get('healthy', 0)} | Warning: {snapshot.get('warning', 0)} | Critical: {snapshot.get('critical', 0)}.\\n"
-                            f"Changed points: {snapshot.get('changed', 0)} | Active simulated events: {snapshot.get('active_events', 0)}.\\n"
-                            "Evidence source: PCI DEMO STREAM. This is simulation data, not live plant telemetry.\\n"
+                            "ANVI — Current Plant Health (SIMULATION)\n"
+                            f"Overall condition: {condition}.\n"
+                            f"Health score: {score}%.\n"
+                            f"Healthy: {snapshot.get('healthy', 0)} | Warning: {snapshot.get('warning', 0)} | Critical: {snapshot.get('critical', 0)}.\n"
+                            f"Changed points: {snapshot.get('changed', 0)} | Active simulated events: {snapshot.get('active_events', 0)}.\n"
+                            "Evidence source: PCI DEMO STREAM. This is simulation data, not live plant telemetry.\n"
                             "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required.",
                             domain="plant_health", evidence_status="EVIDENCE_AVAILABLE",
                             evidence_mode="SIMULATION", plant_id=pid, plant_name=plant.get("name")
                         )
+                if any(x in low_intent for x in (
+                    "what changed", "what has changed", "show changes", "recent changes",
+                    "recent change", "any changes", "any change"
+                )):
+                    changed_points = [
+                        p for p in (snapshot.get("points") or [])
+                        if isinstance(p, dict) and p.get("changed")
+                    ]
+                    event_points = [
+                        p for p in (snapshot.get("points") or [])
+                        if isinstance(p, dict) and p.get("event_active")
+                    ]
+                    if changed_points or event_points:
+                        lines = [
+                            "ANVI — What Changed (SIMULATION)",
+                            f"Verified changed points/events in the selected plant: {len(changed_points)} changed points | {len(event_points)} active events."
+                        ]
+                        for p in changed_points[:12]:
+                            tag = p.get("tag") or p.get("name") or "UNKNOWN"
+                            desc = p.get("description") or p.get("name") or "No description"
+                            value = p.get("value", "N/A")
+                            state = p.get("state", "UNKNOWN")
+                            lines.append(f"{tag} — {desc} — Current value: {value} — State: {state}.")
+                        if not changed_points:
+                            lines.append("No point-level value changes were identified in this snapshot.")
+                        lines.append("Evidence source: PCI DEMO STREAM. This is simulation evidence, not live plant telemetry.")
+                        lines.append("Safety: ANVI is read-only; no PLC/SCADA write. Human decision required.")
+                        return stability._safe(
+                            "\n".join(lines), domain="event_correlation",
+                            evidence_status="EVIDENCE_AVAILABLE", evidence_mode="SIMULATION",
+                            plant_id=pid, plant_name=plant.get("name"),
+                            count=len(changed_points) + len(event_points)
+                        )
+                    return stability._safe(
+                        "ANVI — What Changed (SIMULATION)\nNo verified simulation change/event evidence is currently recorded for the selected plant.\nANVI will not invent a change.\nSafety: ANVI is read-only; no PLC/SCADA write. Human decision required.",
+                        domain="event_correlation", evidence_status="NO_EVIDENCE",
+                        evidence_mode="SIMULATION", plant_id=pid, plant_name=plant.get("name")
+                    )
+
                 if any(x in low_intent for x in (
                     "show active alarms", "active alarms", "current active alarms", "show alarms"
                 )):
@@ -152,7 +191,7 @@ def _install_live_answer_patch():
                         "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required."
                     ]
                     return stability._safe(
-                        "\\n".join(lines), domain="alarms",
+                        "\n".join(lines), domain="alarms",
                         evidence_status="EVIDENCE_AVAILABLE", evidence_mode="SIMULATION",
                         plant_id=pid, plant_name=plant.get("name")
                     )
@@ -180,7 +219,7 @@ def _install_live_answer_patch():
                         "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required."
                     ]
                     return stability._safe(
-                        "\\n".join(lines), domain="critical_equipment",
+                        "\n".join(lines), domain="critical_equipment",
                         evidence_status="EVIDENCE_AVAILABLE", evidence_mode="SIMULATION",
                         plant_id=pid, plant_name=plant.get("name")
                     )
