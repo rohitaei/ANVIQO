@@ -184,6 +184,8 @@ def _install_live_answer_patch():
                         evidence_status="EVIDENCE_AVAILABLE", evidence_mode="SIMULATION",
                         plant_id=pid, plant_name=plant.get("name")
                     )
+            except Exception as exc:
+                print(f"ANVIQO_COMMAND_CENTRE_CHAT_ROUTING_ERROR error={exc!r}", flush=True)
 
             # Reuse the authoritative critical-spares intelligence before the
             # plant-knowledge resolver. This keeps "spares of MCV" and exact
