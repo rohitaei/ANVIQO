@@ -4562,7 +4562,11 @@ def _anviqo_authoritative_core(question):
         # ============================================================
         # DIRECT PCI FOLLOW-UP FROM VERIFIED CONVERSATION CONTEXT
         # ============================================================
-        direct_pci = _anvi_direct_pci_followup(q)
+        # A plain What Changed request is plant/event intelligence, not a
+        # remembered PCI follow-up. Do not let previous equipment context
+        # hijack it (for example, after asking about PT-303).
+        # The dedicated V2 What-Changed route remains authoritative.
+        direct_pci = None if v2_what_changed_request else _anvi_direct_pci_followup(q)
 
         if direct_pci:
             return direct_pci
