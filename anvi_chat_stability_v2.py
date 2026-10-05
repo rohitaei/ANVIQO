@@ -446,8 +446,7 @@ def _answer(text):
         "current active alarms", "show alarms"
     )):
         try:
-            from pci_live_simulator import get_live_pci_snapshot
-            snap = get_live_pci_snapshot() or {}
+            snap = _selected_pci_snapshot()
             points = [
                 p for p in (snap.get("points") or [])
                 if isinstance(p,dict) and p.get("event_active")
@@ -478,8 +477,7 @@ def _answer(text):
         "which equipment is critical"
     )):
         try:
-            from pci_live_simulator import get_live_pci_snapshot
-            snap = get_live_pci_snapshot() or {}
+            snap = _selected_pci_snapshot()
             points = [
                 p for p in (snap.get("points") or [])
                 if isinstance(p,dict) and str(p.get("state","")).upper()=="CRITICAL"
