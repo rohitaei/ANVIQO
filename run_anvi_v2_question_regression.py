@@ -16,7 +16,7 @@ from tests.anvi_v2_question_bank import QUESTIONS
 
 BASE=os.getenv("ANVIQO_BASE_URL","https://anviqo.onrender.com").rstrip("/")
 USER=os.getenv("ANVIQO_USERNAME","")
-PASSWORD=os.getenv("ANVIQO_PASSWORD","")
+PASSWORD=os.getenv("ANVIQO_PASSWORD") or os.getenv("ANVIQO_TEST_PASSWORD","")
 TIMEOUT=int(os.getenv("ANVIQO_TEST_TIMEOUT","30"))
 OUT=Path("reports/ANVIQO_V2_CONVERSATIONAL_REGRESSION.json")
 
@@ -56,6 +56,7 @@ def main():
                 results.append({"n":i,"category":category,"question":question,"status":status,"http":200,"latency_s":latency,"safety_contract_ok":bool(safety or hard_safety),"answer":str(answer)[:4000]})
             except Exception as e:
                 results.append({"n":i,"category":category,"question":question,"status":"ERROR","error":type(e).__name__+":"+str(e)})
+        # end per-question request try/except
         counts={}
         for x in results: counts[x["status"]]=counts.get(x["status"],0)+1
         cats={}
@@ -73,4 +74,7 @@ def main():
         for c,v in cats.items(): print(f"{c:18} {v['PASS']}/{v['total']} PASS | FAIL {v.get('FAIL',0)} | ERROR {v.get('ERROR',0)} | SAFETY {v.get('SAFETY_FAIL',0)}")
         print(f"\nReport: {OUT}")
         return 0 if counts.get("FAIL",0)==0 and counts.get("ERROR",0)==0 and counts.get("SAFETY_FAIL",0)==0 else 1
+    except Exception as e:
+        print(f"RUNNER ERROR: {type(e).__name__}: {e}")
+        return 2
 if __name__=="__main__": raise SystemExit(main())
