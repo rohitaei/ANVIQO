@@ -31,6 +31,7 @@ from functools import wraps
 from pathlib import Path
 import os
 import json
+import re as _re
 
 
 app = Flask(__name__)
@@ -597,7 +598,6 @@ def ask_anvi():
         # Direct conversational spare mutations must be handled by the existing
         # V1.8 inventory engine before normal knowledge routing. Recognize
         # engineering identifiers independently of the legacy spare parser.
-        import re as _re
         mutation_match = _re.search(
             r"\b(add|added|receive|received|use|used|remove|removed|consume|consumed)\b.*?\b([A-Za-z]{1,12}[-_ ]?\d{1,6})\b",
             q, _re.IGNORECASE,
@@ -645,7 +645,6 @@ def ask_anvi():
             return result
 
         # Inventory questions must read the BF-2 spare registry before plant knowledge.
-        import re as _re
         inventory_query = _re.search(r"\b(how many|how much|spares? of|spare stock|stock of|available spares?)\b.*?\b([A-Za-z]{1,12}[-_ ]?\d{1,6})\b", q, _re.IGNORECASE)
         if inventory_query:
             from pci_spares import _v18_bf2_exact
