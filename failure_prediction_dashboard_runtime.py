@@ -88,11 +88,11 @@ def _apk_download(environ, start_response):
 def application(environ, start_response):
     path = environ.get("PATH_INFO", "")
     method = environ.get("REQUEST_METHOD", "GET").upper()
-    if path == "/health" and method == "GET":
+    if path == "/health" and method in {"GET", "HEAD"}:
         return _health(environ, start_response)
     # The custom domain is the public ANVIQO website first. Keep the existing
     # authenticated application at / and /login behind its normal login flow.
-    if method == "GET" and path == "/":
+    if path == "/" and method in {"GET", "HEAD"}:
         return _public_file(_PUBLIC_HOME, "text/html; charset=utf-8", start_response)
     # Authenticated login redirects here so the public landing page remains public.
     if path == "/dashboard":
