@@ -154,7 +154,7 @@ class ExtraordinaryOperatorIntelligence:
     def confidence(self, org, plant, tag=None):
         points,events=self._data(org,plant)
         evidence=len([p for p in points if tag is None or p.tag==tag])+len([e for e in events if tag is None or e.tag==tag or e.equipment==tag])
-        level="HIGH" if evidence>=5 else ("MEDIUM" if evidence>=2 else "LOW")
+        level="HIGH" if evidence>=4 else ("MEDIUM" if evidence>=2 else "LOW")
         return {"status":"OK","tag":tag,"evidence_count":evidence,"evidence_strength":level,
                 "causal_claimed":False,"safety":dict(SAFETY)}
 
