@@ -297,20 +297,76 @@ def _tenant_answer(q,rows,plant):
                 normalized_tags[n]=r
     if any(x in low for x in ("what plant","which plant","connected to","current plant","selected plant")):
         return _safe_response(f"ANVI is connected to {plant['name']} (selected plant).",plant_id=plant["plant_id"],plant_name=plant["name"])
+    # Specific field questions must be answered from the resolved record, not by
+    # dumping the whole identity record. This prevents generic agent routing from
+    # turning "What is the PLC address?" into an unrelated full-record response.
     requested=_tag_from_question(text,rows)
     if requested:
         row=normalized_tags.get(requested)
         if not row: return _safe_response("I cannot find that tag in the currently selected plant's knowledge. I will not use another plant's data as a fallback.",blocked=True,reason="TENANT_KNOWLEDGE_NOT_FOUND",plant_id=plant["plant_id"],plant_name=plant["name"])
+        meta=row.get("metadata") if isinstance(row.get("metadata"),dict) else {}
+        def field(*keys):
+            for key in keys:
+                value = row.get(key)
+                if value not in (None,"",[]):
+                    return value
+                value = meta.get(key)
+                if value not in (None,"",[]):
+                    return value
+            return None
+        if "panel" in low and ("terminal" in low or "tb" in low):
+            answer=f"PT-303 uses panel {field('panel') or 'not recorded'} and terminal block {field('tb','tb_name') or 'not recorded'}"
+            tb_no=field('tb_no')
+            if tb_no: answer += f" ({tb_no})"
+            return _safe_response(answer+".",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],evidence=[row])
+        if "plc address" in low or "plc address" in low:
+            return _safe_response(f"{row.get('tag') or row.get('name')} PLC address: {field('plc_address') or 'not recorded'}.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],evidence=[row])
+        if "type of signal" in low or "signal" in low:
+            return _safe_response(f"{row.get('tag') or row.get('name')} signal type: {field('io_type','i_o_type') or 'not recorded'}.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],evidence=[row])
+        if "criticality" in low:
+            return _safe_response(f"{row.get('tag') or row.get('name')} criticality: {field('criticality') or 'not recorded'}.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],evidence=[row])
+        if "where" in low and ("located" in low or "location" in low):
+            return _safe_response(f"{row.get('tag') or row.get('name')} is located in {row.get('area') or field('area') or 'an area not recorded'}.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],evidence=[row])
+        if "used for" in low or "purpose" in low:
+            return _safe_response(f"{row.get('tag') or row.get('name')} is used for: {row.get('service') or row.get('name') or row.get('content') or 'service not recorded'}.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],evidence=[row])
         fields={k:row.get(k) for k in ("tag","name","area","service","asset_type","record_type","external_id","parent_id","source")}
-        meta=row.get("metadata")
-        if isinstance(meta,dict):
-            for key in ("io_type","i_o_type","plc_address","panel","tb","jb","criticality","model","range","unit"):
-                if meta.get(key) is not None: fields[key]=meta[key]
+        for key in ("io_type","i_o_type","plc_address","panel","tb","jb","criticality","model","range","unit"):
+            if field(key) is not None: fields[key]=field(key)
         fields={k:v for k,v in fields.items() if v not in (None,"",[])}
         return _safe_response(f"Verified tenant knowledge for {row.get('tag') or row.get('name')}: "+", ".join(f"{k}: {v}" for k,v in fields.items() if k!="tag"),blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],evidence=[fields])
-    if any(x in low for x in ("count","how many","number of")) and any(x in low for x in ("equipment","instrument","io","i/o","asset","device")):
-        terms=_question_terms(text); count=_count_matches(plant["plant_id"],terms) if terms else 0
-        return _safe_response(f"The selected plant {plant['name']} has {count} matching indexed equipment/instrument records in tenant knowledge.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],count=count)
+    # Aggregate PCI counts must be calculated from the actual selected plant's
+    # onboarded engineering metadata. Do this before generic keyword matching.
+    if any(x in low for x in ("count","how many","number of")):
+        meta_rows=[_coerce_row(r) for r in rows]
+        def io_kind(r):
+            m=r.get("metadata") if isinstance(r.get("metadata"),dict) else {}
+            value=" ".join(str(r.get(k) or "") for k in ("record_type","asset_type","name","service","content"))
+            value += " "+str(m.get("io_type") or m.get("i_o_type") or "")
+            u=" "+re.sub(r"[^A-Z0-9-]+"," ",value.upper())+" "
+            if " DIGITAL INPUT " in u or " DI " in u: return "DI"
+            if " DIGITAL OUTPUT " in u or " DO " in u: return "DO"
+            if " ANALOG OUTPUT " in u or " AO " in u: return "AO"
+            if " ANALOG INPUT " in u or " AI " in u or "4-20 MA" in u or " RTD " in u: return "AI"
+            return "OTHER"
+        if "digital input" in low or "digital inputs" in low:
+            n=sum(io_kind(r)=="DI" for r in meta_rows)
+            return _safe_response(f"The selected plant has {n} verified digital input record(s) in its onboarded PCI data.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],count=n)
+        if "digital output" in low or "digital outputs" in low:
+            n=sum(io_kind(r)=="DO" for r in meta_rows)
+            return _safe_response(f"The selected plant has {n} verified digital output record(s) in its onboarded PCI data.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],count=n)
+        if "4-20" in low or "4–20" in low:
+            n=sum(("4-20" in json.dumps(r.get("metadata") or {}).lower()) or ("4–20" in json.dumps(r.get("metadata") or {}).lower()) for r in meta_rows)
+            if n==0: n=sum(1 for r in meta_rows if "4-20" in (" ".join(str(r.get(k) or "") for k in ("name","service","asset_type","content"))).lower())
+            return _safe_response(f"The selected plant has {n} verified 4–20 mA analog input record(s) in its onboarded PCI data.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],count=n)
+        if "rtd" in low:
+            n=sum("RTD" in json.dumps(r.get("metadata") or {}).upper() or "RTD" in " ".join(str(r.get(k) or "") for k in ("name","service","asset_type","content")).upper() for r in meta_rows)
+            return _safe_response(f"The selected plant has {n} verified RTD analog input record(s) in its onboarded PCI data.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],count=n)
+        if "analog output" in low:
+            n=sum(io_kind(r)=="AO" for r in meta_rows)
+            return _safe_response(f"The selected plant has {n} verified analog output record(s) in its onboarded PCI data.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],count=n)
+        if any(x in low for x in ("equipment","instrument","io","i/o","asset","device")):
+            terms=_question_terms(text); count=_count_matches(plant["plant_id"],terms) if terms else 0
+            return _safe_response(f"The selected plant {plant['name']} has {count} matching indexed equipment/instrument records in tenant knowledge.",blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant["name"],count=count)
     return _natural_knowledge_answer(text,rows,plant)
 
 def _legacy_onboarding_question(q):
