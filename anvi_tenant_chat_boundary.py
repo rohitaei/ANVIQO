@@ -337,7 +337,10 @@ def _tenant_answer(q,rows,plant):
     # Aggregate PCI counts must be calculated from the actual selected plant's
     # onboarded engineering metadata. Do this before generic keyword matching.
     if any(x in low for x in ("count","how many","number of")):
-        meta_rows=[_coerce_row(r) for r in rows]
+        # Counts must use the complete selected-plant knowledge set, not
+        # keyword-filtered rows. The latter can silently undercount/overcount
+        # because _rows(terms=...) intentionally uses broad OR matching.
+        meta_rows=[_coerce_row(r) for r in _rows(plant["plant_id"],limit=2500)]
         def io_kind(r):
             m=r.get("metadata") if isinstance(r.get("metadata"),dict) else {}
             value=" ".join(str(r.get(k) or "") for k in ("record_type","asset_type","name","service","content"))
