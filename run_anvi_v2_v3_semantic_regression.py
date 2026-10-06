@@ -113,7 +113,7 @@ def main():
             ok=check(q,ans,QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed") if r.status_code==200 else False
             status="CORRECT" if ok else "INCORRECT"
             counts[status]+=1
-            rows.append({"number":i,"category":QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "v3_extra","question":q,"answer":ans,"status":status,"http":r.status_code})
+            rows.append({"number":i,"category":QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed","question":q,"answer":ans,"status":status,"http":r.status_code})
             print(f"{i:03d}/200 {status:10s} {q}")
         except Exception as e:
             counts["ERROR"]+=1; rows.append({"number":i,"question":q,"answer":"","status":"ERROR","error":str(e)})
