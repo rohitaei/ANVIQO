@@ -777,6 +777,29 @@ def ask_anvi():
                         "human_decision_required": True,
                         "answer": f"Available spares for {identifier}: {int(r.get('qty_available') or 0)}."}
 
+        # Deterministic selected-plant engineering questions must reach the
+        # tenant-scoped knowledge boundary before the generic conversational agent.
+        # Otherwise the agent can answer a factual PCI question from stale context
+        # or return an unrelated full-record response. This is routing only; the
+        # tenant boundary remains fail-closed and read-only.
+        engineering_tag = bool(_re.search(
+            r"\\b(?:PT|FT|TT|LT|AT|DT|WT|CT|XV|FV|PV|TV|LV|PIC|FIC|TIC|LIC|MCV)[-_ ]?\\d+\\b",
+            q.upper(),
+        ))
+        engineering_intent = any(term in q.lower() for term in (
+            "pci database", "plc address", "terminal block", "panel",
+            "i/o", "io", "analog input", "digital input", "digital output",
+            "analog output", "4-20", "4–20", "rtd", "criticality",
+            "signal type", "used for", "where is", "find "
+        ))
+        if engineering_tag or engineering_intent:
+            try:
+                tenant_result = knowledge_ask(q)
+                if isinstance(tenant_result, dict) and tenant_result.get("answer"):
+                    return _regression_safety_contract(q, tenant_result)
+            except Exception:
+                pass
+
         try:
             from anvi_agent import ask as agent_ask
             agent_answer, agent_error, agent_evidence = agent_ask(q)
