@@ -1183,6 +1183,15 @@ def plant_snapshot():
 
 
 # ------------------------------------------------------------
+# V2.0 → V3.0 UNIFIED INDUSTRIAL INTELLIGENCE
+# ------------------------------------------------------------
+try:
+    from anvi_v3_unified_platform import register as register_v3_unified_platform
+    register_v3_unified_platform(app)
+except Exception as exc:
+    print(f"ANVIQO_V3_FACADE_REGISTRATION_ERROR error={exc!r}", flush=True)
+
+# ------------------------------------------------------------
 # SERVER
 # ------------------------------------------------------------
 
