@@ -24,6 +24,6 @@ EXTRA_QUESTIONS = [
 def test_extra_question_pack():
     assert len(EXTRA_QUESTIONS)==21
     assert len({q.lower() for q in EXTRA_QUESTIONS})==21
-    required={"time","story","memory","unusual","worse","warning","recover","repeat","shift","before","continues","instrument","spare","cost","energy","safety","trust","confident"}
+    required={"story","remember","unusual","worse","warning","recover","repeat","shift","before","continues","instrument","spare","cost","energy","safety","trust","confident"}
     joined=" ".join(EXTRA_QUESTIONS).lower()
     assert required <= set(x for x in required if x in joined)
