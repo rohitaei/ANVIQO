@@ -170,7 +170,7 @@ def register(app, platform):
         s=scope()
         if not s: return jsonify({"status":"TENANT_UNAVAILABLE","safety":dict(SAFETY)}),409
         return jsonify(fn(*s,*args,**kwargs))
-    @app.get("/api/v3/intelligence/attention"); 
+    @app.get("/api/v3/intelligence/attention")
     def attention(): return call(engine.attention_now)
     @app.get("/api/v3/intelligence/story")
     def story(): return call(engine.plant_story,request.args.get("tag"))
