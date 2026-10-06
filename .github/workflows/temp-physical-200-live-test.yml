@@ -1,0 +1,73 @@
+name: Temporary Physical 200 Live Test
+on:
+  push:
+    branches: [temp-physical-200-live-test-2026-10-07]
+jobs:
+  live-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run 200 live ANVI questions
+        env:
+          ANVIQO_BASE_URL: https://anviqo-v2-v3-test.onrender.com
+          ANVIQO_USERNAME: Rohitaei
+          ANVIQO_PASSWORD: ${{ secrets.ANVIQO_TEST_PASSWORD }}
+        run: |
+          python - <<'PY'
+          import os, json, requests, time
+          from tests.anvi_v2_question_bank import QUESTIONS
+          extras = [
+          "What should I care about right now",
+          "What happened around PT-303",
+          "Show me the plant story for PT-303",
+          "What happened yesterday around PT-303",
+          "Have we seen this before on PT-303",
+          "Find anything unusual in the plant",
+          "Is PT-303 getting worse",
+          "Give me an early warning for PT-303",
+          "Did PT-303 recover",
+          "Does this problem repeat",
+          "What does ANVI remember about the previous shift",
+          "What did the previous shift do",
+          "Have we experienced this condition before",
+          "What happens if PT-303 continues increasing",
+          "Show PT-303 instrument health",
+          "Which critical instruments have no spare",
+          "What is the cost impact of this abnormality",
+          "Why is energy consumption increasing",
+          "Are there developing safety concerns",
+          "Can I trust the current plant data",
+          "How confident are you about PT-303",
+          ]
+          qs = [(c,q) for c,q in QUESTIONS] + [("v3_extra",q) for q in extras]
+          assert len(qs) == 200, len(qs)
+          base=os.environ["ANVIQO_BASE_URL"].rstrip("/")
+          s=requests.Session()
+          r=s.post(base+"/login",data={"username":os.environ["ANVIQO_USERNAME"],"password":os.environ["ANVIQO_PASSWORD"]},allow_redirects=False,timeout=90)
+          print("LOGIN",r.status_code)
+          assert r.status_code in (200,302,303), r.text[:500]
+          out=[]
+          for i,(cat,q) in enumerate(qs,1):
+              try:
+                  r=s.post(base+"/api/ask",json={"question":q},timeout=90)
+                  try: d=r.json()
+                  except: d={"raw":r.text}
+                  a=d.get("answer") if isinstance(d,dict) else None
+                  if not a and isinstance(d,dict): a=d.get("response") or d.get("message")
+                  a=a or str(d)
+                  row={"number":i,"category":cat,"question":q,"http_status":r.status_code,"answer":a}
+                  out.append(row)
+                  print("\n=== QUESTION %d/200 [%s] ===\n%s\n--- ANSWER ---\n%s" % (i,cat,q,a.replace("\n"," ")))
+              except Exception as e:
+                  out.append({"number":i,"category":cat,"question":q,"http_status":None,"answer":"","error":repr(e)})
+                  print("\n=== QUESTION %d/200 ERROR ===\n%s" % (i,repr(e)))
+              time.sleep(.1)
+          os.makedirs("physical-test",exist_ok=True)
+          with open("physical-test/answers.json","w",encoding="utf-8") as f: json.dump(out,f,indent=2,ensure_ascii=False)
+          print("\nTOTAL",len(out))
+          PY
+      - name: Upload actual answers
+        uses: actions/upload-artifact@v4
+        with:
+          name: anviqo-physical-200-answers
+          path: physical-test/answers.json
