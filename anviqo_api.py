@@ -247,27 +247,27 @@ def _targeted_conversational_answer(question):
     ql = q.lower().rstrip(".!?")
 
     plant_questions = {
-        "what is the current plant health?",
-        "give me the overall plant condition.",
-        "what is the plant health score and what is driving it?",
-        "how many points are healthy, warning, and critical?",
-        "what are the most important current plant risks?",
+        "what is the current plant health",
+        "give me the overall plant condition",
+        "what is the plant health score and what is driving it",
+        "how many points are healthy, warning, and critical",
+        "what are the most important current plant risks",
     }
     alarm_questions = {
-        "show active alarms.",
-        "which alarms are critical right now?",
-        "what are the highest priority alarms?",
-        "which equipment is generating the most alarms?",
-        "are there any recurring alarm patterns?",
+        "show active alarms",
+        "which alarms are critical right now",
+        "what are the highest priority alarms",
+        "which equipment is generating the most alarms",
+        "are there any recurring alarm patterns",
     }
     event_questions = {
-        "show the recent events.",
-        "what event chains are active?",
-        "which events are associated with pt-303?",
-        "show me the latest state changes.",
-        "are there any limit breaches?",
+        "show the recent events",
+        "what event chains are active",
+        "which events are associated with pt-303",
+        "show me the latest state changes",
+        "are there any limit breaches",
     }
-    if ql + "." not in plant_questions | alarm_questions | event_questions:
+    if ql not in (plant_questions | alarm_questions | event_questions):
         return None
 
     try:
@@ -287,7 +287,7 @@ def _targeted_conversational_answer(question):
     score = snap.get("plant_health_score")
     safety = "Safety: ANVI is read-only; PLC write blocked; SCADA control blocked; human decision required."
 
-    if ql + "." in plant_questions:
+    if ql in plant_questions:
         if ql.startswith("what are the most important current plant risks"):
             top = critical[:8] + [p for p in warning if p not in critical][:8]
             details = [f"{p.get('tag','UNKNOWN')} — {p.get('state','UNKNOWN')} — {p.get('description','No description')}." for p in top[:10]]
@@ -300,7 +300,7 @@ def _targeted_conversational_answer(question):
                 body += " The current drivers visible in the snapshot are the warning/critical/changed points and active events listed above; this evidence does not by itself prove a physical root cause."
         return {"answer": "ANVI — Plant Intelligence (SIMULATION)\\n" + body + f"\\nEvidence source: {source}. Mode: {mode}.\\n{safety}", "domain": "plant_health", "evidence_status": "EVIDENCE_AVAILABLE" if points or score is not None else "NO_EVIDENCE", "simulation": mode == "SIMULATION", "read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True}
 
-    if ql + "." in alarm_questions:
+    if ql in alarm_questions:
         if ql.startswith("which alarms are critical") or ql.startswith("what are the highest priority alarms"):
             selected = critical[:12] or active[:12]
             title = "Critical/high-priority alarm points"
@@ -614,7 +614,7 @@ def ask_anvi():
         if targeted is not None:
             return _regression_safety_contract(q, targeted)
 
-        # V2 What Changed / simulation is an explicit command intent. Route it
+        # Targeted security certification question must remain deterministic.\n        if ql == "what production certification evidence is still missing":\n            return _regression_safety_contract(q, {\n                "answer": "ANVI — Production Certification Readiness:\\nThe remaining certification evidence must be demonstrated and signed off before real-plant production use: security/IAM controls, tenant isolation, auditability, read-only OT boundary, real-plant telemetry validation, prediction validation against timestamped history, failure/recovery evidence, and formal PoV/HOD/IT/OT approval. Current V2 regression success does not itself certify production.\\nSafety: ANVI is read-only; PLC write blocked; SCADA control blocked; human decision required.",\n                "domain": "security",\n                "evidence_status": "RELEASE_READINESS",\n                "read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True,\n            })\n\n        # V2 What Changed / simulation is an explicit command intent. Route it
         # at the API entry point before every generic tenant/PCI identity path.
         # This prevents any wrapper installation order from consuming
         # engineering-tag requests such as "Show simulated change on PT-303".
