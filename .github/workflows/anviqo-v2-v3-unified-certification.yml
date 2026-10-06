@@ -23,3 +23,5 @@ jobs:
         run: python -m pytest -q tests/test_v2_v3_unified_platform.py tests/test_v3_extra_operator_intelligence.py tests/test_v3_extra_question_contract.py
       - name: Run existing V2 contract suite
         run: python -m pytest -q tests/test_global_v2_contracts.py tests/test_global_v2_observation_contract.py tests/test_global_v2_edge_registry.py tests/test_global_v2_evidence_ledger.py tests/test_global_v2_realtime_store.py tests/test_global_v2_realtime_replay.py tests/test_global_v2_event_correlation.py tests/test_global_v2_capability_contracts.py tests/test_global_v2_evidence_graph.py tests/test_global_v2_intelligence_boundaries.py tests/test_global_v2_timeseries_contract.py tests/test_global_v2_secure_edge_runtime.py tests/test_global_v2_edge_ingestion_bridge.py tests/test_global_v2_audit_contract.py tests/test_global_v2_final_release_gate.py tests/test_global_v2_pov_contract.py tests/test_global_v2_production_blueprint.py tests/test_global_v2_month_soak.py
+
+# Extraordinary operator intelligence certification pack included.
