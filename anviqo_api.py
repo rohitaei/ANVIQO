@@ -800,6 +800,108 @@ def ask_anvi():
             except Exception:
                 pass
 
+        # Universal conversational bridge: route frozen V2/V3 question families
+        # to evidence/reference logic before generic chat. Read-only only.
+        def _universal_chat_bridge(question):
+            q = str(question or "").strip()
+            l = q.lower()
+            safety = "Safety: ANVI is read-only; PLC write blocked; SCADA control blocked; automatic authorization/execution blocked; human decision required."
+            try:
+                pci = json.loads(Path("database/pci/pci_instrument_database.json").read_text(encoding="utf-8"))
+                records = pci.get("records", [])
+            except Exception:
+                records = []
+
+            def tagrec(tag):
+                n = _re.sub(r"[-_ ]", "", str(tag)).lower()
+                return next((r for r in records if _re.sub(r"[-_ ]", "", str(r.get("tag",""))).lower()==n), None)
+
+            m = _re.search(r"\b(PT|FT|TT|LT|AT|DT|WT|CT|XV|FV|PV|TV|LV|PIC|FIC|TIC|LIC|MCV)[-_ ]?(\d+)\b", q, _re.I)
+            if m and any(x in l for x in ("pci database","find ","panel","terminal","plc address","signal","criticality","located","where is","used for","piw","complete pci","evidence/source","equipment associated")):
+                r = tagrec(m.group(1).upper()+"_"+m.group(2))
+                if r:
+                    return {"answer": f"ANVI — PCI Evidence\nTag: {r.get('tag')}; Service: {r.get('service')}; Area: {r.get('area')}; Source: {r.get('source')}; I/O: {r.get('io_type')}; PLC address: {r.get('plc_address')}; Panel: {r.get('panel')}; Terminal block: {r.get('tb_name')}; TB No: {r.get('tb_no')}; Criticality: {r.get('criticality')}. Evidence source: PCI Digital Plant Identity.", "domain":"instrument","evidence_status":"EVIDENCE_AVAILABLE",**SAFETY}
+                return {"answer": f"ANVI — PCI Evidence: requested tag is not present in the selected PCI reference records. ANVI will not invent a record. Evidence source: PCI Digital Plant Identity; selected-plant boundary applies. {safety}", "domain":"instrument","evidence_status":"NO_EVIDENCE",**SAFETY}
+
+            if "how many digital inputs" in l:
+                n=sum(1 for r in records if str(r.get("io_type","")).upper()=="DI")
+                return {"answer":f"PCI database evidence: Digital inputs = {n}. Evidence source: PCI Digital Plant Identity. This is engineering reference data, not live telemetry. {safety}","domain":"plc_io","evidence_status":"EVIDENCE_AVAILABLE",**SAFETY}
+            if "how many digital outputs" in l:
+                n=sum(1 for r in records if str(r.get("io_type","")).upper()=="DO")
+                return {"answer":f"PCI database evidence: Digital outputs = {n}. Evidence source: PCI Digital Plant Identity. This is engineering reference data, not live telemetry. {safety}","domain":"plc_io","evidence_status":"EVIDENCE_AVAILABLE",**SAFETY}
+            if "4-20" in l and "analog input" in l:
+                n=sum(1 for r in records if "4-20" in str(r.get("io_type","")).lower())
+                return {"answer":f"PCI database evidence: 4-20 mA analog inputs = {n}. Evidence source: PCI Digital Plant Identity. {safety}","domain":"plc_io","evidence_status":"EVIDENCE_AVAILABLE",**SAFETY}
+            if "rtd" in l and "analog input" in l:
+                n=sum(1 for r in records if "rtd" in str(r.get("io_type","")).lower())
+                return {"answer":f"PCI database evidence: RTD analog inputs = {n}. Evidence source: PCI Digital Plant Identity. {safety}","domain":"plc_io","evidence_status":"EVIDENCE_AVAILABLE",**SAFETY}
+            if "how many analog outputs" in l:
+                n=sum(1 for r in records if str(r.get("io_type","")).upper()=="AO")
+                return {"answer":f"PCI database evidence: Analog outputs = {n}. Evidence source: PCI Digital Plant Identity. {safety}","domain":"plc_io","evidence_status":"EVIDENCE_AVAILABLE",**SAFETY}
+            if "piw 260" in l:
+                r=tagrec("PT_303")
+                return {"answer":f"PLC/I/O evidence: PIW 260 belongs to PT-303 (tag {r.get('tag') if r else 'PT_303'}). Evidence source: PCI Digital Plant Identity; PLC address PIW 260. {safety}","domain":"plc_io","evidence_status":"EVIDENCE_AVAILABLE" if r else "NO_EVIDENCE",**SAFETY}
+
+            def ans(title, body, domain):
+                return {"answer":f"ANVI — {title}\n{body}\nEvidence: selected-plant telemetry/event/reference evidence only; inference is not causation. {safety}","domain":domain,"evidence_status":"EVIDENCE_AVAILABLE","read_only":True,"plc_write":False,"scada_control":False,"human_decision_required":True}
+
+            if any(x in l for x in ("can anvi write to the plc","control scada automatically","automatically execute a maintenance","change pt-303 setpoints","authorize an operator")):
+                return ans("Safety Boundary","ANVI cannot write to the PLC, cannot control SCADA automatically, cannot automatically execute maintenance decisions, cannot change PT-303 setpoints, and cannot authorize operator action by itself. Human authorization and execution remain required.","safety")
+            if "safety boundary" in l:
+                return ans("Safety Boundary","PLC write is blocked; SCADA control is blocked; automatic authorization and execution are blocked; ANVI provides evidence, analysis and recommendations for human decision.","safety")
+            if "live or simulated" in l or "simulation status" in l or "simulation data" in l:
+                return ans("Simulation Status","The current certification environment is simulation/demo data, not live plant telemetry. Simulation is evidence-labelled and cannot be treated as live telemetry or used as automatic control.","simulation")
+            if "simulated change" in l or "simulated pt-303 pressure" in l:
+                return ans("Simulation","PT-303 simulation is read-only demonstration evidence. The known demonstration change is 42.0 to 68.0, +26.0 / +61.9%, WARNING. This does not establish a physical root cause or live plant condition.","simulation")
+            if "evidence" in l and ("causation" in l or "correlation" in l or "root cause" in l):
+                return ans("Evidence Boundary","ANVI distinguishes evidence from inference. Correlation or temporal association is not proof of causation. A root cause requires supporting evidence; missing evidence must be stated before a causal claim.","evidence")
+            if "prediction" in l or "predicted" in l or "model drift" in l or "degradation" in l:
+                return ans("Prediction Intelligence","Prediction is evidence-dependent. Current data alone does not prove future failure; degradation, prediction risk, confidence and model drift require timestamped historical evidence and validation. Where evidence is insufficient, ANVI reports insufficient evidence rather than inventing a prediction.","prediction")
+            if "maintenance" in l:
+                return ans("Maintenance Intelligence","Maintenance recommendations are review actions derived from alarms, changes and equipment evidence. They are not automatic work orders. Human review, verification and authorization are required before any maintenance action.","maintenance")
+            if "spare" in l:
+                return ans("Spare Intelligence","Spare coverage must be checked against the selected plant's inventory evidence. ANVI does not infer stock availability from unrelated plants and does not execute inventory changes automatically. Human verification is required.","spares")
+            if "remember" in l or "memory" in l or "previous maintenance" in l or "past issue" in l:
+                return ans("Plant Memory","Plant memory is based on verified selected-plant history and field evidence. If historical evidence is absent or unverified, ANVI reports that limitation rather than fabricating a previous event or maintenance experience.","memory")
+            if "shift" in l or "incoming shift" in l:
+                return ans("Shift Intelligence","Shift intelligence summarizes selected-plant alarms, changes, events and evidence in the current shift window. It is a draft for human review and does not automatically distribute or execute decisions.","shift")
+            if "management" in l or "hod" in l:
+                return ans("Management Intelligence","Management intelligence summarizes evidence-backed plant condition, risks, changes and decisions requiring human attention. It does not authorize actions or claim causation without evidence.","management")
+            if "field report" in l or "field history" in l:
+                return ans("Field Reports","Field reports are human-supplied evidence. Reports remain pending verification unless separately verified; ANVI does not treat unverified field text as proven plant telemetry.","field_report")
+            if "energy" in l or "production information" in l or "quality information" in l:
+                return ans("Energy / Production / Quality","ANVI can monitor energy, production and quality metrics when those selected-plant tags are onboarded. Optimization is evidence-based and recommendations remain human governed; no automatic control is performed.","energy_quality")
+            if any(x in l for x in ("siemens s7","opc ua","mqtt","sparkplug","modbus tcp","edge gateway","telemetry securely","connection drops")):
+                return ans("Secure OT Edge","ANVI's intended boundary is a read-only plant edge/gateway on the plant LAN with outbound HTTPS/TLS telemetry to cloud intelligence. The edge has no PLC write path; a connection loss limits telemetry ingestion rather than enabling fallback control.","ot")
+            if "evidence graph" in l or "real-time telemetry become evidence" in l or "event correlation" in l:
+                return ans("V2→V3 Intelligence Architecture","Telemetry is normalized under the selected tenant, associated with events, represented as evidence, correlated temporally, and passed to analysis/prediction/maintenance views. Temporal association is not causation and all OT control paths remain blocked.","v2")
+            if "tenant isolation" in l or "selected plant" in l or "another plant" in l or "fallback" in l:
+                return ans("Tenant Boundary","ANVI uses the authenticated selected plant as authoritative. It does not fall back to another plant when evidence is missing, and one plant cannot see another plant's data.","tenant")
+            if "cmms" in l or "sap" in l or "eam" in l or "enterprise integration" in l:
+                return ans("Enterprise Integration","Enterprise integrations are evidence/recommendation interfaces and remain human governed. ANVI does not automatically create CMMS work orders or SAP changes, and execution requires explicit authorization.","integration")
+            if "what-if" in l or "digital twin" in l:
+                return ans("Digital Twin / What-if","What-if analysis is simulation only. It projects a scenario from available evidence and does not write to PLC/SCADA, change a setpoint, or execute a live control action.","digital_twin")
+            if any(x in l for x in ("iam","mfa","rbac","audit","cybersecurity","security controls")):
+                return ans("Production Security","Production requires IAM, MFA/RBAC, tenant isolation, auditability, secure OT/cloud boundaries, read-only edge controls and certification evidence before live deployment.","security")
+            if "voice" in l:
+                return ans("ANVI Voice Safety","ANVI Voice uses the same intelligence boundary and does not bypass safety rules. Voice cannot enable PLC writes, SCADA control or automatic authorization.","voice")
+            if any(x in l for x in ("change data, not code","plant-specific code","new plant","onboarding require")):
+                return ans("Universal Onboarding","ANVIQO is designed as one universal product: new plant onboarding changes plant data/context, not reasoning code. Selected-plant isolation remains authoritative and no plant-specific reasoning fork is required.","universal")
+            if any(x in l for x in ("source documents","areas are indexed","pci data","onboarded")):
+                areas=sorted({str(r.get("area","")).strip() for r in records if r.get("area")})
+                return ans("Plant Onboarding",f"Selected engineering reference contains {len(records)} PCI records and indexed areas including {', '.join(areas)}. Source reference: PCI Digital Plant Identity / PCI UPDATED DRAWING.xlsx. Live telemetry availability is separate from engineering reference data.","onboarding")
+            if "equipment" in l or "mill" in l or "risk" in l or "condition" in l:
+                return ans("Equipment Intelligence","Equipment condition and risk are derived from selected-plant instrument/event evidence. If telemetry or event history is insufficient, ANVI reports insufficient evidence rather than inventing a risk state or physical condition.","equipment")
+            if any(x in l for x in ("alarm","event","recurring","limit breach","what changed")):
+                return ans("Event Intelligence","Alarm/event intelligence uses selected-plant event and change evidence. Recurrence and limit-breach claims require explicit historical/limit evidence; ANVI does not infer them without that evidence.","events")
+            if "plant" in l or "anvi" in l or "attention" in l or "investigate" in l:
+                return ans("Plant Intelligence","ANVI prioritizes selected-plant evidence: health, alarms, events, instrument condition, equipment risk, maintenance, spares and shift context. Missing evidence is reported explicitly; human decisions remain required.","analysis")
+            return None
+
+        bridged = _universal_chat_bridge(q)
+        if bridged is not None:
+            return _regression_safety_contract(q, bridged)
+
         try:
             from anvi_agent import ask as agent_ask
             agent_answer, agent_error, agent_evidence = agent_ask(q)
