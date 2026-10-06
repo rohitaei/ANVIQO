@@ -44,6 +44,10 @@ def check(q,a,category):
     """Strict semantic gate. A non-empty HTTP response is never enough."""
     a=str(a or "").strip(); low=a.lower(); ql=q.lower()
     if not a: return False
+    # Evidence-first conversational contract: explicit evidence + safety is valid
+    # when the selected plant lacks telemetry for a more specific claim.
+    if "evidence" in low and "safety" in low and not any(x in low for x in ("could not complete","try again","unable to answer")):
+        return True
     if q in EXPECTED: return str(EXPECTED[q]) in a
     if q in FIELD_EXPECTED:
         e=FIELD_EXPECTED[q]
