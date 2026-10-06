@@ -650,7 +650,7 @@ def ask_anvi():
                     return {"answer": f"ANVI — PCI Evidence\nTag: {r.get('tag')}; Service: {r.get('service')}; Area: {r.get('area')}; Source: {r.get('source')}; I/O: {r.get('io_type')}; PLC address: {r.get('plc_address')}; Panel: {r.get('panel')}; Terminal block: {r.get('tb_name')}; TB No: {r.get('tb_no')}; Criticality: {r.get('criticality')}. Evidence source: PCI Digital Plant Identity.", "domain":"instrument","evidence_status":"EVIDENCE_AVAILABLE",**SAFETY}
                 return {"answer": f"ANVI — PCI Evidence: {m.group(1).upper()}-{m.group(2)} is not present as a complete instrument record in the selected PCI reference records. ANVI will not invent a record. Evidence source: PCI Digital Plant Identity; selected-plant boundary applies. {safety}", "domain":"instrument","evidence_status":"NO_EVIDENCE",**SAFETY}
 
-            if l in ("did pt-402 change", "did pt-403 change"):
+            if l.rstrip(".!?") in ("did pt-402 change", "did pt-403 change"):
                 tag = "PT-402" if "pt-402" in l else "PT-403"
                 return ans("Event Intelligence", f"{tag} change status: no verified selected-plant change event is available for this tag in the current evidence stream. ANVI will not infer a change without telemetry/event evidence. Evidence source: selected-plant event/change stream.", "events")
 
