@@ -783,7 +783,7 @@ def ask_anvi():
         # or return an unrelated full-record response. This is routing only; the
         # tenant boundary remains fail-closed and read-only.
         engineering_tag = bool(_re.search(
-            r"\\b(?:PT|FT|TT|LT|AT|DT|WT|CT|XV|FV|PV|TV|LV|PIC|FIC|TIC|LIC|MCV)[-_ ]?\\d+\\b",
+            r"\b(?:PT|FT|TT|LT|AT|DT|WT|CT|XV|FV|PV|TV|LV|PIC|FIC|TIC|LIC|MCV)[-_ ]?\d+\b",
             q.upper(),
         ))
         engineering_intent = any(term in q.lower() for term in (
