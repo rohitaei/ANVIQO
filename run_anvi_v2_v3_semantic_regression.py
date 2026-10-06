@@ -1,5 +1,7 @@
 """ANVIQO V2-V3 semantic regression contract.
 
+# Live certification routing fix checkpoint 2026-10-06.
+
 This suite deliberately distinguishes semantic correctness from HTTP success.
 It validates exact engineering facts against the authoritative PCI reference,
 while allowing evidence-unavailable answers where the selected tenant has no
