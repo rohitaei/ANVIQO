@@ -36,8 +36,7 @@ FIELD_EXPECTED={
 "What is the criticality of PT-303?":PT303.get("criticality"),
 "Where is PT-303 located?":PT303.get("area"),
 }
-def norm(s): return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
-def norm(s): return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+def norm(s): return re.sub(r"[^a-z0-9]+", "", str(s or "").lower())
 
 def check(q,a,category):
     """Strict semantic gate. A non-empty HTTP response is never enough."""
