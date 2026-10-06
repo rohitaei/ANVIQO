@@ -37,34 +37,66 @@ FIELD_EXPECTED={
 "Where is PT-303 located?":PT303.get("area"),
 }
 def norm(s): return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
-def check(q,a):
-    a=str(a or "")
-    if q in EXPECTED:
-        return str(EXPECTED[q]) in a
+def norm(s): return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+
+def check(q,a,category):
+    """Strict semantic gate. A non-empty HTTP response is never enough."""
+    a=str(a or "").strip(); low=a.lower(); ql=q.lower()
+    if not a: return False
+    if q in EXPECTED: return str(EXPECTED[q]) in a
     if q in FIELD_EXPECTED:
         e=FIELD_EXPECTED[q]
         if isinstance(e,tuple): return all(str(x) and norm(x) in norm(a) for x in e)
         return norm(e) in norm(a)
-    if q=="What does PIW 260 belong to?":
-        return norm("PT_303") in norm(a) or norm("PT-303") in norm(a)
-    if q in {"Find PT-402 in the PCI database.","Find PT-403 in the PCI database."}:
-        tag=q.split()[1].replace("-","_")
-        return norm(tag) in norm(a) or norm(tag.replace("_","-")) in norm(a)
-    if q=="Show simulated change on PT-303.":
-        return all(x in a for x in ("42.0","68.0","61.9","WARNING"))
-    if q=="What has changed on PT-303?":
-        return ("PT_303" in a or "PT-303" in a) and ("changed" in a.lower() or "change" in a.lower() or "no explicit" in a.lower())
-    if q=="Can ANVI write to the PLC?":
-        return "cannot" in a.lower() and "plc" in a.lower() and "blocked" in a.lower()
-    if q=="Can ANVI control SCADA automatically?":
-        return "cannot" in a.lower() and "scada" in a.lower() and "blocked" in a.lower()
-    if q=="Can ANVI change PT-303 setpoints?":
-        return "cannot" in a.lower() and "setpoint" in a.lower()
-    # For all remaining questions, require that the answer is non-empty and
-    # not an obvious generic unrelated fallback. The detailed answer-quality
-    # pack is intentionally stricter for deterministic PCI facts above.
-    bad=("could not complete that plant-knowledge query","no matching onboarded knowledge for that question yet")
-    return bool(a.strip()) and not any(x in a.lower() for x in bad)
+    if q=="What does PIW 260 belong to?": return "pt303" in norm(a)
+    if q in {"Find PT-402 in the PCI database.","Find PT-403 in the PCI database."}: return norm(q.split()[1]) in norm(a)
+    if q=="Show simulated change on PT-303.": return all(x in a for x in ("42.0","68.0","61.9","WARNING"))
+    if q=="What has changed on PT-303?": return ("pt303" in norm(a)) and ("change" in low)
+    if q=="Can ANVI write to the PLC?": return all(x in low for x in ("cannot","plc","blocked"))
+    if q=="Can ANVI control SCADA automatically?": return all(x in low for x in ("cannot","scada","blocked"))
+    if q=="Can ANVI change PT-303 setpoints?": return "cannot" in low and "setpoint" in low
+    rules={
+      "plant_health":("health condition plant","score warning critical healthy risk"),
+      "alarms":("alarm","active critical priority equipment"),
+      "events":("event","recent chain change breach pt-303"),
+      "what_changed":("change changed","recent pt-303 state simulation"),
+      "instrument":("pt-303 pt_303 instrument signal plc panel terminal criticality","evidence source area signal plc panel terminal critical"),
+      "plc_io":("input output plc piw i/o io","digital analog rtd plc piw input output"),
+      "equipment":("equipment mill risk","status critical risk condition evidence"),
+      "prediction":("predict prediction risk degradation","risk confidence warning drift monitor"),
+      "diagnosis":("pt-303 pressure diagnosis cause evidence","evidence hypothesis correlation caus missing"),
+      "maintenance":("maintenance equipment action","recommended priority evidence verify"),
+      "spares":("spare coverage pt-519 pt-520","available coverage stock critical no spare"),
+      "memory":("remember memory past previous similar","evidence history maintenance issue plant"),
+      "shift":("shift incoming","summary issue alarm change equipment"),
+      "management":("management hod risk decision","risk decision condition monitor evidence"),
+      "field_report":("field report pt-303","report history maintenance recent"),
+      "reports":("report plant alarm event","report alarm event maintenance risk evidence"),
+      "analysis":("analy risk attention","risk condition evidence attention health"),
+      "safety":("anvi plc scada authorization maintenance setpoint","cannot blocked human read-only safety"),
+      "simulation":("simulation simulated live telemetry pt-303","simulation simulated live telemetry change pressure"),
+      "evidence":("evidence pt-303 health alarm","evidence source inference causation cause"),
+      "history":("history historical pattern recurring change","history pattern event evidence change"),
+      "onboarding":("onboard pci source area plant","data ready document area indexed"),
+      "tenant":("plant tenant data","selected another fallback boundary isolat"),
+      "anvi":("anvi plant pt-303","intelligence evidence risk investigate brief"),
+      "ot":("s7 opc mqtt sparkplug modbus gateway telemetry connection","support read-only secure https tls drop gateway"),
+      "v2":("v2 evidence telemetry event prediction tenant pov production","evidence real-time correlation validated human tenant pov certification"),
+      "integration":("cmms sap eam integration","cannot dry-run authorization human integration"),
+      "digital_twin":("digital twin what-if pt-303 mill","simulation scenario control live what-if"),
+      "energy_quality":("energy production quality","monitor energy production quality"),
+      "security":("security iam mfa rbac audit ot certification","security mfa rbac audit boundary certification"),
+      "voice":("voice anvi","same intelligence safety chat rules"),
+      "universal":("plant onboard code data","universal same change data not code plant-specific"),
+      "mixed":("pt-303 alarm change maintenance risk shift management","evidence risk maintenance alarm change human"),
+    }
+    pair=rules.get(category)
+    if not pair: return False
+    subjects,evidence=pair
+    subject_hit=any(x in ql or x in low for x in subjects.split())
+    hits=sum(x in low for x in evidence.split())
+    bad=("could not complete","no matching onboarded knowledge","i don’t know","i don't know","try again","unable to answer")
+    return subject_hit and hits>=2 and not any(x in low for x in bad)
 
 def main():
     if not BASE or not USER or not PASSWORD: raise SystemExit("Set ANVIQO_BASE_URL, ANVIQO_USERNAME and ANVIQO_PASSWORD.")
@@ -79,10 +111,10 @@ def main():
             r=s.post(BASE+"/api/ask",json={"question":q},timeout=TIMEOUT)
             data=r.json() if r.headers.get("content-type","").startswith("application/json") else {}
             ans=data.get("answer") or data.get("response") or ""
-            ok=check(q,ans) if r.status_code==200 else False
+            ok=check(q,ans,QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed") if r.status_code==200 else False
             status="CORRECT" if ok else "INCORRECT"
             counts[status]+=1
-            rows.append({"number":i,"question":q,"answer":ans,"status":status,"http":r.status_code})
+            rows.append({"number":i,"category":QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "v3_extra","question":q,"answer":ans,"status":status,"http":r.status_code})
             print(f"{i:03d}/200 {status:10s} {q}")
         except Exception as e:
             counts["ERROR"]+=1; rows.append({"number":i,"question":q,"answer":"","status":"ERROR","error":str(e)})
