@@ -355,6 +355,46 @@ def register(app) -> None:
         if err: return err, code
         return jsonify(platform.platform_summary(*scope))
 
+    @app.post("/api/v3/edge/envelope")
+    def v3_edge_envelope():
+        scope, err, code = require_scope()
+        if err: return err, code
+        body = request.get_json(silent=True) or {}
+        try:
+            from anvi_v2_edge_ingestion_bridge import EdgeIngestionBridge
+            from anvi_v2_secure_edge_runtime import EdgeEnvelope
+            ts = datetime.fromisoformat(str(body["observed_at"]).replace("Z", "+00:00"))
+            env = EdgeEnvelope(
+                scope[0], scope[1], str(body["protocol"]).upper(),
+                int(body["sequence"]), ts, dict(body.get("payload") or {})
+            )
+            bridge = EdgeIngestionBridge()
+            accepted = bridge.ingest(
+                env, scope[0], scope[1], str(body["tag"]), body["value"],
+                str(body.get("quality", "GOOD")).upper(),
+                body.get("engineering_unit"), str(body.get("source", "READ_ONLY_EDGE"))
+            )
+            if accepted:
+                ts_point = TelemetryPoint(
+                    scope[0], scope[1], str(body["tag"]), ts, body["value"],
+                    str(body.get("engineering_unit", "")),
+                    str(body.get("quality", "GOOD")).upper(),
+                    str(body.get("source", "READ_ONLY_EDGE")), int(body["sequence"])
+                )
+                platform.ingest(ts_point, selected_org=scope[0], selected_plant=scope[1])
+            return jsonify({
+                "status": "ACCEPTED" if accepted else "DEDUPLICATED",
+                "tenant": {"organization_id": scope[0], "plant_id": scope[1]},
+                "observation_accepted": bool(accepted),
+                "protocol": env.protocol,
+                "control_path": "NONE",
+                "safety": bridge.safety(),
+            }), 200
+        except PermissionError as exc:
+            return jsonify({"status": "FORBIDDEN", "message": str(exc), "safety": dict(SAFETY)}), 403
+        except Exception as exc:
+            return jsonify({"status": "BAD_REQUEST", "message": str(exc), "safety": dict(SAFETY)}), 400
+
     @app.post("/api/v3/edge/observations")
     def v3_ingest():
         scope, err, code = require_scope()
