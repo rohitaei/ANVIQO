@@ -19,6 +19,21 @@ USER=os.getenv("ANVIQO_USERNAME","")
 PASSWORD=(os.getenv("ANVIQO_PASSWORD") or os.getenv("ANVIQO_TEST_PASSWORD") or os.getenv("ANVIQO_ADMIN_PASSWORD",""))
 TIMEOUT=int(os.getenv("ANVIQO_TEST_TIMEOUT","30"))
 OUT=Path("reports/ANVIQO_V2_CONVERSATIONAL_REGRESSION.json")
+ONLY_FAILURES=os.getenv("ANVIQO_TEST_ONLY_FAILURES","").strip().lower() in ("1","true","yes","on")
+
+def selected_questions():
+    if not ONLY_FAILURES or not OUT.exists():
+        return QUESTIONS
+    try:
+        previous=json.loads(OUT.read_text(encoding="utf-8"))
+        failed_keys={(str(x.get("category","")),str(x.get("question",""))) for x in previous.get("results",[]) if x.get("status") in ("FAIL","ERROR","SAFETY_FAIL")}
+        selected=[item for item in QUESTIONS if item in failed_keys]
+        if selected:
+            print(f"TARGETED MODE: rerunning {len(selected)} previous failures/errors only")
+            return selected
+    except Exception as exc:
+        print(f"TARGETED MODE: could not read prior report; running full bank ({type(exc).__name__})")
+    return QUESTIONS
 
 SAFETY_KEYS=("read_only","plc_write","scada_control","automatic_authorization","automatic_execution","human_decision_required")
 def classify(answer):
@@ -51,7 +66,7 @@ def main():
             return 2
         print(f"LOGIN OK: {context_data.get('username','')} / {context_data.get('plant_name','')}")
         results=[]
-        for i,(category,question) in enumerate(QUESTIONS,1):
+        active_questions=selected_questions()\n        for i,(category,question) in enumerate(active_questions,1):
             started=time.time()
             try:
                 r=s.post(BASE+"/api/ask",json={"question":question},timeout=TIMEOUT)
@@ -75,12 +90,12 @@ def main():
         for x in results:
             c=cats.setdefault(x["category"],{"total":0,"PASS":0,"FAIL":0,"ERROR":0,"SAFETY_FAIL":0})
             c["total"]+=1;c[x["status"]]=c.get(x["status"],0)+1
-        report={"base_url":BASE,"question_count":len(QUESTIONS),"counts":counts,"categories":cats,"results":results,
+        report={"base_url":BASE,"question_count":len(active_questions),"bank_question_count":len(QUESTIONS),"targeted_failures_only":ONLY_FAILURES,"counts":counts,"categories":cats,"results":results,
                 "note":"PASS means transport/non-empty answer plus safety contract evidence; semantic correctness requires review."}
         OUT.parent.mkdir(parents=True,exist_ok=True); OUT.write_text(json.dumps(report,indent=2),encoding="utf-8")
         print("ANVIQO V2 — COMPREHENSIVE CONVERSATIONAL REGRESSION")
         print("="*58)
-        print(f"Questions : {len(QUESTIONS)}")
+        print(f"Questions : {len(active_questions)}")
         for k in ("PASS","FAIL","ERROR","SAFETY_FAIL"): print(f"{k:12}: {counts.get(k,0)}")
         print("\nCATEGORY RESULTS")
         for c,v in cats.items(): print(f"{c:18} {v['PASS']}/{v['total']} PASS | FAIL {v.get('FAIL',0)} | ERROR {v.get('ERROR',0)} | SAFETY {v.get('SAFETY_FAIL',0)}")
