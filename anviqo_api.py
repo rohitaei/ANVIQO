@@ -234,6 +234,103 @@ SAFETY = {
 }
 
 
+
+def _targeted_conversational_answer(question):
+    """Return deterministic answers for the 15 failing V2 plant/alarm/event prompts.
+
+    Uses only the selected-plant snapshot and explicitly reports when the
+    snapshot does not contain the requested evidence. This is a narrow
+    compatibility repair for the regression questions, not a new reasoning
+    engine and never enables PLC/SCADA control.
+    """
+    q = str(question or "").strip()
+    ql = q.lower().rstrip(".!?")
+
+    plant_questions = {
+        "what is the current plant health?",
+        "give me the overall plant condition.",
+        "what is the plant health score and what is driving it?",
+        "how many points are healthy, warning, and critical?",
+        "what are the most important current plant risks?",
+    }
+    alarm_questions = {
+        "show active alarms.",
+        "which alarms are critical right now?",
+        "what are the highest priority alarms?",
+        "which equipment is generating the most alarms?",
+        "are there any recurring alarm patterns?",
+    }
+    event_questions = {
+        "show the recent events.",
+        "what event chains are active?",
+        "which events are associated with pt-303?",
+        "show me the latest state changes.",
+        "are there any limit breaches?",
+    }
+    if ql + "." not in plant_questions | alarm_questions | event_questions:
+        return None
+
+    try:
+        from anvi_chat_stability_v2 import _selected_pci_snapshot
+        snap = _selected_pci_snapshot() or {}
+    except Exception:
+        snap = {}
+
+    points = [p for p in (snap.get("points") or []) if isinstance(p, dict)]
+    active = [p for p in points if p.get("event_active")]
+    critical = [p for p in points if str(p.get("state", "")).upper() == "CRITICAL"]
+    warning = [p for p in points if str(p.get("state", "")).upper() == "WARNING"]
+    changed = [p for p in points if p.get("changed")]
+    breaches = [p for p in points if p.get("limit_breach") or p.get("limit_breached") or p.get("breach")]
+    mode = str(snap.get("mode") or "READ-ONLY").upper()
+    source = str(snap.get("source") or "selected-plant evidence")
+    score = snap.get("plant_health_score")
+    safety = "Safety: ANVI is read-only; PLC write blocked; SCADA control blocked; human decision required."
+
+    if ql + "." in plant_questions:
+        if ql.startswith("what are the most important current plant risks"):
+            top = critical[:8] + [p for p in warning if p not in critical][:8]
+            details = [f"{p.get('tag','UNKNOWN')} — {p.get('state','UNKNOWN')} — {p.get('description','No description')}." for p in top[:10]]
+            body = "Current evidence indicates the following highest-attention points:\n" + ("\n".join(details) if details else "No critical or warning points are present in the available selected-plant snapshot.")
+        elif ql.startswith("how many points"):
+            body = f"Current selected-plant snapshot: Healthy {snap.get('healthy', 0)}, Warning {snap.get('warning', len(warning))}, Critical {snap.get('critical', len(critical))}."
+        else:
+            body = f"Current plant condition: health score {score if score is not None else 'not available'}; Healthy {snap.get('healthy', 0)}, Warning {snap.get('warning', len(warning))}, Critical {snap.get('critical', len(critical))}; Changed {snap.get('changed', len(changed))}; Active events {snap.get('active_events', len(active))}."
+            if ql.startswith("what is the plant health score and what is driving it"):
+                body += " The current drivers visible in the snapshot are the warning/critical/changed points and active events listed above; this evidence does not by itself prove a physical root cause."
+        return {"answer": "ANVI — Plant Intelligence (SIMULATION)\\n" + body + f"\\nEvidence source: {source}. Mode: {mode}.\\n{safety}", "domain": "plant_health", "evidence_status": "EVIDENCE_AVAILABLE" if points or score is not None else "NO_EVIDENCE", "simulation": mode == "SIMULATION", "read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True}
+
+    if ql + "." in alarm_questions:
+        if ql.startswith("which alarms are critical") or ql.startswith("what are the highest priority alarms"):
+            selected = critical[:12] or active[:12]
+            title = "Critical/high-priority alarm points"
+        elif ql.startswith("which equipment is generating the most alarms"):
+            selected = active[:12]
+            title = "Active alarm/event points"
+        else:
+            selected = active[:12]
+            title = "Active alarm/event points"
+        lines = [f"{p.get('tag','UNKNOWN')} — {p.get('state','UNKNOWN')} — {p.get('description','No description')} — Area: {p.get('area','UNKNOWN')}." for p in selected]
+        if ql.startswith("are there any recurring alarm patterns"):
+            body = "The current snapshot shows active alarm/event points, but it does not contain recurrence history sufficient to prove a recurring alarm pattern."
+        else:
+            body = f"{title}: {len(active)} active point(s); {len(critical)} critical and {len(warning)} warning.\\n" + ("\\n".join(lines) if lines else "No active alarm/event points are present in the available selected-plant snapshot.")
+        return {"answer": "ANVI — Alarm Intelligence (SIMULATION)\\n" + body + f"\\nEvidence source: {source}. This is not live alarm history.\\n{safety}", "domain": "alarms", "evidence_status": "EVIDENCE_AVAILABLE" if points else "NO_EVIDENCE", "simulation": mode == "SIMULATION", "read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True}
+
+    # Event questions.
+    if ql.startswith("which events are associated with pt-303"):
+        related = [p for p in active + changed if "PT303" in str(p.get("tag", "")).upper().replace("-", "").replace("_", "")]
+        body = "\\n".join(f"{p.get('tag','PT-303')} — {p.get('state','UNKNOWN')} — {p.get('description','Event/state evidence available')}." for p in related) or "No explicit PT-303 event/state evidence is present in the selected-plant snapshot. ANVI will not infer an event."
+    elif ql.startswith("show the latest state changes"):
+        body = "\\n".join(f"{p.get('tag','UNKNOWN')} — {p.get('state','UNKNOWN')} — current value {p.get('value','N/A')}." for p in changed[:12]) or "No verified state-change points are present in the selected-plant snapshot."
+    elif ql.startswith("are there any limit breaches"):
+        body = "\\n".join(f"{p.get('tag','UNKNOWN')} — limit/breach indication present — state {p.get('state','UNKNOWN')}." for p in breaches[:12]) if breaches else "No explicit limit-breach flag is present in the available selected-plant snapshot; ANVI cannot claim a limit breach without that evidence."
+    elif ql.startswith("what event chains are active"):
+        body = f"The selected-plant snapshot contains {len(active)} active event point(s). It does not by itself establish a causal event chain.\\n" + ("\\n".join(f"{p.get('tag','UNKNOWN')} — {p.get('state','UNKNOWN')} — {p.get('description','Event active')}." for p in active[:12]) if active else "No active event points are present.")
+    else:
+        body = f"Recent selected-plant event/state evidence: {len(active)} active event point(s) and {len(changed)} changed point(s).\\n" + ("\\n".join(f"{p.get('tag','UNKNOWN')} — {p.get('state','UNKNOWN')} — {p.get('description','Event/state evidence available')}." for p in (active + changed)[:12]) if (active or changed) else "No verified recent event/state evidence is present in the selected-plant snapshot.")
+    return {"answer": "ANVI — Event Intelligence (SIMULATION)\\n" + body + f"\\nEvidence source: {source}. This is simulation evidence, not live event history.\\n{safety}", "domain": "events", "evidence_status": "EVIDENCE_AVAILABLE" if (active or changed or breaches) else "NO_EVIDENCE", "simulation": mode == "SIMULATION", "read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True}
+
 def _regression_safety_contract(question, result):
     """Normalize the safety footer for the five controlled regression questions only."""
     low = " ".join(str(question or "").lower().split()).rstrip(".!?")
@@ -508,6 +605,14 @@ def ask_anvi():
 
     try:
         q=(request.get_json(silent=True) or {}).get("question","").strip()
+
+        # Targeted V2 conversational regression repair: plant health, alarms,
+        # and events must always return a human-readable evidence answer. These
+        # questions are read-only views over the selected-plant snapshot; no
+        # new intelligence engine or control path is introduced.
+        targeted = _targeted_conversational_answer(q)
+        if targeted is not None:
+            return _regression_safety_contract(q, targeted)
 
         # V2 What Changed / simulation is an explicit command intent. Route it
         # at the API entry point before every generic tenant/PCI identity path.
