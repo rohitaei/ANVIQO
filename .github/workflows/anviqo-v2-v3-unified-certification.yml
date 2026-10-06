@@ -1,6 +1,7 @@
 name: ANVIQO V2-V3 unified certification
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - v2-v3-unified-industrial-intelligence
@@ -25,3 +26,20 @@ jobs:
         run: python -m pytest -q tests/test_global_v2_contracts.py tests/test_global_v2_observation_contract.py tests/test_global_v2_edge_registry.py tests/test_global_v2_evidence_ledger.py tests/test_global_v2_realtime_store.py tests/test_global_v2_realtime_replay.py tests/test_global_v2_event_correlation.py tests/test_global_v2_capability_contracts.py tests/test_global_v2_evidence_graph.py tests/test_global_v2_intelligence_boundaries.py tests/test_global_v2_timeseries_contract.py tests/test_global_v2_secure_edge_runtime.py tests/test_global_v2_edge_ingestion_bridge.py tests/test_global_v2_audit_contract.py tests/test_global_v2_final_release_gate.py tests/test_global_v2_pov_contract.py tests/test_global_v2_production_blueprint.py tests/test_global_v2_month_soak.py
 
 # Extraordinary operator intelligence certification pack included.
+
+
+  semantic-live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --upgrade pip requests
+      - name: Run strict 200-question semantic certification
+        env:
+          ANVIQO_BASE_URL: https://anviqo-v2-v3-test.onrender.com
+          ANVIQO_USERNAME: Rohitaei
+          ANVIQO_PASSWORD: ${{ secrets.ANVIQO_TEST_PASSWORD }}
+          ANVIQO_TEST_TIMEOUT: '90'
+        run: python run_anvi_v2_v3_semantic_regression.py
