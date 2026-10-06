@@ -115,9 +115,9 @@ def _rows(plant_id, terms=None, tag=None, limit=2500):
         # completed in Python after fetching only this plant's candidates.
         raw_tag = str(tag or "").strip().upper()
         compact_tag = _normalize(raw_tag)
-        underscored_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\\1_\\2", compact_tag)
-        dashed_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\\1-\\2", compact_tag)
-        spaced_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\\1 \\2", compact_tag)
+        underscored_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\1_\2", compact_tag)
+        dashed_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\1-\2", compact_tag)
+        spaced_tag = re.sub(r"([A-Z]+)([0-9]+)$", r"\1 \2", compact_tag)
         variants = [raw_tag, compact_tag, underscored_tag, dashed_tag, spaced_tag]
         clauses.append(
             "(" + " OR ".join(
