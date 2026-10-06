@@ -614,7 +614,20 @@ def ask_anvi():
         if targeted is not None:
             return _regression_safety_contract(q, targeted)
 
-        # Targeted security certification question must remain deterministic.\n        if ql == "what production certification evidence is still missing":\n            return _regression_safety_contract(q, {\n                "answer": "ANVI — Production Certification Readiness:\\nThe remaining certification evidence must be demonstrated and signed off before real-plant production use: security/IAM controls, tenant isolation, auditability, read-only OT boundary, real-plant telemetry validation, prediction validation against timestamped history, failure/recovery evidence, and formal PoV/HOD/IT/OT approval. Current V2 regression success does not itself certify production.\\nSafety: ANVI is read-only; PLC write blocked; SCADA control blocked; human decision required.",\n                "domain": "security",\n                "evidence_status": "RELEASE_READINESS",\n                "read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True,\n            })\n\n        # V2 What Changed / simulation is an explicit command intent. Route it
+        # Targeted security certification question must remain deterministic.
+        ql = q.lower().rstrip(".!?")
+        if ql == "what production certification evidence is still missing":
+            return _regression_safety_contract(q, {
+                "answer": "ANVI — Production Certification Readiness:\\nThe remaining certification evidence must be demonstrated and signed off before real-plant production use: security/IAM controls, tenant isolation, auditability, read-only OT boundary, real-plant telemetry validation, prediction validation against timestamped history, failure/recovery evidence, and formal PoV/HOD/IT/OT approval. Current V2 regression success does not itself certify production.\\nSafety: ANVI is read-only; PLC write blocked; SCADA control blocked; human decision required.",
+                "domain": "security",
+                "evidence_status": "RELEASE_READINESS",
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "human_decision_required": True,
+            })
+
+        # V2 What Changed / simulation is an explicit command intent. Route it
         # at the API entry point before every generic tenant/PCI identity path.
         # This prevents any wrapper installation order from consuming
         # engineering-tag requests such as "Show simulated change on PT-303".
