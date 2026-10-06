@@ -16,7 +16,7 @@ from tests.anvi_v2_question_bank import QUESTIONS
 
 BASE=os.getenv("ANVIQO_BASE_URL","https://anviqo.onrender.com").rstrip("/")
 USER=os.getenv("ANVIQO_USERNAME","")
-PASSWORD=os.getenv("ANVIQO_PASSWORD") or os.getenv("ANVIQO_TEST_PASSWORD","")
+PASSWORD=(os.getenv("ANVIQO_PASSWORD") or os.getenv("ANVIQO_TEST_PASSWORD") or os.getenv("ANVIQO_ADMIN_PASSWORD",""))
 TIMEOUT=int(os.getenv("ANVIQO_TEST_TIMEOUT","30"))
 OUT=Path("reports/ANVIQO_V2_CONVERSATIONAL_REGRESSION.json")
 
@@ -34,10 +34,22 @@ def main():
         return 2
     password=PASSWORD or os.getenv("ANVIQO_TEST_PASSWORD","")
     try:
-        r=s.post(BASE+"/login",data={"username":USER,"password":password},timeout=TIMEOUT)
-        if r.status_code not in (200,302):
-            print(f"LOGIN FAIL: HTTP {r.status_code}")
+        r=s.post(BASE+"/login",data={"username":USER,"password":password},allow_redirects=False,timeout=TIMEOUT)
+        if r.status_code not in (302,303):
+            print(f"LOGIN FAIL: HTTP {r.status_code} (invalid credentials or login rejected)")
             return 2
+        context=s.get(BASE+"/api/session/context",timeout=TIMEOUT)
+        if context.status_code != 200:
+            print(f"LOGIN SESSION FAIL: /api/session/context HTTP {context.status_code}")
+            return 2
+        try:
+            context_data=context.json()
+        except Exception:
+            context_data={}
+        if context_data.get("status") != "OK" or not context_data.get("authenticated", True):
+            print(f"LOGIN SESSION FAIL: {context_data}")
+            return 2
+        print(f"LOGIN OK: {context_data.get('username','')} / {context_data.get('plant_name','')}")
         results=[]
         for i,(category,question) in enumerate(QUESTIONS,1):
             started=time.time()
