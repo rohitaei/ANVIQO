@@ -263,6 +263,33 @@ def phase2_field_report_spare_sync(response):
 
 
 @app.after_request
+def phase2_conversational_safety_envelope(response):
+    """Normalize the frozen read-only boundary on every /api/ask response.
+
+    before_request bridges can return a response before the main /api/ask
+    view executes. Keep the safety contract authoritative at the final HTTP
+    boundary so those legitimate read-only answers cannot lose the same
+    explicit PLC/SCADA protections exposed by the main route.
+    """
+    if request.path != "/api/ask" or response.status_code >= 400:
+        return response
+    try:
+        payload = response.get_json(silent=True)
+        if isinstance(payload, dict):
+            payload.setdefault("read_only", True)
+            payload.setdefault("plc_write", False)
+            payload.setdefault("scada_control", False)
+            payload.setdefault("automatic_authorization", False)
+            payload.setdefault("automatic_execution", False)
+            payload.setdefault("human_decision_required", True)
+            response.set_data(json.dumps(payload))
+            response.content_type = "application/json"
+    except Exception:
+        pass
+    return response
+
+
+@app.after_request
 def phase2_audit_api_activity(response):
     if _api_authenticated() and request.path != "/api/tenant/audit":
         actor = _actor()
