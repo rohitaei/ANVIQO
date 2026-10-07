@@ -750,7 +750,19 @@ def ask_anvi_api():
             "scada_control": False,
         }), 400
 
-    return jsonify(ask_anvi(question))
+    result = ask_anvi(question)
+    # V2 conversational safety envelope: every successful answer exposes the
+    # same frozen read-only boundary, including legacy V5 plant/event paths.
+    # This is a response contract only; it does not authorize or execute any
+    # PLC/SCADA action and does not alter the underlying intelligence result.
+    if isinstance(result, dict):
+        result.setdefault("read_only", True)
+        result.setdefault("plc_write", False)
+        result.setdefault("scada_control", False)
+        result.setdefault("automatic_authorization", False)
+        result.setdefault("automatic_execution", False)
+        result.setdefault("human_decision_required", True)
+    return jsonify(result)
 @app.route("/api/status")
 def status():
 

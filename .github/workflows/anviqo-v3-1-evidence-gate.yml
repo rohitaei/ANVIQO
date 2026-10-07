@@ -1,0 +1,21 @@
+name: ANVIQO V3.1 Real-Time Evidence Gate
+
+on:
+  push:
+    branches:
+      - v3-1-real-time-evidence-intelligence
+  pull_request:
+    branches:
+      - v2-v3-unified-industrial-intelligence
+      - v3-1-real-time-evidence-intelligence
+
+jobs:
+  v31-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt pytest
+      - run: PYTHONPATH=. pytest -q tests/test_v3_1_real_time_evidence.py tests/test_v2_v3_unified_platform.py
