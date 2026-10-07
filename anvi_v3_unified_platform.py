@@ -24,6 +24,7 @@ from anvi_v2_realtime_store import TelemetryPoint, StreamEvent
 from anvi_v2_evidence_graph import build_evidence_graph
 from anvi_v2_prediction_validation import drift_signal
 from anvi_v2_global_capability_contracts import TenantRef
+from anvi_v3_1_real_time_evidence import assess_observations, build_evidence_chain
 
 SAFETY = {
     "read_only": True,
@@ -289,6 +290,13 @@ class UnifiedIndustrialPlatform:
         ]
         return {"status": "OK", "items": items, "human_approval_required": True, "safety": dict(SAFETY)}
 
+    def data_trust(self, org: str, plant: str, *, expected_tags: Iterable[str] = (), stale_after_seconds: int = 300) -> dict[str, Any]:
+        points = self._points_for(org, plant)
+        return assess_observations(points, expected_tags=expected_tags, stale_after_seconds=stale_after_seconds)
+
+    def evidence_chain(self, org: str, plant: str, tag: str | None = None) -> dict[str, Any]:
+        return build_evidence_chain(self._points_for(org, plant, tag), self._events_for(org, plant), tag=tag)
+
     def platform_summary(self, org: str, plant: str) -> dict[str, Any]:
         points = self._points_for(org, plant)
         events = self._events_for(org, plant)
@@ -297,7 +305,7 @@ class UnifiedIndustrialPlatform:
         warning = sum(e.severity == "WARNING" for e in alarms)
         return {
             "product": "ANVIQO",
-            "version": "V2.0→V3.0 UNIFIED INTELLIGENCE",
+            "version": "V3.1 REAL-TIME EVIDENCE INTELLIGENCE",
             "scope": {"organization_id": org, "plant_id": plant},
             "domains": {
                 "real_time_telemetry": True,
@@ -317,6 +325,11 @@ class UnifiedIndustrialPlatform:
                 "secure_edge_boundary": True,
                 "digital_twin_boundary": True,
                 "optimization_boundary": True,
+                "data_trust": True,
+                "freshness_staleness": True,
+                "missing_observation_detection": True,
+                "duplicate_observation_detection": True,
+                "evidence_lineage": True,
                 "mobile_api_boundary": True,
             },
             "telemetry_points": len(points),
@@ -463,6 +476,21 @@ def register(app) -> None:
         if err: return err, code
         tags = [x.strip() for x in request.args.get("tags", "").split(",") if x.strip()]
         return jsonify(platform.energy_production_quality(*scope, tags))
+
+    @app.get("/api/v3/intelligence/data-trust")
+    def v31_data_trust():
+        scope, err, code = require_scope()
+        if err: return err, code
+        expected = [x.strip() for x in request.args.get("tags", "").split(",") if x.strip()]
+        try: stale = int(request.args.get("stale_after_seconds", "300"))
+        except ValueError: stale = 300
+        return jsonify(platform.data_trust(*scope, expected_tags=expected, stale_after_seconds=max(1, stale)))
+
+    @app.get("/api/v3/intelligence/evidence-chain")
+    def v31_evidence_chain():
+        scope, err, code = require_scope()
+        if err: return err, code
+        return jsonify(platform.evidence_chain(*scope, request.args.get("tag")))
 
     @app.get("/api/v3/safety")
     def v3_safety():
