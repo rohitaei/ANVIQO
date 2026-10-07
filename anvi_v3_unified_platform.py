@@ -27,6 +27,7 @@ from anvi_v2_global_capability_contracts import TenantRef
 from anvi_v3_1_real_time_evidence import assess_observations, build_evidence_chain
 from anvi_v3_2_historical_evidence import historical_assessment
 from anvi_v3_3_durable_history import DurableHistoricalStore
+from anvi_v3_4_decision_governance import DecisionGovernanceStore
 
 SAFETY = {
     "read_only": True,
@@ -68,6 +69,7 @@ class UnifiedIndustrialPlatform:
     def __init__(self, history_store: DurableHistoricalStore | None = None) -> None:
         self._lock = threading.RLock()
         self._history = history_store or DurableHistoricalStore()
+        self._decisions = DecisionGovernanceStore()
         self._points: dict[str, TelemetryPoint] = {}
         self._events: dict[str, StreamEvent] = {}
         self._baselines: dict[tuple[str, str, str], float] = {}
@@ -327,6 +329,39 @@ class UnifiedIndustrialPlatform:
         return self._history.validate_due(organization_id=org, plant_id=plant, tag=tag,
                                           prediction_id=prediction_id, tolerance=max(0.0, float(tolerance)))
 
+    def decision_create(self, org: str, plant: str, body: dict[str, Any]) -> dict[str, Any]:
+        return self._decisions.create(
+            organization_id=org, plant_id=plant,
+            subject_type=str(body.get("subject_type", "EQUIPMENT")),
+            subject_id=str(body["subject_id"]),
+            recommendation=str(body["recommendation"]),
+            evidence_ids=body.get("evidence_ids", []),
+            evidence_status=str(body.get("evidence_status", "NO_EVIDENCE")),
+            operator_id=body.get("operator_id"),
+            rationale=body.get("rationale"),
+            decision_id=body.get("decision_id"),
+        )
+
+    def decision_decide(self, org: str, plant: str, decision_id: str, body: dict[str, Any]) -> dict[str, Any]:
+        return self._decisions.decide(
+            organization_id=org, plant_id=plant, decision_id=decision_id,
+            decision=str(body["decision"]).upper(),
+            operator_id=str(body["operator_id"]),
+            rationale=body.get("rationale"),
+        )
+
+    def decision_outcome(self, org: str, plant: str, decision_id: str, body: dict[str, Any]) -> dict[str, Any]:
+        return self._decisions.record_outcome(
+            organization_id=org, plant_id=plant, decision_id=decision_id,
+            outcome=str(body["outcome"]).upper(), note=body.get("note"),
+        )
+
+    def decision_trace(self, org: str, plant: str, decision_id: str) -> dict[str, Any]:
+        return self._decisions.get(decision_id)
+
+    def decision_snapshot(self, org: str, plant: str) -> dict[str, Any]:
+        return self._decisions.snapshot(org, plant)
+
     def data_trust(self, org: str, plant: str, *, expected_tags: Iterable[str] = (), stale_after_seconds: int = 300) -> dict[str, Any]:
         points = self._points_for(org, plant)
         return assess_observations(points, expected_tags=expected_tags, stale_after_seconds=stale_after_seconds)
@@ -369,6 +404,8 @@ class UnifiedIndustrialPlatform:
                 "evidence_lineage": True,
                 "historical_evidence": True,
                 "prediction_readiness": True,
+                "decision_governance": True,
+                "human_outcome_learning": True,
                 "mobile_api_boundary": True,
             },
             "telemetry_points": len(points),
@@ -557,6 +594,59 @@ def register(app) -> None:
             return jsonify({"status": "FORBIDDEN", "message": str(exc), "safety": dict(SAFETY)}), 403
         except Exception as exc:
             return jsonify({"status": "BAD_REQUEST", "message": str(exc), "safety": dict(SAFETY)}), 400
+
+    @app.post("/api/v3/intelligence/decisions")
+    def v34_decision_create():
+        scope, err, code = require_scope()
+        if err: return err, code
+        try:
+            return jsonify(platform.decision_create(*scope, request.get_json(silent=True) or {}))
+        except (PermissionError, KeyError, ValueError) as exc:
+            return jsonify({"status": "BAD_REQUEST", "message": str(exc), "safety": dict(SAFETY)}), 400
+
+    @app.post("/api/v3/intelligence/decisions/<decision_id>/decide")
+    def v34_decision_decide(decision_id):
+        scope, err, code = require_scope()
+        if err: return err, code
+        try:
+            return jsonify(platform.decision_decide(*scope, decision_id, request.get_json(silent=True) or {}))
+        except (PermissionError, KeyError, ValueError) as exc:
+            return jsonify({"status": "BAD_REQUEST", "message": str(exc), "safety": dict(SAFETY)}), 400
+
+    @app.post("/api/v3/intelligence/decisions/<decision_id>/outcome")
+    def v34_decision_outcome(decision_id):
+        scope, err, code = require_scope()
+        if err: return err, code
+        try:
+            return jsonify(platform.decision_outcome(*scope, decision_id, request.get_json(silent=True) or {}))
+        except (PermissionError, KeyError, ValueError) as exc:
+            return jsonify({"status": "BAD_REQUEST", "message": str(exc), "safety": dict(SAFETY)}), 400
+
+    @app.get("/api/v3/intelligence/decisions/<decision_id>")
+    def v34_decision_trace(decision_id):
+        scope, err, code = require_scope()
+        if err: return err, code
+        try:
+            row = platform.decision_trace(*scope, decision_id)
+            if row["organization_id"] != scope[0] or row["plant_id"] != scope[1]:
+                raise PermissionError("TENANT_BOUNDARY_VIOLATION")
+            return jsonify(row)
+        except PermissionError as exc:
+            return jsonify({"status": "FORBIDDEN", "message": str(exc), "safety": dict(SAFETY)}), 403
+        except KeyError as exc:
+            return jsonify({"status": "NOT_FOUND", "message": str(exc), "safety": dict(SAFETY)}), 404
+
+    @app.get("/api/v3/intelligence/decisions")
+    def v34_decision_list():
+        scope, err, code = require_scope()
+        if err: return err, code
+        return jsonify(platform._decisions.list(*scope, limit=request.args.get("limit", 100)))
+
+    @app.get("/api/v3/intelligence/decision-snapshot")
+    def v34_decision_snapshot():
+        scope, err, code = require_scope()
+        if err: return err, code
+        return jsonify(platform.decision_snapshot(*scope))
 
     @app.get("/api/v3/intelligence/data-trust")
     def v31_data_trust():
