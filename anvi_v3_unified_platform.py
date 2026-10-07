@@ -25,6 +25,7 @@ from anvi_v2_evidence_graph import build_evidence_graph
 from anvi_v2_prediction_validation import drift_signal
 from anvi_v2_global_capability_contracts import TenantRef
 from anvi_v3_1_real_time_evidence import assess_observations, build_evidence_chain
+from anvi_v3_2_historical_evidence import historical_assessment
 
 SAFETY = {
     "read_only": True,
@@ -290,6 +291,13 @@ class UnifiedIndustrialPlatform:
         ]
         return {"status": "OK", "items": items, "human_approval_required": True, "safety": dict(SAFETY)}
 
+    def historical_evidence(self, org: str, plant: str, tag: str) -> dict[str, Any]:
+        rows = self._points_for(org, plant, tag)
+        result = historical_assessment(rows)
+        result["tag"] = tag
+        result["tenant"] = {"organization_id": org, "plant_id": plant}
+        return result
+
     def data_trust(self, org: str, plant: str, *, expected_tags: Iterable[str] = (), stale_after_seconds: int = 300) -> dict[str, Any]:
         points = self._points_for(org, plant)
         return assess_observations(points, expected_tags=expected_tags, stale_after_seconds=stale_after_seconds)
@@ -330,6 +338,8 @@ class UnifiedIndustrialPlatform:
                 "missing_observation_detection": True,
                 "duplicate_observation_detection": True,
                 "evidence_lineage": True,
+                "historical_evidence": True,
+                "prediction_readiness": True,
                 "mobile_api_boundary": True,
             },
             "telemetry_points": len(points),
@@ -476,6 +486,12 @@ def register(app) -> None:
         if err: return err, code
         tags = [x.strip() for x in request.args.get("tags", "").split(",") if x.strip()]
         return jsonify(platform.energy_production_quality(*scope, tags))
+
+    @app.get("/api/v3/intelligence/historical-evidence/<tag>")
+    def v32_historical_evidence(tag):
+        scope, err, code = require_scope()
+        if err: return err, code
+        return jsonify(platform.historical_evidence(*scope, tag))
 
     @app.get("/api/v3/intelligence/data-trust")
     def v31_data_trust():
