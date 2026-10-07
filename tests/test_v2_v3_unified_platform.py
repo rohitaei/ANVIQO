@@ -22,6 +22,9 @@ def test_unified_platform_composes_v2_v3_domains():
     assert p.evidence_graph(org, plant, "PT-303")["causal_claimed"] is False
     assert p.maintenance(org, plant)["human_approval_required"] is True
     assert p.energy_production_quality(org, plant, ["PT-303"])["metrics"]["PT-303"]["latest"] == 68.0
+    trust = p.data_trust(org, plant, expected_tags=["PT-303", "PT-MISSING"])
+    assert trust["missing_tags"] == ["PT-MISSING"]
+    assert p.evidence_chain(org, plant, "PT-303")["causal_claimed"] is False
 
 
 def test_tenant_boundary_and_safety():
