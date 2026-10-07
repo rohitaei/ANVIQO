@@ -383,6 +383,147 @@ def _summary_answer(text,rows,plant):
     return _safe("\n".join(lines),blocked=False,evidence_status="EVIDENCE_AVAILABLE",plant_id=plant["plant_id"],plant_name=plant.get("name"),count=len(rows),evidence=evidence)
 
 
+
+def _current_plant_intelligence_answer(text, pid, plant):
+    """Natural-language current-situation/alarm/event view over the authoritative
+    selected-plant simulation snapshot. This is an adapter, not a second engine.
+    """
+    low = " ".join(str(text or "").lower().split())
+    try:
+        snap = _selected_pci_snapshot()
+        if str(snap.get("mode","")).upper() != "SIMULATION":
+            return None
+
+        points = [p for p in (snap.get("points") or []) if isinstance(p, dict)]
+        active = [p for p in points if p.get("event_active") and
+                  str(p.get("state","")).upper() in ("WARNING","CRITICAL")]
+        active.sort(key=lambda p: (str(p.get("state","")).upper() != "CRITICAL",
+                                   str(p.get("tag",""))))
+
+        # Natural-language alarm intent variants.
+        if any(k in low for k in (
+            "alarm", "alarms", "immediate attention", "needs attention",
+            "need immediate attention", "urgent"
+        )):
+            lines = [
+                "ANVI — Alarm Attention (SIMULATION)",
+                f"Verified active simulated alarm/event points: {len(active)}."
+            ]
+            for p in active[:15]:
+                lines.append(
+                    f"{p.get('tag','UNKNOWN')} — {p.get('state','UNKNOWN')} — "
+                    f"{p.get('description','No description')} — "
+                    f"Area: {p.get('area','UNKNOWN')}."
+                )
+            if not active:
+                lines.append("No active simulated alarm/event points were detected in this snapshot.")
+            lines += [
+                "Evidence source: PCI DEMO STREAM. This is simulation data, not live alarm history.",
+                "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required."
+            ]
+            return _safe("\n".join(lines), domain="alarms",
+                         evidence_status="EVIDENCE_AVAILABLE",
+                         evidence_mode="SIMULATION", count=len(active),
+                         evidence=active[:15], plant_id=pid,
+                         plant_name=plant.get("name"))
+
+        # Natural-language event/timeline variants.
+        if any(k in low for k in (
+            "event timeline", "recent event", "latest events", "recent events",
+            "what events", "event history", "what happened recently"
+        )):
+            timeline = []
+            try:
+                from v2_simulation_state import get as get_simulation_evidence
+                timeline = [x for x in get_simulation_evidence(pid)
+                            if isinstance(x, dict)]
+            except Exception:
+                timeline = []
+            timeline.sort(key=lambda x: str(x.get("timestamp") or x.get("created_at") or ""))
+            if not timeline:
+                timeline = [
+                    {"timestamp": p.get("timestamp"),
+                     "equipment": p.get("tag"),
+                     "event_type": "ALARM" if p in active else "TELEMETRY",
+                     "severity": p.get("state"),
+                     "description": p.get("description"),
+                     "source": "PCI DEMO STREAM"}
+                    for p in points if p in active
+                ]
+            lines = [
+                "ANVI — Recent Event Timeline (SIMULATION)",
+                f"Verified selected-plant evidence items: {len(timeline)}."
+            ]
+            for x in timeline[-20:]:
+                lines.append(
+                    f"{x.get('timestamp','time unavailable')} — "
+                    f"{x.get('equipment') or x.get('tag') or 'UNKNOWN'} — "
+                    f"{x.get('event_type') or x.get('type') or 'EVENT'} — "
+                    f"{x.get('severity') or x.get('state') or 'INFO'} — "
+                    f"{x.get('description') or x.get('message') or 'Evidence recorded'}."
+                )
+            if not timeline:
+                lines.append("No verified event/timeline evidence is currently recorded.")
+            lines += [
+                "Evidence source: selected-plant ANVIQO simulation evidence.",
+                "This is simulation evidence, not live plant telemetry.",
+                "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required."
+            ]
+            return _safe("\n".join(lines), domain="events",
+                         evidence_status="EVIDENCE_AVAILABLE" if timeline else "NO_EVIDENCE",
+                         evidence_mode="SIMULATION", count=len(timeline),
+                         evidence=timeline[-20:], plant_id=pid,
+                         plant_name=plant.get("name"))
+
+        # Broad current-situation variants.
+        if any(k in low for k in (
+            "most important things happening", "what is happening in the plant",
+            "what's happening in the plant", "happening in the plant right now",
+            "current plant situation", "plant situation", "what is going on in the plant",
+            "what's going on in the plant", "most important things"
+        )):
+            changed = [p for p in points if p.get("changed") or p.get("value_changed")]
+            changed.sort(key=lambda p: str(p.get("tag","")))
+            lines = [
+                "ANVI — Current Plant Situation (SIMULATION)",
+                f"Active simulated alarms/events: {len(active)}.",
+                f"Changed points identified in the snapshot: {len(changed)}.",
+                f"Healthy: {snap.get('healthy',0)} | Warning: {snap.get('warning',0)} | "
+                f"Critical: {snap.get('critical',0)}.",
+                f"Plant health score: {snap.get('plant_health_score','N/A')}."
+            ]
+            if active:
+                lines.append("Priority attention:")
+                for p in active[:10]:
+                    lines.append(
+                        f"{p.get('tag','UNKNOWN')} — {p.get('state','UNKNOWN')} — "
+                        f"{p.get('description','No description')} — Area: {p.get('area','UNKNOWN')}."
+                    )
+            if changed:
+                lines.append("Changed evidence:")
+                for p in changed[:10]:
+                    lines.append(
+                        f"{p.get('tag','UNKNOWN')} — value {p.get('value','N/A')} — "
+                        f"state {p.get('state','UNKNOWN')}."
+                    )
+            if not active and not changed:
+                lines.append("No active alarm/change evidence is present in this snapshot.")
+            lines += [
+                "Evidence source: PCI DEMO STREAM / selected-plant simulation.",
+                "This is simulation evidence, not live plant telemetry.",
+                "Safety: ANVI is read-only; no PLC/SCADA write. Human decision required."
+            ]
+            return _safe("\n".join(lines), domain="plant_situation",
+                         evidence_status="EVIDENCE_AVAILABLE",
+                         evidence_mode="SIMULATION", count=len(points),
+                         evidence={"snapshot": snap, "active": active[:10],
+                                   "changed": changed[:10]},
+                         plant_id=pid, plant_name=plant.get("name"))
+    except Exception:
+        return None
+    return None
+
+
 def _answer(text):
     # Resolve the authenticated membership HERE, in the actual universal
     # answer function. Do not depend on a UI plant selector or a stale
@@ -406,6 +547,12 @@ def _answer(text):
 
     # V2 demo evidence views. These reuse the existing PCI simulator and
     # remain read-only; they do not create a second control/reasoning engine.
+    # Route natural-language situation/alarm/event variants to the same
+    # authoritative selected-plant snapshot before generic knowledge lookup.
+    current_intelligence = _current_plant_intelligence_answer(text, pid, plant)
+    if current_intelligence is not None:
+        return current_intelligence
+
     low_text = str(text or "").strip().lower()
 
     if any(x in low_text for x in (
