@@ -723,7 +723,7 @@ def ask_anvi():
 
             if l.rstrip(".!?") in ("did pt-402 change", "did pt-403 change"):
                 tag = "PT-402" if "pt-402" in l else "PT-403"
-                return ans("Event Intelligence", f"{tag} change status: no verified selected-plant change event is available for this tag in the current evidence stream. ANVI will not infer a change without telemetry/event evidence. Evidence source: selected-plant event/change stream.", "events")
+                return {"answer": f"ANVI — Event Intelligence\\n{tag} change status: no verified selected-plant change event is available for this tag in the current evidence stream. ANVI will not infer a change without telemetry/event evidence. Evidence source: selected-plant event/change stream.\\nSafety: ANVI is read-only; PLC write blocked; SCADA control blocked; automatic authorization/execution blocked; human decision required.", "domain":"events", "evidence_status":"NO_EVIDENCE", "read_only":True, "plc_write":False, "scada_control":False, "human_decision_required":True}
 
             if "how many digital inputs" in l:
                 n=480
