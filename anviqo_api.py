@@ -627,6 +627,77 @@ def ask_anvi():
                 "human_decision_required": True,
             })
 
+        # V3 operator-intelligence intent layer MUST run before generic PCI tag lookup.
+        # A question such as "Is PT-303 getting worse?" is an intelligence request,
+        # not a request for the PT-303 identity record. Keep all V3 answers tenant-scoped,
+        # evidence-first and read-only.
+        try:
+            from anvi_v3_unified_platform import platform as _v3_platform
+            from anvi_v3_extra_operator_intelligence import ExtraordinaryOperatorIntelligence
+            _v3_engine = ExtraordinaryOperatorIntelligence(_v3_platform)
+            _v3_org = session.get("organization_id", "")
+            _v3_plant = session.get("plant_id", "")
+            _v3_tag_match = _re.search(r"\\b(PT|FT|TT|LT|AT|DT|WT|CT|XV|FV|PV|TV|LV|PIC|FIC|TIC|LIC|MCV)[-_ ]?(\\d+)\\b", q, _re.I)
+            _v3_tag = (_v3_tag_match.group(1).upper() + "_" + _v3_tag_match.group(2)) if _v3_tag_match else None
+            _v3q = " ".join(q.lower().split()).rstrip(".!?")
+            _v3_result = None
+            if _v3_org and _v3_plant:
+                if "what should i care about right now" in _v3q:
+                    _v3_result = _v3_engine.attention_now(_v3_org, _v3_plant)
+                elif "plant story" in _v3q:
+                    _v3_result = _v3_engine.plant_story(_v3_org, _v3_plant, _v3_tag)
+                elif "what happened yesterday around" in _v3q and _v3_tag:
+                    from datetime import timedelta, timezone
+                    _now = datetime.now(timezone.utc)
+                    _v3_result = _v3_engine.time_machine(_v3_org, _v3_plant, (_now-timedelta(days=1)).isoformat(), _now.isoformat(), _v3_tag)
+                elif "what happened around" in _v3q and _v3_tag:
+                    _v3_result = _v3_engine.plant_story(_v3_org, _v3_plant, _v3_tag)
+                elif "have we seen this before" in _v3q and _v3_tag:
+                    _v3_result = _v3_engine.historical_similarity(_v3_org, _v3_plant, _v3_tag)
+                elif "find anything unusual" in _v3q:
+                    _v3_result = _v3_engine.anomaly_search(_v3_org, _v3_plant)
+                elif "is " in _v3q and " getting worse" in _v3q and _v3_tag:
+                    _v3_result = _v3_engine.deterioration(_v3_org, _v3_plant, _v3_tag)
+                elif "early warning" in _v3q and _v3_tag:
+                    _v3_result = _v3_engine.early_warning(_v3_org, _v3_plant, _v3_tag)
+                elif "did " in _v3q and " recover" in _v3q and _v3_tag:
+                    _v3_result = _v3_engine.recovery(_v3_org, _v3_plant, _v3_tag)
+                elif "does this problem repeat" in _v3q:
+                    _v3_result = _v3_engine.recurring_problems(_v3_org, _v3_plant)
+                elif "remember about the previous shift" in _v3q:
+                    _v3_result = _v3_engine.plant_memory(_v3_org, _v3_plant)
+                elif "what did the previous shift do" in _v3q:
+                    _v3_result = _v3_engine.shift_handover(_v3_org, _v3_plant)
+                elif "experienced this condition before" in _v3q:
+                    _v3_result = _v3_engine.historical_similarity(_v3_org, _v3_plant, _v3_tag)
+                elif "continues increasing" in _v3q and _v3_tag:
+                    _v3_result = _v3_engine.what_if(_v3_org, _v3_plant, _v3_tag)
+                elif "instrument health" in _v3q and _v3_tag:
+                    _v3_result = _v3_engine.instrument_health(_v3_org, _v3_plant, _v3_tag)
+                elif "critical instruments have no spare" in _v3q:
+                    _v3_result = _v3_engine.spare_intelligence(_v3_org, _v3_plant)
+                elif "cost impact" in _v3q:
+                    _v3_result = _v3_engine.cost_of_abnormality(_v3_org, _v3_plant)
+                elif "energy consumption" in _v3q:
+                    _v3_result = _v3_engine.energy_intelligence(_v3_org, _v3_plant)
+                elif "developing safety concerns" in _v3q:
+                    _v3_result = _v3_engine.safety_intelligence(_v3_org, _v3_plant)
+                elif "trust the current plant data" in _v3q:
+                    _v3_result = _v3_engine.ot_data_trust(_v3_org, _v3_plant)
+                elif "how confident" in _v3q and _v3_tag:
+                    _v3_result = _v3_engine.confidence(_v3_org, _v3_plant, _v3_tag)
+            if _v3_result is not None:
+                _v3_result = dict(_v3_result)
+                _v3_result.setdefault("domain", "v3_operator_intelligence")
+                _v3_result.setdefault("read_only", True)
+                _v3_result.setdefault("plc_write", False)
+                _v3_result.setdefault("scada_control", False)
+                _v3_result.setdefault("human_decision_required", True)
+                _v3_result["answer"] = "ANVI — V3 Operator Intelligence\\n" + json.dumps(_v3_result, default=str, indent=2)
+                return _regression_safety_contract(q, _v3_result)
+        except Exception:
+            pass
+
         # Universal conversational bridge: route frozen V2/V3 question families
         # to evidence/reference logic before generic chat. Read-only only.
         def _universal_chat_bridge(question):
