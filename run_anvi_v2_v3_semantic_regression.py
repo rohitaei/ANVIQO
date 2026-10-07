@@ -106,6 +106,38 @@ def check(q,a,category):
     bad=("could not complete","no matching onboarded knowledge","i don’t know","i don't know","try again","unable to answer")
     return subject_hit and hits>=2 and not any(x in low for x in bad)
 
+
+# STRICT LIVE ANSWER CONTRACT (2026-10-07)
+STRICT_REQUIREMENTS = {
+    "What are the most important things happening in the plant right now?": ("current plant situation","simulation","active simulated","plant health score"),
+    "Which alarms need immediate attention?": ("alarm attention","active simulated","verified active","simulation"),
+    "Show me the recent event timeline.": ("event timeline","simulation","evidence items","event"),
+    "What happened around PT-303?": ("pt-303","event","evidence","simulation"),
+    "Show me the plant story for PT-303.": ("pt-303","story","evidence","simulation"),
+    "What happened yesterday around PT-303?": ("pt-303","history","evidence","simulation"),
+    "Have we seen this before on PT-303?": ("pt-303","historical","evidence"),
+    "Is PT-303 getting worse?": ("pt-303","deterior","evidence"),
+    "Give me an early warning for PT-303.": ("pt-303","warning","evidence"),
+    "Did PT-303 recover?": ("pt-303","recover","evidence"),
+    "Does this problem repeat?": ("repeat","recurr","evidence"),
+    "What happens if PT-303 continues increasing?": ("pt-303","scenario","simulation"),
+    "Show PT-303 instrument health.": ("pt-303","instrument","health"),
+    "Which critical instruments have no spare?": ("spare","critical","evidence"),
+    "What is the cost impact of this abnormality?": ("cost","evidence"),
+    "Why is energy consumption increasing?": ("energy","evidence"),
+    "Are there developing safety concerns?": ("safety","evidence"),
+    "Can I trust the current plant data?": ("data","trust","evidence"),
+    "How confident are you about PT-303?": ("pt-303","confidence","evidence"),
+}
+def strict_live_check(q, a):
+    low = str(a or "").lower()
+    bad = ("no matching onboarded knowledge","could not complete","unable to answer","anvi knowledge service error")
+    if any(x in low for x in bad): return False
+    req = STRICT_REQUIREMENTS.get(q)
+    if not req: return True
+    pci_only = ("pci identity" in low or "complete pci record" in low or "service: pt303" in low) and not any(k in low for k in ("evidence","simulation","event","story","health","risk","alarm","history","warning","recovery","spare","cost","energy","safety","confidence"))
+    if pci_only: return False
+    return sum(1 for k in req if k in low) >= 2
 def main():
     if not BASE or not USER or not PASSWORD: raise SystemExit("Set ANVIQO_BASE_URL, ANVIQO_USERNAME and ANVIQO_PASSWORD.")
     s=requests.Session()
@@ -119,7 +151,7 @@ def main():
             r=s.post(BASE+"/api/ask",json={"question":q},timeout=TIMEOUT)
             data=r.json() if r.headers.get("content-type","").startswith("application/json") else {}
             ans=data.get("answer") or data.get("response") or ""
-            ok=check(q,ans,QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed") if r.status_code==200 else False
+            ok=(check(q,ans,QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed") and strict_live_check(q,ans)) if r.status_code==200 else False
             status="CORRECT" if ok else "INCORRECT"
             counts[status]+=1
             rows.append({"number":i,"category":QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed","question":q,"answer":ans,"status":status,"http":r.status_code})
