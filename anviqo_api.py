@@ -769,7 +769,7 @@ def ask_anvi():
                 return ans("Shift Intelligence","Shift intelligence summarizes selected-plant alarms, changes, events and evidence in the current shift window. It is a draft for human review and does not automatically distribute or execute decisions.","shift")
             if "management" in l or "hod" in l:
                 return ans("Management Intelligence","Management intelligence summarizes evidence-backed plant condition, risks, changes and decisions requiring human attention. It does not authorize actions or claim causation without evidence.","management")
-            if "field report" in l or "field history" in l:
+            if "field report" in l or "field history" in l or "reported recently in the field" in l or "reported in the field" in l:
                 return ans("Field Reports","Field reports are human-supplied evidence. Reports remain pending verification unless separately verified; ANVI does not treat unverified field text as proven plant telemetry.","field_report")
             if "energy" in l or "production information" in l or "quality information" in l:
                 return ans("Energy / Production / Quality","ANVI can monitor energy, production and quality metrics when those selected-plant tags are onboarded. Optimization is evidence-based and recommendations remain human governed; no automatic control is performed.","energy_quality")
