@@ -1,0 +1,21 @@
+name: ANVIQO V3.2 Historical Evidence Gate
+
+on:
+  push:
+    branches:
+      - v3-2-historical-evidence-prediction
+  pull_request:
+    branches:
+      - v2-v3-unified-industrial-intelligence
+      - v3-2-historical-evidence-prediction
+
+jobs:
+  v32-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pytest -q tests/test_v3_2_historical_evidence.py tests/test_v3_1_real_time_evidence.py tests/test_v2_v3_unified_platform.py
