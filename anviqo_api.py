@@ -1390,6 +1390,11 @@ try:
     register_v3_unified_platform(app)
 except Exception as exc:
     print(f"ANVIQO_V3_FACADE_REGISTRATION_ERROR error={exc!r}", flush=True)
+try:
+    from anvi_v3_5_to_v4_enterprise import register as register_v4_enterprise
+    register_v4_enterprise(app)
+except Exception as exc:
+    print(f"ANVIQO_V4_ENTERPRISE_REGISTRATION_ERROR error={exc!r}", flush=True)
 
 # ------------------------------------------------------------
 # SERVER
