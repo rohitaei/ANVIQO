@@ -26,6 +26,7 @@ from anvi_v2_prediction_validation import drift_signal
 from anvi_v2_global_capability_contracts import TenantRef
 from anvi_v3_1_real_time_evidence import assess_observations, build_evidence_chain
 from anvi_v3_2_historical_evidence import historical_assessment
+from anvi_v3_3_durable_history import DurableHistoricalStore
 
 SAFETY = {
     "read_only": True,
@@ -64,8 +65,9 @@ class PlatformEvent:
 class UnifiedIndustrialPlatform:
     """Universal, deterministic V2→V3 intelligence reference implementation."""
 
-    def __init__(self) -> None:
+    def __init__(self, history_store: DurableHistoricalStore | None = None) -> None:
         self._lock = threading.RLock()
+        self._history = history_store or DurableHistoricalStore()
         self._points: dict[str, TelemetryPoint] = {}
         self._events: dict[str, StreamEvent] = {}
         self._baselines: dict[tuple[str, str, str], float] = {}
@@ -91,9 +93,11 @@ class UnifiedIndustrialPlatform:
         with self._lock:
             created = point_id not in self._points
             self._points.setdefault(point_id, point)
+            durable_created = self._history.append(point)
         return {
             "accepted": True,
             "deduplicated": not created,
+            "durable_persisted": durable_created or not created,
             "observation_id": point_id,
             "safety": dict(SAFETY),
         }
@@ -298,6 +302,31 @@ class UnifiedIndustrialPlatform:
         result["tenant"] = {"organization_id": org, "plant_id": plant}
         return result
 
+    def historical_store(self, org: str, plant: str) -> dict[str, Any]:
+        snap = self._history.snapshot()
+        snap["tenant"] = {"organization_id": org, "plant_id": plant}
+        return snap
+
+    def historical_replay(self, org: str, plant: str, tag: str) -> dict[str, Any]:
+        rows = self._history.query(org, plant, tag)
+        return {"status": "OK", "tenant": {"organization_id": org, "plant_id": plant},
+                "tag": tag, "sample_count": len(rows),
+                "timestamps": [p.timestamp.astimezone(timezone.utc).isoformat() for p in rows],
+                "values": [p.value for p in rows], "durable": True, "safety": dict(SAFETY)}
+
+    def record_prediction(self, org: str, plant: str, tag: str, body: dict[str, Any]) -> dict[str, Any]:
+        return self._history.record_prediction(
+            organization_id=org, plant_id=plant, tag=tag,
+            target_time=datetime.fromisoformat(str(body["target_time"]).replace("Z", "+00:00")),
+            predicted_value=float(body["predicted_value"]), model=str(body.get("model", "ANVIQO_VALIDATION")),
+            evidence_status=str(body["evidence_status"]), prediction_id=str(body["prediction_id"]),
+            operator_feedback=body.get("operator_feedback"),
+        ) | {"tenant": {"organization_id": org, "plant_id": plant}, "safety": dict(SAFETY)}
+
+    def validate_prediction(self, org: str, plant: str, tag: str, prediction_id: str, tolerance: float) -> dict[str, Any]:
+        return self._history.validate_due(organization_id=org, plant_id=plant, tag=tag,
+                                          prediction_id=prediction_id, tolerance=max(0.0, float(tolerance)))
+
     def data_trust(self, org: str, plant: str, *, expected_tags: Iterable[str] = (), stale_after_seconds: int = 300) -> dict[str, Any]:
         points = self._points_for(org, plant)
         return assess_observations(points, expected_tags=expected_tags, stale_after_seconds=stale_after_seconds)
@@ -492,6 +521,42 @@ def register(app) -> None:
         scope, err, code = require_scope()
         if err: return err, code
         return jsonify(platform.historical_evidence(*scope, tag))
+
+    @app.get("/api/v3/intelligence/historical-store")
+    def v33_historical_store():
+        scope, err, code = require_scope()
+        if err: return err, code
+        return jsonify(platform.historical_store(*scope))
+
+    @app.get("/api/v3/intelligence/historical-replay/<tag>")
+    def v33_historical_replay(tag):
+        scope, err, code = require_scope()
+        if err: return err, code
+        return jsonify(platform.historical_replay(*scope, tag))
+
+    @app.post("/api/v3/intelligence/predictions/<tag>")
+    def v33_record_prediction(tag):
+        scope, err, code = require_scope()
+        if err: return err, code
+        try:
+            body = request.get_json(silent=True) or {}
+            return jsonify(platform.record_prediction(*scope, tag, body))
+        except PermissionError as exc:
+            return jsonify({"status": "FORBIDDEN", "message": str(exc), "safety": dict(SAFETY)}), 403
+        except Exception as exc:
+            return jsonify({"status": "BAD_REQUEST", "message": str(exc), "safety": dict(SAFETY)}), 400
+
+    @app.post("/api/v3/intelligence/predictions/<tag>/<prediction_id>/validate")
+    def v33_validate_prediction(tag, prediction_id):
+        scope, err, code = require_scope()
+        if err: return err, code
+        try:
+            tolerance = float(request.args.get("tolerance", "0"))
+            return jsonify(platform.validate_prediction(*scope, tag, prediction_id, tolerance))
+        except PermissionError as exc:
+            return jsonify({"status": "FORBIDDEN", "message": str(exc), "safety": dict(SAFETY)}), 403
+        except Exception as exc:
+            return jsonify({"status": "BAD_REQUEST", "message": str(exc), "safety": dict(SAFETY)}), 400
 
     @app.get("/api/v3/intelligence/data-trust")
     def v31_data_trust():
