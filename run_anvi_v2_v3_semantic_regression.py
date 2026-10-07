@@ -155,7 +155,8 @@ def main():
             status="CORRECT" if ok else "INCORRECT"
             counts[status]+=1
             rows.append({"number":i,"category":QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed","question":q,"answer":ans,"status":status,"http":r.status_code})
-            print(f"{i:03d}/200 {status:10s} {q}")\n            if status != "CORRECT": print("ANSWER:", ans.replace("\\n"," | ")[:1200])
+            print(f"{i:03d}/200 {status:10s} {q}")
+            if status != "CORRECT": print("ANSWER:", ans[:1200])
         except Exception as e:
             counts["ERROR"]+=1; rows.append({"number":i,"question":q,"answer":"","status":"ERROR","error":str(e)})
     out=Path("reports/ANVIQO_V2_V3_SEMANTIC_200.json"); out.parent.mkdir(exist_ok=True)
