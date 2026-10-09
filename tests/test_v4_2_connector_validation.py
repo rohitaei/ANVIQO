@@ -31,7 +31,8 @@ def test_fresh_complete_stream_healthy():
     report = validate_connector_stream(source=source(), observations=[obs()], now=NOW,
                                        expected_tags=["PT-303"])
     assert report["status"] == "HEALTHY"
-    assert report["live_connection_verified"] is True
+    assert report["telemetry_observed_in_scope"] is True
+    assert report["live_connection_verified"] is False
     assert report["last_seen"] is not None
 
 
