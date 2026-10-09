@@ -78,7 +78,7 @@ def validate_connector_stream(
     for row in observations:
         if (str(row.get("organization_id", "")) != scoped_org
                 or str(row.get("plant_id", "")) != scoped_plant
-                or str(row.get("source_id", source_id)) != source_id):
+                or str(row.get("source_id", "")) != source_id):
             scope_errors += 1
             continue
         tag = str(row.get("tag", "")).strip()
@@ -159,7 +159,8 @@ def validate_connector_stream(
         "observations_received": total,
         "valid_value_rows": valid_rows,
         "last_seen": last_seen,
-        "live_connection_verified": bool(observations) and scope_errors == 0,
+        "telemetry_observed_in_scope": bool(observations) and scope_errors == 0,
+        "live_connection_verified": False,
         "timestamp_quality": {
             "invalid_or_timezone_missing": invalid_timestamps,
             "future_beyond_tolerance": future_timestamps,
@@ -213,7 +214,7 @@ def register(app):
                                 "safety": dict(SAFETY)}), 400
             if (str(row.get("organization_id", "")) != organization_id
                     or str(row.get("plant_id", "")) != plant_id
-                    or str(row.get("source_id", source.get("source_id", ""))) != str(source.get("source_id", ""))):
+                    or str(row.get("source_id", "")) != str(source.get("source_id", ""))):
                 return jsonify({"status": "FORBIDDEN", "message": "TENANT_OR_PLANT_BOUNDARY_VIOLATION",
                                 "safety": dict(SAFETY)}), 403
         try:
