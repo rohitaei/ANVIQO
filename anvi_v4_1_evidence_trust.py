@@ -106,3 +106,41 @@ def validate_scope(evidence: list[dict[str, Any]], organization_id: str, plant_i
             raise PermissionError("PLANT_BOUNDARY_VIOLATION")
     return {"status":"SCOPE_VALID","evidence_count":len(evidence),
             "cross_plant_fallback":False,"safety":dict(SAFETY)}
+
+def register(app):
+    from flask import jsonify, request, session
+    def scoped():
+        org=session.get("organization_id",""); plant=session.get("plant_id","")
+        return (str(org),str(plant)) if org and plant else None
+    @app.post("/api/v4/intelligence/evidence-trust")
+    def v41_evidence_trust():
+        scope=scoped()
+        if not scope:
+            return jsonify({"status":"TENANT_UNAVAILABLE","safety":dict(SAFETY)}),409
+        body=request.get_json(silent=True) or {}
+        rows=body.get("evidence",[])
+        if not isinstance(rows,list):
+            return jsonify({"status":"BAD_REQUEST","message":"evidence must be a list","safety":dict(SAFETY)}),400
+        try:
+            validate_scope(rows,*scope)
+            threshold=int(body.get("stale_after_seconds",300))
+            return jsonify(assess_evidence_trust(rows,stale_after_seconds=threshold))
+        except PermissionError as exc:
+            return jsonify({"status":"FORBIDDEN","message":str(exc),"safety":dict(SAFETY)}),403
+        except (ValueError,TypeError) as exc:
+            return jsonify({"status":"BAD_REQUEST","message":str(exc),"safety":dict(SAFETY)}),400
+    @app.post("/api/v4/integration/readiness")
+    def v41_connector_readiness():
+        scope=scoped()
+        if not scope:
+            return jsonify({"status":"TENANT_UNAVAILABLE","safety":dict(SAFETY)}),409
+        body=request.get_json(silent=True) or {}
+        if str(body.get("organization_id",""))!=scope[0] or str(body.get("plant_id",""))!=scope[1]:
+            return jsonify({"status":"FORBIDDEN","message":"TENANT_OR_PLANT_BOUNDARY_VIOLATION","safety":dict(SAFETY)}),403
+        return jsonify(connector_readiness(body))
+    @app.get("/api/v4/intelligence/trust-policy")
+    def v41_trust_policy():
+        return jsonify({"policy_version":TRUST_POLICY_VERSION,"good_quality":sorted(GOOD_QUALITY),
+                        "bad_quality":sorted(BAD_QUALITY),"unknown_quality":sorted(UNKNOWN_QUALITY),
+                        "trust_score_is_probability":False,"live_connectivity_verified":False,
+                        "safety":dict(SAFETY)})
