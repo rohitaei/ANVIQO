@@ -13,4 +13,4 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt pytest
-      - run: PYTHONPATH=. pytest -q tests/test_anvi_field_report_chat_answers.py
+      - run: PYTHONPATH=. pytest -q tests/test_anvi_field_report_chat_answers.py tests/test_field_report_persistence_identity.py tests/test_field_report_query_fail_closed.py

@@ -224,11 +224,10 @@ def answer_field_report_query(question):
     if tenant_plant_id:
         # Authenticated tenants must never read bundled/global Plant Memory.
         # The persistent tenant bridge is the authoritative source here.
-        try:
-            from field_report_persistent_bridge import _field_reports_from_neon
-            results = _field_reports_from_neon(tag=tag, limit=20)
-        except Exception:
-            results = []
+        # Durable lookup errors must reach the API bridge so it can return
+        # LOOKUP_UNAVAILABLE (503), not a misleading NOT_FOUND or generic PCI answer.
+        from field_report_persistent_bridge import _field_reports_from_neon
+        results = _field_reports_from_neon(tag=tag, limit=20)
     else:
         import plant_memory
         results = plant_memory.search_all_memory(query=question, tag=tag, limit=20)

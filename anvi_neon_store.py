@@ -186,28 +186,62 @@ def get_memory(tag="",equipment=""):
     return [r[0] for r in rows]
 
 def upsert_field_report(record):
-    if not neon_enabled(): return False
+    """Persist one field report with a stable ID and trusted tenant scope.
+
+    A report must have organization + plant scope before it can enter durable
+    storage. In request context, tenant IDs come from the authenticated session,
+    never from client-supplied report fields. Existing explicit IDs are retained
+    for idempotent retries; generated IDs are deterministic across restarts.
+    """
+    if not neon_enabled():
+        return False
     init_neon()
 
-    # Persist the active Phase 2 tenant context inside the report payload so
-    # durable retrieval can enforce organization + plant isolation after a
-    # Render restart. This is metadata only; it does not alter report content
-    # or inventory behavior.
     record = dict(record or {})
+    if not record:
+        return False
+
     try:
-        from flask import session
-        org_id = str(session.get("organization_id", "")).strip()
-        plant_id = str(session.get("plant_id", "")).strip()
-        if org_id:
-            record.setdefault("organization_id", org_id)
-        if plant_id:
-            record.setdefault("plant_id", plant_id)
-    except Exception:
+        from flask import has_request_context, session
+        if has_request_context():
+            if not session.get("authenticated") and not session.get("user_id"):
+                return False
+            org_id = str(session.get("organization_id", "")).strip()
+            plant_id = str(session.get("plant_id", "")).strip()
+            if not org_id or not plant_id:
+                return False
+            # Never trust tenant identifiers submitted in a report payload.
+            record["organization_id"] = org_id
+            record["plant_id"] = plant_id
+    except RuntimeError:
+        # Flask may be installed without an active request context. The caller
+        # must then provide explicit tenant metadata for durable storage.
         pass
 
-    rid=str(record.get("report_id","")).strip()
+    org_id = str(record.get("organization_id", "")).strip()
+    plant_id = str(record.get("plant_id", "")).strip()
+    if not org_id or not plant_id:
+        return False
+
+    rid = str(record.get("report_id", "")).strip()
     if not rid:
-        rid="FR-"+str(abs(hash(_json(record))))
+        # Python's hash() is process-randomized; use a stable digest instead.
+        import hashlib
+        identity = _json({
+            "organization_id": org_id,
+            "plant_id": plant_id,
+            "tag": str(record.get("tag", "")).strip().upper(),
+            "equipment": str(record.get("equipment", "")).strip(),
+            "event": str(record.get("event", "")).strip(),
+            "observation": str(record.get("observation", "")).strip(),
+            "finding": str(record.get("finding", "")).strip(),
+            "maintenance_action": str(record.get("maintenance_action", "")).strip(),
+            "outcome": str(record.get("outcome", "")).strip(),
+            "raw_report": str(record.get("raw_report", "")).strip(),
+        })
+        rid = "FR-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
+    record["report_id"] = rid
+
     _exec("""
       INSERT INTO anviqo_field_reports(report_id,tag,equipment,payload)
       VALUES(%s,%s,%s,%s::jsonb)
@@ -215,7 +249,7 @@ def upsert_field_report(record):
       SET tag=EXCLUDED.tag,
           equipment=EXCLUDED.equipment,
           payload=EXCLUDED.payload
-    """,(rid,record.get("tag",""),record.get("equipment",""),_json(record)))
+    """, (rid, record.get("tag", ""), record.get("equipment", ""), _json(record)))
     return True
 
 def upsert_critical_spare(spare_key, tag, payload):
