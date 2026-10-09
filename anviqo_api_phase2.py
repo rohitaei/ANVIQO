@@ -135,13 +135,37 @@ def phase2_field_report_query_bridge():
     if not question or _is_reconcile_command(question):
         return None
     try:
-        from field_report_runtime import answer_field_report_query
+        from field_report_runtime import (
+            _report_query,
+            answer_field_report_query,
+            field_report_not_found_answer,
+        )
+        if not _report_query(question):
+            return None
         answer = answer_field_report_query(question)
         if answer:
             return jsonify(answer)
+        # A report-history question must not fall through to generic PCI/spares
+        # routing, which can look like an answer but is not the saved report.
+        return jsonify(field_report_not_found_answer(question)), 200
     except Exception:
-        pass
-    return None
+        # Fail closed for explicit report-history queries. Do not expose internals
+        # or let generic knowledge masquerade as persisted maintenance evidence.
+        try:
+            from field_report_runtime import field_report_not_found_answer
+            return jsonify(field_report_not_found_answer(question, "LOOKUP_UNAVAILABLE")), 503
+        except Exception:
+            return jsonify({
+                "status": "LOOKUP_UNAVAILABLE",
+                "domain": "plant_memory",
+                "answer": "Saved field-report lookup is unavailable; no substitute PCI/spares answer was used.",
+                "read_only": True,
+                "plc_write": False,
+                "scada_control": False,
+                "automatic_authorization": False,
+                "automatic_execution": False,
+                "human_decision_required": True,
+            }), 503
 
 
 @app.route("/api/tenant/context")

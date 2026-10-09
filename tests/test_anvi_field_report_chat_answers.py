@@ -151,3 +151,63 @@ def test_tenantless_session_never_uses_global_memory(monkeypatch):
     monkeypatch.setattr("plant_memory.search_all_memory", lambda **kwargs: [])
     assert runtime.answer_field_report_query("What happened to PT-303 last time?") is None
     assert called["persistent"] is False
+
+
+def test_missing_report_answer_is_explicit_and_never_substitutes_pci_data():
+    answer = runtime.field_report_not_found_answer(
+        "Show the saved field report for PT_303"
+    )
+    assert answer["status"] == "NOT_FOUND"
+    assert answer["requested_tag"] == "PT-303"
+    assert "No saved technician field report" in answer["answer"]
+    assert "will not substitute PCI identity" in answer["answer"]
+    assert answer["evidence"] is None
+    assert answer["read_only"] is True
+    assert answer["plc_write"] is False
+    assert answer["scada_control"] is False
+    assert answer["automatic_execution"] is False
+    assert answer["human_decision_required"] is True
+
+
+def test_report_store_failure_is_not_claimed_as_durably_saved(monkeypatch):
+    import sys
+    import types
+    import anvi_field_report
+
+    memory_module = types.SimpleNamespace(
+        create_conversational_memory=lambda **kwargs: {"memory_id": "QA-FR-STORE-1"}
+    )
+    monkeypatch.setitem(sys.modules, "plant_memory", memory_module)
+    monkeypatch.setattr(anvi_neon_store, "upsert_field_report", lambda record: False)
+    result = anvi_field_report.store_field_report(
+        "PT-303 was not showing anything; checked fuse blown no power; changed fuse now ok"
+    )
+    assert result["persistence"]["status"] == "NOT_CONFIGURED"
+    assert result["persistence"]["durable"] is False
+    assert "durable tenant storage is not configured" in result["message"]
+    assert result["status"] == "PENDING_VERIFICATION"
+    assert result["plc_write"] is False
+    assert result["scada_control"] is False
+    assert result["human_decision_required"] is True
+
+
+def test_report_store_database_exception_is_visible_without_leaking_details(monkeypatch):
+    import sys
+    import types
+    import anvi_field_report
+
+    memory_module = types.SimpleNamespace(
+        create_conversational_memory=lambda **kwargs: {"memory_id": "QA-FR-STORE-2"}
+    )
+    monkeypatch.setitem(sys.modules, "plant_memory", memory_module)
+    def fail_store(record):
+        raise RuntimeError("private database connection detail")
+    monkeypatch.setattr(anvi_neon_store, "upsert_field_report", fail_store)
+    result = anvi_field_report.store_field_report(
+        "PT-519 was not showing anything; checked fuse blown no power; changed fuse now ok"
+    )
+    assert result["persistence"]["status"] == "FAILED"
+    assert result["persistence"]["durable"] is False
+    assert result["persistence"]["error_type"] == "RuntimeError"
+    assert "private database connection detail" not in result["message"]
+    assert "Do not treat this report as durably saved" in result["message"]

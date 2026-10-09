@@ -178,6 +178,42 @@ def _report_match_score(report, question, wanted_tag=""):
     return score
 
 
+def field_report_not_found_answer(question, status="NOT_FOUND"):
+    """Build a safe, explicit result when a report query has no durable evidence."""
+    match = _TAG_RE.search(str(question or ""))
+    tag = _normalise_tag(match.group(1)) if match else ""
+    if status == "LOOKUP_UNAVAILABLE":
+        message = (
+            f"I couldn't verify the saved field report for {tag} in the selected plant because the report store could not be read. "
+            "I have not substituted PCI identity or spare-stock data. Please retry after the report store is available."
+        ) if tag else (
+            "I couldn't verify saved field reports in the selected plant because the report store could not be read. "
+            "I have not substituted general PCI or spare-stock data. Please retry after the report store is available."
+        )
+    else:
+        message = (
+            f"No saved technician field report was found for {tag} in the selected plant. "
+            "I will not substitute PCI identity or spare-stock data for a maintenance report."
+        ) if tag else (
+            "No saved technician field report was found in the selected plant for this query. "
+            "I will not substitute general PCI identity or spare-stock data for a maintenance report."
+        )
+    return {
+        "status": status,
+        "domain": "plant_memory",
+        "source": "technician field report lookup",
+        "answer": message,
+        "requested_tag": tag,
+        "evidence": None,
+        "read_only": True,
+        "plc_write": False,
+        "scada_control": False,
+        "automatic_authorization": False,
+        "automatic_execution": False,
+        "human_decision_required": True,
+    }
+
+
 def answer_field_report_query(question):
     if not _report_query(question):
         return None

@@ -542,27 +542,52 @@ def store_field_report(text, filename=""):
 
     record["inventory_update"] = inventory_update
 
-    # ANVIQO_NEON_FIELD_REPORT_HOOK_V2
+    # Durable report persistence must be visible to the caller. Previously this
+    # hook swallowed DB errors and still implied the report had been stored.
+    persistence = {
+        "status": "NOT_CONFIGURED",
+        "durable": False,
+        "message": "Report was parsed into local Plant Memory, but durable tenant storage is not configured.",
+    }
     try:
         from anvi_neon_store import upsert_field_report
-        upsert_field_report({
-            "report_id": str(memory.get("memory_id","")),
-            "tag": record.get("tag",""),
-            "equipment": record.get("equipment",""),
-            "event": record.get("event",""),
-            "source": record.get("source",""),
-            "raw_report": record.get("raw_report",""),
+        persisted = upsert_field_report({
+            "report_id": str(memory.get("memory_id", "")),
+            "tag": record.get("tag", ""),
+            "equipment": record.get("equipment", ""),
+            "event": record.get("event", ""),
+            "source": record.get("source", ""),
+            "raw_report": record.get("raw_report", ""),
             "parsed_report": record,
             "memory": memory,
             "verification_status": "PENDING_VERIFICATION",
         })
-    except Exception:
-        pass
+        if persisted:
+            persistence = {
+                "status": "PERSISTED",
+                "durable": True,
+                "message": "Field report saved to durable tenant-scoped storage; verification remains pending.",
+            }
+        else:
+            persistence = {
+                "status": "NOT_CONFIGURED",
+                "durable": False,
+                "message": "Report parsed into local Plant Memory only; durable tenant storage is not configured, so cross-restart retrieval is not guaranteed.",
+            }
+    except Exception as exc:
+        persistence = {
+            "status": "FAILED",
+            "durable": False,
+            "error_type": type(exc).__name__,
+            "message": "Report parsed into local Plant Memory, but durable tenant storage failed. Do not treat this report as durably saved.",
+        }
 
     return {
         "status": "PENDING_VERIFICATION",
         "domain": "plant_memory",
         "memory": memory,
         "parsed_report": record,
+        "persistence": persistence,
+        "message": persistence["message"],
         **SAFETY,
     }
