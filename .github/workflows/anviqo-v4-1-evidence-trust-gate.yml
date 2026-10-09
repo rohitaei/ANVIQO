@@ -1,0 +1,16 @@
+name: ANVIQO V4.1 Evidence Trust Gate
+on:
+  push:
+    branches: [v4-1-evidence-trust-connector-readiness]
+  pull_request:
+    branches: [main, v2-v3-unified-industrial-intelligence]
+jobs:
+  v4-1-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt pytest
+      - run: PYTHONPATH=. pytest -q tests/test_v4_1_evidence_trust.py tests/test_v3_5_to_v4_enterprise.py tests/test_v3_4_decision_governance.py tests/test_v3_3_durable_history.py tests/test_v3_2_historical_evidence.py tests/test_v3_1_real_time_evidence.py tests/test_v2_v3_unified_platform.py
