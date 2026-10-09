@@ -151,3 +151,123 @@ def test_tenantless_session_never_uses_global_memory(monkeypatch):
     monkeypatch.setattr("plant_memory.search_all_memory", lambda **kwargs: [])
     assert runtime.answer_field_report_query("What happened to PT-303 last time?") is None
     assert called["persistent"] is False
+
+
+
+SPARE_FIXTURE_PATH = Path(__file__).parent / "fixtures" / "anvi_field_reports_spare_sync_10.json"
+
+
+def test_ten_reports_save_answer_and_update_spare_once_by_report(monkeypatch, tmp_path):
+    """QA-only end-to-end flow: save report, consume its named spare once, then answer chat."""
+    payload = json.loads(SPARE_FIXTURE_PATH.read_text(encoding="utf-8"))
+    assert payload["not_for_production"] is True
+    reports = payload["reports"]
+    assert len(reports) == 10
+    assert len({r["report_id"] for r in reports}) == 10
+    assert len({r["tag"] for r in reports}) == 10
+
+    # The inventory adapter is deliberately mocked: tests must never edit the
+    # authoritative critical_spares.xlsx or any live plant inventory.
+    inventory = {r["tag"]: 4 for r in reports}
+    inventory_calls = []
+
+    def fake_remove_spare(tag, quantity):
+        tag = str(tag).upper()
+        quantity = float(quantity)
+        before = inventory[tag]
+        assert quantity > 0 and before >= quantity
+        inventory[tag] = before - quantity
+        transaction_id = f"QA-SPARE-TXN-{len(inventory_calls) + 1:03d}"
+        inventory_calls.append((tag, quantity, before, inventory[tag]))
+        return {
+            "tag": tag, "action": "REMOVE", "quantity": quantity,
+            "before": before, "after": inventory[tag],
+            "transaction_id": transaction_id,
+        }
+
+    import sys
+    monkeypatch.setitem(
+        sys.modules, "pci_spare_direct_excel",
+        SimpleNamespace(remove_spare=fake_remove_spare),
+    )
+    monkeypatch.setattr(runtime, "LEDGER", tmp_path / "field_report_spare_sync.json")
+
+    saved = {}
+
+    def fake_exec(sql, params=(), fetch=False):
+        if "INSERT INTO anviqo_field_reports" in sql:
+            saved[str(params[0])] = json.loads(params[3])
+            return None
+        if fetch:
+            return [(row,) for row in saved.values()]
+        return None
+
+    monkeypatch.setattr(anvi_neon_store, "neon_enabled", lambda: True)
+    monkeypatch.setattr(anvi_neon_store, "init_neon", lambda: True)
+    monkeypatch.setattr(anvi_neon_store, "_exec", fake_exec)
+
+    app = Flask(__name__)
+    app.secret_key = "field-report-spare-qa-only"
+    with app.test_request_context("/api/field_report", method="POST"):
+        session["authenticated"] = True
+        session["organization_id"] = "QA-ORG-ONLY"
+        session["plant_id"] = "QA-PLANT-ONLY"
+
+        for report in reports:
+            assert anvi_neon_store.upsert_field_report(report) is True
+            first = runtime.sync_field_report_spare(report, report["report_id"])
+            assert first["status"] == "APPLIED", report["tag"]
+            assert first["inventory_changed"] is True
+            assert first["before"] == 4
+            assert first["after"] == 3
+
+            # Reprocessing the same report must not consume the same spare twice.
+            duplicate = runtime.sync_field_report_spare(report, report["report_id"])
+            assert duplicate["status"] == "ALREADY_APPLIED", report["tag"]
+            assert duplicate["inventory_changed"] is False
+            assert inventory[report["tag"]] == 3
+
+    assert len(saved) == 10
+    assert len(inventory_calls) == 10
+    assert all(row["organization_id"] == "QA-ORG-ONLY" for row in saved.values())
+    assert all(row["plant_id"] == "QA-PLANT-ONLY" for row in saved.values())
+
+    def fetch_reports(tag="", limit=20):
+        rows = [
+            row for row in saved.values()
+            if row.get("organization_id") == "QA-ORG-ONLY"
+            and row.get("plant_id") == "QA-PLANT-ONLY"
+        ]
+        if tag:
+            norm = "".join(ch.lower() for ch in tag if ch.isalnum())
+            rows = [row for row in rows if "".join(
+                ch.lower() for ch in row.get("tag", "") if ch.isalnum()
+            ) == norm]
+        return rows[:limit]
+
+    monkeypatch.setitem(
+        sys.modules, "field_report_persistent_bridge",
+        SimpleNamespace(_field_reports_from_neon=fetch_reports),
+    )
+    monkeypatch.setattr(
+        runtime, "_authenticated_tenant",
+        lambda: ("QA-PLANT-ONLY", "QA-ORG-ONLY"),
+    )
+
+    for report in reports:
+        answer = runtime.answer_field_report_query(
+            f"Show the saved field report for {report['tag']}"
+        )
+        assert answer is not None, report["tag"]
+        assert answer["evidence"]["report_id"] == report["report_id"]
+        assert report["observation"] in answer["answer"]
+        assert report["finding"] in answer["answer"]
+        assert report["maintenance_action"] in answer["answer"]
+        assert report["outcome"] in answer["answer"]
+        assert f"{report['tag']} x 1" in answer["answer"]
+        assert answer["verification_status"] == "PENDING_VERIFICATION"
+        assert answer["read_only"] is True
+        assert answer["plc_write"] is False
+        assert answer["scada_control"] is False
+        assert answer["automatic_execution"] is False
+        assert answer["human_decision_required"] is True
