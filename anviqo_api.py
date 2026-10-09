@@ -1400,6 +1400,11 @@ try:
     register_v4_1_evidence_trust(app)
 except Exception as exc:
     print(f"ANVIQO_V4_1_TRUST_REGISTRATION_ERROR error={exc!r}", flush=True)
+try:
+    from anvi_v4_2_connector_validation import register as register_v4_2_connector_validation
+    register_v4_2_connector_validation(app)
+except Exception as exc:
+    print(f"ANVIQO_V4_2_CONNECTOR_VALIDATION_REGISTRATION_ERROR error={exc!r}", flush=True)
 
 # ------------------------------------------------------------
 # SERVER
