@@ -1395,6 +1395,11 @@ try:
     register_v4_enterprise(app)
 except Exception as exc:
     print(f"ANVIQO_V4_ENTERPRISE_REGISTRATION_ERROR error={exc!r}", flush=True)
+try:
+    from anvi_v4_1_evidence_trust import register as register_v4_1_evidence_trust
+    register_v4_1_evidence_trust(app)
+except Exception as exc:
+    print(f"ANVIQO_V4_1_TRUST_REGISTRATION_ERROR error={exc!r}", flush=True)
 
 # ------------------------------------------------------------
 # SERVER
