@@ -213,7 +213,7 @@ def register(app):
                                 "safety": dict(SAFETY)}), 400
             if (str(row.get("organization_id", "")) != organization_id
                     or str(row.get("plant_id", "")) != plant_id
-                    or str(row.get("source_id", source.get("source_id", ""))) != str(source.get("source_id", "")):
+                    or str(row.get("source_id", source.get("source_id", ""))) != str(source.get("source_id", ""))):
                 return jsonify({"status": "FORBIDDEN", "message": "TENANT_OR_PLANT_BOUNDARY_VIOLATION",
                                 "safety": dict(SAFETY)}), 403
         try:
