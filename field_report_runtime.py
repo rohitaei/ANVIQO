@@ -109,9 +109,36 @@ def _report_query(q):
 
     return explicit_report or historical
 
+def _flatten_report(report):
+    """Normalize current and legacy report payload shapes for chat retrieval."""
+    if not isinstance(report, dict):
+        return {}
+    merged = dict(report)
+    memory = report.get("memory")
+    if isinstance(memory, dict):
+        for key, value in memory.items():
+            if value not in (None, ""):
+                merged.setdefault(key, value)
+    parsed = report.get("parsed_report")
+    if isinstance(parsed, dict):
+        for key, value in parsed.items():
+            if value not in (None, ""):
+                merged[key] = value
+    merged.setdefault("memory_id", merged.get("report_id", ""))
+    merged.setdefault("source", "technician field report" if (
+        isinstance(parsed, dict) and parsed.get("source") == "technician field report"
+    ) else "")
+    return merged
+
+
 def _has_report_details(report):
-    if not isinstance(report,dict): return False
-    return any(str(report.get(k) or "").strip() for k in ("observation","finding","maintenance_action","outcome","recovery_status","spare_used","raw_report","notes"))
+    report = _flatten_report(report)
+    return bool(report.get("source") == "technician field report") and any(
+        str(report.get(k) or "").strip()
+        for k in ("observation", "finding", "maintenance_action", "outcome",
+                  "recovery_status", "spare_used", "raw_report", "notes")
+    )
+
 
 def _authenticated_tenant():
     """Return authenticated tenant context for report reads, or no tenant."""
@@ -124,39 +151,88 @@ def _authenticated_tenant():
         return None, None
 
 
+def _report_match_score(report, question, wanted_tag=""):
+    report = _flatten_report(report)
+    score = 0
+    report_tag = re.sub(r"[^a-z0-9]", "", str(report.get("tag") or "").lower())
+    wanted = re.sub(r"[^a-z0-9]", "", str(wanted_tag or "").lower())
+    if wanted and report_tag == wanted:
+        score += 1000
+    elif wanted:
+        score -= 1000
+    q_terms = {
+        t for t in re.findall(r"[a-z0-9]+", str(question or "").lower())
+        if len(t) > 2 and t not in {
+            "what", "when", "where", "which", "who", "why", "how", "did",
+            "does", "the", "this", "that", "last", "time", "about", "tell",
+            "show", "give", "field", "report", "reports", "technician", "plant",
+            "maintenance", "happened", "with", "from", "and", "for",
+        }
+    }
+    text = " ".join(str(report.get(k) or "") for k in (
+        "tag", "equipment", "area", "event", "observation", "finding",
+        "maintenance_action", "outcome", "recovery_status", "spare_used",
+        "notes", "raw_report",
+    )).lower()
+    score += 10 * len(q_terms & set(re.findall(r"[a-z0-9]+", text)))
+    return score
+
+
 def answer_field_report_query(question):
-    if not _report_query(question): return None
-    tag_match=_TAG_RE.search(str(question or ""))
-    tag=_normalise_tag(tag_match.group(1)) if tag_match else ""
+    if not _report_query(question):
+        return None
+    tag_match = _TAG_RE.search(str(question or ""))
+    tag = _normalise_tag(tag_match.group(1)) if tag_match else ""
 
     tenant_plant_id, tenant_org_id = _authenticated_tenant()
-
     if tenant_plant_id:
         # Authenticated tenants must never read bundled/global Plant Memory.
         # The persistent tenant bridge is the authoritative source here.
         try:
             from field_report_persistent_bridge import _field_reports_from_neon
-            results = _field_reports_from_neon(tag=tag, limit=10)
+            results = _field_reports_from_neon(tag=tag, limit=20)
         except Exception:
             results = []
     else:
         import plant_memory
-        results=plant_memory.search_all_memory(query=question,tag=tag,limit=10)
+        results = plant_memory.search_all_memory(query=question, tag=tag, limit=20)
 
-    reports=[r for r in results if r.get("source")=="technician field report" and _has_report_details(r)]
-    if not reports: return None
-    report=reports[0]
-    pending=report.get("verification_status")!="VERIFIED"
-    usage=extract_spare_usage(report)
-    display_spare=report.get("spare_used") or ""
+    reports = [_flatten_report(r) for r in results if _has_report_details(r)]
+    if tag:
+        wanted = re.sub(r"[^a-z0-9]", "", tag.lower())
+        reports = [r for r in reports if
+                   re.sub(r"[^a-z0-9]", "", str(r.get("tag") or "").lower()) == wanted]
+    if not reports:
+        return None
+
+    report = max(reports, key=lambda r: _report_match_score(r, question, tag))
+    pending = report.get("verification_status") != "VERIFIED"
+    usage = extract_spare_usage(report)
+    display_spare = report.get("spare_used") or ""
     if usage:
-        spare_tag,spare_qty=usage
-        display_spare=f"{spare_tag} x {spare_qty:g}"
-    answer=(f"I found a technician field report for {report.get('tag') or report.get('equipment') or 'the equipment'}. "
-            f"Observation: {report.get('observation') or 'not stated'}. "
-            f"Finding: {report.get('finding') or 'not stated'}. "
-            f"Maintenance action: {report.get('maintenance_action') or 'not stated'}. "
-            f"Outcome: {report.get('outcome') or 'not stated'}. "
-            f"Spare used: {display_spare or 'none reported'}.")
-    if pending: answer += " This is a human field report and remains PENDING_VERIFICATION."
-    return {"answer":answer,"status":"OK","domain":"plant_memory","source":"technician field report","memory_id":report.get("memory_id",""),"verification_status":report.get("verification_status","PENDING_VERIFICATION"),"evidence":report,"read_only":True,"plc_write":False,"scada_control":False}
+        spare_tag, spare_qty = usage
+        display_spare = f"{spare_tag} x {spare_qty:g}"
+    answer = (
+        f"I found a technician field report for {report.get('tag') or report.get('equipment') or 'the equipment'}. "
+        f"Observation: {report.get('observation') or 'not stated'}. "
+        f"Finding: {report.get('finding') or 'not stated'}. "
+        f"Maintenance action: {report.get('maintenance_action') or 'not stated'}. "
+        f"Outcome: {report.get('outcome') or 'not stated'}. "
+        f"Spare used: {display_spare or 'none reported'}."
+    )
+    if pending:
+        answer += " This is a human field report and remains PENDING_VERIFICATION."
+    return {
+        "answer": answer,
+        "status": "OK",
+        "domain": "plant_memory",
+        "source": "technician field report",
+        "memory_id": report.get("memory_id", ""),
+        "verification_status": report.get("verification_status", "PENDING_VERIFICATION"),
+        "evidence": report,
+        "read_only": True,
+        "plc_write": False,
+        "scada_control": False,
+        "automatic_execution": False,
+        "human_decision_required": True,
+    }
