@@ -34,6 +34,7 @@ if callable(_original_v18_action):
 
 from anviqo_api_phase2 import app  # noqa: E402
 import failure_prediction_api  # noqa: E402,F401
+import field_report_persistent_bridge  # noqa: E402,F401 — registers tenant-scoped saved field-report lookup
 
 
 @app.before_request
