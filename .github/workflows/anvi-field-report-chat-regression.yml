@@ -1,0 +1,16 @@
+name: ANVI Field Report Chat Regression
+on:
+  push:
+    branches: [fix-anvi-field-report-chat-answers]
+  pull_request:
+    branches: [v2-v3-unified-industrial-intelligence]
+jobs:
+  field-report-chat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt pytest
+      - run: PYTHONPATH=. pytest -q tests/test_anvi_field_report_chat_answers.py
