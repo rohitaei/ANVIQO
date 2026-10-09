@@ -48,7 +48,7 @@ def _field_reports_from_neon(tag="", limit=20):
         from anvi_neon_store import _exec, neon_enabled, init_neon
 
         if not neon_enabled():
-            return []
+            raise RuntimeError("Durable field-report store is not configured")
         init_neon()
         org_id = str(session.get("organization_id", "")).strip()
         plant_id = str(session.get("plant_id", "")).strip()
@@ -78,21 +78,23 @@ def _field_reports_from_neon(tag="", limit=20):
             )
         return [row[0] for row in rows if row and isinstance(row[0], dict)]
     except Exception:
-        return []
+        # Do not turn a database outage/schema error into a false "not found".
+        raise
 
 
 def _report_view(report):
     """Flatten the stored report payload without changing stored data."""
     if not isinstance(report, dict):
         return {}
-    parsed = report.get("parsed_report")
-    if isinstance(parsed, dict):
-        merged = dict(report)
-        for key, value in parsed.items():
-            if value not in (None, ""):
-                merged[key] = value
-        return merged
-    return report
+    merged = dict(report)
+    for nested_key in ("memory", "parsed_report"):
+        nested = report.get(nested_key)
+        if isinstance(nested, dict):
+            for key, value in nested.items():
+                if value not in (None, ""):
+                    merged[key] = value
+    merged.setdefault("memory_id", merged.get("report_id", ""))
+    return merged
 
 
 def _best_report(question, reports, tag=""):
@@ -116,7 +118,14 @@ def _best_report(question, reports, tag=""):
             s += 5
         return s
 
-    candidates = [r for r in reports if _report_view(r).get("source") == "technician field report"]
+    candidates = [
+        r for r in reports
+        if _report_view(r).get("source") == "technician field report"
+        and any(str(_report_view(r).get(k) or "").strip() for k in (
+            "observation", "finding", "maintenance_action", "outcome",
+            "recovery_status", "spare_used", "raw_report", "notes",
+        ))
+    ]
     if not candidates:
         return None
     return max(candidates, key=score)
@@ -147,10 +156,16 @@ def persistent_field_report_query_bridge():
 
     tag_match = _TAG_RE.search(question)
     tag = tag_match.group(1).upper().replace("_", "-").replace(" ", "-") if tag_match else ""
-    reports = _field_reports_from_neon(tag=tag, limit=20)
+    try:
+        reports = _field_reports_from_neon(tag=tag, limit=20)
+    except Exception:
+        from field_report_runtime import field_report_not_found_answer
+        return jsonify(field_report_not_found_answer(question, "LOOKUP_UNAVAILABLE")), 503
+
     report = _best_report(question, reports, tag=tag)
     if not report:
-        return None
+        from field_report_runtime import field_report_not_found_answer
+        return jsonify(field_report_not_found_answer(question)), 200
 
     view = _report_view(report)
     answer = (
