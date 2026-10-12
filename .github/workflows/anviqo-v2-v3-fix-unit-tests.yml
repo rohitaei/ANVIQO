@@ -34,4 +34,6 @@ jobs:
       - name: Run targeted regression contracts
         env:
           ANVIQO_SECRET_KEY: "test-only-unit-key"
+          ANVIQO_ADMIN_USER: "unit-test-admin"
+          ANVIQO_ADMIN_PASSWORD: "unit-test-admin-password"
         run: python -m pytest -q tests/test_anvi_intelligence_orchestrator_no_blank.py tests/test_field_report_persistent_bridge_completeness.py tests/test_field_report_runtime_intent.py tests/test_anviqo_api_v3_tag_extraction.py tests/test_v2_v3_regression_contracts.py
