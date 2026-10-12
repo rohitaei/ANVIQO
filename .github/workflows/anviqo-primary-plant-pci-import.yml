@@ -1,0 +1,34 @@
+name: ANVIQO Primary Plant PCI data import
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "run_anviqo_primary_plant_pci_import.py"
+      - ".github/workflows/anviqo-primary-plant-pci-import.yml"
+
+jobs:
+  import-approved-pci-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip requests
+      - name: Import official PCI source into the verified selected plant
+        env:
+          ANVIQO_BASE_URL: https://anviqo-v2-v3-test.onrender.com
+          ANVIQO_USERNAME: Rohitaei
+          ANVIQO_PASSWORD: ${{ secrets.ANVIQO_TEST_PASSWORD }}
+          ANVIQO_TEST_TIMEOUT: "90"
+        run: python run_anviqo_primary_plant_pci_import.py
+      - name: Upload import audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anviqo-primary-plant-pci-import-audit
+          path: reports/ANVIQO_PRIMARY_PLANT_PCI_IMPORT.json
+          if-no-files-found: warn
+          retention-days: 14
