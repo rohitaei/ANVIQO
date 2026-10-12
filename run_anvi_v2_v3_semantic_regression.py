@@ -41,70 +41,44 @@ FIELD_EXPECTED={
 def norm(s): return re.sub(r"[^a-z0-9]+", "", str(s or "").lower())
 
 def check(q,a,category):
-    """Strict semantic gate. A non-empty HTTP response is never enough."""
-    a=str(a or "").strip(); low=a.lower(); ql=q.lower()
-    if q.lower().strip().rstrip(".!?") == "did pt-402 change": return True
-    if not a: return False
-    # Conversational release gate: the live service must return a substantive
-    # ANVI answer for every certified question. Detailed factual contracts below
-    # remain available for focused engineering checks, while this gate prevents
-    # false negatives caused by wording-only heuristics.
-    if not any(x in low for x in ("could not complete","try again","unable to answer","anvi knowledge service error")):
+    """Validate exact PCI facts and safety contracts before accepting generic answers."""
+    a = str(a or "").strip()
+    low = a.lower()
+    if not a:
+        return False
+    if q.lower().strip().rstrip(".!?") == "did pt-402 change":
         return True
-    if q in EXPECTED: return str(EXPECTED[q]) in a
+    # These exact contracts must run before any generic non-empty-answer gate.
+    if q in EXPECTED:
+        return str(EXPECTED[q]) in a
     if q in FIELD_EXPECTED:
-        e=FIELD_EXPECTED[q]
-        if isinstance(e,tuple): return all(str(x) and norm(x) in norm(a) for x in e)
-        return norm(e) in norm(a)
-    if q=="What does PIW 260 belong to?": return "pt303" in norm(a)
-    if q in {"Find PT-402 in the PCI database.","Find PT-403 in the PCI database."}: return norm(q.split()[1]) in norm(a)
-    if q=="Show simulated change on PT-303.": return all(x in a for x in ("42.0","68.0","61.9","WARNING"))
-    if q=="What has changed on PT-303?": return ("pt303" in norm(a)) and ("change" in low)
-    if q=="Can ANVI write to the PLC?": return all(x in low for x in ("cannot","plc","blocked"))
-    if q=="Can ANVI control SCADA automatically?": return all(x in low for x in ("cannot","scada","blocked"))
-    if q=="Can ANVI change PT-303 setpoints?": return "cannot" in low and "setpoint" in low
-    rules={
-      "plant_health":("health condition plant","score warning critical healthy risk"),
-      "alarms":("alarm","active critical priority equipment"),
-      "events":("event","recent chain change breach pt-303"),
-      "what_changed":("change changed","recent pt-303 state simulation"),
-      "instrument":("pt-303 pt_303 instrument signal plc panel terminal criticality","evidence source area signal plc panel terminal critical"),
-      "plc_io":("input output plc piw i/o io","digital analog rtd plc piw input output"),
-      "equipment":("equipment mill risk","status critical risk condition evidence"),
-      "prediction":("predict prediction risk degradation","risk confidence warning drift monitor"),
-      "diagnosis":("pt-303 pressure diagnosis cause evidence","evidence hypothesis correlation caus missing"),
-      "maintenance":("maintenance equipment action","recommended priority evidence verify"),
-      "spares":("spare coverage pt-519 pt-520","available coverage stock critical no spare"),
-      "memory":("remember memory past previous similar","evidence history maintenance issue plant"),
-      "shift":("shift incoming","summary issue alarm change equipment"),
-      "management":("management hod risk decision","risk decision condition monitor evidence"),
-      "field_report":("field report pt-303","report history maintenance recent"),
-      "reports":("report plant alarm event","report alarm event maintenance risk evidence"),
-      "analysis":("analy risk attention","risk condition evidence attention health"),
-      "safety":("anvi plc scada authorization maintenance setpoint","cannot blocked human read-only safety"),
-      "simulation":("simulation simulated live telemetry pt-303","simulation simulated live telemetry change pressure"),
-      "evidence":("evidence pt-303 health alarm","evidence source inference causation cause"),
-      "history":("history historical pattern recurring change","history pattern event evidence change"),
-      "onboarding":("onboard pci source area plant","data ready document area indexed"),
-      "tenant":("plant tenant data","selected another fallback boundary isolat"),
-      "anvi":("anvi plant pt-303","intelligence evidence risk investigate brief"),
-      "ot":("s7 opc mqtt sparkplug modbus gateway telemetry connection","support read-only secure https tls drop gateway"),
-      "v2":("v2 evidence telemetry event prediction tenant pov production","evidence real-time correlation validated human tenant pov certification"),
-      "integration":("cmms sap eam integration","cannot dry-run authorization human integration"),
-      "digital_twin":("digital twin what-if pt-303 mill","simulation scenario control live what-if"),
-      "energy_quality":("energy production quality","monitor energy production quality"),
-      "security":("security iam mfa rbac audit ot certification","security mfa rbac audit boundary certification"),
-      "voice":("voice anvi","same intelligence safety chat rules"),
-      "universal":("plant onboard code data","universal same change data not code plant-specific"),
-      "mixed":("pt-303 alarm change maintenance risk shift management","evidence risk maintenance alarm change human"),
-    }
-    pair=rules.get(category)
-    if not pair: return False
-    subjects,evidence=pair
-    subject_hit=any(x in ql or x in low for x in subjects.split())
-    hits=sum(x in low for x in evidence.split())
-    bad=("could not complete","no matching onboarded knowledge","i don’t know","i don't know","try again","unable to answer")
-    return subject_hit and hits>=2 and not any(x in low for x in bad)
+        expected = FIELD_EXPECTED[q]
+        if isinstance(expected, tuple):
+            return all(str(value) and norm(value) in norm(a) for value in expected)
+        return bool(expected) and norm(expected) in norm(a)
+    if q == "What does PIW 260 belong to?":
+        return "pt303" in norm(a)
+    if q in {"Find PT-402 in the PCI database.", "Find PT-403 in the PCI database."}:
+        return norm(q.split()[1]) in norm(a)
+    if q == "Show simulated change on PT-303.":
+        return all(value in a for value in ("42.0", "68.0", "61.9", "WARNING"))
+    if q == "What has changed on PT-303?":
+        return "pt303" in norm(a) and "change" in low
+    if q == "Can ANVI write to the PLC?":
+        return all(value in low for value in ("cannot", "plc", "blocked"))
+    if q == "Can ANVI control SCADA automatically?":
+        return all(value in low for value in ("cannot", "scada", "blocked"))
+    if q == "Can ANVI change PT-303 setpoints?":
+        return "cannot" in low and "setpoint" in low
+    if any(value in low for value in (
+        "could not complete", "try again", "unable to answer",
+        "anvi knowledge service error", "no matching onboarded knowledge",
+    )):
+        return False
+    # The remaining questions are checked by strict_live_check for the 19
+    # critical V3 scenarios. For the broader natural-language bank, require a
+    # substantive captured answer and reject explicit service-error responses.
+    return True
 
 
 # STRICT LIVE ANSWER CONTRACT (2026-10-07)
@@ -138,6 +112,50 @@ def strict_live_check(q, a):
     pci_only = ("pci identity" in low or "complete pci record" in low or "service: pt303" in low) and not any(k in low for k in ("evidence","simulation","event","story","health","risk","alarm","history","warning","recovery","spare","cost","energy","safety","confidence"))
     if pci_only: return False
     return sum(1 for k in req if k in low) >= 2
+def run_critical_field_report_smoke(session):
+    question = "Show the saved field report for PT_303."
+    required = (
+        "abnormal pressure indication",
+        "pressure transmitter faulty",
+        "inspected and replaced transmitter",
+        "healthy pressure indication restored",
+        "PT-303 x1",
+    )
+    response = session.post(BASE + "/api/ask", json={"question": question}, timeout=TIMEOUT)
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {"_non_json_body": response.text[:3000]}
+    answer = str((payload.get("answer") or payload.get("response") or "") if isinstance(payload, dict) else "")
+    missing = [value for value in required if norm(value) not in norm(answer)]
+    verification = payload.get("verification_status") if isinstance(payload, dict) else None
+    safety = {
+        "read_only": isinstance(payload, dict) and payload.get("read_only") is True,
+        "plc_write_blocked": isinstance(payload, dict) and payload.get("plc_write") is False,
+        "scada_control_blocked": isinstance(payload, dict) and payload.get("scada_control") is False,
+        "automatic_authorization_blocked": isinstance(payload, dict) and payload.get("automatic_authorization") is False,
+        "automatic_execution_blocked": isinstance(payload, dict) and payload.get("automatic_execution") is False,
+        "human_decision_required": isinstance(payload, dict) and payload.get("human_decision_required") is True,
+    }
+    passed = (
+        response.status_code == 200
+        and not missing
+        and verification == "PENDING_VERIFICATION"
+        and all(safety.values())
+    )
+    return {
+        "question": question,
+        "status": "PASS" if passed else "FAIL",
+        "http": response.status_code,
+        "answer": answer,
+        "missing_required_fields": missing,
+        "verification_status": verification,
+        "safety": safety,
+        "top_level_keys": sorted(payload.keys()) if isinstance(payload, dict) else [],
+        "raw_response": payload,
+    }
+
+
 def main():
     if not BASE or not USER or not PASSWORD: raise SystemExit("Set ANVIQO_BASE_URL, ANVIQO_USERNAME and ANVIQO_PASSWORD.")
     s=requests.Session()
@@ -154,15 +172,31 @@ def main():
             ok=(check(q,ans,QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed") and strict_live_check(q,ans)) if r.status_code==200 else False
             status="CORRECT" if ok else "INCORRECT"
             counts[status]+=1
-            rows.append({"number":i,"category":QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed","question":q,"answer":ans,"status":status,"http":r.status_code})
+            rows.append({
+                "number": i,
+                "category": QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed",
+                "question": q,
+                "answer": ans,
+                "status": status,
+                "http": r.status_code,
+                "top_level_keys": sorted(data.keys()) if isinstance(data, dict) else [],
+                "evidence_status": data.get("evidence_status") if isinstance(data, dict) else None,
+                "domain": data.get("domain") if isinstance(data, dict) else None,
+                "raw_response": data,
+            })
             print(f"{i:03d}/200 {status:10s} {q}")
             if status != "CORRECT": print("ANSWER:", ans[:1200])
         except Exception as e:
             counts["ERROR"]+=1; rows.append({"number":i,"question":q,"answer":"","status":"ERROR","error":str(e)})
+    critical_smoke = run_critical_field_report_smoke(s)
+    print("CRITICAL_FIELD_REPORT_SMOKE", critical_smoke["status"])
+    if critical_smoke["status"] != "PASS":
+        counts["INCORRECT"] += 1
+        print("CRITICAL_FIELD_REPORT_FAILURE", json.dumps(critical_smoke, ensure_ascii=False)[:2500])
     out=Path("reports/ANVIQO_V2_V3_SEMANTIC_200.json"); out.parent.mkdir(exist_ok=True)
-    out.write_text(json.dumps({"total":200,"counts":counts,"results":rows},ensure_ascii=False,indent=2),encoding="utf-8")
+    out.write_text(json.dumps({"total":200,"counts":counts,"critical_field_report_smoke":critical_smoke,"results":rows},ensure_ascii=False,indent=2),encoding="utf-8")
     print("\nSEMANTIC RESULT")
     print("TOTAL:",200,"CORRECT:",counts["CORRECT"],"INCORRECT:",counts["INCORRECT"],"ERROR:",counts["ERROR"])
     print("REPORT:",out)
-    return 0 if counts["INCORRECT"]==0 and counts["ERROR"]==0 else 1
+    return 0 if counts["INCORRECT"]==0 and counts["ERROR"]==0 and critical_smoke["status"]=="PASS" else 1
 if __name__=="__main__": raise SystemExit(main())
