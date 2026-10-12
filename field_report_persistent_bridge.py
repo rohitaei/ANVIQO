@@ -111,7 +111,16 @@ def _best_report(question, reports, tag=""):
                 "tag", "equipment", "area", "source",
             )
         ))
-        s = len(q_tokens & _tokens(text)) * 10
+        detail_fields = (
+            "observation", "finding", "maintenance_action", "outcome",
+            "recovery_status", "spare_used",
+        )
+        completeness = sum(
+            1 for key in detail_fields if str(view.get(key) or "").strip()
+        )
+        # A complete, older technician report is more useful than a newer
+        # sparse duplicate. Never merge separate reports to manufacture detail.
+        s = completeness * 40 + len(q_tokens & _tokens(text)) * 10
         if wanted and wanted == _tag_norm(view.get("tag")):
             s += 100
         if view.get("source") == "technician field report":
@@ -126,6 +135,13 @@ def _best_report(question, reports, tag=""):
             "recovery_status", "spare_used", "raw_report", "notes",
         ))
     ]
+    if wanted:
+        # A requested tag is an exact identity constraint, never a relevance
+        # hint. Do not return a different instrument's report as a fallback.
+        candidates = [
+            r for r in candidates
+            if _tag_norm(_report_view(r).get("tag")) == wanted
+        ]
     if not candidates:
         return None
     return max(candidates, key=score)
@@ -190,4 +206,7 @@ def persistent_field_report_query_bridge():
         "read_only": True,
         "plc_write": False,
         "scada_control": False,
+        "automatic_authorization": False,
+        "automatic_execution": False,
+        "human_decision_required": True,
     })
