@@ -36,6 +36,16 @@ import re as _re
 
 app = Flask(__name__)
 
+def _extract_v3_tag(question):
+    """Extract a normalized engineering tag from the current question."""
+    match = _re.search(
+        r"\b(PT|FT|TT|LT|AT|DT|WT|CT|XV|FV|PV|TV|LV|PIC|FIC|TIC|LIC|MCV)[-_ ]?(\d+)\b",
+        str(question or ""),
+        _re.I,
+    )
+    return (match.group(1).upper() + "_" + match.group(2)) if match else None
+
+
 # ------------------------------------------------------------
 # SPARE INVENTORY STRUCTURE MIGRATION
 # ------------------------------------------------------------
@@ -637,8 +647,7 @@ def ask_anvi():
             _v3_engine = ExtraordinaryOperatorIntelligence(_v3_platform)
             _v3_org = session.get("organization_id", "")
             _v3_plant = session.get("plant_id", "")
-            _v3_tag_match = _re.search(r"\\b(PT|FT|TT|LT|AT|DT|WT|CT|XV|FV|PV|TV|LV|PIC|FIC|TIC|LIC|MCV)[-_ ]?(\\d+)\\b", q, _re.I)
-            _v3_tag = (_v3_tag_match.group(1).upper() + "_" + _v3_tag_match.group(2)) if _v3_tag_match else None
+            _v3_tag = _extract_v3_tag(q)
             _v3q = " ".join(q.lower().split()).rstrip(".!?")
             _v3_result = None
             if _v3_org and _v3_plant:
