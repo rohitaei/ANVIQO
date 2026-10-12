@@ -44,7 +44,7 @@ def ensure_plant(plant_id):
   cur=conn.cursor();cur.execute(f"SELECT plant_id FROM anviqo_plant_onboarding WHERE plant_id={p}",(plant_id,))
   if cur.fetchone():return
   cur.execute(f"INSERT INTO anviqo_plant_onboarding(plant_id,organization_id,created_at,updated_at) VALUES({p},{p},{p},{p})",(plant_id,a["organization_id"],_now(),_now()))
-@app.get("/admin/onboarding")
+@app.get("/admin/onboarding", endpoint="universal_onboarding_page")
 def onboarding_page():
  if not _admin():return Response("ANVIQO onboarding requires OWNER/ADMIN access",status=403,mimetype="text/plain")
  html=Path(__file__).with_name("anvi_plant_data_upload.html")
