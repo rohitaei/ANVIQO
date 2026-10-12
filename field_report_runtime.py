@@ -97,14 +97,15 @@ def _report_query(q):
     )
 
     historical = (
-        "what happened" in low
-        or "last time" in low
+        "last time" in low
         or "previously" in low
         or "earlier" in low
-        or "reported" in low
+        or "what was reported" in low
         or "what was done before" in low
         or "what did maintenance find" in low
         or "what did the technician find" in low
+        or "what did technician find" in low
+        or "what was the maintenance action" in low
     )
 
     return explicit_report or historical
