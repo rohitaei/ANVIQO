@@ -16,6 +16,7 @@ SAFETY = {
     "plc_write": False,
     "scada_control": False,
     "automatic_authorization": False,
+    "automatic_execution": False,
     "human_decision_required": True,
     "v5_intelligence_modified": False,
 }
@@ -161,10 +162,27 @@ def investigate(question: str, plant_id: str, plant_name: str, answer_fn: Callab
     if rows:
         evidence = evidence or rows[:8]
     status = answer.get("evidence_status") or ("EVIDENCE_AVAILABLE" if evidence else "INSUFFICIENT_EVIDENCE")
+    answer_text = str(answer.get("answer") or answer.get("response") or "").strip()
+    if not answer_text:
+        status_text = str(status or "").upper()
+        target = tag or "this request"
+        plant_label = plant_name or "the selected plant"
+        if status_text in {"INSUFFICIENT_EVIDENCE", "NO_EVIDENCE", "NO_DATA", "EVIDENCE_UNAVAILABLE", "LOOKUP_UNAVAILABLE"}:
+            answer_text = (
+                f"Insufficient verified evidence is available for {target} in {plant_label}. "
+                "ANVI did not use cross-plant fallback. Onboard the relevant PCI, telemetry, event, "
+                "or maintenance source and review the evidence before deciding. "
+                "No PLC/SCADA action was performed."
+            )
+        else:
+            answer_text = (
+                f"ANVI could not produce a verified answer from {plant_label} evidence for {target}. "
+                "No cross-plant fallback or physical action was performed."
+            )
     brief = {
         "intent": intents,
         "primary_intent": intents[0],
-        "answer": answer.get("answer", ""),
+        "answer": answer_text,
         "evidence_status": status,
         "evidence_count": len(evidence),
         "evidence": evidence[:8],
