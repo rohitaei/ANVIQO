@@ -47,7 +47,12 @@ def check(q,a,category):
     if not a:
         return False
     if q.lower().strip().rstrip(".!?") == "did pt-402 change":
-        return True
+        return "pt402" in norm(a) and any(
+            marker in low for marker in (
+                "no recorded change", "no evidence", "no event", "no change",
+                "not found", "no matching", "insufficient",
+            )
+        )
     # These exact contracts must run before any generic non-empty-answer gate.
     if q in EXPECTED:
         return str(EXPECTED[q]) in a
