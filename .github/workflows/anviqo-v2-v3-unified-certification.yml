@@ -43,3 +43,12 @@ jobs:
           ANVIQO_PASSWORD: ${{ secrets.ANVIQO_TEST_PASSWORD }}
           ANVIQO_TEST_TIMEOUT: '90'
         run: python run_anvi_v2_v3_semantic_regression.py
+
+      - name: Upload live 200-question response capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anviqo-live-200-question-capture
+          path: reports/ANVIQO_V2_V3_SEMANTIC_200.json
+          if-no-files-found: warn
+          retention-days: 14
