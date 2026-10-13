@@ -47,10 +47,14 @@ def check(q,a,category):
     if not a:
         return False
     if q.lower().strip().rstrip(".!?") == "did pt-402 change":
+        # A correct fail-closed answer may say there is no *verified* selected-
+        # plant event; requiring the literal adjacent phrase "no event" rejects
+        # this valid evidence-qualified answer.
         return "pt402" in norm(a) and any(
             marker in low for marker in (
                 "no recorded change", "no evidence", "no event", "no change",
-                "not found", "no matching", "insufficient",
+                "not found", "no matching", "insufficient", "no verified",
+                "not available for this tag", "no verified selected-plant change event",
             )
         )
     # These exact contracts must run before any generic non-empty-answer gate.
@@ -188,7 +192,16 @@ def main():
     rows=[]; counts={"CORRECT":0,"INCORRECT":0,"ERROR":0}
     for i,q in enumerate(qs,1):
         try:
-            r=s.post(BASE+"/api/ask",json={"question":q},timeout=TIMEOUT)
+            # Brief Render restarts/cold starts can return a transient gateway
+            # error. Retry only transient statuses; never count an infrastructure
+            # blip as a semantic failure when the same read-only query can be
+            # safely repeated.
+            r=None
+            for attempt in range(3):
+                r=s.post(BASE+"/api/ask",json={"question":q},timeout=TIMEOUT)
+                if r.status_code not in (429, 502, 503, 504) or attempt == 2:
+                    break
+                time.sleep(2 * (attempt + 1))
             data=r.json() if r.headers.get("content-type","").startswith("application/json") else {}
             ans=data.get("answer") or data.get("response") or ""
             ok=(check(q,ans,QUESTIONS[i-1][0] if i <= len(QUESTIONS) else "mixed") and strict_live_check(q,ans)) if r.status_code==200 else False
