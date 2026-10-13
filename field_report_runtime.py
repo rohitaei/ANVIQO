@@ -145,11 +145,63 @@ def _authenticated_tenant():
     """Return authenticated tenant context for report reads, or no tenant."""
     try:
         from flask import has_request_context, session
-        if not has_request_context() or not session.get("authenticated"):
+        if not has_request_context() or not (session.get("authenticated") or session.get("user_id")):
             return None, None
         return session.get("plant_id"), session.get("organization_id")
     except Exception:
         return None, None
+
+
+def _field_report_display_fields(report):
+    """Return report fields with conservative fallbacks derived only from saved text."""
+    view = _flatten_report(report)
+    raw = str(view.get("raw_report") or view.get("original_report") or "").strip()
+    if not raw and isinstance(view.get("memory"), dict):
+        raw = str(view["memory"].get("raw_report") or "").strip()
+
+    def same_as_raw(value):
+        return bool(raw and re.sub(r"\s+", " ", str(value or "")).strip().lower()
+                    == re.sub(r"\s+", " ", raw).strip().lower())
+
+    problem = str(view.get("reported_problem") or view.get("problem") or "").strip()
+    if not problem and raw:
+        match = re.search(
+            r"(?is)^\s*(.*?)(?=\s+\b(?:checked|changed|replaced|installed|repaired|cleaned|now\s+(?:ok|normal|working))\b|$)",
+            raw,
+        )
+        problem = (match.group(1).strip(" .;:-") if match else raw)
+
+    action = str(view.get("maintenance_action") or "").strip()
+    if not action or same_as_raw(action):
+        match = re.search(
+            r"(?is)\b(?:checked|changed|replaced|installed|repaired|cleaned|tightened|calibrated|inspected)\b.*?(?=\s+\bnow\s+(?:ok|normal|working)\b|$)",
+            raw,
+        ) if raw else None
+        if match:
+            action = match.group(0).strip(" .;:-")
+
+    outcome = str(view.get("outcome") or "").strip()
+    if not outcome or same_as_raw(outcome):
+        match = re.search(r"(?is)\bnow\s+(?:ok|normal|working)\b.*$", raw) if raw else None
+        outcome = f"Technician reported: {match.group(0).strip(' .;:')}" if match else ""
+
+    spare = str(view.get("spare_used") or "").strip()
+    if not spare and raw:
+        if re.search(r"(?i)\b1\s*(?:no|nos|number|pc|pcs)?\s+spare\b|\b1nos\s+spare\b", raw):
+            spare = "One new spare is mentioned; exact spare tag/type is not recorded"
+        elif re.search(r"(?i)\b(?:spare used|used a spare|new spare)\b", raw):
+            spare = "A spare is mentioned; quantity and exact tag/type are not recorded"
+
+    return {
+        "reported_problem": problem or "Not separately recorded",
+        "observation": str(view.get("observation") or "").strip() or "Not separately recorded",
+        "finding": str(view.get("finding") or "").strip() or "Not separately recorded",
+        "maintenance_action": action or "Not separately recorded",
+        "spare_used": spare or "Not recorded",
+        "outcome": outcome or (str(view.get("outcome") or "").strip() if not same_as_raw(view.get("outcome")) else "") or "Not separately recorded",
+        "verification_status": str(view.get("verification_status") or "PENDING_VERIFICATION"),
+        "raw_report": raw or "Original technician text not stored",
+    }
 
 
 def _report_match_score(report, question, wanted_tag=""):
@@ -255,22 +307,26 @@ def answer_field_report_query(question):
         return None
 
     report = max(reports, key=lambda r: _report_match_score(r, question, tag))
-    pending = report.get("verification_status") != "VERIFIED"
+    fields = _field_report_display_fields(report)
+    pending = fields["verification_status"] != "VERIFIED"
     usage = extract_spare_usage(report)
-    display_spare = report.get("spare_used") or ""
-    if usage:
+    display_spare = fields["spare_used"]
+    if usage and display_spare == "Not recorded":
         spare_tag, spare_qty = usage
         display_spare = f"{spare_tag} x {spare_qty:g}"
     answer = (
-        f"I found a technician field report for {report.get('tag') or report.get('equipment') or 'the equipment'}. "
-        f"Observation: {report.get('observation') or 'not stated'}. "
-        f"Finding: {report.get('finding') or 'not stated'}. "
-        f"Maintenance action: {report.get('maintenance_action') or 'not stated'}. "
-        f"Outcome: {report.get('outcome') or 'not stated'}. "
-        f"Spare used: {display_spare or 'none reported'}."
+        f"Saved technician field report for {report.get('tag') or report.get('equipment') or 'the equipment'}. "
+        f"Reported problem: {fields['reported_problem']}. "
+        f"Observation: {fields['observation']}. "
+        f"Finding: {fields['finding']}. "
+        f"Maintenance action: {fields['maintenance_action']}. "
+        f"Spare used: {display_spare}. "
+        f"Outcome: {fields['outcome']}. "
+        f"Verification status: {fields['verification_status']}. "
+        f"Original technician text: {fields['raw_report']}."
     )
     if pending:
-        answer += " This is a human field report and remains PENDING_VERIFICATION."
+        answer += " Human verification is still required; the reported outcome has not been independently verified."
     return {
         "answer": answer,
         "status": "OK",
