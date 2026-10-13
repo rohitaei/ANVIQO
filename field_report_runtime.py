@@ -163,7 +163,20 @@ def _field_report_display_fields(report):
         return bool(raw and re.sub(r"\s+", " ", str(value or "")).strip().lower()
                     == re.sub(r"\s+", " ", raw).strip().lower())
 
-    problem = str(view.get("reported_problem") or view.get("problem") or "").strip()
+    def labeled(name):
+        if not raw:
+            return ""
+        match = re.search(rf"(?im)^\s*{re.escape(name)}\s*:\s*(.*?)\s*$", raw)
+        return match.group(1).strip() if match else ""
+
+    # Prefer explicit fields in the saved technician text when present. A
+    # free-text fallback that scans for verbs can otherwise stop at a verb
+    # inside a labeled maintenance-action line and mislabel the whole header
+    # block as the reported problem.
+    problem = str(
+        view.get("reported_problem") or view.get("problem")
+        or view.get("event") or labeled("EVENT") or ""
+    ).strip()
     if not problem and raw:
         match = re.search(
             r"(?is)^\s*(.*?)(?=\s+\b(?:checked|changed|replaced|installed|repaired|cleaned|now\s+(?:ok|normal|working))\b|$)",
@@ -171,7 +184,7 @@ def _field_report_display_fields(report):
         )
         problem = (match.group(1).strip(" .;:-") if match else raw)
 
-    action = str(view.get("maintenance_action") or "").strip()
+    action = str(labeled("MAINTENANCE ACTION") or view.get("maintenance_action") or "").strip()
     if not action or same_as_raw(action):
         match = re.search(
             r"(?is)\b(?:checked|changed|replaced|installed|repaired|cleaned|tightened|calibrated|inspected)\b.*?(?=\s+\bnow\s+(?:ok|normal|working)\b|$)",
@@ -180,12 +193,12 @@ def _field_report_display_fields(report):
         if match:
             action = match.group(0).strip(" .;:-")
 
-    outcome = str(view.get("outcome") or "").strip()
+    outcome = str(labeled("OUTCOME") or view.get("outcome") or "").strip()
     if not outcome or same_as_raw(outcome):
         match = re.search(r"(?is)\bnow\s+(?:ok|normal|working)\b.*$", raw) if raw else None
         outcome = f"Technician reported: {match.group(0).strip(' .;:')}" if match else ""
 
-    spare = str(view.get("spare_used") or "").strip()
+    spare = str(labeled("SPARE USED") or view.get("spare_used") or "").strip()
     if not spare and raw:
         if re.search(r"(?i)\b1\s*(?:no|nos|number|pc|pcs)?\s+spare\b|\b1nos\s+spare\b", raw):
             spare = "One new spare is mentioned; exact spare tag/type is not recorded"
