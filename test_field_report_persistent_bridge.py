@@ -117,3 +117,62 @@ def test_authenticated_report_query_fails_closed_without_selected_plant():
     assert payload["status"] == "TENANT_CONTEXT_UNAVAILABLE"
     assert payload["plc_write"] is False
     assert payload["scada_control"] is False
+
+
+
+def test_persisted_raw_report_renders_all_fields_without_inventing_missing_details(monkeypatch):
+    from flask import session
+
+    report = {
+        "report_id": "QA-PT303-RAW",
+        "tag": "PT-303",
+        "source": "technician field report",
+        "raw_report": "Pt-303 was faulty changed by new 1nos spare now ok",
+        "maintenance_action": "Pt-303 was faulty changed by new 1nos spare now ok",
+        "outcome": "Pt-303 was faulty changed by new 1nos spare now ok",
+        "verification_status": "PENDING_VERIFICATION",
+        "organization_id": "QA-ORG-ONLY",
+        "plant_id": "QA-PLANT-ONLY",
+        "parsed_report": {
+            "tag": "PT-303",
+            "source": "technician field report",
+            "raw_report": "Pt-303 was faulty changed by new 1nos spare now ok",
+            "maintenance_action": "Pt-303 was faulty changed by new 1nos spare now ok",
+            "outcome": "Pt-303 was faulty changed by new 1nos spare now ok",
+            "spare_used": "",
+            "observation": "",
+            "finding": "",
+            "verification_status": "PENDING_VERIFICATION",
+        },
+    }
+    monkeypatch.setattr(bridge, "_field_reports_from_neon", lambda tag="", limit=20: [report])
+    app = bridge.app
+    with app.test_request_context(
+        "/api/ask",
+        method="POST",
+        json={"question": "Show the saved field report for PT_303"},
+    ):
+        session["authenticated"] = True
+        session["organization_id"] = "QA-ORG-ONLY"
+        session["plant_id"] = "QA-PLANT-ONLY"
+        result = bridge.persistent_field_report_query_bridge()
+
+    response, status_code = result if isinstance(result, tuple) else (result, 200)
+    payload = response.get_json()
+    answer = payload["answer"]
+    assert status_code == 200
+    assert payload["status"] == "OK"
+    assert payload["source"] == "technician field report"
+    assert "Reported problem: Pt-303 was faulty" in answer
+    assert "Observation: Not separately recorded" in answer
+    assert "Finding: Not separately recorded" in answer
+    assert "Maintenance action: changed by new 1nos spare" in answer
+    assert "Spare used: One new spare is mentioned; exact spare tag/type is not recorded" in answer
+    assert "Outcome: Technician reported: now ok" in answer
+    assert "Verification status: PENDING_VERIFICATION" in answer
+    assert "Original technician text: Pt-303 was faulty changed by new 1nos spare now ok" in answer
+    assert payload["read_only"] is True
+    assert payload["plc_write"] is False
+    assert payload["scada_control"] is False
+    assert payload["automatic_execution"] is False
+    assert payload["human_decision_required"] is True
