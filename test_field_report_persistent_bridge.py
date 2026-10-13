@@ -176,3 +176,42 @@ def test_persisted_raw_report_renders_all_fields_without_inventing_missing_detai
     assert payload["scada_control"] is False
     assert payload["automatic_execution"] is False
     assert payload["human_decision_required"] is True
+
+
+
+def test_labeled_report_uses_event_and_full_maintenance_action():
+    raw = (
+        "TAG: PT-303\n"
+        "AREA: Mill outlet Gas Pr\n"
+        "OBSERVATION: abnormal pressure indication\n"
+        "FINDING: pressure transmitter faulty\n"
+        "MAINTENANCE ACTION: inspected and replaced transmitter\n"
+        "OUTCOME: healthy pressure indication restored\n"
+        "RECOVERY: Recovered\n"
+        "SPARE USED: PT-303 x1"
+    )
+    fields = runtime._field_report_display_fields({
+        "tag": "PT-303",
+        "source": "technician field report",
+        "event": "abnormal pressure indication",
+        "raw_report": raw,
+        "maintenance_action": "inspected and",
+        "outcome": "healthy pressure indication restored",
+        "parsed_report": {
+            "source": "technician field report",
+            "raw_report": raw,
+            "event": "abnormal pressure indication",
+            "observation": "abnormal pressure indication",
+            "finding": "pressure transmitter faulty",
+            "maintenance_action": "inspected and",
+            "outcome": "healthy pressure indication restored",
+            "spare_used": "PT-303 x1",
+            "verification_status": "PENDING_VERIFICATION",
+        },
+    })
+    assert fields["reported_problem"] == "abnormal pressure indication"
+    assert fields["observation"] == "abnormal pressure indication"
+    assert fields["finding"] == "pressure transmitter faulty"
+    assert fields["maintenance_action"] == "inspected and replaced transmitter"
+    assert fields["spare_used"] == "PT-303 x1"
+    assert fields["outcome"] == "healthy pressure indication restored"
