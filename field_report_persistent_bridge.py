@@ -200,17 +200,22 @@ def persistent_field_report_query_bridge():
         from field_report_runtime import field_report_not_found_answer
         return jsonify(field_report_not_found_answer(question)), 200
 
+    from field_report_runtime import _field_report_display_fields
     view = _report_view(report)
+    fields = _field_report_display_fields(report)
     answer = (
-        f"I found a technician field report for {view.get('tag') or view.get('equipment') or 'the equipment'}. "
-        f"Observation: {view.get('observation') or 'not stated'}. "
-        f"Finding: {view.get('finding') or 'not stated'}. "
-        f"Maintenance action: {view.get('maintenance_action') or 'not stated'}. "
-        f"Outcome: {view.get('outcome') or 'not stated'}. "
-        f"Spare used: {view.get('spare_used') or 'none reported'}."
+        f"Saved technician field report for {view.get('tag') or view.get('equipment') or 'the equipment'}. "
+        f"Reported problem: {fields['reported_problem']}. "
+        f"Observation: {fields['observation']}. "
+        f"Finding: {fields['finding']}. "
+        f"Maintenance action: {fields['maintenance_action']}. "
+        f"Spare used: {fields['spare_used']}. "
+        f"Outcome: {fields['outcome']}. "
+        f"Verification status: {fields['verification_status']}. "
+        f"Original technician text: {fields['raw_report']}."
     )
-    if view.get("verification_status") != "VERIFIED":
-        answer += " This is a human field report and remains PENDING_VERIFICATION."
+    if fields["verification_status"] != "VERIFIED":
+        answer += " Human verification is still required; the reported outcome has not been independently verified."
 
     return jsonify({
         "answer": answer,
@@ -218,7 +223,7 @@ def persistent_field_report_query_bridge():
         "domain": "plant_memory",
         "source": "technician field report",
         "memory_id": view.get("memory_id") or view.get("report_id", ""),
-        "verification_status": view.get("verification_status", "PENDING_VERIFICATION"),
+        "verification_status": fields["verification_status"],
         "evidence": report,
         "read_only": True,
         "plc_write": False,
