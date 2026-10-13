@@ -185,8 +185,16 @@ def run_critical_field_report_smoke(session):
 def main():
     if not BASE or not USER or not PASSWORD: raise SystemExit("Set ANVIQO_BASE_URL, ANVIQO_USERNAME and ANVIQO_PASSWORD.")
     s=requests.Session()
-    r=s.post(BASE+"/login",data={"username":USER,"password":PASSWORD},timeout=TIMEOUT)
-    if r.status_code not in (200,302): raise SystemExit(f"LOGIN HTTP {r.status_code}")
+    r=None
+    for attempt in range(4):
+        r=s.post(BASE+"/login",data={"username":USER,"password":PASSWORD},timeout=TIMEOUT)
+        if r.status_code in (200,302):
+            break
+        if r.status_code not in (429, 502, 503, 504) or attempt == 3:
+            raise SystemExit(f"LOGIN HTTP {r.status_code}")
+        # Login is read-only authentication; retry a transient Render gateway
+        # response with a short backoff rather than failing the entire suite.
+        time.sleep(2 * (attempt + 1))
     qs=[q for _,q in QUESTIONS]+EXTRA_QUESTIONS
     if len(qs)!=200: raise SystemExit(f"Expected 200 questions, got {len(qs)}")
     rows=[]; counts={"CORRECT":0,"INCORRECT":0,"ERROR":0}
