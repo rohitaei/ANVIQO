@@ -61,3 +61,59 @@ def test_best_report_uses_nested_parsed_report_payload():
 def test_empty_field_report_placeholder_is_not_usable():
     assert runtime._has_report_details({"source": "technician field report", "tag": "PT-303"}) is False
     assert runtime._has_report_details({"source": "technician field report", "tag": "PT-303", "finding": "Fuse blown"}) is True
+
+
+
+def test_authenticated_session_without_user_id_still_intercepts_report_query(monkeypatch):
+    """A valid tenant session must not fall through to generic PCI knowledge."""
+    from flask import session
+
+    monkeypatch.setattr(bridge, "_field_reports_from_neon", lambda tag="", limit=20: [])
+    app = bridge.app
+    with app.test_request_context(
+        "/api/ask",
+        method="POST",
+        json={"question": "Show the saved field report for PT_303"},
+    ):
+        session["authenticated"] = True
+        session["organization_id"] = "QA-ORG-ONLY"
+        session["plant_id"] = "QA-PLANT-ONLY"
+        # Intentionally omit user_id: some authenticated session paths do not
+        # populate it, but still carry the selected tenant.
+        result = bridge.persistent_field_report_query_bridge()
+
+    assert result is not None
+    response, status_code = result if isinstance(result, tuple) else (result, 200)
+    payload = response.get_json()
+    assert status_code == 200
+    assert payload["status"] == "NOT_FOUND"
+    assert payload["requested_tag"] == "PT-303"
+    assert payload["evidence"] is None
+    assert "will not substitute PCI identity" in payload["answer"]
+    assert payload["read_only"] is True
+    assert payload["plc_write"] is False
+    assert payload["scada_control"] is False
+    assert payload["automatic_execution"] is False
+    assert payload["human_decision_required"] is True
+
+
+def test_authenticated_report_query_fails_closed_without_selected_plant():
+    from flask import session
+
+    app = bridge.app
+    with app.test_request_context(
+        "/api/ask",
+        method="POST",
+        json={"question": "Show the saved field report for PT_303"},
+    ):
+        session["authenticated"] = True
+        session["organization_id"] = "QA-ORG-ONLY"
+        # No selected plant must not trigger a global or cross-plant lookup.
+        result = bridge.persistent_field_report_query_bridge()
+
+    response, status_code = result if isinstance(result, tuple) else (result, 200)
+    payload = response.get_json()
+    assert status_code == 503
+    assert payload["status"] == "TENANT_CONTEXT_UNAVAILABLE"
+    assert payload["plc_write"] is False
+    assert payload["scada_control"] is False
