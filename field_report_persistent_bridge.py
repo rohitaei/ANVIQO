@@ -150,10 +150,27 @@ def _best_report(question, reports, tag=""):
 @app.before_request
 def persistent_field_report_query_bridge():
     """Fallback for /api/ask when local Plant Memory has no report."""
-    # Phase 2 establishes authenticated tenant context using user_id. Keep
-    # this bridge aligned with that boundary; do not invent a second auth flag.
-    if not session.get("user_id") or request.path != "/api/ask" or request.method != "POST":
+    # Login/session variants do not all populate user_id identically. Match the
+    # API's authenticated-session contract, while still requiring the selected
+    # tenant below before any report lookup. Without this, a valid authenticated
+    # session lacking user_id can fall through to generic PCI knowledge and
+    # present instrument identity as if it were the requested maintenance report.
+    if not (session.get("authenticated") or session.get("user_id")):
         return None
+    if request.path != "/api/ask" or request.method != "POST":
+        return None
+    if not str(session.get("organization_id") or "").strip() or not str(session.get("plant_id") or "").strip():
+        return jsonify({
+            "status": "TENANT_CONTEXT_UNAVAILABLE",
+            "domain": "plant_memory",
+            "answer": "Saved field-report lookup is blocked because the selected organization and plant context is missing. No PCI identity or spare-stock substitute was used.",
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "automatic_authorization": False,
+            "automatic_execution": False,
+            "human_decision_required": True,
+        }), 503
 
     payload = request.get_json(silent=True) or {}
     question = str(
