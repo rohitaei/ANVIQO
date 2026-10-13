@@ -119,12 +119,17 @@ def strict_live_check(q, a):
     return sum(1 for k in req if k in low) >= 2
 def run_critical_field_report_smoke(session):
     question = "Show the saved field report for PT_303."
+    # Validate the actual saved-report contract, not invented maintenance
+    # details. The live record may legitimately leave individual fields blank.
     required = (
-        "abnormal pressure indication",
-        "pressure transmitter faulty",
-        "inspected and replaced transmitter",
-        "healthy pressure indication restored",
-        "PT-303 x1",
+        "reported problem:",
+        "observation:",
+        "finding:",
+        "maintenance action:",
+        "spare used:",
+        "outcome:",
+        "verification status:",
+        "original technician text:",
     )
     response = session.post(BASE + "/api/ask", json={"question": question}, timeout=TIMEOUT)
     try:
@@ -133,6 +138,18 @@ def run_critical_field_report_smoke(session):
         payload = {"_non_json_body": response.text[:3000]}
     answer = str((payload.get("answer") or payload.get("response") or "") if isinstance(payload, dict) else "")
     missing = [value for value in required if norm(value) not in norm(answer)]
+    evidence = payload.get("evidence") if isinstance(payload, dict) else None
+    raw_report = ""
+    if isinstance(evidence, dict):
+        raw_report = str(evidence.get("raw_report") or "")
+        if not raw_report and isinstance(evidence.get("parsed_report"), dict):
+            raw_report = str(evidence["parsed_report"].get("raw_report") or "")
+        if not raw_report and isinstance(evidence.get("memory"), dict):
+            raw_report = str(evidence["memory"].get("notes") or "")
+    if not raw_report.strip():
+        missing.append("persisted original technician text in evidence")
+    if not isinstance(payload, dict) or payload.get("source") != "technician field report":
+        missing.append("source=technician field report")
     verification = payload.get("verification_status") if isinstance(payload, dict) else None
     safety = {
         "read_only": isinstance(payload, dict) and payload.get("read_only") is True,
