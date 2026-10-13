@@ -12,6 +12,11 @@ on:
 jobs:
   unified:
     runs-on: ubuntu-latest
+    env:
+      # Isolated import-time credentials for unit tests only; never production secrets.
+      ANVIQO_SECRET_KEY: qa-only-field-report-test-secret
+      ANVIQO_ADMIN_USER: qa-only-admin
+      ANVIQO_ADMIN_PASSWORD: qa-only-password
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
