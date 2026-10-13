@@ -176,6 +176,19 @@ def _report_match_score(report, question, wanted_tag=""):
         "notes", "raw_report",
     )).lower()
     score += 10 * len(q_terms & set(re.findall(r"[a-z0-9]+", text)))
+
+    # Prefer a complete exact-tag technician report over a sparse duplicate.
+    # Keep reports separate: never merge fields from different report records.
+    detail_fields = (
+        "observation", "finding", "maintenance_action", "outcome",
+        "recovery_status", "spare_used",
+    )
+    completeness = sum(
+        1 for key in detail_fields if str(report.get(key) or "").strip()
+    )
+    score += completeness * 40
+    if report.get("source") == "technician field report":
+        score += 5
     return score
 
 
