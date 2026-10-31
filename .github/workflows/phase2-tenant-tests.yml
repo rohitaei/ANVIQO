@@ -41,11 +41,29 @@ jobs:
           path = "database/spares/critical_spares.xlsx"
           wb = load_workbook(path, data_only=True, read_only=True)
           print("SPARES_WORKBOOK_SHEETS", json.dumps([(ws.title, ws.max_row, ws.max_column) for ws in wb.worksheets]))
+          import re
+          def key(v):
+              return re.sub(r"[^a-z0-9]+", "", str(v or "").lower())
+          stock_aliases = {"qtyavbl", "qtyavailable", "quantityavailable", "available", "stockavailable"}
           for ws in wb.worksheets:
               rows = [[v for v in row] for row in ws.iter_rows(values_only=True)]
-              nonempty = [r for r in rows if any(v is not None and str(v).strip() for v in r)]
-              if nonempty:
-                  print("SPARES_SHEET_PREVIEW", json.dumps({"sheet": ws.title, "rows": nonempty[:12]}, default=str))
+              header_idx = None
+              headers = None
+              for i, row in enumerate(rows[:8]):
+                  keys = {key(v) for v in row}
+                  if keys & stock_aliases:
+                      header_idx, headers = i, row
+                      break
+              if header_idx is None:
+                  continue
+              names = [str(v).strip() if v is not None and str(v).strip() else "column_" + str(j+1) for j,v in enumerate(headers)]
+              for row_num, row in enumerate(rows[header_idx+1:], header_idx+2):
+                  if not any(v is not None and str(v).strip() for v in row):
+                      continue
+                  item = {names[j]: (row[j] if j < len(row) else None) for j in range(len(names))}
+                  if not any(v is not None and str(v).strip() for v in item.values()):
+                      continue
+                  print("SPARE_ROW_JSON:", json.dumps({"sheet": ws.title, "row": row_num, "data": item}, default=str, ensure_ascii=False))
           PY
 
       - name: Compile Phase 2, field-report and prediction modules
