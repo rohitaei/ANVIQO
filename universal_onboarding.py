@@ -84,14 +84,14 @@ def _engineering_metadata(raw: Mapping[str, Any]) -> Dict[str, Any]:
 
 def normalize_record(raw: Mapping[str, Any], record_type: str) -> OnboardingRecord:
     """Normalize canonical and common engineering spreadsheet column names."""
-    tag = _text(_pick(raw, "tag", "tag_name", "PLC TAG", "PLC TAG NAME", "TAG NAME", "Instrument Tag", "Loop Tag"))
-    rid = _text(_pick(raw, "external_id", "id", "asset_id", "tag", "tag_name", "PLC TAG", "PLC TAG NAME", "TAG NAME", "Instrument Tag", "Loop Tag"))
+    tag = _text(_pick(raw, "tag", "TAG NO", "TAG NO.", "tag_name", "PLC TAG", "PLC TAG NAME", "TAG NAME", "Instrument Tag", "Loop Tag"))
+    rid = _text(_pick(raw, "external_id", "id", "asset_id", "tag", "TAG NO", "TAG NO.", "tag_name", "PLC TAG", "PLC TAG NAME", "TAG NAME", "Instrument Tag", "Loop Tag"))
     if not rid:
         raise ValueError("external_id, id, tag, PLC TAG or asset_id is required")
     return OnboardingRecord(
         record_type=_text(record_type).upper(),
         external_id=rid,
-        name=_text(_pick(raw, "name", "description", "equipment_name", "instrument description", "service description")),
+        name=_text(_pick(raw, "name", "instrument", "short description", "item", "description", "equipment_name", "instrument description", "service description")),
         area=_text(_pick(raw, "area", "unit", "location", "area name", "plant area")),
         service=_text(_pick(raw, "service", "process_service", "service description", "process")),
         asset_type=_text(_pick(raw, "asset_type", "type", "instrument_type", "equipment type", "instrument type")),
