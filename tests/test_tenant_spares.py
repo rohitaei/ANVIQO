@@ -1,5 +1,8 @@
 import unittest
 
+from anvi_plant_data_import import _matrix_records
+from universal_onboarding import normalize_record
+
 from anvi_tenant_spares import (
     _number, _stock_status, is_low_stock_question, is_spare_question
 )
@@ -29,6 +32,33 @@ class TenantSpareIntentTests(unittest.TestCase):
 
     def test_reorder_level(self):
         self.assertEqual(_stock_status(2, None, 2), "LOW STOCK")
+
+    def test_spares_xlsx_headers_are_detected(self):
+        rows = [
+            ("SPARES FOR PCI", None, None, None, None),
+            ("SL.NO", "INSTRUMENT", "QTY AVBL", "QTY REQ", "TAG NO"),
+            (1, "Pressure transmitter", 2, 4, "PT-303"),
+        ]
+        parsed = list(_matrix_records("PT", rows))
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(parsed[0]["record_type"], "CRITICAL_SPARE")
+        self.assertEqual(parsed[0]["external_id"], "PT-303")
+
+    def test_spares_record_normalizes_tag_and_keeps_stock_fields(self):
+        raw = {
+            "record_type": "CRITICAL_SPARE",
+            "external_id": "PT-303",
+            "TAG NO": "PT-303",
+            "INSTRUMENT": "Pressure transmitter",
+            "QTY AVBL": 2,
+            "QTY REQ": 4,
+            "source": "PT",
+        }
+        record = normalize_record(raw, "CRITICAL_SPARE")
+        self.assertEqual(record.tag, "PT-303")
+        self.assertEqual(record.name, "Pressure transmitter")
+        self.assertEqual(record.metadata["QTY AVBL"], 2)
+        self.assertEqual(record.metadata["QTY REQ"], 4)
 
 
 if __name__ == "__main__":
