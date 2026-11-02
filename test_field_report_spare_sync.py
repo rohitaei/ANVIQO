@@ -138,3 +138,63 @@ def test_authenticated_field_report_query_never_reads_global_memory(monkeypatch)
         session["plant_id"] = "plant-b"
         session["organization_id"] = "org-b"
         assert runtime.answer_field_report_query("What happened to TIC-101A last time?") is None
+
+
+def test_authenticated_field_report_saves_only_to_tenant_store(monkeypatch):
+    from flask import Flask, session
+    import anvi_field_report
+    app = Flask(__name__)
+    app.secret_key = "test"
+    calls = {"shared": 0, "tenant": []}
+
+    def fail_shared(**kwargs):
+        calls["shared"] += 1
+        raise AssertionError("authenticated tenant report wrote shared Plant Memory")
+
+    def create_memory(**kwargs):
+        return {"memory_id": "PM-TENANT-001", "verification_status": "PENDING_VERIFICATION", **kwargs}
+
+    monkeypatch.setattr("plant_memory.create_conversational_memory", fail_shared)
+    monkeypatch.setattr("plant_memory.create_memory", create_memory)
+    monkeypatch.setattr("anvi_neon_store.upsert_field_report", lambda record: calls["tenant"].append(record) or True)
+
+    with app.test_request_context("/api/field_report"):
+        session.update({
+            "authenticated": True, "user_id": "user-1",
+            "organization_id": "org-1", "plant_id": "plant-1"
+        })
+        result = anvi_field_report.store_field_report(
+            "PT-303 Observation: no indication. Finding: fuse blown. "
+            "Maintenance action: replaced fuse. Outcome: signal returned to normal."
+        )
+
+    assert calls["shared"] == 0
+    assert len(calls["tenant"]) == 1
+    assert calls["tenant"][0]["plant_id"] == "plant-1"
+    assert calls["tenant"][0]["organization_id"] == "org-1"
+    assert result["status"] == "PENDING_VERIFICATION"
+
+
+def test_authenticated_field_report_fails_closed_without_tenant_store(monkeypatch):
+    from flask import Flask, session
+    import anvi_field_report
+    app = Flask(__name__)
+    app.secret_key = "test"
+
+    monkeypatch.setattr(
+        "plant_memory.create_memory",
+        lambda **kwargs: {"memory_id": "PM-TENANT-002", **kwargs},
+    )
+    monkeypatch.setattr(
+        "plant_memory.create_conversational_memory",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError("shared store used")),
+    )
+    monkeypatch.setattr("anvi_neon_store.upsert_field_report", lambda record: False)
+
+    with app.test_request_context("/api/field_report"):
+        session.update({
+            "authenticated": True, "user_id": "user-1",
+            "organization_id": "org-1", "plant_id": "plant-1"
+        })
+        with pytest.raises(RuntimeError, match="Tenant field-report store is unavailable"):
+            anvi_field_report.store_field_report("PT-303 Observation: no indication.")

@@ -90,3 +90,28 @@ if __name__ == "__main__":
     test_tenant_isolation_and_authorization()
     test_unknown_or_cross_tenant_membership_denies_access()
     print("PHASE2 TENANT FOUNDATION: PASS")
+
+
+def test_create_user_after_auth_columns_are_added():
+    store, db = load_store()
+    try:
+        store.init_schema()
+        import importlib
+        import anvi_plant_auth
+        auth = importlib.reload(anvi_plant_auth)
+        auth.init_auth_schema()
+        user = store.create_user("auth-extended-user", "Auth Extended User")
+        with store._connect() as conn:
+            cur = conn.cursor()
+            p = store._placeholder()
+            cur.execute(
+                f"SELECT user_id,external_username,display_name,status FROM anviqo_users WHERE user_id={p}",
+                (user,),
+            )
+            row = cur.fetchone()
+        assert row is not None
+        assert row[1] == "auth-extended-user"
+        assert row[2] == "Auth Extended User"
+        assert row[3] == "ACTIVE"
+    finally:
+        db.unlink(missing_ok=True)

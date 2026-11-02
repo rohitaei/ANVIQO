@@ -236,17 +236,27 @@ def _install_live_answer_patch():
             ))
             if spare_intent:
                 try:
-                    import pci_spares
-                    result = pci_spares.answer_spare_management(text)
+                    # Critical-spare queries must use records onboarded to
+                    # this exact plant. Never read the repository-wide Excel
+                    # workbook as a fallback for an authenticated tenant.
+                    import anvi_tenant_spares
+                    result = anvi_tenant_spares.answer(text, pid, oid)
                     if isinstance(result, dict):
                         result.setdefault("plant_id", pid)
                         result.setdefault("plant_name", plant.get("name"))
                         result.setdefault("human_decision_required", True)
+                        result.setdefault("read_only", True)
                         result.setdefault("plc_write", False)
                         result.setdefault("scada_control", False)
                         return result
                 except Exception as exc:
                     print(f"ANVIQO_SPARE_ROUTING_ERROR error={exc!r}", flush=True)
+                    return stability._safe(
+                        "ANVI could not read the selected plant's spare inventory. "
+                        "No other plant's data was used.",
+                        blocked=True, reason="TENANT_SPARE_QUERY_ERROR",
+                        plant_id=pid, error_type=type(exc).__name__
+                    )
 
             candidate = stability._candidate(text)
             # Keep the universal PCI resolver on the actual live request path.
