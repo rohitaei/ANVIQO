@@ -60,10 +60,23 @@ jobs:
           name: ANVIQO-Android-APK
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+  release:
+    needs: android
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ANVIQO-Android-APK
+          path: release
       - name: Publish latest Android release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp android-app/app/build/outputs/apk/debug/app-debug.apk ANVIQO.apk
+          test -s release/app-debug.apk
+          cp release/app-debug.apk ANVIQO.apk
           gh release delete anviqo-android-latest --yes --cleanup-tag || true
           gh release create anviqo-android-latest ANVIQO.apk --target "${GITHUB_SHA}" --title "ANVIQO Android App v1.1.0" --notes "ANVIQO native mobile command-centre with live ANVIQO intelligence connection. Safety boundary: read-only, human governed."
