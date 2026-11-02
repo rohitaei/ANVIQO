@@ -143,7 +143,7 @@ def answer(question: str, plant_id: str, organization_id: str):
         name = str(_value(row, 1, "name") or "")
         area = str(_value(row, 2, "area") or "")
         service = str(_value(row, 3, "service") or "")
-        tag = str(_value(row, 4, "tag") or external_id)
+        raw_tag = str(_value(row, 4, "tag") or "").strip()
         source = str(_value(row, 5, "source") or "")
         metadata = _value(row, 6, "metadata") or {}
         filename = str(_value(row, 7, "filename") or source or "plant spare register")
@@ -153,6 +153,20 @@ def answer(question: str, plant_id: str, organization_id: str):
                 metadata = json.loads(metadata)
             except Exception:
                 metadata = {}
+
+        # A synthetic external_id is a database key, not an equipment tag.
+        # Never display placeholders such as NA or a generated sheet-row key
+        # as if they were verified instrument identifiers.
+        missing_tags = {"", "NA", "N/A", "NONE", "NULL", "NOT AVAILABLE", "UNKNOWN", "-"}
+        if raw_tag.upper() not in missing_tags:
+            display_tag = raw_tag
+        else:
+            sheet_name = str(_pick(metadata, "sheet_name", "worksheet", "sheet") or "").strip()
+            workbook_row = _pick(metadata, "workbook_row", "excel_row", "row_number")
+            if sheet_name and workbook_row not in (None, ""):
+                display_tag = f"Tag not recorded (workbook row {sheet_name} #{workbook_row})"
+            else:
+                display_tag = "Tag not recorded"
 
         available = _number(_pick(
             metadata, "qty_available", "qty_avbl", "qty available",
@@ -181,7 +195,7 @@ def answer(question: str, plant_id: str, organization_id: str):
             continue
 
         records.append({
-            "tag": tag,
+            "tag": display_tag,
             "name": name or service,
             "area": area,
             "available": available,
