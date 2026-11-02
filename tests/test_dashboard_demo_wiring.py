@@ -105,7 +105,7 @@ def test_inline_javascript_parses_when_node_is_available():
 def test_field_report_user_content_is_html_escaped():
     html = _dashboard()
     start = html.index("async function submitFieldReport(){")
-    end = html.index("\\n}\\n\\n</script>", start)
+    end = html.index("\n}\n\n</script>", start)
     renderer = html[start:end]
     for field in ("data.status", "p.equipment", "p.tag", "p.area", "p.observation",
                   "p.finding", "p.maintenance_action", "p.outcome", "p.recovery_status"):
