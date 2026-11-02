@@ -100,3 +100,24 @@ def test_inline_javascript_parses_when_node_is_available():
         assert result.returncode == 0, (
             f"Inline script {index} has a JavaScript syntax error:\\n{result.stderr}"
         )
+
+
+def test_field_report_user_content_is_html_escaped():
+    html = _dashboard()
+    start = html.index("async function submitFieldReport(){")
+    end = html.index("\\n}\\n\\n</script>", start)
+    renderer = html[start:end]
+    for field in ("data.status", "p.equipment", "p.tag", "p.area", "p.observation",
+                  "p.finding", "p.maintenance_action", "p.outcome", "p.recovery_status"):
+        assert f"escapeHtml({field}" in renderer
+    assert "escapeHtml(err.message || err)" in renderer
+
+
+def test_spare_search_uses_shared_api_error_and_auth_handling():
+    html = _dashboard()
+    start = html.index("async function searchSpares(){")
+    end = html.index("\\n}\\n\\n</script>", start)
+    search = html[start:end]
+    assert "await askAPI(" in search
+    assert "fetch('/api/ask'" not in search
+    assert "escapeHtml(d.answer" in search
