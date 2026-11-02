@@ -109,9 +109,17 @@ def test_field_report_user_content_is_html_escaped():
     end = html.index("\n}\n\n</script>", start)
     renderer = html[start:end]
     for field in ("data.status", "p.equipment", "p.tag", "p.area", "p.observation",
-                  "p.finding", "p.maintenance_action", "p.outcome", "p.recovery_status"):
+                  "p.finding", "p.maintenance_action", "p.outcome", "p.recovery_status",
+                  "p.spare_used", "p.verification_status"):
         assert f"escapeHtml({field}" in renderer
+    assert "inventory_update" in renderer
     assert "escapeHtml(err.message || err)" in renderer
+
+
+def test_spares_loader_is_only_invoked_from_page_navigation():
+    html = _dashboard()
+    assert "if(name==='spares'){await loadSpares();return;}" in html
+    assert "if(name==='spares') loadSpares();" not in html
 
 
 def test_spare_search_uses_shared_api_error_and_auth_handling():
