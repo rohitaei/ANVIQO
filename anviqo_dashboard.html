@@ -109,6 +109,8 @@ p{font-size:11px;color:var(--muted);line-height:1.7}
 
 .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(max-width:900px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .card-head{
  padding:13px 15px;border-bottom:1px solid var(--line);
@@ -334,7 +336,8 @@ input,select{
 
 <div class="page" id="page-prediction">
  <div class="hero"><div class="card"><div class="kicker">PREDICTIVE INTELLIGENCE</div><h1>What could happen next?</h1><p>Simulation-driven predictive indicators. Predictions remain decision support; ANVI never automatically controls the plant.</p></div><div class="card brain"><div class="orb">◈</div><b>PREDICT</b></div></div>
- <div class="grid2"><div class="card"><div class="card-head"><b>RISK INDICATORS</b></div><div class="card-body" id="predictionData">Loading...</div></div><div class="card"><div class="card-head"><b>EXPLAIN PREDICTION</b></div><div class="card-body"><button class="btn primary" onclick="askQuick('What problems could develop in the plant based on current evidence?')">Ask ANVI</button></div></div></div>
+ <div class="card"><div class="card-head"><b>EQUIPMENT FAILURE PREDICTION</b></div><div class="card-body"><label for="predictionTag">Equipment tag</label><input id="predictionTag" placeholder="Enter an onboarded tag, e.g. PT-303" autocomplete="off"><button class="btn primary" onclick="loadPrediction()">Run evidence-based prediction</button><div id="predictionData" class="card-body">Enter an equipment tag to inspect selected-plant prediction evidence. No tag or plant is assumed.</div></div></div>
+ <div class="card"><div class="card-head"><b>EXPLAIN PREDICTION</b></div><div class="card-body"><button class="btn primary" onclick="explainPrediction()">Explain this prediction with ANVI</button></div></div>
 </div>
 
 <div class="page" id="page-critical">
@@ -359,7 +362,7 @@ input,select{
 </div>
 
 <div class="page" id="page-interlocks">
- <div class="card"><div class="card-head"><b>INTERLOCKS & PROCESS CONTEXT</b></div><div class="card-body"><p>Process and interlock evidence remains available through the selected plant's onboarded evidence.</p><button class="btn primary" onclick="askQuick('Explain the plant interlocks and process context')">Ask ANVI</button></div></div>
+ <div class="card"><div class="card-head"><b>INTERLOCKS & PROCESS CONTEXT</b></div><div class="card-body" id="interlocksData">Loading selected-plant interlock evidence...</div></div>
 </div>
 
 <!-- SHIFT -->
@@ -422,9 +425,9 @@ input,select{
    <small>Attention required</small>
   </div>
   <div class="card metric">
-   <label>MAINTENANCE ITEMS</label>
+   <label>SOURCE STATUS</label>
    <strong id="sparesMaintenance">—</strong>
-   <small>Available intelligence</small>
+   <small>Selected-plant register</small>
   </div>
   <div class="card metric">
    <label>STATUS</label>
@@ -638,7 +641,10 @@ shade.onclick=closeMenu;
 async function api(url,options){
  const r=await fetch(url,options);
  if(r.status===401){location.href='/login';throw Error('Authentication required')}
- return r.json();
+ let data={};
+ try{data=await r.json()}catch(e){}
+ if(!r.ok)throw Error(data.message||data.error||('Request failed: HTTP '+r.status));
+ return data;
 }
 
 function box(text){
@@ -649,7 +655,7 @@ async function refresh(){
  try{
   const d=await api('/api/pci/live');
   document.getElementById('health').textContent=d.plant_health_score??'—';
-  const totalIO=document.getElementById('totalIO'); if(totalIO) totalIO.textContent=d.total_io??'—';
+  const ioCount=document.getElementById('ioCount'); if(ioCount) ioCount.textContent=d.total_io??'—';
   const ioMode=document.getElementById('ioMode'); if(ioMode) ioMode.textContent=(d.mode||'ONBOARDED_DATA').replace(/_/g,' ');
   document.getElementById('alarms').textContent=(d.warning||0)+(d.critical||0);
   document.getElementById('critical').textContent=d.critical??0;
@@ -661,33 +667,139 @@ async function refresh(){
    '<div class="row"><span>Warning</span><b class="amber">'+(d.warning==null?'—':d.warning)+'</b></div>'+
    '<div class="row"><span>Critical</span><b class="red">'+(d.critical==null?'—':d.critical)+'</b></div>';
  }catch(e){
-  document.getElementById('overviewSituation').textContent='API connection unavailable';
+  ['health','alarms','critical','events','ioCount'].forEach(id=>{
+   const el=document.getElementById(id);if(el)el.textContent='—';
+  });
+  const situation=document.getElementById('overviewSituation');
+  if(situation)situation.textContent='Selected-plant overview unavailable: '+(e.message||e);
  }
 }
 
 async function loadPage(name){
  if(name==='overview')return refresh();
-
- if(name==='pci'||name==='plc'||name==='alarms'||name==='analysis'||name==='prediction'||name==='critical'||name==='equipment'){
+ if(name==='pci'||name==='plc'){
+  const ids={pci:'pciData',plc:'plcData'};
+  const el=document.getElementById(ids[name]);
+  if(el)el.innerHTML='<div class="empty">Loading selected-plant instrumentation data...</div>';
   try{
    const d=await api('/api/pci/live');
-   let html=
-    '<div class="row"><span>MODE</span><b class="amber">'+(d.mode||'ONBOARDING_DATA').replace(/_/g,' ')+'</b></div>'+
-    '<div class="row"><span>TOTAL I/O</span><b>'+(d.total_io??0)+'</b></div>'+
-    '<div class="row"><span>HEALTHY</span><b class="green">'+(d.healthy==null?'—':d.healthy)+'</b></div>'+
-    '<div class="row"><span>WARNING</span><b class="amber">'+(d.warning==null?'—':d.warning)+'</b></div>'+
-    '<div class="row"><span>CRITICAL</span><b class="red">'+(d.critical==null?'—':d.critical)+'</b></div>'+
-    '<div class="row"><span>CHANGED</span><b>'+JSON.stringify(d.changed??0)+'</b></div>';
-   const ids={pci:'pciData',plc:'plcData',alarms:'alarmData',analysis:'analysisData',prediction:'predictionData',critical:'criticalData',equipment:'equipmentData'};
-   if(ids[name])document.getElementById(ids[name]).innerHTML=html;
-  }catch(e){}
+   const html=
+    '<div class="row"><span>MODE</span><b class="amber">'+escapeHtml((d.mode||'ONBOARDING_DATA').replace(/_/g,' '))+'</b></div>'+
+    '<div class="row"><span>TOTAL I/O</span><b>'+escapeHtml(d.total_io??d.io_count??'—')+'</b></div>'+
+    '<div class="row"><span>HEALTHY</span><b class="green">'+escapeHtml(d.healthy??'—')+'</b></div>'+
+    '<div class="row"><span>WARNING</span><b class="amber">'+escapeHtml(d.warning??'—')+'</b></div>'+
+    '<div class="row"><span>CRITICAL</span><b class="red">'+escapeHtml(d.critical??'—')+'</b></div>'+
+    '<div class="row"><span>CHANGED</span><b>'+escapeHtml(d.changed??'—')+'</b></div>';
+   if(el)el.innerHTML=html;
+  }catch(e){if(el)el.innerHTML='<div class="empty">Unable to load selected-plant instrumentation evidence: '+escapeHtml(e.message||e)+'</div>'}
+  return;
  }
+ if(name==='prediction'){await loadPrediction();return;}
+ if(name==='events'||name==='changed'){
+  await loadCommandCentreStream(name);
+  return;
+ }
+ const askPages={
+  alarms:['alarmData','Show active alarms for the selected plant. Include tag, condition, severity, timestamp and evidence source. Do not invent live telemetry.'],
+  analysis:['analysisData','Analyse the current selected plant using available health, alarm, equipment, event, instrumentation and maintenance evidence. State evidence limits.'],
+  critical:['criticalData','Show critical equipment in the selected plant with its evidence, condition and risk basis.'],
+  equipment:['equipmentData','Show equipment status for the selected plant with tag, service, area, condition and source evidence.'],
+  maintenance:['maintenanceData','Generate the current selected-plant maintenance intelligence summary from onboarded evidence.'],
+  management:['managementData','Generate selected-plant management decision support from verified evidence, priorities, risks and human-review requirements.'],
+  interlocks:['interlocksData','Explain selected-plant interlocks and process context from onboarded evidence. If no interlock register is available, say so explicitly.']
+ };
+ if(askPages[name]){
+  await loadAskInto(askPages[name][0],askPages[name][1]);
+  return;
+ }
+ if(name==='spares'){await loadSpares();return;}
+ if(name==='system')await loadSystem();
+}
+ 
+async function loadCommandCentreStream(mode){
+ const id=mode==='events'?'eventData':'changedData';
+ const el=document.getElementById(id);
+ if(!el)return;
+ el.innerHTML='<div class="empty">Reading selected-plant event/change evidence...</div>';
+ try{
+  const response=await fetch('/api/command-centre/stream',{credentials:'same-origin'});
+  if(response.status===401){location.href='/login';throw Error('Authentication required');}
+  const data=await response.json();
+  if(!response.ok)throw Error(data.message||data.status||('HTTP '+response.status));
+  if(data.scope!=='SELECTED_PLANT_ONLY')throw Error('Selected-plant scope could not be verified.');
+  const rows=mode==='events'?(Array.isArray(data.events)?data.events:[]):(Array.isArray(data.changes)?data.changes:[]);
+  let html='<div class="row"><span>Evidence scope</span><b>SELECTED PLANT ONLY</b></div>'+
+   '<div class="row"><span>Stream status</span><b>'+escapeHtml(data.status||'UNKNOWN')+'</b></div>'+
+   '<div class="row"><span>Evidence records</span><b>'+escapeHtml(data.evidence_count??0)+'</b></div>';
+  if(mode==='events'){
+   html+='<h3>Event timeline</h3>';
+   if(!rows.length)html+='<div class="empty">No explicit event evidence is available for this selected plant.</div>';
+   rows.forEach(item=>{
+    html+='<div class="row"><span>'+escapeHtml(item.timestamp||'Time not recorded')+' · '+escapeHtml(item.equipment||'Plant-wide')+' · '+escapeHtml(item.event_type||'UNCLASSIFIED')+'<br>'+escapeHtml(item.message||'Event')+'<br><small>'+escapeHtml(item.source||'Source not recorded')+'</small></span></div>';
+   });
+   const correlation=data.correlation||{};
+   html+='<div class="row"><span>Correlation</span><b>'+escapeHtml(correlation.status||'NO DATA')+'</b></div>'+
+    '<div class="row"><span>Causation</span><b>Not claimed</b></div>';
+  }else{
+   html+='<h3>What changed</h3>';
+   if(!rows.length)html+='<div class="empty">No explicit change records or simulation baseline changes are available for this selected plant. ANVI has not inferred a change.</div>';
+   rows.forEach(item=>{
+    const before=item.previous===null||item.previous===undefined?'not recorded':item.previous;
+    const after=item.current===null||item.current===undefined?'not recorded':item.current;
+    html+='<div class="row"><span>'+escapeHtml(item.timestamp||'Time not recorded')+' · '+escapeHtml(item.equipment||'Plant-wide')+' · '+escapeHtml(item.parameter||'Parameter')+'<br>'+escapeHtml(item.change_type||'VALUE_CHANGE')+': '+escapeHtml(before)+' → '+escapeHtml(after)+'<br><small>'+escapeHtml(item.source||'Source not recorded')+'</small></span><b>'+escapeHtml(item.direction||'—')+'</b></div>';
+   });
+   html+='<div class="row"><span>Change status</span><b>'+escapeHtml(data.change_status||'UNKNOWN')+'</b></div>';
+  }
+  html+='<div class="row"><span>Safety</span><b>READ ONLY · PLC/SCADA WRITE BLOCKED · HUMAN DECISION REQUIRED</b></div>';
+  el.innerHTML=html;
+ }catch(e){
+  el.innerHTML='<div class="empty">Unable to load selected-plant '+(mode==='events'?'event':'change')+' evidence: '+escapeHtml(e.message||e)+'. No other plant data was substituted.</div>';
+ }
+}
 
- if(name==='maintenance')loadAskInto('maintenanceData','Generate the current maintenance intelligence summary');
- if(name==='management')loadAskInto('managementData','Generate the current management decision support summary');
- if(name==='events')loadAskInto('eventData','Show the current event timeline and correlated events');
- if(name==='changed')loadAskInto('changedData','What changed in the plant recently?');
- if(name==='system')loadSystem();
+
+async function loadPrediction(){
+ const tag=(document.getElementById('predictionTag')||{}).value||'';
+ const el=document.getElementById('predictionData');
+ if(!el)return;
+ if(!tag.trim()){
+  el.textContent='Enter an equipment tag to inspect selected-plant prediction evidence. No tag or plant is assumed.';
+  return;
+ }
+ el.innerHTML='<div class="empty">Checking selected-plant evidence for '+escapeHtml(tag.trim())+'...</div>';
+ try{
+  const d=await api('/api/failure_prediction',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({query:'Assess failure risk using available evidence for '+tag.trim(),tag:tag.trim()})
+  });
+  const evidence=d.evidence_summary||{};
+  const trend=d.trend||{};
+  const rows=[
+   ['Equipment tag',d.tag||tag.trim()],
+   ['Prediction status',d.status||'NOT REPORTED'],
+   ['Risk signal',d.risk_signal||'NOT REPORTED'],
+   ['Prediction',d.prediction||'No prediction statement returned.'],
+   ['Confidence',d.confidence??'Not established'],
+   ['Trend',trend.status==='AVAILABLE'?(trend.direction||'AVAILABLE'):(trend.reason||'UNAVAILABLE')],
+   ['Timestamped numeric observations',evidence.numeric_observation_count??0],
+   ['Evidence basis',(evidence.evidence_basis||[]).join('; ')||'No explicit evidence basis returned'],
+   ['Decision',d.decision_status||'HUMAN_DECISION_REQUIRED']
+  ];
+  el.innerHTML=rows.map(([k,v])=>'<div class="row"><span>'+escapeHtml(k)+'</span><b>'+escapeHtml(v)+'</b></div>').join('')+
+   '<div class="row"><span>Safety</span><b>READ ONLY · PLC/SCADA WRITE BLOCKED · HUMAN DECISION REQUIRED</b></div>';
+ }catch(e){
+  el.innerHTML='<div class="empty">Prediction unavailable for '+escapeHtml(tag.trim())+': '+escapeHtml(e.message||e)+'. No cross-plant or global history was substituted.</div>';
+ }
+}
+function explainPrediction(){
+ const tag=((document.getElementById('predictionTag')||{}).value||'').trim();
+ if(!tag){
+  const el=document.getElementById('predictionData');
+  if(el)el.textContent='Enter an equipment tag first.';
+  return;
+ }
+ askQuick('Explain the evidence-based failure prediction for '+tag+'. Distinguish available evidence from uncertainty. Do not invent a failure date or probability.');
 }
 
 async function loadAskInto(id,q){
@@ -784,16 +896,28 @@ async function loadShift(){
 
 async function loadSystem(){
  const el=document.getElementById('systemData');
+ el.innerHTML='<div class="empty">Reading authenticated system status...</div>';
  try{
   const d=await api('/api/status');
-  el.innerHTML='<div class="row"><span>API</span><b class="green">ONLINE</b></div>'+
-  '<div class="row"><span>ANVI</span><b class="green">AVAILABLE</b></div>'+
-  '<div class="row"><span>Mode</span><b class="amber">SIMULATION</b></div>'+
-  '<div class="row"><span>PLC Write</span><b class="red">BLOCKED</b></div>'+
-  '<div class="row"><span>SCADA Control</span><b class="red">BLOCKED</b></div>';
- }catch(e){el.textContent='Unable to read system status.'}
+  const safety=d.safety||{};
+  const rows=[
+   ['Product',d.product||'Not reported'],
+   ['Version',d.version||'Not reported'],
+   ['Core',d.core||'Not reported'],
+   ['Service status',d.status||'Not reported'],
+   ['Authenticated',d.authenticated===true?'YES':'NO'],
+   ['Role',d.role||'Not reported'],
+   ['PLC write',safety.plc_write===false?'BLOCKED':'Not verified'],
+   ['SCADA control',safety.scada_control===false?'BLOCKED':'Not verified'],
+   ['Automatic authorization',safety.automatic_authorization===false?'BLOCKED':'Not verified'],
+   ['Human decision required',safety.human_decision_required===true?'YES':'Not verified']
+  ];
+  el.innerHTML=rows.map(([k,v])=>'<div class="row"><span>'+escapeHtml(k)+'</span><b>'+escapeHtml(v)+'</b></div>').join('')+
+   '<div class="row"><span>Timestamp</span><b>'+escapeHtml(d.timestamp||'Not supplied')+'</b></div>';
+ }catch(e){
+  el.innerHTML='<div class="empty">Unable to read authenticated system status: '+escapeHtml(e.message||e)+'</div>';
+ }
 }
-
 let recognition=null;
 let listening=false;
 
@@ -825,77 +949,58 @@ function toggleVoice(){
  recognition.start();
 }
 
-if(name==='spares') loadSpares();
-
 document.getElementById('shiftDate').value=new Date().toISOString().slice(0,10);
 refresh();
 setInterval(refresh,15000);
 
 async function loadSpares(){
   const box=document.getElementById('sparesSituation');
-  if(!box) return;
-
+  if(!box)return;
+  box.innerHTML='<div class="empty">Reading this selected plant spare register...</div>';
+  const critical=document.getElementById('sparesCritical');
+  const low=document.getElementById('sparesLow');
+  const maintenance=document.getElementById('sparesMaintenance');
   try{
-    const r=await fetch('/api/maintenance');
-    const d=await r.json();
-
-    const text =
-      d.answer ||
-      d.response ||
-      d.message ||
-      'Maintenance intelligence is available through ANVI.';
-
+    const [all,attention]=await Promise.all([
+      askAPI('Show critical spares inventory for the selected plant'),
+      askAPI('Show low-stock critical spares for the selected plant')
+    ]);
+    const allRecords=Array.isArray(all.records)?all.records:[];
+    const lowRecords=Array.isArray(attention.records)?attention.records:[];
+    if(all.domain!=='critical_spares'||attention.domain!=='critical_spares'){
+      throw Error('Selected-plant spare evidence was not returned by the critical-spares service.');
+    }
+    if(critical)critical.textContent=String(all.count??allRecords.length);
+    if(low)low.textContent=String(attention.count??lowRecords.length);
+    if(maintenance)maintenance.textContent='Evidence linked';
     box.innerHTML='<div style="white-space:pre-wrap;line-height:1.8">'+
-      escapeHtml(text)+'</div>';
-
-    const raw=JSON.stringify(d).toLowerCase();
-
-    const critical=(raw.match(/critical/g)||[]).length;
-    const low=(raw.match(/low stock|low-stock/g)||[]).length;
-
-    const c=document.getElementById('sparesCritical');
-    const l=document.getElementById('sparesLow');
-    const m=document.getElementById('sparesMaintenance');
-
-    if(c)c.textContent=critical||'0';
-    if(l)l.textContent=low||'0';
-    if(m)m.textContent='READY';
-
+      escapeHtml(attention.answer||'No stock-attention records were returned.')+
+      '</div>';
   }catch(e){
-    box.innerHTML='<div class="empty">Maintenance intelligence unavailable. Use Ask ANVI for evidence-backed maintenance queries.</div>';
+    if(critical)critical.textContent='—';
+    if(low)low.textContent='—';
+    if(maintenance)maintenance.textContent='Unavailable';
+    box.innerHTML='<div class="empty">Selected-plant spare evidence unavailable: '+escapeHtml(e.message||e)+'. No global or other-plant inventory was substituted.</div>';
   }
 }
-
 async function searchSpares(){
   const q=(document.getElementById('spareSearch')||{}).value||'';
   const box=document.getElementById('spareResults');
-
   if(!q.trim()){
     box.innerHTML='<div class="empty">Enter a spare, equipment tag or maintenance query.</div>';
     return;
   }
-
-  box.innerHTML='<div class="empty">ANVI is searching maintenance and spare intelligence...</div>';
-
+  box.innerHTML='<div class="empty">ANVI is searching selected-plant maintenance and spare evidence...</div>';
   try{
-    const r=await fetch('/api/ask',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        question:
-          'Search maintenance and spare intelligence for: '+q+
-          '. Return only evidence-backed information. Include equipment/tag, spare information, availability if known, maintenance relevance and source/context. Do not invent inventory data.'
-      })
-    });
-
-    const d=await r.json();
-
+    const d=await askAPI(
+      'Search selected-plant maintenance and spare intelligence for: '+q+
+      '. Return only evidence-backed information. Include equipment/tag, spare information, availability if known, maintenance relevance and source/context. Do not invent inventory data.'
+    );
     box.innerHTML='<div style="white-space:pre-wrap;line-height:1.8">'+
       escapeHtml(d.answer||d.response||JSON.stringify(d,null,2))+
       '</div>';
-
   }catch(e){
-    box.innerHTML='<div class="empty">Unable to query ANVI.</div>';
+    box.innerHTML='<div class="empty">Unable to query selected-plant maintenance/spare evidence: '+escapeHtml(e.message||e)+'</div>';
   }
 }
 
@@ -1281,21 +1386,24 @@ async function submitFieldReport(){
     result.innerHTML =
       '<div class="card">' +
       '<b>FIELD REPORT CAPTURED</b>' +
-      '<p><b>Status:</b> ' + (data.status || '') + '</p>' +
-      '<p><b>Equipment:</b> ' + (p.equipment || '') + '</p>' +
-      '<p><b>Tag:</b> ' + (p.tag || '') + '</p>' +
-      '<p><b>Location:</b> ' + (p.area || '') + '</p>' +
-      '<p><b>Observation:</b> ' + (p.observation || '') + '</p>' +
-      '<p><b>Finding:</b> ' + (p.finding || '') + '</p>' +
-      '<p><b>Action:</b> ' + (p.maintenance_action || '') + '</p>' +
-      '<p><b>Outcome:</b> ' + (p.outcome || '') + '</p>' +
-      '<p><b>Recovery:</b> ' + (p.recovery_status || '') + '</p>' +
+      '<p><b>Status:</b> ' + escapeHtml(data.status || '') + '</p>' +
+      '<p><b>Equipment:</b> ' + escapeHtml(p.equipment || '') + '</p>' +
+      '<p><b>Tag:</b> ' + escapeHtml(p.tag || '') + '</p>' +
+      '<p><b>Location:</b> ' + escapeHtml(p.area || '') + '</p>' +
+      '<p><b>Observation:</b> ' + escapeHtml(p.observation || '') + '</p>' +
+      '<p><b>Finding:</b> ' + escapeHtml(p.finding || '') + '</p>' +
+      '<p><b>Action:</b> ' + escapeHtml(p.maintenance_action || '') + '</p>' +
+      '<p><b>Spare used:</b> ' + escapeHtml(p.spare_used || 'Not recorded') + '</p>' +
+      '<p><b>Outcome:</b> ' + escapeHtml(p.outcome || '') + '</p>' +
+      '<p><b>Recovery:</b> ' + escapeHtml(p.recovery_status || '') + '</p>' +
+      '<p><b>Verification:</b> ' + escapeHtml(p.verification_status || p.verification || 'PENDING_VERIFICATION') + '</p>' +
+      '<p><b>Inventory update:</b> ' + escapeHtml((p.inventory_update || {}).status || 'Not changed') + '</p>' +
       '<p><b>Safety:</b> Read-only • Human verification required</p>' +
       '</div>';
 
   } catch (err) {
     result.innerHTML =
-      '<div class="urgent">' + err.message + '</div>';
+      '<div class="urgent">' + escapeHtml(err.message || err) + '</div>';
   }
 }
 

@@ -495,28 +495,58 @@ def store_field_report(text, filename=""):
 
     import plant_memory
 
-    # Existing Plant Memory remains authoritative.
-    # Conversational reports remain pending until human verification.
-    memory = plant_memory.create_conversational_memory(
-        event=record["event"],
-        equipment=record["equipment"],
-        tag=record["tag"],
-        area=record["area"],
-        source=record["source"],
-        observation=record["observation"],
-        maintenance_action=record["maintenance_action"],
-        finding=record["finding"],
-        confirmation_evidence=record["confirmation_evidence"],
-        outcome=record["outcome"],
-        recovery_status=record["recovery_status"],
-        spare_used=record["spare_used"],
-        notes=(
-            record["notes"]
-            + f" Raw report: {record['raw_report']}"
-            + (f" Present with: {record['present_with']}."
-               if record["present_with"] else "")
-        ),
+    memory_notes = (
+        record["notes"]
+        + f" Raw report: {record['raw_report']}"
+        + (f" Present with: {record['present_with']}."
+           if record["present_with"] else "")
     )
+    memory_fields = {
+        "event": record["event"],
+        "equipment": record["equipment"],
+        "tag": record["tag"],
+        "area": record["area"],
+        "source": record["source"],
+        "observation": record["observation"],
+        "maintenance_action": record["maintenance_action"],
+        "finding": record["finding"],
+        "confirmation_evidence": record["confirmation_evidence"],
+        "outcome": record["outcome"],
+        "recovery_status": record["recovery_status"],
+        "spare_used": record["spare_used"],
+        "notes": memory_notes,
+    }
+
+    # Authenticated tenant reports must be persisted only in the tenant-tagged
+    # durable report store. Do not also write them into the shared local
+    # Plant Memory JSON file, which has no organization/plant partition key.
+    tenant_request = False
+    tenant_plant_id = ""
+    tenant_org_id = ""
+    try:
+        from flask import has_request_context, session
+        tenant_request = bool(has_request_context() and session.get("authenticated"))
+        if tenant_request:
+            tenant_plant_id = str(session.get("plant_id") or "").strip()
+            tenant_org_id = str(session.get("organization_id") or "").strip()
+    except Exception:
+        tenant_request = False
+
+    if tenant_request:
+        if not tenant_plant_id or not tenant_org_id:
+            raise PermissionError(
+                "An authenticated selected plant is required to save a field report. "
+                "No shared Plant Memory fallback was used."
+            )
+        memory = plant_memory.create_memory(
+            verified=False,
+            **memory_fields,
+        )
+        memory["plant_id"] = tenant_plant_id
+        memory["organization_id"] = tenant_org_id
+    else:
+        # Preserve local Plant Memory for offline tools and non-request tests.
+        memory = plant_memory.create_conversational_memory(**memory_fields)
 
     # Phase 1 safety boundary:
     # A field report is PENDING_VERIFICATION and therefore cannot mutate
@@ -545,7 +575,7 @@ def store_field_report(text, filename=""):
     # ANVIQO_NEON_FIELD_REPORT_HOOK_V2
     try:
         from anvi_neon_store import upsert_field_report
-        upsert_field_report({
+        stored = upsert_field_report({
             "report_id": str(memory.get("memory_id","")),
             "tag": record.get("tag",""),
             "equipment": record.get("equipment",""),
@@ -555,9 +585,14 @@ def store_field_report(text, filename=""):
             "parsed_report": record,
             "memory": memory,
             "verification_status": "PENDING_VERIFICATION",
+            "plant_id": tenant_plant_id if tenant_request else "",
+            "organization_id": tenant_org_id if tenant_request else "",
         })
+        if tenant_request and not stored:
+            raise RuntimeError("Tenant field-report store is unavailable; report was not saved.")
     except Exception:
-        pass
+        if tenant_request:
+            raise
 
     return {
         "status": "PENDING_VERIFICATION",
