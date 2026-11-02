@@ -157,3 +157,9 @@ def test_predictive_intelligence_uses_tag_scoped_prediction_api():
     assert "tag:tag.trim()" in prediction
     assert "evidence.numeric_observation_count" in prediction
     assert "No cross-plant or global history was substituted." in prediction
+
+
+def test_spares_summary_does_not_label_source_status_as_a_maintenance_count():
+    html = _dashboard()
+    assert "<label>SOURCE STATUS</label>" in html
+    assert "<label>MAINTENANCE ITEMS</label>" not in html
