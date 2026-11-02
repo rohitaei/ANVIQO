@@ -130,8 +130,28 @@ def answer_field_report_query(question):
     tag=_normalise_tag(tag_match.group(1)) if tag_match else ""
 
     tenant_plant_id, tenant_org_id = _authenticated_tenant()
+    try:
+        from flask import has_request_context, session
+        authenticated_request = bool(has_request_context() and session.get("authenticated"))
+    except Exception:
+        authenticated_request = False
 
-    if tenant_plant_id:
+    if authenticated_request and (not tenant_plant_id or not tenant_org_id):
+        return {
+            "answer": (
+                "ANVI cannot retrieve this field report because no authorised selected plant "
+                "is active. No shared or other-plant Plant Memory was searched."
+            ),
+            "status": "BLOCKED",
+            "domain": "plant_memory",
+            "evidence_status": "NO_AUTHORIZED_PLANT",
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "human_decision_required": True,
+        }
+
+    if authenticated_request:
         # Authenticated tenants must never read bundled/global Plant Memory.
         # The persistent tenant bridge is the authoritative source here.
         try:
@@ -140,6 +160,7 @@ def answer_field_report_query(question):
         except Exception:
             results = []
     else:
+        # Local memory is reserved for offline/non-request tooling only.
         import plant_memory
         results=plant_memory.search_all_memory(query=question,tag=tag,limit=10)
 

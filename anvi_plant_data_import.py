@@ -33,7 +33,15 @@ def _p(): return store._placeholder()
 def _nonempty(v): return v is not None and str(v).strip() != ""
 def _key(v): return re.sub(r"[^a-z0-9]+", "", str(v or "").strip().lower())
 def _header_score(row):
-    known = {"tag","tagname","plctag","plctagname","externalid","assetid","area","service","description","iotype","plcaddress","panel","tb","jb","recordtype","entitytype"}
+    # Include critical-spares workbook headers. Without these aliases the
+    # title row can win header detection and stock columns are lost.
+    known = {
+        "tag","tagno","tagname","plctag","plctagname","externalid","assetid",
+        "area","service","description","iotype","plcaddress","panel","tb","jb",
+        "recordtype","entitytype","instrument","shortdescription","item",
+        "qtyavbl","qtyavailable","quantityavailable","qtyreq","qtyrequired",
+        "requiredquantity","sparetobeindent","specification","criticality",
+    }
     return sum(1 for v in row if _key(v) in known)
 
 def _matrix_records(sheet_name, rows):
@@ -49,12 +57,20 @@ def _matrix_records(sheet_name, rows):
     for i, v in enumerate(first):
         h = str(v).strip() if _nonempty(v) else "column_" + str(i + 1)
         k = _key(h); seen[k] = seen.get(k, 0) + 1; headers.append(h if seen[k] == 1 else h + "_" + str(seen[k]))
+    header_keys = {_key(h) for h in headers}
+    has_spare_columns = (
+        bool(header_keys & {"tagno", "tag", "instrument", "shortdescription", "item"})
+        and bool(header_keys & {"qtyavbl", "qtyavailable", "quantityavailable", "available"})
+        and bool(header_keys & {"qtyreq", "qtyrequired", "requiredquantity", "sparetobeindent", "minimumstock", "reorderlevel"})
+    )
     def emit(row, idx):
         if not any(_nonempty(v) for v in row): return None
         rec = {headers[i]: row[i] for i in range(min(len(headers), len(row)))}
         rec = {str(k).strip(): v for k, v in rec.items() if str(k).strip()}
-        rec["external_id"] = str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or rec.get("TAG") or hashlib.sha256((sheet_name + str(idx) + json.dumps(rec, sort_keys=True, default=str)).encode()).hexdigest()[:20])
-        rec["source"] = sheet_name; rec["record_type"] = str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
+        rec["external_id"] = str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or rec.get("TAG") or rec.get("TAG NO") or rec.get("TAG NO.") or hashlib.sha256((sheet_name + str(idx) + json.dumps(rec, sort_keys=True, default=str)).encode()).hexdigest()[:20])
+        rec["source"] = sheet_name
+        inferred_type = "CRITICAL_SPARE" if has_spare_columns else "ASSET"
+        rec["record_type"] = str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or inferred_type)
         return rec
     for offset, row in enumerate(sample[hi + 1:], start=hi + 2):
         rec = emit(row, offset)
@@ -139,7 +155,7 @@ def _insert_batch(plant_id, org_id, document_id, digest, records):
         if store._is_sqlite():
             sql = "INSERT OR REPLACE INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content,created_at) VALUES(" + ",".join(ph) + "," + p + ")"; cur.executemany(sql, [r + (_now(),) for r in rows])
         else:
-            sql = "INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES(" + ",".join(ph) + ") ON CONFLICT(plant_id,external_id,source) DO UPDATE SET organization_id=EXCLUDED.organization_id,document_id=EXCLUDED.document_id,name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,parent_id=EXCLUDED.parent_id,metadata=EXCLUDED.metadata,content=EXCLUDED.content"; cur.executemany(sql, rows)
+            sql = "INSERT INTO anviqo_plant_knowledge(knowledge_id,organization_id,plant_id,document_id,record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content) VALUES(" + ",".join(ph) + ") ON CONFLICT(plant_id,external_id,source) DO UPDATE SET organization_id=EXCLUDED.organization_id,document_id=EXCLUDED.document_id,record_type=EXCLUDED.record_type,name=EXCLUDED.name,area=EXCLUDED.area,service=EXCLUDED.service,asset_type=EXCLUDED.asset_type,tag=EXCLUDED.tag,parent_id=EXCLUDED.parent_id,metadata=EXCLUDED.metadata,content=EXCLUDED.content"; cur.executemany(sql, rows)
     return len(rows), errors
 
 def _safe_insert_batch(plant_id, org_id, document_id, digest, records):
