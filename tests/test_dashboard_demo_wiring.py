@@ -69,7 +69,7 @@ def test_inline_javascript_parses_when_node_is_available():
     node = shutil.which("node")
     if not node:
         return
-    scripts = re.findall(r"<script\\b[^>]*>(.*?)</script>", _dashboard(), re.I | re.S)
+    scripts = re.findall(r"<script\b[^>]*>(.*?)</script>", _dashboard(), re.I | re.S)
     assert scripts
     for index, script in enumerate(scripts):
         result = subprocess.run(
