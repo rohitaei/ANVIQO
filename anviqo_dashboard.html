@@ -640,7 +640,10 @@ shade.onclick=closeMenu;
 async function api(url,options){
  const r=await fetch(url,options);
  if(r.status===401){location.href='/login';throw Error('Authentication required')}
- return r.json();
+ let data={};
+ try{data=await r.json()}catch(e){}
+ if(!r.ok)throw Error(data.message||data.error||('Request failed: HTTP '+r.status));
+ return data;
 }
 
 function box(text){
@@ -663,7 +666,11 @@ async function refresh(){
    '<div class="row"><span>Warning</span><b class="amber">'+(d.warning==null?'—':d.warning)+'</b></div>'+
    '<div class="row"><span>Critical</span><b class="red">'+(d.critical==null?'—':d.critical)+'</b></div>';
  }catch(e){
-  document.getElementById('overviewSituation').textContent='API connection unavailable';
+  ['health','alarms','critical','events','ioCount'].forEach(id=>{
+   const el=document.getElementById(id);if(el)el.textContent='—';
+  });
+  const situation=document.getElementById('overviewSituation');
+  if(situation)situation.textContent='Selected-plant overview unavailable: '+(e.message||e);
  }
 }
 
