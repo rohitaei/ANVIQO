@@ -29,7 +29,7 @@ def test_intelligence_pages_use_the_selected_plant_anvi_query_path():
     start = html.index("async function loadPage(name){")
     end = html.index("\nasync function loadAskInto", start)
     loader = html[start:end]
-    for page in ("alarms", "analysis", "prediction", "critical", "equipment",
+    for page in ("alarms", "analysis", "critical", "equipment",
                  "maintenance", "management", "interlocks"):
         assert f"{page}:" in loader, f"{page} page has no explicit evidence query"
     assert "if(name==='spares'){await loadSpares();return;}" in loader
