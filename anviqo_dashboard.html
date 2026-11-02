@@ -935,33 +935,21 @@ async function loadSpares(){
 async function searchSpares(){
   const q=(document.getElementById('spareSearch')||{}).value||'';
   const box=document.getElementById('spareResults');
-
   if(!q.trim()){
     box.innerHTML='<div class="empty">Enter a spare, equipment tag or maintenance query.</div>';
     return;
   }
-
-  box.innerHTML='<div class="empty">ANVI is searching maintenance and spare intelligence...</div>';
-
+  box.innerHTML='<div class="empty">ANVI is searching selected-plant maintenance and spare evidence...</div>';
   try{
-    const r=await fetch('/api/ask',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        question:
-          'Search maintenance and spare intelligence for: '+q+
-          '. Return only evidence-backed information. Include equipment/tag, spare information, availability if known, maintenance relevance and source/context. Do not invent inventory data.'
-      })
-    });
-
-    const d=await r.json();
-
+    const d=await askAPI(
+      'Search selected-plant maintenance and spare intelligence for: '+q+
+      '. Return only evidence-backed information. Include equipment/tag, spare information, availability if known, maintenance relevance and source/context. Do not invent inventory data.'
+    );
     box.innerHTML='<div style="white-space:pre-wrap;line-height:1.8">'+
       escapeHtml(d.answer||d.response||JSON.stringify(d,null,2))+
       '</div>';
-
   }catch(e){
-    box.innerHTML='<div class="empty">Unable to query ANVI.</div>';
+    box.innerHTML='<div class="empty">Unable to query selected-plant maintenance/spare evidence: '+escapeHtml(e.message||e)+'</div>';
   }
 }
 
@@ -1347,21 +1335,21 @@ async function submitFieldReport(){
     result.innerHTML =
       '<div class="card">' +
       '<b>FIELD REPORT CAPTURED</b>' +
-      '<p><b>Status:</b> ' + (data.status || '') + '</p>' +
-      '<p><b>Equipment:</b> ' + (p.equipment || '') + '</p>' +
-      '<p><b>Tag:</b> ' + (p.tag || '') + '</p>' +
-      '<p><b>Location:</b> ' + (p.area || '') + '</p>' +
-      '<p><b>Observation:</b> ' + (p.observation || '') + '</p>' +
-      '<p><b>Finding:</b> ' + (p.finding || '') + '</p>' +
-      '<p><b>Action:</b> ' + (p.maintenance_action || '') + '</p>' +
-      '<p><b>Outcome:</b> ' + (p.outcome || '') + '</p>' +
-      '<p><b>Recovery:</b> ' + (p.recovery_status || '') + '</p>' +
+      '<p><b>Status:</b> ' + escapeHtml(data.status || '') + '</p>' +
+      '<p><b>Equipment:</b> ' + escapeHtml(p.equipment || '') + '</p>' +
+      '<p><b>Tag:</b> ' + escapeHtml(p.tag || '') + '</p>' +
+      '<p><b>Location:</b> ' + escapeHtml(p.area || '') + '</p>' +
+      '<p><b>Observation:</b> ' + escapeHtml(p.observation || '') + '</p>' +
+      '<p><b>Finding:</b> ' + escapeHtml(p.finding || '') + '</p>' +
+      '<p><b>Action:</b> ' + escapeHtml(p.maintenance_action || '') + '</p>' +
+      '<p><b>Outcome:</b> ' + escapeHtml(p.outcome || '') + '</p>' +
+      '<p><b>Recovery:</b> ' + escapeHtml(p.recovery_status || '') + '</p>' +
       '<p><b>Safety:</b> Read-only • Human verification required</p>' +
       '</div>';
 
   } catch (err) {
     result.innerHTML =
-      '<div class="urgent">' + err.message + '</div>';
+      '<div class="urgent">' + escapeHtml(err.message || err) + '</div>';
   }
 }
 
