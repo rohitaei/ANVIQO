@@ -30,10 +30,28 @@ def test_intelligence_pages_use_the_selected_plant_anvi_query_path():
     end = html.index("\nasync function loadAskInto", start)
     loader = html[start:end]
     for page in ("alarms", "analysis", "prediction", "critical", "equipment",
-                 "maintenance", "management", "events", "changed", "interlocks"):
+                 "maintenance", "management", "interlocks"):
         assert f"{page}:" in loader, f"{page} page has no explicit evidence query"
     assert "if(name==='spares'){await loadSpares();return;}" in loader
     assert "if(name==='system')await loadSystem();" in loader
+
+
+def test_events_and_what_changed_use_the_selected_plant_v2_stream():
+    html = _dashboard()
+    start = html.index("async function loadPage(name){")
+    end = html.index("\\nasync function loadCommandCentreStream", start)
+    loader = html[start:end]
+    assert "if(name==='events'||name==='changed')" in loader
+    assert "await loadCommandCentreStream(name)" in loader
+    assert "events:['eventData'" not in loader
+    assert "changed:['changedData'" not in loader
+    start = html.index("async function loadCommandCentreStream(mode){")
+    end = html.index("\\nasync function loadAskInto", start)
+    stream = html[start:end]
+    assert "fetch('/api/command-centre/stream'" in stream
+    assert "data.scope!=='SELECTED_PLANT_ONLY'" in stream
+    assert "data.events" in stream and "data.changes" in stream
+    assert "No other plant data was substituted." in stream
 
 
 def test_spares_page_reads_structured_tenant_scoped_inventory_not_static_demo_api():
