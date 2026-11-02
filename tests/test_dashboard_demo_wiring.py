@@ -121,3 +121,20 @@ def test_spare_search_uses_shared_api_error_and_auth_handling():
     assert "await askAPI(" in search
     assert "fetch('/api/ask'" not in search
     assert "escapeHtml(d.answer" in search
+
+
+def test_dashboard_api_helper_surfaces_non_success_responses():
+    html = _dashboard()
+    start = html.index("async function api(url,options){")
+    end = html.index("\\nfunction box", start)
+    helper = html[start:end]
+    assert "if(!r.ok)throw Error(data.message||data.error||('Request failed: HTTP '+r.status));" in helper
+
+
+def test_overview_clears_stale_metrics_when_api_fails():
+    html = _dashboard()
+    start = html.index("async function refresh(){")
+    end = html.index("\\nasync function loadPage", start)
+    refresh = html[start:end]
+    assert "['health','alarms','critical','events','ioCount']" in refresh
+    assert "Selected-plant overview unavailable:" in refresh
