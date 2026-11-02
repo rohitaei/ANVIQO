@@ -949,8 +949,6 @@ function toggleVoice(){
  recognition.start();
 }
 
-if(name==='spares') loadSpares();
-
 document.getElementById('shiftDate').value=new Date().toISOString().slice(0,10);
 refresh();
 setInterval(refresh,15000);
@@ -1395,8 +1393,11 @@ async function submitFieldReport(){
       '<p><b>Observation:</b> ' + escapeHtml(p.observation || '') + '</p>' +
       '<p><b>Finding:</b> ' + escapeHtml(p.finding || '') + '</p>' +
       '<p><b>Action:</b> ' + escapeHtml(p.maintenance_action || '') + '</p>' +
+      '<p><b>Spare used:</b> ' + escapeHtml(p.spare_used || 'Not recorded') + '</p>' +
       '<p><b>Outcome:</b> ' + escapeHtml(p.outcome || '') + '</p>' +
       '<p><b>Recovery:</b> ' + escapeHtml(p.recovery_status || '') + '</p>' +
+      '<p><b>Verification:</b> ' + escapeHtml(p.verification_status || p.verification || 'PENDING_VERIFICATION') + '</p>' +
+      '<p><b>Inventory update:</b> ' + escapeHtml((p.inventory_update || {}).status || 'Not changed') + '</p>' +
       '<p><b>Safety:</b> Read-only • Human verification required</p>' +
       '</div>';
 
