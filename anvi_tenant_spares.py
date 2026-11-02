@@ -185,7 +185,7 @@ def answer(question: str, plant_id: str, organization_id: str):
         status = _stock_status(available, required, reorder)
 
         if query_tokens and not any(
-            token in _key(" ".join((tag, external_id, name, service)))
+            token in _key(" ".join((raw_tag, external_id, name, service)))
             for token in query_tokens
         ):
             continue
