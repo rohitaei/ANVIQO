@@ -39,14 +39,14 @@ def test_intelligence_pages_use_the_selected_plant_anvi_query_path():
 def test_events_and_what_changed_use_the_selected_plant_v2_stream():
     html = _dashboard()
     start = html.index("async function loadPage(name){")
-    end = html.index("\\nasync function loadCommandCentreStream", start)
+    end = html.index("\nasync function loadCommandCentreStream", start)
     loader = html[start:end]
     assert "if(name==='events'||name==='changed')" in loader
     assert "await loadCommandCentreStream(name)" in loader
     assert "events:['eventData'" not in loader
     assert "changed:['changedData'" not in loader
     start = html.index("async function loadCommandCentreStream(mode){")
-    end = html.index("\\nasync function loadAskInto", start)
+    end = html.index("\nasync function loadAskInto", start)
     stream = html[start:end]
     assert "fetch('/api/command-centre/stream'" in stream
     assert "data.scope!=='SELECTED_PLANT_ONLY'" in stream
@@ -99,7 +99,7 @@ def test_inline_javascript_parses_when_node_is_available():
             timeout=10,
         )
         assert result.returncode == 0, (
-            f"Inline script {index} has a JavaScript syntax error:\\n{result.stderr}"
+            f"Inline script {index} has a JavaScript syntax error:\n{result.stderr}"
         )
 
 
@@ -117,7 +117,7 @@ def test_field_report_user_content_is_html_escaped():
 def test_spare_search_uses_shared_api_error_and_auth_handling():
     html = _dashboard()
     start = html.index("async function searchSpares(){")
-    end = html.index("\\n}\\n\\n</script>", start)
+    end = html.index("\n}\n\n</script>", start)
     search = html[start:end]
     assert "await askAPI(" in search
     assert "fetch('/api/ask'" not in search
@@ -127,7 +127,7 @@ def test_spare_search_uses_shared_api_error_and_auth_handling():
 def test_dashboard_api_helper_surfaces_non_success_responses():
     html = _dashboard()
     start = html.index("async function api(url,options){")
-    end = html.index("\\nfunction box", start)
+    end = html.index("\nfunction box", start)
     helper = html[start:end]
     assert "if(!r.ok)throw Error(data.message||data.error||('Request failed: HTTP '+r.status));" in helper
 
@@ -135,7 +135,7 @@ def test_dashboard_api_helper_surfaces_non_success_responses():
 def test_overview_clears_stale_metrics_when_api_fails():
     html = _dashboard()
     start = html.index("async function refresh(){")
-    end = html.index("\\nasync function loadPage", start)
+    end = html.index("\nasync function loadPage", start)
     refresh = html[start:end]
     assert "['health','alarms','critical','events','ioCount']" in refresh
     assert "Selected-plant overview unavailable:" in refresh
