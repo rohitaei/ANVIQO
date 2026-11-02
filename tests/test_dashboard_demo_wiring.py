@@ -139,3 +139,21 @@ def test_overview_clears_stale_metrics_when_api_fails():
     refresh = html[start:end]
     assert "['health','alarms','critical','events','ioCount']" in refresh
     assert "Selected-plant overview unavailable:" in refresh
+
+
+def test_predictive_intelligence_uses_tag_scoped_prediction_api():
+    html = _dashboard()
+    assert 'id="predictionTag"' in html
+    assert 'onclick="loadPrediction()"' in html
+    start = html.index("async function loadPage(name){")
+    end = html.index("\nasync function loadCommandCentreStream", start)
+    loader = html[start:end]
+    assert "if(name==='prediction'){await loadPrediction();return;}" in loader
+    assert "prediction:['predictionData'" not in loader
+    start = html.index("async function loadPrediction(){")
+    end = html.index("\nfunction explainPrediction()", start)
+    prediction = html[start:end]
+    assert "api('/api/failure_prediction'" in prediction
+    assert "tag:tag.trim()" in prediction
+    assert "evidence.numeric_observation_count" in prediction
+    assert "No cross-plant or global history was substituted." in prediction
