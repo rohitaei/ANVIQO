@@ -4,6 +4,7 @@ The field-report bridge executes before /api/ask, so its classifier must not
 capture ordinary spare/inventory commands.
 """
 
+import field_report_runtime
 from field_report_runtime import _report_query
 
 
