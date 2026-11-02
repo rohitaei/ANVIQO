@@ -686,6 +686,10 @@ async function loadPage(name){
   }catch(e){if(el)el.innerHTML='<div class="empty">Unable to load selected-plant instrumentation evidence: '+escapeHtml(e.message||e)+'</div>'}
   return;
  }
+ if(name==='events'||name==='changed'){
+  await loadCommandCentreStream(name);
+  return;
+ }
  const askPages={
   alarms:['alarmData','Show active alarms for the selected plant. Include tag, condition, severity, timestamp and evidence source. Do not invent live telemetry.'],
   analysis:['analysisData','Analyse the current selected plant using available health, alarm, equipment, event, instrumentation and maintenance evidence. State evidence limits.'],
@@ -694,8 +698,6 @@ async function loadPage(name){
   equipment:['equipmentData','Show equipment status for the selected plant with tag, service, area, condition and source evidence.'],
   maintenance:['maintenanceData','Generate the current selected-plant maintenance intelligence summary from onboarded evidence.'],
   management:['managementData','Generate selected-plant management decision support from verified evidence, priorities, risks and human-review requirements.'],
-  events:['eventData','Show the selected plant event timeline and correlated events with timestamps and evidence.'],
-  changed:['changedData','What changed recently in the selected plant? Distinguish simulation from live telemetry and cite evidence.'],
   interlocks:['interlocksData','Explain selected-plant interlocks and process context from onboarded evidence. If no interlock register is available, say so explicitly.']
  };
  if(askPages[name]){
@@ -705,6 +707,48 @@ async function loadPage(name){
  if(name==='spares'){await loadSpares();return;}
  if(name==='system')await loadSystem();
 }
+ 
+async function loadCommandCentreStream(mode){
+ const id=mode==='events'?'eventData':'changedData';
+ const el=document.getElementById(id);
+ if(!el)return;
+ el.innerHTML='<div class="empty">Reading selected-plant event/change evidence...</div>';
+ try{
+  const response=await fetch('/api/command-centre/stream',{credentials:'same-origin'});
+  if(response.status===401){location.href='/login';throw Error('Authentication required');}
+  const data=await response.json();
+  if(!response.ok)throw Error(data.message||data.status||('HTTP '+response.status));
+  if(data.scope!=='SELECTED_PLANT_ONLY')throw Error('Selected-plant scope could not be verified.');
+  const rows=mode==='events'?(Array.isArray(data.events)?data.events:[]):(Array.isArray(data.changes)?data.changes:[]);
+  let html='<div class="row"><span>Evidence scope</span><b>SELECTED PLANT ONLY</b></div>'+
+   '<div class="row"><span>Stream status</span><b>'+escapeHtml(data.status||'UNKNOWN')+'</b></div>'+
+   '<div class="row"><span>Evidence records</span><b>'+escapeHtml(data.evidence_count??0)+'</b></div>';
+  if(mode==='events'){
+   html+='<h3>Event timeline</h3>';
+   if(!rows.length)html+='<div class="empty">No explicit event evidence is available for this selected plant.</div>';
+   rows.forEach(item=>{
+    html+='<div class="row"><span>'+escapeHtml(item.timestamp||'Time not recorded')+' · '+escapeHtml(item.equipment||'Plant-wide')+' · '+escapeHtml(item.event_type||'UNCLASSIFIED')+'<br>'+escapeHtml(item.message||'Event')+'<br><small>'+escapeHtml(item.source||'Source not recorded')+'</small></span></div>';
+   });
+   const correlation=data.correlation||{};
+   html+='<div class="row"><span>Correlation</span><b>'+escapeHtml(correlation.status||'NO DATA')+'</b></div>'+
+    '<div class="row"><span>Causation</span><b>Not claimed</b></div>';
+  }else{
+   html+='<h3>What changed</h3>';
+   if(!rows.length)html+='<div class="empty">No explicit change records or simulation baseline changes are available for this selected plant. ANVI has not inferred a change.</div>';
+   rows.forEach(item=>{
+    const before=item.previous===null||item.previous===undefined?'not recorded':item.previous;
+    const after=item.current===null||item.current===undefined?'not recorded':item.current;
+    html+='<div class="row"><span>'+escapeHtml(item.timestamp||'Time not recorded')+' · '+escapeHtml(item.equipment||'Plant-wide')+' · '+escapeHtml(item.parameter||'Parameter')+'<br>'+escapeHtml(item.change_type||'VALUE_CHANGE')+': '+escapeHtml(before)+' → '+escapeHtml(after)+'<br><small>'+escapeHtml(item.source||'Source not recorded')+'</small></span><b>'+escapeHtml(item.direction||'—')+'</b></div>';
+   });
+   html+='<div class="row"><span>Change status</span><b>'+escapeHtml(data.change_status||'UNKNOWN')+'</b></div>';
+  }
+  html+='<div class="row"><span>Safety</span><b>READ ONLY · PLC/SCADA WRITE BLOCKED · HUMAN DECISION REQUIRED</b></div>';
+  el.innerHTML=html;
+ }catch(e){
+  el.innerHTML='<div class="empty">Unable to load selected-plant '+(mode==='events'?'event':'change')+' evidence: '+escapeHtml(e.message||e)+'. No other plant data was substituted.</div>';
+ }
+}
+
 async function loadAskInto(id,q){
  const el=document.getElementById(id);
  el.innerHTML='<div class="empty">ANVI is analysing...</div>';
