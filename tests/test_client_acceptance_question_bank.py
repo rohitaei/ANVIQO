@@ -23,8 +23,8 @@ def load_bank():
 def test_bank_has_180_unique_questions_and_expected_categories():
     bank = load_bank()
     questions = bank["questions"]
-    assert bank["question_count"] == len(questions) == 180
-    assert len({item["id"] for item in questions}) == 180
+    assert bank["question_count"] == len(questions) == 195
+    assert len({item["id"] for item in questions}) == 195
     assert len({item["question"] for item in questions}) == 180
     assert {item["category"] for item in questions} == REQUIRED_CATEGORIES
 
