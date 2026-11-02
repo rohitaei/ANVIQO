@@ -336,7 +336,8 @@ input,select{
 
 <div class="page" id="page-prediction">
  <div class="hero"><div class="card"><div class="kicker">PREDICTIVE INTELLIGENCE</div><h1>What could happen next?</h1><p>Simulation-driven predictive indicators. Predictions remain decision support; ANVI never automatically controls the plant.</p></div><div class="card brain"><div class="orb">◈</div><b>PREDICT</b></div></div>
- <div class="grid2"><div class="card"><div class="card-head"><b>RISK INDICATORS</b></div><div class="card-body" id="predictionData">Loading...</div></div><div class="card"><div class="card-head"><b>EXPLAIN PREDICTION</b></div><div class="card-body"><button class="btn primary" onclick="askQuick('What problems could develop in the plant based on current evidence?')">Ask ANVI</button></div></div></div>
+ <div class="card"><div class="card-head"><b>EQUIPMENT FAILURE PREDICTION</b></div><div class="card-body"><label for="predictionTag">Equipment tag</label><input id="predictionTag" placeholder="Enter an onboarded tag, e.g. PT-303" autocomplete="off"><button class="btn primary" onclick="loadPrediction()">Run evidence-based prediction</button><div id="predictionData" class="card-body">Enter an equipment tag to inspect selected-plant prediction evidence. No tag or plant is assumed.</div></div></div>
+ <div class="card"><div class="card-head"><b>EXPLAIN PREDICTION</b></div><div class="card-body"><button class="btn primary" onclick="explainPrediction()">Explain this prediction with ANVI</button></div></div>
 </div>
 
 <div class="page" id="page-critical">
@@ -693,6 +694,7 @@ async function loadPage(name){
   }catch(e){if(el)el.innerHTML='<div class="empty">Unable to load selected-plant instrumentation evidence: '+escapeHtml(e.message||e)+'</div>'}
   return;
  }
+ if(name==='prediction'){await loadPrediction();return;}
  if(name==='events'||name==='changed'){
   await loadCommandCentreStream(name);
   return;
@@ -700,7 +702,6 @@ async function loadPage(name){
  const askPages={
   alarms:['alarmData','Show active alarms for the selected plant. Include tag, condition, severity, timestamp and evidence source. Do not invent live telemetry.'],
   analysis:['analysisData','Analyse the current selected plant using available health, alarm, equipment, event, instrumentation and maintenance evidence. State evidence limits.'],
-  prediction:['predictionData','What problems could develop in the selected plant based on available timestamped evidence? Do not invent failure probability or failure date.'],
   critical:['criticalData','Show critical equipment in the selected plant with its evidence, condition and risk basis.'],
   equipment:['equipmentData','Show equipment status for the selected plant with tag, service, area, condition and source evidence.'],
   maintenance:['maintenanceData','Generate the current selected-plant maintenance intelligence summary from onboarded evidence.'],
@@ -754,6 +755,51 @@ async function loadCommandCentreStream(mode){
  }catch(e){
   el.innerHTML='<div class="empty">Unable to load selected-plant '+(mode==='events'?'event':'change')+' evidence: '+escapeHtml(e.message||e)+'. No other plant data was substituted.</div>';
  }
+}
+
+
+async function loadPrediction(){
+ const tag=(document.getElementById('predictionTag')||{}).value||'';
+ const el=document.getElementById('predictionData');
+ if(!el)return;
+ if(!tag.trim()){
+  el.textContent='Enter an equipment tag to inspect selected-plant prediction evidence. No tag or plant is assumed.';
+  return;
+ }
+ el.innerHTML='<div class="empty">Checking selected-plant evidence for '+escapeHtml(tag.trim())+'...</div>';
+ try{
+  const d=await api('/api/failure_prediction',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({query:'Assess failure risk using available evidence for '+tag.trim(),tag:tag.trim()})
+  });
+  const evidence=d.evidence_summary||{};
+  const trend=d.trend||{};
+  const rows=[
+   ['Equipment tag',d.tag||tag.trim()],
+   ['Prediction status',d.status||'NOT REPORTED'],
+   ['Risk signal',d.risk_signal||'NOT REPORTED'],
+   ['Prediction',d.prediction||'No prediction statement returned.'],
+   ['Confidence',d.confidence??'Not established'],
+   ['Trend',trend.status==='AVAILABLE'?(trend.direction||'AVAILABLE'):(trend.reason||'UNAVAILABLE')],
+   ['Timestamped numeric observations',evidence.numeric_observation_count??0],
+   ['Evidence basis',(evidence.evidence_basis||[]).join('; ')||'No explicit evidence basis returned'],
+   ['Decision',d.decision_status||'HUMAN_DECISION_REQUIRED']
+  ];
+  el.innerHTML=rows.map(([k,v])=>'<div class="row"><span>'+escapeHtml(k)+'</span><b>'+escapeHtml(v)+'</b></div>').join('')+
+   '<div class="row"><span>Safety</span><b>READ ONLY · PLC/SCADA WRITE BLOCKED · HUMAN DECISION REQUIRED</b></div>';
+ }catch(e){
+  el.innerHTML='<div class="empty">Prediction unavailable for '+escapeHtml(tag.trim())+': '+escapeHtml(e.message||e)+'. No cross-plant or global history was substituted.</div>';
+ }
+}
+function explainPrediction(){
+ const tag=((document.getElementById('predictionTag')||{}).value||'').trim();
+ if(!tag){
+  const el=document.getElementById('predictionData');
+  if(el)el.textContent='Enter an equipment tag first.';
+  return;
+ }
+ askQuick('Explain the evidence-based failure prediction for '+tag+'. Distinguish available evidence from uncertainty. Do not invent a failure date or probability.');
 }
 
 async function loadAskInto(id,q){
