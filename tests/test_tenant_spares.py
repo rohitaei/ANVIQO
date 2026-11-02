@@ -60,6 +60,38 @@ class TenantSpareIntentTests(unittest.TestCase):
         self.assertEqual(record.metadata["QTY AVBL"], 2)
         self.assertEqual(record.metadata["QTY REQ"], 4)
 
+    def test_generated_workbook_row_id_is_not_displayed_as_equipment_tag(self):
+        from unittest.mock import patch
+        from anvi_tenant_spares import answer
+
+        row = (
+            "Analyser-10", "Analyser", "PCI", "Analyser service", "NA",
+            "critical_spares.xlsx",
+            {"sheet_name": "Analyser", "workbook_row": 10, "qty_available": 0, "qty_required": 1},
+            "critical_spares.xlsx",
+        )
+        with patch("anvi_tenant_spares._load", return_value=[row]):
+            result = answer("Show critical spares inventory", "plant-1", "org-1")
+
+        self.assertEqual(result["records"][0]["tag"], "Tag not recorded (workbook row Analyser #10)")
+        self.assertNotIn("Analyser-10 —", result["answer"])
+
+    def test_grouped_source_register_tag_is_preserved(self):
+        from unittest.mock import patch
+        from anvi_tenant_spares import answer
+
+        grouped_tag = "FSV-506/513/520/527"
+        row = (
+            grouped_tag, "Flow shutoff valve", "PCI", "FSV group", grouped_tag,
+            "critical_spares.xlsx",
+            {"sheet_name": "FSV&PCV", "workbook_row": 8, "qty_available": 1, "qty_required": 2},
+            "critical_spares.xlsx",
+        )
+        with patch("anvi_tenant_spares._load", return_value=[row]):
+            result = answer("Show critical spares inventory", "plant-1", "org-1")
+
+        self.assertEqual(result["records"][0]["tag"], grouped_tag)
+
 
 if __name__ == "__main__":
     unittest.main()
