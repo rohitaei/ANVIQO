@@ -91,11 +91,12 @@ def test_inline_javascript_parses_when_node_is_available():
     assert scripts
     for index, script in enumerate(scripts):
         result = subprocess.run(
-            [node, "--check"],
+            [node, "--check", "-"],
             input=script,
             text=True,
             capture_output=True,
             check=False,
+            timeout=10,
         )
         assert result.returncode == 0, (
             f"Inline script {index} has a JavaScript syntax error:\\n{result.stderr}"
