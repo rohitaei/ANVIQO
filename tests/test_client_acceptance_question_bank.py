@@ -20,12 +20,12 @@ def load_bank():
     return json.loads(BANK.read_text(encoding="utf-8"))
 
 
-def test_bank_has_180_unique_questions_and_expected_categories():
+def test_bank_has_195_unique_questions_and_expected_categories():
     bank = load_bank()
     questions = bank["questions"]
     assert bank["question_count"] == len(questions) == 195
     assert len({item["id"] for item in questions}) == 195
-    assert len({item["question"] for item in questions}) == 180
+    assert len({item["question"] for item in questions}) == 195
     assert {item["category"] for item in questions} == REQUIRED_CATEGORIES
 
 
@@ -62,3 +62,4 @@ def test_cross_plant_and_missing_evidence_cases_are_explicitly_included():
     assert any("another plant" in q for q in prompts)
     assert any("make a reasonable guess" in q for q in prompts)
     assert any("no source" in q for q in prompts)
+}
