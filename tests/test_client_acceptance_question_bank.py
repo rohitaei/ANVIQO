@@ -62,4 +62,3 @@ def test_cross_plant_and_missing_evidence_cases_are_explicitly_included():
     assert any("another plant" in q for q in prompts)
     assert any("make a reasonable guess" in q for q in prompts)
     assert any("no source" in q for q in prompts)
-}
