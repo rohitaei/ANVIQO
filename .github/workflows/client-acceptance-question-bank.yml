@@ -26,6 +26,8 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install test runner
-        run: python -m pip install --upgrade pip pytest
+        run: python -m pip install --upgrade pip pytest Flask openpyxl
       - name: Validate complete client acceptance corpus
-        run: pytest -q tests/test_client_acceptance_question_bank.py
+        run: >-
+          pytest -q tests/test_client_acceptance_question_bank.py
+          test_plant_scoped_auth.py
