@@ -4,9 +4,19 @@ import sqlite3
 from pathlib import Path
 
 
+def _configure_tenant_db(monkeypatch, db_path):
+    """Point the already-importable tenant store at an isolated file per test."""
+    import anvi_tenant_store as store
+    url = f"sqlite:///{db_path}"
+    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", url)
+    monkeypatch.setattr(store, "TENANT_DB_URL", url)
+    monkeypatch.setattr(store, "DATABASE_URL", "")
+    return store
+
+
 def test_plant_scoped_login_and_isolation(tmp_path, monkeypatch):
     db = tmp_path / "tenant.db"
-    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", f"sqlite:///{db}")
+    _configure_tenant_db(monkeypatch, db)
     monkeypatch.setenv("ANVIQO_ADMIN_USER", "admin-test")
     monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "admin-password")
     monkeypatch.setenv("ANVIQO_SECRET_KEY", "test-secret")
@@ -30,8 +40,8 @@ def test_plant_scoped_login_and_isolation(tmp_path, monkeypatch):
     assert [p["plant_id"] for p in plants] == [plant_a]
 
 
-def test_production_runtime_imports_plant_auth_routes(monkeypatch):
-    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", "sqlite:///:memory:")
+def test_production_runtime_imports_plant_auth_routes(tmp_path, monkeypatch):
+    _configure_tenant_db(monkeypatch, tmp_path / "runtime-import.db")
     monkeypatch.setenv("ANVIQO_ADMIN_USER", "admin-test")
     monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "admin-password")
     monkeypatch.setenv("ANVIQO_SECRET_KEY", "test-secret")
@@ -43,8 +53,8 @@ def test_production_runtime_imports_plant_auth_routes(monkeypatch):
     assert "/api/admin/plant-users" in paths
 
 
-def test_authenticated_plant_selection_enforces_scope(monkeypatch):
-    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", "sqlite:///:memory:")
+def test_authenticated_plant_selection_enforces_scope(tmp_path, monkeypatch):
+    _configure_tenant_db(monkeypatch, tmp_path / "plant-selection.db")
     monkeypatch.setenv("ANVIQO_ADMIN_USER", "admin-test")
     monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "admin-password")
     monkeypatch.setenv("ANVIQO_SECRET_KEY", "test-secret")
@@ -82,7 +92,7 @@ def test_authenticated_plant_selection_enforces_scope(monkeypatch):
 
 def test_fresh_plant_knowledge_isolation_after_onboarding(tmp_path, monkeypatch):
     db = tmp_path / "tenant-isolation.db"
-    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", f"sqlite:///{db}")
+    _configure_tenant_db(monkeypatch, db)
     monkeypatch.setenv("ANVIQO_ADMIN_USER", "admin-test")
     monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "admin-password")
     monkeypatch.setenv("ANVIQO_SECRET_KEY", "test-secret")
