@@ -1,7 +1,6 @@
 import os
 import io
 import sqlite3
-import time
 from pathlib import Path
 
 
@@ -129,13 +128,8 @@ def test_fresh_plant_knowledge_isolation_after_onboarding(tmp_path, monkeypatch)
     r = client.post(f"/api/admin/onboarding/plant/{plant_a}/documents", data={"files": (io.BytesIO(csv_a), "alpha.csv")}, content_type="multipart/form-data")
     assert r.status_code == 201
     r = client.post(f"/api/admin/onboarding/plant/{plant_a}/ingest")
-    assert r.status_code in (200, 202)
-    for _ in range(100):
-        job = client.get(f"/api/admin/onboarding/plant/{plant_a}/ingest-status").get_json()
-        if job.get("job_status") in {"COMPLETED", "FAILED"}:
-            break
-        time.sleep(0.05)
-    assert job.get("job_status") == "COMPLETED", job
+    assert r.status_code == 200, r.get_data(as_text=True)
+    assert r.get_json().get("status") == "COMPLETED", r.get_json()
 
     with client.session_transaction() as sess:
         sess.update({"username": "operator-beta", "user_id": user_b, "organization_id": org_b,
@@ -145,13 +139,8 @@ def test_fresh_plant_knowledge_isolation_after_onboarding(tmp_path, monkeypatch)
     r = client.post(f"/api/admin/onboarding/plant/{plant_b}/documents", data={"files": (io.BytesIO(csv_b), "beta.csv")}, content_type="multipart/form-data")
     assert r.status_code == 201
     r = client.post(f"/api/admin/onboarding/plant/{plant_b}/ingest")
-    assert r.status_code in (200, 202)
-    for _ in range(100):
-        job = client.get(f"/api/admin/onboarding/plant/{plant_b}/ingest-status").get_json()
-        if job.get("job_status") in {"COMPLETED", "FAILED"}:
-            break
-        time.sleep(0.05)
-    assert job.get("job_status") == "COMPLETED", job
+    assert r.status_code == 200, r.get_data(as_text=True)
+    assert r.get_json().get("status") == "COMPLETED", r.get_json()
 
     # The selected plant can see its own record and cannot see the other plant's record.
     own = client.get("/api/plant/knowledge?q=BB-2002")
