@@ -94,10 +94,16 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
             unique[key] = point
 
     ordered = sorted(unique.values(), key=lambda p: str(p.get("tag") or p.get("external_id") or p.get("id") or "").upper())
+    reported_critical_count = snap.get("critical_count", snap.get("critical"))
+    try:
+        reported_count_text = str(int(reported_critical_count)) if reported_critical_count is not None else "UNAVAILABLE"
+    except (TypeError, ValueError):
+        reported_count_text = "UNAVAILABLE"
+    reconciliation = "UNAVAILABLE" if reported_count_text == "UNAVAILABLE" else ("MATCH" if int(reported_count_text) == len(critical) else "MISMATCH")
     lines = [
         f"ANVI — Critical Point Report ({'SIMULATION' if mode == 'SIMULATION' else mode})",
         f"Selected plant: {plant_name or plant_id or 'UNAVAILABLE'}.",
-        f"Unique critical tags: {len(ordered)} | Critical source rows: {len(critical)} | Duplicate rows collapsed: {duplicate_rows}.",
+        f"Snapshot-reported critical count: {reported_count_text} | Critical source rows: {len(critical)} | Unique critical tags: {len(ordered)} | Duplicate rows collapsed: {duplicate_rows} | Count reconciliation: {reconciliation}.",
         f"Source: {source}.",
     ]
     evidence = []
@@ -140,7 +146,7 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
     lines.append("Unavailable fields are explicitly labelled UNAVAILABLE; no values or limits have been inferred.")
     lines.append("Safety: read-only; PLC WRITE BLOCKED; SCADA CONTROL BLOCKED; HUMAN DECISION REQUIRED.")
     return {"answer": "\n".join(lines), "status": "OK", "count": len(ordered),
-            "source_row_count": len(critical), "duplicate_rows_collapsed": duplicate_rows,
+            "source_row_count": len(critical), "snapshot_reported_critical_count": reported_count_text, "count_reconciliation": reconciliation, "duplicate_rows_collapsed": duplicate_rows,
             "evidence": evidence, "plant_id": plant_id, "source": source, "mode": mode,
             "read_only": True, "plc_write": False, "scada_control": False,
             "automatic_authorization": False, "automatic_execution": False,
