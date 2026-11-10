@@ -61,21 +61,15 @@ def test_authenticated_plant_selection_enforces_scope(tmp_path, monkeypatch):
 
     import anvi_tenant_store as store
     store.ensure_bootstrap("admin-test")
-    org_id = store.create_organization("Selection Org", "selection-org")
-    plant_a = store.create_plant(org_id, "Plant A", "plant-a")
+    context = store.ensure_bootstrap("admin-test")
+    org_id = context["organization_id"]
+    plant_a = context["plant_id"]
     plant_b = store.create_plant(org_id, "Plant B", "plant-b")
 
     from anvi_plant_auth_routes import app
     client = app.test_client()
     with client.session_transaction() as sess:
-        sess.update({
-            "authenticated": True,
-            "username": "admin-test",
-            "user_id": "bootstrap-admin-test",
-            "organization_id": org_id,
-            "role": "ADMIN",
-            "plant_id": plant_a,
-        })
+        sess.update({"authenticated": True, "username": "admin-test", **context})
 
     selected = client.post("/api/select-plant", json={"plant_id": plant_b})
     assert selected.status_code == 200
