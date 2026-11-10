@@ -139,7 +139,7 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
         lines.append("Simulation only: this is not live plant telemetry and does not establish actual equipment condition.")
     lines.append("Unavailable fields are explicitly labelled UNAVAILABLE; no values or limits have been inferred.")
     lines.append("Safety: read-only; PLC WRITE BLOCKED; SCADA CONTROL BLOCKED; HUMAN DECISION REQUIRED.")
-    return {"answer": "\\n".join(lines), "status": "OK", "count": len(ordered),
+    return {"answer": "\n".join(lines), "status": "OK", "count": len(ordered),
             "source_row_count": len(critical), "duplicate_rows_collapsed": duplicate_rows,
             "evidence": evidence, "plant_id": plant_id, "source": source, "mode": mode,
             "read_only": True, "plc_write": False, "scada_control": False,
