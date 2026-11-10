@@ -21,7 +21,7 @@ def test_hyphenated_critical_point_prompt_uses_complete_high_criticality_report(
     fake_stability = SimpleNamespace(
         _is_data_question=lambda _text: False,
         _pci_resolve_rows=lambda *_args: [],
-        _safe=lambda answer, **extra: {"answer": answer, **extra},
+        _safe=lambda answer, **extra: {"answer": answer, "read_only": True, "plc_write": False, "scada_control": False, "human_decision_required": True, **extra},
         _selected_pci_snapshot=lambda: {"mode": "ONBOARDING_DATA", "points": []},
         _selected_critical_point_snapshot=lambda _pid, _oid: {
             "mode": "ONBOARDING_DATA",
