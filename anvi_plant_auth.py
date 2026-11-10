@@ -82,9 +82,9 @@ def _verify(password: str, password_hash: str, password_salt: str) -> bool:
 def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any] | None:
     """Authenticate a user and require an ACTIVE membership for a plant ID, name, or slug.
 
-    If the user has exactly one active plant membership, that membership may be
-    selected without relying on the plant text matching. This remains tenant-safe
-    because the fallback only succeeds when an active membership already exists.
+    A supplied plant identifier must match an active membership exactly. A
+    single-membership default is allowed only when the caller omits plant context;
+    it must never override an explicit, mismatched plant selection.
     """
     username = str(username or "").strip()
     plant_slug = str(plant_slug or "").strip()
@@ -133,7 +133,7 @@ def authenticate(username: str, password: str, plant_slug: str) -> dict[str, Any
             )
             membership = cur.fetchone()
 
-        if not membership:
+        if not membership and not plant_slug:
             cur.execute(
                 f"""SELECT m.organization_id,m.plant_id,r.name,o.name,p.name,p.slug
                     FROM anviqo_memberships m
