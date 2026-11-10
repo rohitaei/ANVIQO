@@ -1,8 +1,6 @@
 """ANVIQO production entrypoint with safe spare intent and repair command guard."""
 from __future__ import annotations
 import re
-from flask import jsonify, request, session
-
 
 def _is_read_question(question: str) -> bool:
     q = str(question or "").strip().lower()
@@ -22,6 +20,7 @@ def _extract_tag(question: str) -> str:
     m = re.search(r"\b([a-z]{1,8}[- ]?\d{1,5})\b", str(question or ""), re.I)
     return m.group(1).upper().replace(" ", "-") if m else ""
 
+
 import pci_spares
 
 _original_v18_action = getattr(pci_spares, "_v18_action", None)
@@ -35,39 +34,13 @@ if callable(_original_v18_action):
 from anviqo_api_phase2 import app  # noqa: E402
 import failure_prediction_api  # noqa: E402,F401
 
-
-@app.before_request
-def _reconcile_command_bridge():
-    """Route a conversational reconcile command to the authorized repair path."""
-    if request.path != "/api/ask" or request.method != "POST" or not session.get("authenticated"):
-        return None
-    payload = request.get_json(silent=True) or {}
-    question = str(payload.get("question", "")).strip()
-    if not _is_reconcile_command(question):
-        return None
-
-    actor = {"user_id": session.get("user_id", ""), "organization_id": session.get("organization_id", ""), "plant_id": session.get("plant_id", ""), "role": session.get("role", ""), "username": session.get("username", "")}
-    from anvi_tenant_store import authorize
-    if not authorize(actor, "inventory:write", actor["organization_id"], actor["plant_id"]):
-        return jsonify({"status": "FORBIDDEN", "domain": "critical_spares", "message": "Spare reconciliation requires inventory:write permission.", "inventory_changed": False, "plc_write": False, "scada_control": False}), 403
-
-    try:
-        from field_report_spare_reconcile import reconcile_field_report_spares
-        tag = _extract_tag(question)
-        result = reconcile_field_report_spares(tag=tag)
-        return jsonify({
-            "status": result.get("status", "OK"),
-            "domain": "critical_spares",
-            "answer": f"Historical field-report spare reconciliation completed for {tag or 'all eligible tags'}. Applied: {result.get('applied_count', 0)}; already applied: {result.get('already_applied_count', 0)}; errors: {result.get('error_count', 0)}.",
-            "inventory_update": result,
-            "inventory_changed": bool(result.get("applied_count")),
-            "read_only": False,
-            "plc_write": False,
-            "scada_control": False,
-            "human_decision_required": True,
-        })
-    except Exception as exc:
-        return jsonify({"status": "ERROR", "domain": "critical_spares", "message": str(exc), "inventory_changed": False, "plc_write": False, "scada_control": False, "human_decision_required": True}), 500
+# IMPORTANT: inventory reconciliation is deliberately NOT attached to
+# /api/ask or Flask before_request. The conversational endpoint may receive
+# a transcript containing earlier user turns; interpreting transcript text
+# as a fresh write command can decrement stock repeatedly and block the
+# chat worker while loading the Excel workbook. Reconciliation must use a
+# separate, tenant-scoped, explicitly confirmed write workflow. Until that
+# workflow is provided, chat remains read-only and never mutates inventory.
 
 
 # Plant login, tenant-scoped account provisioning and plant-user management
