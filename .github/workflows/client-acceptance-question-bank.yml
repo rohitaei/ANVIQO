@@ -10,6 +10,8 @@ on:
       - "anvi_chat_stability_v2.py"
       - "anvi_critical_point_report.py"
       - "tests/test_critical_point_report.py"
+      - "anvi_universal_command_centre.py"
+      - "test_universal_command_centre_tenant.py"
       - ".github/workflows/client-acceptance-question-bank.yml"
   push:
     branches: [client-acceptance-question-bank-20261103]
@@ -20,6 +22,8 @@ on:
       - "anvi_chat_stability_v2.py"
       - "anvi_critical_point_report.py"
       - "tests/test_critical_point_report.py"
+      - "anvi_universal_command_centre.py"
+      - "test_universal_command_centre_tenant.py"
       - ".github/workflows/client-acceptance-question-bank.yml"
 
 permissions:
@@ -45,3 +49,4 @@ jobs:
           pytest -q tests/test_critical_point_report.py
           tests/test_client_acceptance_question_bank.py
           test_plant_scoped_auth.py
+          test_universal_command_centre_tenant.py
