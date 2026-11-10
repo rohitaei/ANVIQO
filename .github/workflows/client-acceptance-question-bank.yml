@@ -55,6 +55,7 @@ jobs:
       - name: Validate complete client acceptance corpus
         run: >-
           pytest -q tests/test_critical_point_report.py
+          tests/test_critical_point_membership_wrapper.py
           tests/test_client_acceptance_question_bank.py
           test_plant_scoped_auth.py
           test_universal_command_centre_tenant.py
