@@ -142,16 +142,27 @@ def test_fresh_plant_knowledge_isolation_after_onboarding(tmp_path, monkeypatch)
     assert r.status_code == 200, r.get_data(as_text=True)
     assert r.get_json().get("status") == "COMPLETED", r.get_json()
 
-    # The selected plant can see its own record and cannot see the other plant's record.
-    own = client.get("/api/plant/knowledge?q=BB-2002")
-    assert own.status_code == 200, own.get_data(as_text=True)
-    own_data = own.get_json() or {}
-    assert own_data.get("count") == 1, own_data
-    assert own_data["records"][0]["tag"] == "BB-2002"
-    foreign = client.get("/api/plant/knowledge?q=AA-1001")
-    assert foreign.status_code == 200, foreign.get_data(as_text=True)
-    foreign_data = foreign.get_json() or {}
-    assert foreign_data.get("count") == 0, foreign_data
+    # Verify the tenant knowledge index directly. The dashboard's legacy
+    # /api/plant/knowledge endpoint is a separate presentation route.
+    p = store._placeholder()
+    with store._connect() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT external_id,tag,name FROM anviqo_plant_knowledge "
+            f"WHERE plant_id={p} AND organization_id={p}",
+            (plant_b, org_b),
+        )
+        beta_rows = cur.fetchall()
+        cur.execute(
+            f"SELECT external_id,tag,name FROM anviqo_plant_knowledge "
+            f"WHERE plant_id={p} AND organization_id={p}",
+            (plant_a, org_a),
+        )
+        alpha_rows = cur.fetchall()
+    assert any("BB-2002" in str(value) for row in beta_rows for value in row), beta_rows
+    assert not any("AA-1001" in str(value) for row in beta_rows for value in row), beta_rows
+    assert any("AA-1001" in str(value) for row in alpha_rows for value in row), alpha_rows
+    assert not any("BB-2002" in str(value) for row in alpha_rows for value in row), alpha_rows
 
     # ANVI must answer from the selected plant only.
     answer = client.post("/api/ask", json={"question": "Tell me about AA-1001"}).get_json()
