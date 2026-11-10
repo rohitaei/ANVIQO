@@ -22,7 +22,7 @@
     {
       "name": "Enter Command Centre",
       "short_name": "Command Centre",
-      "url": "https://anviqo.onrender.com/login"
+      "url": "/login"
     }
   ],
   "icons": [
