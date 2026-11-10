@@ -62,3 +62,37 @@ def test_empty_selected_plant_returns_no_data_without_fallback():
     assert "No other plant or global demo data was used." in result["answer"]
     assert result["plc_write"] is False
     assert result["scada_control"] is False
+
+
+def test_report_includes_all_onboarded_high_criticality_tags_even_without_alarm_state():
+    points = [
+        {
+            "tag": tag,
+            "name": name,
+            "area": "VRM / MILL",
+            "state": "HEALTHY",
+            "value": value,
+            "timestamp": "2026-11-10T10:00:00Z",
+            "source": "PCI DEMO STREAM",
+            "metadata": {"criticality": "HIGH", "unit": unit, "plc_address": address},
+        }
+        for tag, name, value, unit, address in [
+            ("AT_201", "Mill inlet O2", 8.2, "%", "PIW 256"),
+            ("AT_202", "Mill inlet CO", 0.04, "%", "PIW 258"),
+            ("LT_302", "Mill bed height", 55.0, "%", "PIW 262"),
+            ("PT_303", "Mill outlet gas pressure", 68.0, "mbar", "PIW 260"),
+        ]
+    ]
+    result = build_critical_point_report(
+        {"mode": "SIMULATION", "source": "SELECTED_PLANT_HIGH_CRITICALITY_PCI_KNOWLEDGE",
+         "critical_count": 4, "points": points},
+        plant_id="primary-plant", plant_name="Primary Plant",
+    )
+    assert result["count"] == 4
+    assert result["count_reconciliation"] == "MATCH"
+    assert all(tag in result["answer"] for tag in ("AT_201", "AT_202", "LT_302", "PT_303"))
+    assert all(item["severity"] == "HIGH CRITICALITY" for item in result["evidence"])
+    assert "asset classification, not proof of an active alarm" in result["answer"]
+    assert "Configured limit: UNAVAILABLE" in result["answer"]
+    assert result["plc_write"] is False
+    assert result["scada_control"] is False
