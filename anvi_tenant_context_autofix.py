@@ -100,6 +100,48 @@ def _install_live_answer_patch():
             try:
                 snapshot = stability._selected_pci_snapshot()
                 low_intent = str(text or "").strip().lower()
+
+                # Critical-point prompts must bypass this membership wrapper's
+                # legacy CRITICAL-state-only shortcut. The authoritative report
+                # includes every selected-plant PCI instrument configured HIGH,
+                # even when it has no active alarm state. Keep all enrichment
+                # selected-plant and preserve unavailable values as UNAVAILABLE.
+                try:
+                    from anvi_critical_point_report import (
+                        is_critical_point_request, build_critical_point_report
+                    )
+                    if is_critical_point_request(low_intent):
+                        critical_snapshot = stability._selected_critical_point_snapshot(pid, oid)
+                        critical_report = build_critical_point_report(
+                            critical_snapshot, plant_id=pid, plant_name=plant.get("name", "")
+                        )
+                        return stability._safe(
+                            critical_report.get("answer", "Critical-point evidence is unavailable."),
+                            domain="critical_equipment",
+                            evidence_status="EVIDENCE_AVAILABLE" if critical_report.get("status") == "OK" else "NO_DATA",
+                            evidence_mode=critical_report.get("mode"),
+                            count=critical_report.get("count", 0),
+                            source_row_count=critical_report.get("source_row_count", 0),
+                            duplicate_rows_collapsed=critical_report.get("duplicate_rows_collapsed", 0),
+                            evidence=critical_report.get("evidence", []),
+                            blocked=critical_report.get("status") == "NO_DATA",
+                            reason="SELECTED_PLANT_DATA_UNAVAILABLE" if critical_report.get("status") == "NO_DATA" else None,
+                            plant_id=pid, plant_name=plant.get("name"),
+                        )
+                except Exception as critical_report_error:
+                    print(
+                        "ANVIQO_CRITICAL_POINT_REPORT_ERROR "
+                        f"error={type(critical_report_error).__name__}",
+                        flush=True,
+                    )
+                    return stability._safe(
+                        "ANVI could not build the critical-point report from the selected plant's onboarded PCI records. "
+                        "No other plant's data was used; unavailable fields remain UNAVAILABLE.",
+                        domain="critical_equipment", evidence_status="ERROR",
+                        reason="CRITICAL_POINT_REPORT_ERROR",
+                        error_type=type(critical_report_error).__name__,
+                        plant_id=pid, plant_name=plant.get("name"),
+                    )
                 if any(x in low_intent for x in (
                     "current plant health", "what is the current plant health",
                     "plant health", "overall plant health", "health of the plant"

@@ -9,6 +9,8 @@ on:
       - "test_plant_scoped_auth.py"
       - "anvi_chat_stability_v2.py"
       - "anvi_critical_point_report.py"
+      - "anvi_tenant_context_autofix.py"
+      - "tests/test_critical_point_membership_wrapper.py"
       - "tests/test_critical_point_report.py"
       - "anvi_universal_command_centre.py"
       - "test_universal_command_centre_tenant.py"
@@ -53,7 +55,10 @@ jobs:
       - name: Validate complete client acceptance corpus
         run: >-
           pytest -q tests/test_critical_point_report.py
+          tests/test_critical_point_membership_wrapper.py
           tests/test_client_acceptance_question_bank.py
           test_plant_scoped_auth.py
           test_universal_command_centre_tenant.py
           tests/test_public_login_links.py
+
+# Keep the critical-point membership wrapper regression in the acceptance gate.
