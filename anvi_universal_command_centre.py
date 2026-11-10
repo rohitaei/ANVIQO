@@ -16,7 +16,7 @@ from typing import Any
 
 # Keep the same simulated plant observation stable across adjacent dashboard
 # and conversational reads. Cache keys include both tenant identifiers.
-_TENANT_SNAPSHOT_CACHE: dict[tuple[str, str], tuple[float, dict[str, Any]]] = {}
+_TENANT_SNAPSHOT_CACHE: dict[tuple[str, str], tuple[float, str, dict[str, Any]]] = {}
 _TENANT_SNAPSHOT_CACHE_TTL = 15.0
 
 
@@ -56,11 +56,9 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
         organization_id = ""
     cache_key = (organization_id, str(plant_id))
     now = time.monotonic()
-    cached = _TENANT_SNAPSHOT_CACHE.get(cache_key)
-    if cached and now - cached[0] < _TENANT_SNAPSHOT_CACHE_TTL:
-        return cached[1]
-    if cached:
-        _TENANT_SNAPSHOT_CACHE.pop(cache_key, None)
+    for old_key, old_value in list(_TENANT_SNAPSHOT_CACHE.items()):
+        if now - old_value[0] >= _TENANT_SNAPSHOT_CACHE_TTL:
+            _TENANT_SNAPSHOT_CACHE.pop(old_key, None)
     try:
         import anvi_plant_ingestion_runtime as ingestion
         import anvi_tenant_store as store
@@ -78,7 +76,25 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
         return None
 
     if not rows:
+        _TENANT_SNAPSHOT_CACHE.pop(cache_key, None)
         return None
+
+    # Re-check the selected plant's current source rows before reusing a
+    # simulated snapshot. Onboarding changes invalidate the cache immediately.
+    fingerprint = json.dumps(
+        [
+            (str(row[1] or ""), str(row[6] or ""), str(row[8] or ""),
+             row[9] if isinstance(row[9], (dict, list)) else str(row[9] or ""),
+             str(row[10] or ""))
+            for row in rows
+        ],
+        sort_keys=True, default=str, separators=(",", ":"),
+    )
+    cached = _TENANT_SNAPSHOT_CACHE.get(cache_key)
+    if cached and now - cached[0] < _TENANT_SNAPSHOT_CACHE_TTL and cached[1] == fingerprint:
+        return cached[2]
+    if cached:
+        _TENANT_SNAPSHOT_CACHE.pop(cache_key, None)
 
     points: list[dict[str, Any]] = []
     areas: dict[str, dict[str, Any]] = {}
@@ -190,7 +206,7 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
         "scada_control": False,
     }
     if is_simulation:
-        _TENANT_SNAPSHOT_CACHE[cache_key] = (time.monotonic(), snapshot)
+        _TENANT_SNAPSHOT_CACHE[cache_key] = (time.monotonic(), fingerprint, snapshot)
     return snapshot
 
 
