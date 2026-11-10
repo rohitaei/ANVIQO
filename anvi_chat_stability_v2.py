@@ -475,13 +475,11 @@ def _answer(text):
     # Critical-point reporting is an evidence request, not generic RAG.
     # Route every common wording to the same selected-plant snapshot used by
     # the health summary. The formatter deduplicates tags and never truncates.
-    critical_point_request = any(term in low_text for term in (
-        "critical equipment", "which equipment is critical",
-        "critical point", "critical-point", "critical points",
-        "critical tags", "critical tag", "critical count",
-        "unique critical", "all critical", "every critical",
-        "return every unique critical", "show all critical",
-    ))
+    try:
+        from anvi_critical_point_report import is_critical_point_request
+        critical_point_request = is_critical_point_request(low_text)
+    except Exception:
+        critical_point_request = False
     if critical_point_request:
         try:
             from anvi_critical_point_report import build_critical_point_report
