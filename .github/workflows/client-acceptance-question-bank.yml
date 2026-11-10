@@ -6,6 +6,7 @@ on:
     paths:
       - "tests/data/anviqo_client_acceptance_questions.json"
       - "tests/test_client_acceptance_question_bank.py"
+      - "test_plant_scoped_auth.py"
       - ".github/workflows/client-acceptance-question-bank.yml"
   push:
     branches: [client-acceptance-question-bank-20261103]
