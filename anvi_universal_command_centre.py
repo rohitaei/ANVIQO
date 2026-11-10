@@ -43,17 +43,22 @@ def _active_plant() -> str:
 def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
     """Build a dashboard-compatible snapshot from tenant-scoped knowledge.
 
-    Return None when the selected plant has no indexed data so callers can
-    retain the legacy primary-plant demo behaviour rather than fabricating
-    live values.
+    Both the organization and plant identity are mandatory. Missing tenant
+    context fails closed; a plant-only lookup could otherwise mix records
+    across organizations if identifiers or imported data are inconsistent.
     """
     if not plant_id:
         return None
     try:
         from flask import has_request_context, session
-        organization_id = str(session.get("organization_id") or "").strip() if has_request_context() else ""
+        if not has_request_context():
+            return None
+        organization_id = str(session.get("organization_id") or "").strip()
     except Exception:
-        organization_id = ""
+        return None
+    if not organization_id:
+        return None
+
     cache_key = (organization_id, str(plant_id))
     now = time.monotonic()
     for old_key, old_value in list(_TENANT_SNAPSHOT_CACHE.items()):
@@ -68,8 +73,8 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
             cur = conn.cursor()
             cur.execute(
                 f"SELECT record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content "
-                f"FROM anviqo_plant_knowledge WHERE plant_id={p} ORDER BY created_at DESC",
-                (plant_id,),
+                f"FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC",
+                (plant_id, organization_id),
             )
             rows = cur.fetchall()
     except Exception:
@@ -200,6 +205,7 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
         "points": points,
         "records": points,
         "plant_id": plant_id,
+        "organization_id": organization_id,
         "safety": dict(SAFETY),
         "read_only": True,
         "plc_write": False,

@@ -42,9 +42,11 @@ def test_active_tenant_uses_tenant_scoped_knowledge(monkeypatch):
     app.secret_key = "test"
     with app.test_request_context("/"):
         session["plant_id"] = "plant_new"
+        session["organization_id"] = "org_new"
         snapshot = adapter._tenant_snapshot("plant_new")
 
     assert snapshot["plant_id"] == "plant_new"
+    assert snapshot["organization_id"] == "org_new"
     assert snapshot["total_io"] == 2
     assert snapshot["mode"] == "ONBOARDING_DATA"
     assert {p["tag"] for p in snapshot["points"]} == {"PT-901", ""}
@@ -87,8 +89,10 @@ def test_two_plants_never_leak_command_centre_data(monkeypatch):
     app.secret_key = "test"
     with app.test_request_context("/"):
         session["plant_id"] = "plant_a"
+        session["organization_id"] = "org_a"
         a = adapter.get_live_pci_snapshot(lambda: {"source": "legacy"})
         session["plant_id"] = "plant_b"
+        session["organization_id"] = "org_a"
         b = adapter.get_live_pci_snapshot(lambda: {"source": "legacy"})
 
     assert a["plant_id"] == "plant_a"
