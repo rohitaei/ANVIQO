@@ -10,6 +10,19 @@ import re
 from typing import Any
 
 
+def is_critical_point_request(question: Any) -> bool:
+    """Recognize natural-language requests for the complete critical-point list."""
+    q = " ".join(str(question or "").lower().split())
+    terms = (
+        "critical equipment", "which equipment is critical",
+        "critical point", "critical-point", "critical points",
+        "critical tags", "critical tag", "critical count",
+        "unique critical", "all critical", "every critical",
+        "return every unique critical", "show all critical",
+    )
+    return any(term in q for term in terms)
+
+
 def _normalise_tag(value: Any) -> str:
     return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
