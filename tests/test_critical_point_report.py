@@ -78,9 +78,9 @@ def test_report_includes_all_onboarded_high_criticality_tags_even_without_alarm_
         }
         for tag, name, value, unit, address in [
             ("AT_201", "Mill inlet O2", 8.2, "%", "PIW 256"),
-            ("AT_202", "Mill inlet CO", 0.04, "%", "PIW 258"),
+            ("AT_202", "Mill inlet CO", 88.82, "ppm", "PIW 258"),
             ("LT_302", "Mill bed height", 55.0, "%", "PIW 262"),
-            ("PT_303", "Mill outlet gas pressure", 68.0, "mbar", "PIW 260"),
+            ("PT_303", "Mill outlet gas pressure", 68.0, "mmWC", "PIW 260"),
         ]
     ]
     result = build_critical_point_report(
@@ -128,5 +128,43 @@ def test_simulation_source_never_overrides_selected_plant_pci_evidence():
     assert "critical_spares.xlsx" not in result["answer"]
     assert "Unit: UNAVAILABLE" in result["answer"]
     assert "Configured limit: UNAVAILABLE" in result["answer"]
+    assert result["plc_write"] is False
+    assert result["scada_control"] is False
+
+
+
+def test_documented_interlock_reference_is_not_mislabelled_as_live_configured_limit():
+    point = {
+        "tag": "AT_201",
+        "name": "Mill inlet O2",
+        "area": "VRM / MILL",
+        "state": "HEALTHY",
+        "value": 60.28,
+        "timestamp": "2026-11-10T20:12:07Z",
+        "source": "PCI UPDATED DRAWING.xlsx",
+        "mode": "SIMULATION",
+        "metadata": {
+            "criticality": "HIGH",
+            "engineering_unit": "%",
+            "engineering_unit_source": "TMLPCI-ANDE-15-AUT-DE-D0055-01-0.pdf, page 5",
+            "documented_interlock_reference": "AT_201_O2_LVL_VRM_IL: oxygen at VRM inlet >12% (start and run interlock)",
+            "documented_interlock_source": "TMLPCI-ANDE-15-AUT-DE-D0055-01-0.pdf, page 5",
+            "configuration_status": "DOCUMENT_REFERENCE_ONLY; current PLC/HMI setting not verified",
+        },
+    }
+    result = build_critical_point_report(
+        {"mode": "SIMULATION", "source": "SELECTED_PLANT_HIGH_CRITICALITY_PCI_KNOWLEDGE",
+         "critical_count": 1, "points": [point]},
+        plant_id="primary-plant", plant_name="Primary Plant",
+    )
+    assert "Unit: %" in result["answer"]
+    assert "Configured limit: UNAVAILABLE" in result["answer"]
+    assert "Documented interlock reference (not proof of current PLC/HMI setting): AT_201_O2_LVL_VRM_IL: oxygen at VRM inlet >12%" in result["answer"]
+    assert "TMLPCI-ANDE-15-AUT-DE-D0055-01-0.pdf, page 5" in result["answer"]
+    assert "Simulation scaling: UNVERIFIED" in result["answer"]
+    assert "simulated values must not be compared with documented engineering limits" in result["answer"]
+    assert result["evidence"][0]["configured_limit"] == "UNAVAILABLE"
+    assert result["evidence"][0]["documented_interlock_reference"].startswith("AT_201_O2_LVL_VRM_IL")
+    assert result["evidence"][0]["simulation_scale_status"].startswith("UNVERIFIED")
     assert result["plc_write"] is False
     assert result["scada_control"] is False
