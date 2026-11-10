@@ -344,6 +344,66 @@ def _selected_pci_snapshot():
     except Exception:
         return {}
 
+def _selected_critical_point_snapshot(plant_id, organization_id):
+    """Build the critical-point view from selected-plant HIGH-criticality PCI
+    records, enriching each record only with a same-tag selected-plant snapshot.
+    """
+    store = _store()
+    if not store:
+        raise RuntimeError("SELECTED_PLANT_TENANT_STORE_UNAVAILABLE")
+    p = store._placeholder()
+    fields = ",".join(NAMES)
+    clauses = [f"plant_id={p}", f"record_type={p}",
+               "upper(coalesce(metadata->>'criticality',''))='HIGH'"]
+    params = [plant_id, "INSTRUMENT"]
+    if organization_id:
+        clauses.append(f"organization_id={p}")
+        params.append(organization_id)
+    rows = _execute(
+        f"SELECT {fields} FROM anviqo_plant_knowledge "
+        f"WHERE {' AND '.join(clauses)} ORDER BY upper(coalesce(nullif(tag,''),external_id))",
+        params,
+    )
+
+    snapshot = dict(_selected_pci_snapshot() or {})
+    live_points = snapshot.get("points") or snapshot.get("records") or []
+    live_by_tag = {}
+    for live in live_points:
+        if isinstance(live, dict):
+            key = _norm(live.get("tag") or live.get("external_id"))
+            if key and key not in live_by_tag:
+                live_by_tag[key] = live
+
+    points = []
+    seen = set()
+    for row in rows:
+        meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        tag = str(row.get("tag") or row.get("external_id") or "").strip()
+        key = _norm(tag)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        live = live_by_tag.get(key, {})
+        point = dict(live)
+        point.update({
+            "tag": tag,
+            "external_id": row.get("external_id") or tag,
+            "description": row.get("name") or row.get("service") or meta.get("description") or "",
+            "area": row.get("area") or meta.get("area") or "",
+            "source": row.get("source") or "SELECTED_PLANT_PCI_KNOWLEDGE",
+            "metadata": {**meta, "criticality": "HIGH"},
+        })
+        if not live.get("state") and not live.get("status"):
+            point["state"] = "HIGH_CRITICALITY"
+        point["simulation_source"] = live.get("source") if live else ""
+        points.append(point)
+
+    snapshot["points"] = points
+    snapshot["critical_count"] = len(points)
+    snapshot["source"] = "SELECTED_PLANT_HIGH_CRITICALITY_PCI_KNOWLEDGE"
+    snapshot["mode"] = snapshot.get("mode") or "ONBOARDING_DATA"
+    return snapshot
+
 
 def _exact_answer(text,rows,plant):
     requested=_candidate(text)
@@ -483,7 +543,7 @@ def _answer(text):
     if critical_point_request:
         try:
             from anvi_critical_point_report import build_critical_point_report
-            snap = _selected_pci_snapshot()
+            snap = _selected_critical_point_snapshot(pid, oid)
             report = build_critical_point_report(
                 snap, plant_id=pid, plant_name=plant.get("name", "")
             )
