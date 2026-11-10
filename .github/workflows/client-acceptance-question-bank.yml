@@ -2,11 +2,14 @@ name: ANVIQO Client Acceptance Question Bank
 
 on:
   pull_request:
-    branches: [main, audit/demo-readiness-pr80-20261103]
+    branches: [main, audit/demo-readiness-pr80-20261103, client-acceptance-question-bank-20261103]
     paths:
       - "tests/data/anviqo_client_acceptance_questions.json"
       - "tests/test_client_acceptance_question_bank.py"
       - "test_plant_scoped_auth.py"
+      - "anvi_chat_stability_v2.py"
+      - "anvi_critical_point_report.py"
+      - "tests/test_critical_point_report.py"
       - ".github/workflows/client-acceptance-question-bank.yml"
   push:
     branches: [client-acceptance-question-bank-20261103]
@@ -14,6 +17,9 @@ on:
       - "tests/data/anviqo_client_acceptance_questions.json"
       - "tests/test_client_acceptance_question_bank.py"
       - "test_plant_scoped_auth.py"
+      - "anvi_chat_stability_v2.py"
+      - "anvi_critical_point_report.py"
+      - "tests/test_critical_point_report.py"
       - ".github/workflows/client-acceptance-question-bank.yml"
 
 permissions:
@@ -36,5 +42,6 @@ jobs:
         run: python -m pip install --upgrade pip pytest && python -m pip install -r requirements.txt
       - name: Validate complete client acceptance corpus
         run: >-
-          pytest -q tests/test_client_acceptance_question_bank.py
+          pytest -q tests/test_critical_point_report.py
+          tests/test_client_acceptance_question_bank.py
           test_plant_scoped_auth.py

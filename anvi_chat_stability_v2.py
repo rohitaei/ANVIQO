@@ -472,35 +472,42 @@ def _answer(text):
         except Exception:
             pass
 
-    if any(x in low_text for x in (
-        "show critical equipment", "critical equipment",
-        "which equipment is critical"
-    )):
+    # Critical-point reporting is an evidence request, not generic RAG.
+    # Route every common wording to the same selected-plant snapshot used by
+    # the health summary. The formatter deduplicates tags and never truncates.
+    try:
+        from anvi_critical_point_report import is_critical_point_request
+        critical_point_request = is_critical_point_request(low_text)
+    except Exception:
+        critical_point_request = False
+    if critical_point_request:
         try:
+            from anvi_critical_point_report import build_critical_point_report
             snap = _selected_pci_snapshot()
-            points = [
-                p for p in (snap.get("points") or [])
-                if isinstance(p,dict) and str(p.get("state","")).upper()=="CRITICAL"
-            ]
-            points.sort(key=lambda p: str(p.get("tag","")))
-            lines = [
-                "ANVI — Critical Equipment (SIMULATION)",
-                f"Equipment currently in simulated CRITICAL state: {len(points)}."
-            ]
-            for p in points[:15]:
-                lines.append(
-                    f"{p.get('tag','UNKNOWN')} — {p.get('description','No description')} "
-                    f"— Area: {p.get('area','UNKNOWN')} — Value: {p.get('value','N/A')}."
-                )
-            if not points:
-                lines.append("No equipment is in simulated CRITICAL state in this snapshot.")
-            lines.append("Evidence source: PCI DEMO STREAM. Critical here means current simulated condition, not permanent equipment criticality.")
-            lines.append("Safety: ANVI is read-only; no PLC/SCADA write. Human decision required.")
-            return _safe("\\n".join(lines), domain="critical_equipment", evidence_status="EVIDENCE_AVAILABLE",
-                evidence_mode="SIMULATION", count=len(points), evidence=points[:15],
-                plant_id=pid, plant_name=plant.get("name"))
-        except Exception:
-            pass
+            report = build_critical_point_report(
+                snap, plant_id=pid, plant_name=plant.get("name", "")
+            )
+            return _safe(
+                report.get("answer", "Critical-point evidence is unavailable."),
+                domain="critical_equipment",
+                evidence_status="EVIDENCE_AVAILABLE" if report.get("status") == "OK" else "NO_DATA",
+                evidence_mode=report.get("mode"),
+                count=report.get("count", 0),
+                source_row_count=report.get("source_row_count", 0),
+                duplicate_rows_collapsed=report.get("duplicate_rows_collapsed", 0),
+                evidence=report.get("evidence", []),
+                blocked=report.get("status") == "NO_DATA",
+                reason="SELECTED_PLANT_DATA_UNAVAILABLE" if report.get("status") == "NO_DATA" else None,
+                plant_id=pid, plant_name=plant.get("name"),
+            )
+        except Exception as exc:
+            return _safe(
+                "ANVI could not build the critical-point report from the selected plant snapshot. "
+                "No other plant's data was used; report fields are unavailable.",
+                domain="critical_equipment", evidence_status="ERROR",
+                reason="CRITICAL_POINT_REPORT_ERROR", error_type=type(exc).__name__,
+                plant_id=pid, plant_name=plant.get("name"),
+            )
 
     # Broad What Changed is a Command Centre evidence request.
     # Read only the selected plant's process-local simulation evidence.
