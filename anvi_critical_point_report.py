@@ -131,12 +131,16 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
         action = str(meta.get("recommended_human_action") or meta.get("human_action") or (
             "Authorized operations/instrumentation personnel: verify signal quality, engineering units, operating mode, approved alarm limits and process trend against current plant documents; follow site SOP. Do not act on this simulation alone."
         ))
-        point_source = str(point.get("simulation_source") or point.get("source") or source)
+        # Selected-plant PCI is authoritative for instrument identity.
+        # Simulation fixture sources (including spare inventory) are not instrument evidence.
+        point_source = str(point.get("source") or meta.get("source_document") or source)
+        measurement_provenance = "SIMULATION SNAPSHOT (not live telemetry)" if mode == "SIMULATION" else "UNAVAILABLE"
         lines.extend([
             f"{tag} | Area: {area} | Description: {description}",
             f"Measured value: {value} | Unit: {unit} | Timestamp: {timestamp}",
             f"Configured limit: {limit}",
-            f"Evidence: {point_source}; state={str(point.get('state') or point.get('status') or 'UNAVAILABLE').upper()}.",
+            f"Instrument evidence: {point_source}; state={str(point.get('state') or point.get('status') or 'UNAVAILABLE').upper()}.",
+            f"Measurement provenance: {measurement_provenance}.",
             f"Severity reason: {severity_reason}",
             f"Recommended human action: {action}",
         ])
@@ -144,6 +148,7 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
             "tag": tag, "area": area, "description": description,
             "measured_value": value, "unit": unit, "timestamp": timestamp,
             "configured_limit": limit, "evidence": point_source,
+            "measurement_provenance": measurement_provenance,
             "severity": ("CRITICAL" if point_state == "CRITICAL" else "HIGH CRITICALITY"), "severity_reason": severity_reason,
             "recommended_human_action": action,
         })
