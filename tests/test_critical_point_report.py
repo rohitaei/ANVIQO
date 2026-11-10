@@ -96,3 +96,37 @@ def test_report_includes_all_onboarded_high_criticality_tags_even_without_alarm_
     assert "Configured limit: UNAVAILABLE" in result["answer"]
     assert result["plc_write"] is False
     assert result["scada_control"] is False
+
+
+def test_simulation_source_never_overrides_selected_plant_pci_evidence():
+    points = [
+        {
+            "tag": tag,
+            "description": tag,
+            "state": "HEALTHY",
+            "value": 12.3,
+            "timestamp": "2026-11-10T19:11:42Z",
+            "source": "PCI UPDATED DRAWING.xlsx",
+            "simulation_source": spare_source,
+            "metadata": {"criticality": "HIGH"},
+        }
+        for tag, spare_source in [
+            ("LT_302", "database/spares/critical_spares.xlsx#LT"),
+            ("PT_303", "database/spares/critical_spares.xlsx#PT"),
+        ]
+    ]
+    result = build_critical_point_report(
+        {"mode": "SIMULATION", "source": "SELECTED_PLANT_HIGH_CRITICALITY_PCI_KNOWLEDGE",
+         "critical_count": 2, "points": points},
+        plant_id="primary-plant", plant_name="Primary Plant",
+    )
+    assert result["count"] == 2
+    assert all(item["evidence"] == "PCI UPDATED DRAWING.xlsx" for item in result["evidence"])
+    assert all(item["measurement_provenance"] == "SIMULATION SNAPSHOT (not live telemetry)" for item in result["evidence"])
+    assert "Instrument evidence: PCI UPDATED DRAWING.xlsx" in result["answer"]
+    assert "Measurement provenance: SIMULATION SNAPSHOT (not live telemetry)" in result["answer"]
+    assert "critical_spares.xlsx" not in result["answer"]
+    assert "Unit: UNAVAILABLE" in result["answer"]
+    assert "Configured limit: UNAVAILABLE" in result["answer"]
+    assert result["plc_write"] is False
+    assert result["scada_control"] is False
