@@ -144,7 +144,8 @@ def test_same_plant_id_isolated_between_organizations_and_cache(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "anvi_plant_ingestion_runtime", SimpleNamespace(init_schema=lambda: None))
     monkeypatch.setitem(sys.modules, "anvi_tenant_store", Store)
-    monkeypatch.setitem(sys.modules, "anvi_verified_pci_adapter", SimpleNamespace(is_bound=lambda *args: False))
+    monkeypatch.setitem(sys.modules, "anvi_verified_pci_adapter", SimpleNamespace(is_bound=lambda *args: True))
+    monkeypatch.setitem(sys.modules, "pci_live_simulator", SimpleNamespace(simulate_point=lambda record: {"state": "HEALTHY", "value": 1, "changed": False, "event_active": False, "timestamp": "test", "source": "TEST SIMULATION"}))
     adapter._TENANT_SNAPSHOT_CACHE.clear()
 
     app = Flask(__name__)
