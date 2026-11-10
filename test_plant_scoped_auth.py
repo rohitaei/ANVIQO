@@ -1,6 +1,7 @@
 import os
 import io
 import sqlite3
+import time
 from pathlib import Path
 
 
@@ -129,6 +130,12 @@ def test_fresh_plant_knowledge_isolation_after_onboarding(tmp_path, monkeypatch)
     assert r.status_code == 201
     r = client.post(f"/api/admin/onboarding/plant/{plant_a}/ingest")
     assert r.status_code in (200, 202)
+    for _ in range(100):
+        job = client.get(f"/api/admin/onboarding/plant/{plant_a}/ingest-status").get_json()
+        if job.get("job_status") in {"COMPLETED", "FAILED"}:
+            break
+        time.sleep(0.05)
+    assert job.get("job_status") == "COMPLETED", job
 
     with client.session_transaction() as sess:
         sess.update({"username": "operator-beta", "user_id": user_b, "organization_id": org_b,
@@ -139,15 +146,23 @@ def test_fresh_plant_knowledge_isolation_after_onboarding(tmp_path, monkeypatch)
     assert r.status_code == 201
     r = client.post(f"/api/admin/onboarding/plant/{plant_b}/ingest")
     assert r.status_code in (200, 202)
+    for _ in range(100):
+        job = client.get(f"/api/admin/onboarding/plant/{plant_b}/ingest-status").get_json()
+        if job.get("job_status") in {"COMPLETED", "FAILED"}:
+            break
+        time.sleep(0.05)
+    assert job.get("job_status") == "COMPLETED", job
 
     # The selected plant can see its own record and cannot see the other plant's record.
     own = client.get("/api/plant/knowledge?q=BB-2002")
-    assert own.status_code == 200
-    assert own.get_json()["count"] == 1
-    assert own.get_json()["records"][0]["tag"] == "BB-2002"
+    assert own.status_code == 200, own.get_data(as_text=True)
+    own_data = own.get_json() or {}
+    assert own_data.get("count") == 1, own_data
+    assert own_data["records"][0]["tag"] == "BB-2002"
     foreign = client.get("/api/plant/knowledge?q=AA-1001")
-    assert foreign.status_code == 200
-    assert foreign.get_json()["count"] == 0
+    assert foreign.status_code == 200, foreign.get_data(as_text=True)
+    foreign_data = foreign.get_json() or {}
+    assert foreign_data.get("count") == 0, foreign_data
 
     # ANVI must answer from the selected plant only.
     answer = client.post("/api/ask", json={"question": "Tell me about AA-1001"}).get_json()
