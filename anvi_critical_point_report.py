@@ -68,7 +68,10 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
 
     critical = [
         p for p in points
-        if isinstance(p, dict) and str(p.get("state") or p.get("status") or "").upper() == "CRITICAL"
+        if isinstance(p, dict) and (
+            str(p.get("state") or p.get("status") or "").upper() == "CRITICAL"
+            or str(_metadata(p).get("criticality") or "").upper() == "HIGH"
+        )
     ]
     unique: dict[str, dict[str, Any]] = {}
     duplicate_rows = 0
@@ -116,8 +119,14 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
         timestamp = _field(point, meta, "timestamp", "observed_at", "sample_time", "updated_at")
         limit = _field(point, meta, "configured_limit", "alarm_limit", "critical_limit", "high_high_limit", "low_low_limit", "HH_limit", "LL_limit")
         description = str(point.get("description") or point.get("name") or meta.get("description") or "UNAVAILABLE")
+        point_state = str(point.get("state") or point.get("status") or "UNAVAILABLE").upper()
+        configured_criticality = str(meta.get("criticality") or point.get("criticality") or "").upper()
         severity_reason = str(meta.get("severity_reason") or point.get("severity_reason") or (
-            "Snapshot state is CRITICAL. No validated alarm threshold/comparator was supplied; a process-limit breach cannot be confirmed."
+            "Selected-plant snapshot state is CRITICAL. No validated alarm threshold/comparator was supplied; a process-limit breach cannot be confirmed."
+            if point_state == "CRITICAL" else
+            "Instrument is configured with HIGH criticality in the selected plant's onboarded PCI record. This is an asset classification, not proof of an active alarm; live alarm severity and process-limit breach are not established."
+            if configured_criticality == "HIGH" else
+            "Critical state was supplied by the selected-plant snapshot; no validated alarm threshold/comparator was supplied."
         ))
         action = str(meta.get("recommended_human_action") or meta.get("human_action") or (
             "Authorized operations/instrumentation personnel: verify signal quality, engineering units, operating mode, approved alarm limits and process trend against current plant documents; follow site SOP. Do not act on this simulation alone."
@@ -135,7 +144,7 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
             "tag": tag, "area": area, "description": description,
             "measured_value": value, "unit": unit, "timestamp": timestamp,
             "configured_limit": limit, "evidence": point_source,
-            "severity": "CRITICAL", "severity_reason": severity_reason,
+            "severity": ("CRITICAL" if point_state == "CRITICAL" else "HIGH CRITICALITY"), "severity_reason": severity_reason,
             "recommended_human_action": action,
         })
 
