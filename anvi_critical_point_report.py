@@ -80,14 +80,11 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
         tag = str(point.get("tag") or point.get("external_id") or point.get("id") or "").strip()
         key = _normalise_tag(tag)
         if not key:
-            # Preserve an untagged source row without inventing an engineering tag.
             key = "UNTAGGED:" + str(point.get("id") or len(unique) + 1)
             tag = "TAG UNAVAILABLE (" + key.split(":", 1)[1] + ")"
         if key in unique:
             duplicate_rows += 1
             previous = unique[key]
-            # Prefer the row with the richer evidence payload; never merge values
-            # from different records into a fabricated point.
             old_meta = _metadata(previous)
             old_score = sum(v not in (None, "", {}, []) for v in previous.values()) + sum(v not in (None, "", {}, []) for v in old_meta.values())
             new_score = sum(v not in (None, "", {}, []) for v in point.values()) + sum(v not in (None, "", {}, []) for v in meta.values())
@@ -116,8 +113,11 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
         area = str(point.get("area") or meta.get("area") or "UNAVAILABLE")
         value = _field(point, meta, "value", "measured_value", "current_value")
         unit = _field(point, meta, "unit", "engineering_unit", "engg_unit", "units")
+        unit_source = _field(point, meta, "engineering_unit_source", "unit_source")
         timestamp = _field(point, meta, "timestamp", "observed_at", "sample_time", "updated_at")
         limit = _field(point, meta, "configured_limit", "alarm_limit", "critical_limit", "high_high_limit", "low_low_limit", "HH_limit", "LL_limit")
+        documented_interlock = _field(point, meta, "documented_interlock_reference", "documented_process_limit", "process_limit_reference")
+        interlock_source = _field(point, meta, "documented_interlock_source", "engineering_reference_source")
         description = str(point.get("description") or point.get("name") or meta.get("description") or "UNAVAILABLE")
         point_state = str(point.get("state") or point.get("status") or "UNAVAILABLE").upper()
         configured_criticality = str(meta.get("criticality") or point.get("criticality") or "").upper()
@@ -131,24 +131,38 @@ def build_critical_point_report(snapshot: dict[str, Any] | None, plant_id: str =
         action = str(meta.get("recommended_human_action") or meta.get("human_action") or (
             "Authorized operations/instrumentation personnel: verify signal quality, engineering units, operating mode, approved alarm limits and process trend against current plant documents; follow site SOP. Do not act on this simulation alone."
         ))
-        # Selected-plant PCI is authoritative for instrument identity.
-        # Simulation fixture sources (including spare inventory) are not instrument evidence.
         point_source = str(point.get("source") or meta.get("source_document") or source)
         measurement_provenance = "SIMULATION SNAPSHOT (not live telemetry)" if mode == "SIMULATION" else "UNAVAILABLE"
+        scale_status = "UNVERIFIED — simulated values must not be compared with documented engineering limits." if mode == "SIMULATION" and unit != "UNAVAILABLE" else "UNAVAILABLE"
         lines.extend([
             f"{tag} | Area: {area} | Description: {description}",
             f"Measured value: {value} | Unit: {unit} | Timestamp: {timestamp}",
             f"Configured limit: {limit}",
+        ])
+        if documented_interlock != "UNAVAILABLE":
+            lines.append(f"Documented interlock reference (not proof of current PLC/HMI setting): {documented_interlock}")
+        if interlock_source != "UNAVAILABLE":
+            lines.append(f"Engineering reference source: {interlock_source}")
+        if unit_source != "UNAVAILABLE":
+            lines.append(f"Engineering unit source: {unit_source}")
+        lines.extend([
             f"Instrument evidence: {point_source}; state={str(point.get('state') or point.get('status') or 'UNAVAILABLE').upper()}.",
             f"Measurement provenance: {measurement_provenance}.",
+        ])
+        if scale_status != "UNAVAILABLE":
+            lines.append(f"Simulation scaling: {scale_status}")
+        lines.extend([
             f"Severity reason: {severity_reason}",
             f"Recommended human action: {action}",
         ])
         evidence.append({
             "tag": tag, "area": area, "description": description,
-            "measured_value": value, "unit": unit, "timestamp": timestamp,
-            "configured_limit": limit, "evidence": point_source,
-            "measurement_provenance": measurement_provenance,
+            "measured_value": value, "unit": unit, "unit_source": unit_source,
+            "timestamp": timestamp, "configured_limit": limit,
+            "documented_interlock_reference": documented_interlock,
+            "documented_interlock_source": interlock_source,
+            "simulation_scale_status": scale_status,
+            "evidence": point_source, "measurement_provenance": measurement_provenance,
             "severity": ("CRITICAL" if point_state == "CRITICAL" else "HIGH CRITICALITY"), "severity_reason": severity_reason,
             "recommended_human_action": action,
         })
