@@ -29,12 +29,14 @@ def test_report_returns_every_unique_tag_and_collapses_duplicates():
     points.append(dict(points[0]))
     points[0]["metadata"] = {"unit": "degC", "high_high_limit": "120"}
     result = build_critical_point_report(
-        {"mode": "SIMULATION", "source": "PCI DEMO STREAM", "points": points},
+        {"mode": "SIMULATION", "source": "PCI DEMO STREAM", "critical": 27, "points": points},
         plant_id="plant-a", plant_name="Test Plant",
     )
     assert result["count"] == 26
     assert result["source_row_count"] == 27
     assert result["duplicate_rows_collapsed"] == 1
+    assert result["snapshot_reported_critical_count"] == "27"
+    assert result["count_reconciliation"] == "MATCH"
     for i in range(26):
         assert f"TAG_{i:03d}" in result["answer"]
     assert "Unit: degC" in result["answer"]
