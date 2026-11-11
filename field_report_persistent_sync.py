@@ -54,8 +54,16 @@ def get_applied(report_id: str, tag: str, quantity: float):
         """, (str(report_id), canonical, float(quantity)), True)
         # Read legacy ledger keys written before tag canonicalization so a
         # restart cannot accidentally apply the same report twice.
-        legacy = str(tag or "").strip().upper()
-        if not rows and legacy and legacy != canonical:
+        legacy_keys = list(dict.fromkeys((
+            str(tag or "").strip().upper(),
+            canonical.replace("-", "_"),
+            canonical.replace("-", " "),
+        )))
+        for legacy in legacy_keys:
+            if rows:
+                break
+            if not legacy or legacy == canonical:
+                continue
             rows = _exec("""
               SELECT before_qty, after_qty, transaction_id
               FROM anviqo_field_report_spare_sync
