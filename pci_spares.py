@@ -995,7 +995,7 @@ def answer_spare_query(question):
 
         answer = (
             "ANVI found 1 verified critical spare instrument record(s). "
-            "Source: critical spares in pci.xlsx.\n"
+            "Source: critical_spares.xlsx.\n"
             + _format_record(r)
         )
 
@@ -1901,7 +1901,10 @@ def _v18_identifier(q):
     # PT-304 and PT304 (and MCV-205/MCV205, etc.) resolve identically.
     explicit_tag = _extract_tag(q)
     if explicit_tag:
-        return explicit_tag.replace("_", "-")
+        canonical = explicit_tag.replace("_", "-")
+        # The critical-spares register uses PT-### identifiers while MCV
+        # identifiers retain the compact MCV### form.
+        return re.sub(r"^PT(?=\d)", "PT-", canonical)
 
     # Exact PCI inventory item.
     pos = q.find("PCI_")
