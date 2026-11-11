@@ -1,0 +1,15 @@
+{
+  "gateway_id": "anviqo-ot-gateway-01",
+  "tags": [
+    {
+      "tag": "PT_303",
+      "node_id": "ns=2;s=REPLACE_WITH_APPROVED_NODE_ID",
+      "unit": "mmWC"
+    },
+    {
+      "tag": "AT_201",
+      "node_id": "ns=2;s=REPLACE_WITH_APPROVED_NODE_ID",
+      "unit": "%"
+    }
+  ]
+}
