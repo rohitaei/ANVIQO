@@ -159,10 +159,13 @@ def persistent_field_report_query_bridge():
         f"Finding: {view.get('finding') or 'not stated'}. "
         f"Maintenance action: {view.get('maintenance_action') or 'not stated'}. "
         f"Outcome: {view.get('outcome') or 'not stated'}. "
-        f"Spare used: {view.get('spare_used') or 'none reported'}."
+        f"Recovery: {view.get('recovery_status') or 'not stated'}. "
+        f"Spare used: {view.get('spare_used') or 'none reported'}. "
+        f"Verification: {view.get('verification_status') or 'PENDING_VERIFICATION'}. "
+        f"Reported at: {view.get('created_at') or view.get('timestamp') or 'timestamp not recorded'}."
     )
     if view.get("verification_status") != "VERIFIED":
-        answer += " This is a human field report and remains PENDING_VERIFICATION."
+        answer += " This is a human field report and remains PENDING_VERIFICATION; it must not be treated as a verified fault diagnosis."
 
     return jsonify({
         "answer": answer,
