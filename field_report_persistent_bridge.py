@@ -122,6 +122,23 @@ def _best_report(question, reports, tag=""):
     return max(candidates, key=score)
 
 
+def _format_report_answer(view):
+    answer = (
+        f"I found a technician field report for {view.get('tag') or view.get('equipment') or 'the equipment'}. "
+        f"Observation: {view.get('observation') or 'not stated'}. "
+        f"Finding: {view.get('finding') or 'not stated'}. "
+        f"Maintenance action: {view.get('maintenance_action') or 'not stated'}. "
+        f"Outcome: {view.get('outcome') or 'not stated'}. "
+        f"Recovery: {view.get('recovery_status') or 'not stated'}. "
+        f"Spare used: {view.get('spare_used') or 'none reported'}. "
+        f"Verification: {view.get('verification_status') or 'PENDING_VERIFICATION'}. "
+        f"Reported at: {view.get('created_at') or view.get('timestamp') or 'timestamp not recorded'}."
+    )
+    if view.get("verification_status") != "VERIFIED":
+        answer += " This is a human field report and remains PENDING_VERIFICATION; it must not be treated as a verified fault diagnosis."
+    return answer
+
+
 @app.before_request
 def persistent_field_report_query_bridge():
     """Fallback for /api/ask when local Plant Memory has no report."""
@@ -153,19 +170,7 @@ def persistent_field_report_query_bridge():
         return None
 
     view = _report_view(report)
-    answer = (
-        f"I found a technician field report for {view.get('tag') or view.get('equipment') or 'the equipment'}. "
-        f"Observation: {view.get('observation') or 'not stated'}. "
-        f"Finding: {view.get('finding') or 'not stated'}. "
-        f"Maintenance action: {view.get('maintenance_action') or 'not stated'}. "
-        f"Outcome: {view.get('outcome') or 'not stated'}. "
-        f"Recovery: {view.get('recovery_status') or 'not stated'}. "
-        f"Spare used: {view.get('spare_used') or 'none reported'}. "
-        f"Verification: {view.get('verification_status') or 'PENDING_VERIFICATION'}. "
-        f"Reported at: {view.get('created_at') or view.get('timestamp') or 'timestamp not recorded'}."
-    )
-    if view.get("verification_status") != "VERIFIED":
-        answer += " This is a human field report and remains PENDING_VERIFICATION; it must not be treated as a verified fault diagnosis."
+    answer = _format_report_answer(view)
 
     return jsonify({
         "answer": answer,
