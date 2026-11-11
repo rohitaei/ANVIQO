@@ -1,9 +1,10 @@
 from pathlib import Path
-
-import field_report_persistent_bridge as bridge
-
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+import field_report_persistent_bridge as bridge
 
 
 def test_reports_module_has_filters_generation_and_download_exports():
