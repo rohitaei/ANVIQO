@@ -91,48 +91,48 @@ def _evidence(question):
             from pci_live_simulator import get_live_pci_snapshot
             snap = get_live_pci_snapshot() or {}
             if str(snap.get("mode", "")).upper() == "SIMULATION":
-            points = snap.get("points") or []
-            requested = _identifier(question)
-            requested_norm = re.sub(r"[-_ ]", "", requested).lower()
-            requested_point = next(
-                (
-                    p for p in points
-                    if isinstance(p, dict)
-                    and requested_norm
-                    and requested_norm == re.sub(r"[-_ ]", "", str(p.get("tag") or "")).lower()
-                ),
-                None,
-            )
-            evidence["simulation"] = {
-                "mode": snap.get("mode"),
-                "source": snap.get("source"),
-                "total_io": snap.get("total_io"),
-                "healthy": snap.get("healthy"),
-                "warning": snap.get("warning"),
-                "critical": snap.get("critical"),
-                "changed": snap.get("changed"),
-                "active_events": snap.get("active_events"),
-                "plant_health_score": snap.get("plant_health_score"),
-                "areas": snap.get("areas", []),
-                "requested_point": (
-                    {
-                        k: requested_point.get(k)
-                        for k in ("tag","description","area","value","state","event_active","changed","io_type","plc_address")
-                    }
-                    if requested_point else None
-                ),
-                "active_points": [
-                    {
-                        k: p.get(k)
-                        for k in ("tag","description","area","value","state","event_active","changed","io_type","plc_address")
-                    }
-                    for p in points
-                    if isinstance(p, dict) and (
-                        p.get("event_active") or p.get("changed") or
-                        str(p.get("state","")).upper() in ("WARNING","CRITICAL")
-                    )
-                ][:40],
-            }
+                points = snap.get("points") or []
+                requested = _identifier(question)
+                requested_norm = re.sub(r"[-_ ]", "", requested).lower()
+                requested_point = next(
+                    (
+                        p for p in points
+                        if isinstance(p, dict)
+                        and requested_norm
+                        and requested_norm == re.sub(r"[-_ ]", "", str(p.get("tag") or "")).lower()
+                    ),
+                    None,
+                )
+                evidence["simulation"] = {
+                    "mode": snap.get("mode"),
+                    "source": snap.get("source"),
+                    "total_io": snap.get("total_io"),
+                    "healthy": snap.get("healthy"),
+                    "warning": snap.get("warning"),
+                    "critical": snap.get("critical"),
+                    "changed": snap.get("changed"),
+                    "active_events": snap.get("active_events"),
+                    "plant_health_score": snap.get("plant_health_score"),
+                    "areas": snap.get("areas", []),
+                    "requested_point": (
+                        {
+                            k: requested_point.get(k)
+                            for k in ("tag","description","area","value","state","event_active","changed","io_type","plc_address")
+                        }
+                        if requested_point else None
+                    ),
+                    "active_points": [
+                        {
+                            k: p.get(k)
+                            for k in ("tag","description","area","value","state","event_active","changed","io_type","plc_address")
+                        }
+                        for p in points
+                        if isinstance(p, dict) and (
+                            p.get("event_active") or p.get("changed") or
+                            str(p.get("state","")).upper() in ("WARNING","CRITICAL")
+                        )
+                    ][:40],
+                }
         except Exception as exc:
             evidence["simulation_error"] = type(exc).__name__
     else:
