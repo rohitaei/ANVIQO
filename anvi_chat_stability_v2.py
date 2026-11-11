@@ -127,6 +127,16 @@ def _query_rows(plant_id,organization_id,identifier=None,terms=None,limit=120):
     if organization_id: clauses.append(f"organization_id={p}"); params.append(organization_id)
     if identifier:
         n=_norm(identifier)
+        if store._is_sqlite():
+            # SQLite is used by local installs and isolated acceptance tests.
+            # Keep the same tenant predicates while avoiding PostgreSQL-only
+            # regexp_replace and JSON/text casts.
+            exact=" OR ".join(f"upper(coalesce({c},''))={p}" for c in ("tag","external_id","name","service"))
+            sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND ({exact}) ORDER BY created_at DESC LIMIT {min(int(limit),80)}"
+            rows=_execute(sql,params+[str(identifier).strip().upper()]*4)
+            if rows: return rows
+            sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND (upper(coalesce(content,'')) LIKE {p} OR upper(coalesce(metadata,'')) LIKE {p}) ORDER BY created_at DESC LIMIT {min(int(limit),40)}"
+            return _execute(sql,params+[f"%{str(identifier).strip().upper()}%",f"%{str(identifier).strip().upper()}%"])
         exact=" OR ".join(f"regexp_replace(upper(coalesce({c},'')), '[^A-Z0-9]', '', 'g')={p}" for c in ("tag","external_id","name","service"))
         sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND ({exact}) ORDER BY created_at DESC LIMIT {min(int(limit),80)}"
         rows=_execute(sql,params+[n]*4)

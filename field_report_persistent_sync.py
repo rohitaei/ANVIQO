@@ -6,6 +6,14 @@ the applied field-report/report-id + tag + quantity record survives Render
 restarts; the existing local ledger remains the fallback.
 """
 from __future__ import annotations
+import re
+
+
+def _canonical_tag(tag: str) -> str:
+    """Use one stable key for equivalent engineering-tag separators."""
+    value = str(tag or "").strip().upper()
+    return re.sub(r"-+", "-", re.sub(r"[\s_]+", "-", value))
+
 
 
 def _neon_ready() -> bool:
@@ -37,19 +45,38 @@ def get_applied(report_id: str, tag: str, quantity: float):
         return None
     try:
         from anvi_neon_store import _exec
+        canonical = _canonical_tag(tag)
         rows = _exec("""
           SELECT before_qty, after_qty, transaction_id
           FROM anviqo_field_report_spare_sync
           WHERE report_id=%s AND tag=%s AND quantity=%s AND status='APPLIED'
           LIMIT 1
-        """, (str(report_id), str(tag).upper(), float(quantity)), True)
+        """, (str(report_id), canonical, float(quantity)), True)
+        # Read legacy ledger keys written before tag canonicalization so a
+        # restart cannot accidentally apply the same report twice.
+        legacy_keys = list(dict.fromkeys((
+            str(tag or "").strip().upper(),
+            canonical.replace("-", "_"),
+            canonical.replace("-", " "),
+        )))
+        for legacy in legacy_keys:
+            if rows:
+                break
+            if not legacy or legacy == canonical:
+                continue
+            rows = _exec("""
+              SELECT before_qty, after_qty, transaction_id
+              FROM anviqo_field_report_spare_sync
+              WHERE report_id=%s AND tag=%s AND quantity=%s AND status='APPLIED'
+              LIMIT 1
+            """, (str(report_id), legacy, float(quantity)), True)
         if not rows:
             return None
         before, after, transaction_id = rows[0]
         return {
             "status": "ALREADY_APPLIED",
             "inventory_changed": False,
-            "tag": str(tag).upper(),
+            "tag": canonical,
             "quantity": float(quantity),
             "before": before,
             "after": after,
@@ -72,7 +99,7 @@ def record_applied(report_id: str, tag: str, quantity: float, before, after, tra
           VALUES (%s,%s,%s,%s,%s,%s,'APPLIED')
           ON CONFLICT(report_id, tag, quantity) DO NOTHING
         """, (
-            str(report_id), str(tag).upper(), float(quantity),
+            str(report_id), _canonical_tag(tag), float(quantity),
             float(before), float(after), str(transaction_id or ""),
         ))
         return True

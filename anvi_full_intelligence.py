@@ -139,43 +139,43 @@ def build_context(question: str) -> Dict[str, Any]:
             from pci_live_simulator import get_live_pci_snapshot
             snap = get_live_pci_snapshot() or {}
             if str(snap.get("mode") or "").upper() == "SIMULATION":
-            out["live_observation"] = {
-                k: snap.get(k)
-                for k in (
-                    "mode", "source", "total_io", "healthy", "warning",
-                    "critical", "changed", "active_events", "plant_health_score",
-                    "areas",
-                )
-            }
-            points = snap.get("points") or []
-            if tag:
-                wanted = _norm(tag)
-                p = next(
-                    (x for x in points if isinstance(x, dict) and _norm(x.get("tag")) == wanted),
-                    None,
-                )
-                if p:
-                    out["requested_point"] = {
-                        k: p.get(k) for k in (
-                            "tag", "description", "area", "service", "value",
-                            "state", "changed", "event_active", "io_type",
-                            "plc_address", "source",
-                        )
-                    }
-            out["attention_points"] = [
-                {
-                    k: p.get(k) for k in (
-                        "tag", "description", "area", "value", "state",
-                        "changed", "event_active", "io_type", "plc_address",
+                out["live_observation"] = {
+                    k: snap.get(k)
+                    for k in (
+                        "mode", "source", "total_io", "healthy", "warning",
+                        "critical", "changed", "active_events", "plant_health_score",
+                        "areas",
                     )
                 }
-                for p in points
-                if isinstance(p, dict) and (
-                    p.get("changed") or p.get("event_active") or
-                    str(p.get("state") or "").upper() in ("WARNING", "CRITICAL")
-                )
-            ][:50]
-            out["sources"].append("PCI_LIVE_SIMULATOR")
+                points = snap.get("points") or []
+                if tag:
+                    wanted = _norm(tag)
+                    p = next(
+                        (x for x in points if isinstance(x, dict) and _norm(x.get("tag")) == wanted),
+                        None,
+                    )
+                    if p:
+                        out["requested_point"] = {
+                            k: p.get(k) for k in (
+                                "tag", "description", "area", "service", "value",
+                                "state", "changed", "event_active", "io_type",
+                                "plc_address", "source",
+                            )
+                        }
+                out["attention_points"] = [
+                    {
+                        k: p.get(k) for k in (
+                            "tag", "description", "area", "value", "state",
+                            "changed", "event_active", "io_type", "plc_address",
+                        )
+                    }
+                    for p in points
+                    if isinstance(p, dict) and (
+                        p.get("changed") or p.get("event_active") or
+                        str(p.get("state") or "").upper() in ("WARNING", "CRITICAL")
+                    )
+                ][:50]
+                out["sources"].append("PCI_LIVE_SIMULATOR")
         except Exception:
             pass
     else:
