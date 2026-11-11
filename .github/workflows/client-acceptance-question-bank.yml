@@ -104,7 +104,6 @@ jobs:
           test_field_report_persistent_bridge.py test_field_report_persistent_sync.py
           test_field_report_query_routing.py test_field_report_spare_sync.py
           test_maintenance_action_memory_v1.py
-          tests/test_bf2_pci_resolver.py
       - name: Phase 4 advanced intelligence regression
         run: pytest -q test_phase4_advanced_intelligence_v1.py
       - name: Phase 4 runtime API regression
@@ -125,6 +124,12 @@ jobs:
         run: pytest -q test_phase6_enterprise_command_centre_v4.py
       - name: Phase 6 enterprise context V5 regression
         run: pytest -q test_phase6_enterprise_context_v5.py
+      - name: BF2 PCI resolver regression
+        run: pytest -q tests/test_bf2_pci_resolver.py
+      - name: Dashboard demo wiring regression
+        run: pytest -q tests/test_dashboard_demo_wiring.py
+      - name: V2 Command Centre stream regression
+        run: pytest -q tests/test_v2_command_centre_stream.py
       - name: Frozen V5 master regression
         run: python anviqo_v5_test.py
       - name: Integrated product and safety release gates
