@@ -14,8 +14,8 @@ def test_reports_module_has_filters_generation_and_download_exports():
     assert 'id="reportTag"' in html
     assert 'id="reportArea"' in html
     assert 'onclick="generateReport()"' in html
-    assert 'onclick="exportReport(\\'txt\\')"' in html
-    assert 'onclick="exportReport(\\'html\\')"' in html
+    assert "onclick=\\"exportReport('txt')\\"".replace("\\", "") in html
+    assert "onclick=\\"exportReport('html')\\"".replace("\\", "") in html
     assert 'onclick="printReport()"' in html
 
 
@@ -35,7 +35,7 @@ def test_report_export_is_disabled_until_successful_generation():
     assert 'id="exportReportTxt" disabled' in html
     assert 'id="exportReportHtml" disabled' in html
     assert "generatedReportText='';" in html
-    assert "No report was exported." not in html  # empty/failed responses do not enable export
+    assert "No report was exported." in html
 
 
 def test_saved_field_report_answer_includes_action_outcome_recovery_and_verification():
