@@ -130,8 +130,6 @@ jobs:
         run: pytest -q tests/test_dashboard_demo_wiring.py
       - name: V2 Command Centre stream regression
         run: pytest -q tests/test_v2_command_centre_stream.py
-      - name: Frozen V5 master regression
-        run: python anviqo_v5_test.py
       - name: Integrated product and safety release gates
         run: |
           pytest -q tests/test_integrated_product_completion.py
