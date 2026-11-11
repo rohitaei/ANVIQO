@@ -509,6 +509,25 @@ def ask_anvi():
     try:
         q=(request.get_json(silent=True) or {}).get("question","").strip()
 
+        # Route complete critical-point evidence to the selected-plant tenant
+        # engine before the legacy conversational router. This avoids a generic
+        # knowledge fallback for an explicitly supported evidence request.
+        try:
+            from anvi_critical_point_report import is_critical_point_request
+            if is_critical_point_request(q):
+                from anvi_chat_stability_v2 import _answer as selected_plant_answer
+                return selected_plant_answer(q)
+        except Exception as critical_route_error:
+            return {
+                "answer": "ANVI could not complete the selected-plant critical-point request. No other plant's data was used.",
+                "domain": "critical_equipment",
+                "evidence_status": "ERROR",
+                "reason": "CRITICAL_POINT_ROUTE_ERROR",
+                "error_type": type(critical_route_error).__name__,
+                "read_only": True, "plc_write": False, "scada_control": False,
+                "human_decision_required": True,
+            }
+
         # V2 What Changed / simulation is an explicit command intent. Route it
         # at the API entry point before every generic tenant/PCI identity path.
         # This prevents any wrapper installation order from consuming

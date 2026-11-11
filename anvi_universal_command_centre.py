@@ -10,7 +10,14 @@ Safety: read-only; no PLC/SCADA writes; no automatic execution.
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
+
+
+# Keep the same simulated plant observation stable across adjacent dashboard
+# and conversational reads. Cache keys include both tenant identifiers.
+_TENANT_SNAPSHOT_CACHE: dict[tuple[str, str], tuple[float, str, dict[str, Any]]] = {}
+_TENANT_SNAPSHOT_CACHE_TTL = 15.0
 
 
 SAFETY = {
@@ -36,12 +43,27 @@ def _active_plant() -> str:
 def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
     """Build a dashboard-compatible snapshot from tenant-scoped knowledge.
 
-    Return None when the selected plant has no indexed data so callers can
-    retain the legacy primary-plant demo behaviour rather than fabricating
-    live values.
+    Both the organization and plant identity are mandatory. Missing tenant
+    context fails closed; a plant-only lookup could otherwise mix records
+    across organizations if identifiers or imported data are inconsistent.
     """
     if not plant_id:
         return None
+    try:
+        from flask import has_request_context, session
+        if not has_request_context():
+            return None
+        organization_id = str(session.get("organization_id") or "").strip()
+    except Exception:
+        return None
+    if not organization_id:
+        return None
+
+    cache_key = (organization_id, str(plant_id))
+    now = time.monotonic()
+    for old_key, old_value in list(_TENANT_SNAPSHOT_CACHE.items()):
+        if now - old_value[0] >= _TENANT_SNAPSHOT_CACHE_TTL:
+            _TENANT_SNAPSHOT_CACHE.pop(old_key, None)
     try:
         import anvi_plant_ingestion_runtime as ingestion
         import anvi_tenant_store as store
@@ -51,15 +73,33 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
             cur = conn.cursor()
             cur.execute(
                 f"SELECT record_type,external_id,name,area,service,asset_type,tag,parent_id,source,metadata,content "
-                f"FROM anviqo_plant_knowledge WHERE plant_id={p} ORDER BY created_at DESC",
-                (plant_id,),
+                f"FROM anviqo_plant_knowledge WHERE plant_id={p} AND organization_id={p} ORDER BY created_at DESC",
+                (plant_id, organization_id),
             )
             rows = cur.fetchall()
     except Exception:
         return None
 
     if not rows:
+        _TENANT_SNAPSHOT_CACHE.pop(cache_key, None)
         return None
+
+    # Re-check the selected plant's current source rows before reusing a
+    # simulated snapshot. Onboarding changes invalidate the cache immediately.
+    fingerprint = json.dumps(
+        [
+            (str(row[1] or ""), str(row[6] or ""), str(row[8] or ""),
+             row[9] if isinstance(row[9], (dict, list)) else str(row[9] or ""),
+             str(row[10] or ""))
+            for row in rows
+        ],
+        sort_keys=True, default=str, separators=(",", ":"),
+    )
+    cached = _TENANT_SNAPSHOT_CACHE.get(cache_key)
+    if cached and now - cached[0] < _TENANT_SNAPSHOT_CACHE_TTL and cached[1] == fingerprint:
+        return cached[2]
+    if cached:
+        _TENANT_SNAPSHOT_CACHE.pop(cache_key, None)
 
     points: list[dict[str, Any]] = []
     areas: dict[str, dict[str, Any]] = {}
@@ -69,8 +109,6 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
     simulator = None
     simulation_enabled = False
     try:
-        from flask import has_request_context, session
-        organization_id = str(session.get("organization_id") or "").strip() if has_request_context() else ""
         import anvi_verified_pci_adapter as pci_adapter
         simulation_enabled = pci_adapter.is_bound(plant_id, organization_id or None)
         if simulation_enabled:
@@ -150,7 +188,7 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
     area_list = list(areas.values())
     is_simulation = bool(points) and any(p.get("mode") == "SIMULATION" for p in points)
     plant_score = ((healthy + warning * 0.5) / len(points)) * 100 if points and is_simulation else None
-    return {
+    snapshot = {
         "status": "OK",
         "mode": "SIMULATION" if is_simulation else "ONBOARDING_DATA",
         "source": "PCI DEMO STREAM" if is_simulation else "ANVIQO TENANT PLANT KNOWLEDGE",
@@ -162,17 +200,20 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
         "changed": changed if is_simulation else 0,
         "active_events": active_events if is_simulation else [],
         "plant_health_score": round(plant_score, 2) if plant_score is not None else None,
-        "health_status": "SIMULATED" if is_simulation else "DATA_ONLY",
         "area_count": len(area_list),
         "areas": area_list,
         "points": points,
         "records": points,
         "plant_id": plant_id,
+        "organization_id": organization_id,
         "safety": dict(SAFETY),
         "read_only": True,
         "plc_write": False,
         "scada_control": False,
     }
+    if is_simulation:
+        _TENANT_SNAPSHOT_CACHE[cache_key] = (time.monotonic(), fingerprint, snapshot)
+    return snapshot
 
 
 def get_live_pci_snapshot(original_getter):

@@ -45,11 +45,19 @@ def _now() -> str:
 
 
 def enabled() -> bool:
-    return bool(TENANT_DB_URL or DATABASE_URL)
+    # Tests and embedded deployments may configure the tenant DB after this
+    # module has already been imported by another runtime bridge.
+    return bool(_db_url())
 
 
 def _db_url() -> str:
-    return TENANT_DB_URL or DATABASE_URL
+    runtime_tenant_url = os.getenv("ANVIQO_TENANT_DB_URL", "").strip()
+    if runtime_tenant_url:
+        return runtime_tenant_url
+    if TENANT_DB_URL:
+        return TENANT_DB_URL
+    runtime_database_url = os.getenv("DATABASE_URL", "").strip()
+    return runtime_database_url or DATABASE_URL
 
 
 def _is_sqlite() -> bool:

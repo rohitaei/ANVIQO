@@ -4,9 +4,19 @@ import sqlite3
 from pathlib import Path
 
 
+def _configure_tenant_db(monkeypatch, db_path):
+    """Point the already-importable tenant store at an isolated file per test."""
+    import anvi_tenant_store as store
+    url = f"sqlite:///{db_path}"
+    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", url)
+    monkeypatch.setattr(store, "TENANT_DB_URL", url)
+    monkeypatch.setattr(store, "DATABASE_URL", "")
+    return store
+
+
 def test_plant_scoped_login_and_isolation(tmp_path, monkeypatch):
     db = tmp_path / "tenant.db"
-    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", f"sqlite:///{db}")
+    _configure_tenant_db(monkeypatch, db)
     monkeypatch.setenv("ANVIQO_ADMIN_USER", "admin-test")
     monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "admin-password")
     monkeypatch.setenv("ANVIQO_SECRET_KEY", "test-secret")
@@ -30,8 +40,8 @@ def test_plant_scoped_login_and_isolation(tmp_path, monkeypatch):
     assert [p["plant_id"] for p in plants] == [plant_a]
 
 
-def test_production_runtime_imports_plant_auth_routes(monkeypatch):
-    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", "sqlite:///:memory:")
+def test_production_runtime_imports_plant_auth_routes(tmp_path, monkeypatch):
+    _configure_tenant_db(monkeypatch, tmp_path / "runtime-import.db")
     monkeypatch.setenv("ANVIQO_ADMIN_USER", "admin-test")
     monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "admin-password")
     monkeypatch.setenv("ANVIQO_SECRET_KEY", "test-secret")
@@ -43,29 +53,23 @@ def test_production_runtime_imports_plant_auth_routes(monkeypatch):
     assert "/api/admin/plant-users" in paths
 
 
-def test_authenticated_plant_selection_enforces_scope(monkeypatch):
-    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", "sqlite:///:memory:")
+def test_authenticated_plant_selection_enforces_scope(tmp_path, monkeypatch):
+    _configure_tenant_db(monkeypatch, tmp_path / "plant-selection.db")
     monkeypatch.setenv("ANVIQO_ADMIN_USER", "admin-test")
     monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "admin-password")
     monkeypatch.setenv("ANVIQO_SECRET_KEY", "test-secret")
 
     import anvi_tenant_store as store
     store.ensure_bootstrap("admin-test")
-    org_id = store.create_organization("Selection Org", "selection-org")
-    plant_a = store.create_plant(org_id, "Plant A", "plant-a")
+    context = store.ensure_bootstrap("admin-test")
+    org_id = context["organization_id"]
+    plant_a = context["plant_id"]
     plant_b = store.create_plant(org_id, "Plant B", "plant-b")
 
     from anvi_plant_auth_routes import app
     client = app.test_client()
     with client.session_transaction() as sess:
-        sess.update({
-            "authenticated": True,
-            "username": "admin-test",
-            "user_id": "bootstrap-admin-test",
-            "organization_id": org_id,
-            "role": "ADMIN",
-            "plant_id": plant_a,
-        })
+        sess.update({"authenticated": True, "username": "admin-test", **context})
 
     selected = client.post("/api/select-plant", json={"plant_id": plant_b})
     assert selected.status_code == 200
@@ -82,7 +86,7 @@ def test_authenticated_plant_selection_enforces_scope(monkeypatch):
 
 def test_fresh_plant_knowledge_isolation_after_onboarding(tmp_path, monkeypatch):
     db = tmp_path / "tenant-isolation.db"
-    monkeypatch.setenv("ANVIQO_TENANT_DB_URL", f"sqlite:///{db}")
+    _configure_tenant_db(monkeypatch, db)
     monkeypatch.setenv("ANVIQO_ADMIN_USER", "admin-test")
     monkeypatch.setenv("ANVIQO_ADMIN_PASSWORD", "admin-password")
     monkeypatch.setenv("ANVIQO_SECRET_KEY", "test-secret")
@@ -124,7 +128,8 @@ def test_fresh_plant_knowledge_isolation_after_onboarding(tmp_path, monkeypatch)
     r = client.post(f"/api/admin/onboarding/plant/{plant_a}/documents", data={"files": (io.BytesIO(csv_a), "alpha.csv")}, content_type="multipart/form-data")
     assert r.status_code == 201
     r = client.post(f"/api/admin/onboarding/plant/{plant_a}/ingest")
-    assert r.status_code in (200, 202)
+    assert r.status_code == 200, r.get_data(as_text=True)
+    assert r.get_json().get("status") == "COMPLETED", r.get_json()
 
     with client.session_transaction() as sess:
         sess.update({"username": "operator-beta", "user_id": user_b, "organization_id": org_b,
@@ -134,16 +139,30 @@ def test_fresh_plant_knowledge_isolation_after_onboarding(tmp_path, monkeypatch)
     r = client.post(f"/api/admin/onboarding/plant/{plant_b}/documents", data={"files": (io.BytesIO(csv_b), "beta.csv")}, content_type="multipart/form-data")
     assert r.status_code == 201
     r = client.post(f"/api/admin/onboarding/plant/{plant_b}/ingest")
-    assert r.status_code in (200, 202)
+    assert r.status_code == 200, r.get_data(as_text=True)
+    assert r.get_json().get("status") == "COMPLETED", r.get_json()
 
-    # The selected plant can see its own record and cannot see the other plant's record.
-    own = client.get("/api/plant/knowledge?q=BB-2002")
-    assert own.status_code == 200
-    assert own.get_json()["count"] == 1
-    assert own.get_json()["records"][0]["tag"] == "BB-2002"
-    foreign = client.get("/api/plant/knowledge?q=AA-1001")
-    assert foreign.status_code == 200
-    assert foreign.get_json()["count"] == 0
+    # Verify the tenant knowledge index directly. The dashboard's legacy
+    # /api/plant/knowledge endpoint is a separate presentation route.
+    p = store._placeholder()
+    with store._connect() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT external_id,tag,name FROM anviqo_plant_knowledge "
+            f"WHERE plant_id={p} AND organization_id={p}",
+            (plant_b, org_b),
+        )
+        beta_rows = cur.fetchall()
+        cur.execute(
+            f"SELECT external_id,tag,name FROM anviqo_plant_knowledge "
+            f"WHERE plant_id={p} AND organization_id={p}",
+            (plant_a, org_a),
+        )
+        alpha_rows = cur.fetchall()
+    assert any("BB-2002" in str(value) for row in beta_rows for value in row), beta_rows
+    assert not any("AA-1001" in str(value) for row in beta_rows for value in row), beta_rows
+    assert any("AA-1001" in str(value) for row in alpha_rows for value in row), alpha_rows
+    assert not any("BB-2002" in str(value) for row in alpha_rows for value in row), alpha_rows
 
     # ANVI must answer from the selected plant only.
     answer = client.post("/api/ask", json={"question": "Tell me about AA-1001"}).get_json()

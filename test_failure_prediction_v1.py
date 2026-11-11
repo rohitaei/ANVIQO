@@ -93,3 +93,53 @@ def test_authenticated_tenant_never_reads_global_prediction_sources(monkeypatch)
     assert result["evidence_summary"]["pci_identity_available"] is False
     assert result["safety"]["plc_write"] is False
     assert result["decision_status"] == "HUMAN_DECISION_REQUIRED"
+
+
+
+def test_authenticated_missing_history_fails_closed_for_multiple_equipment_tags(monkeypatch):
+    import failure_prediction as fp
+
+    monkeypatch.setattr(fp, "_authenticated_tenant", lambda: ("plant-selected", "org-selected"))
+    monkeypatch.setattr(fp, "_tenant_rows", lambda tag, plant_id: [])
+    monkeypatch.setattr(fp, "_pci", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global PCI fallback used")))
+    monkeypatch.setattr(fp, "_history", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global history fallback used")))
+    monkeypatch.setattr(fp, "_memory", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global memory fallback used")))
+    monkeypatch.setattr(fp, "_events", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global event fallback used")))
+    monkeypatch.setattr(fp, "_health", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global health fallback used")))
+
+    for tag in ("PT-303", "TIC-101A", "FT-204"):
+        result = fp.build_failure_prediction(f"Predict {tag} failure risk")
+        assert result["tag"] == tag
+        assert result["status"] == "INSUFFICIENT_EVIDENCE"
+        assert result["trend"]["status"] == "UNAVAILABLE"
+        assert result["evidence_summary"]["numeric_observation_count"] == 0
+        assert result["safety"]["plc_write"] is False
+        assert result["safety"]["scada_control"] is False
+        assert result["decision_status"] == "HUMAN_DECISION_REQUIRED"
+
+
+def test_historical_observations_are_scoped_to_requested_equipment_tag(monkeypatch):
+    import types
+    from failure_prediction import build_failure_prediction
+
+    histories = {
+        "PT-303": [
+            {"observation_id": "PT-1", "tag": "PT-303", "value": 40.0, "timestamp": "2026-09-01T10:00:00Z", "source": "read-only telemetry", "simulation": False},
+            {"observation_id": "PT-2", "tag": "PT-303", "value": 49.0, "timestamp": "2026-09-08T10:00:00Z", "source": "read-only telemetry", "simulation": False},
+        ],
+        "TIC-101A": [],
+    }
+    modules = _fake_modules()
+    history_module = types.ModuleType("failure_prediction_history")
+    history_module.get_observations = lambda tag, limit=500: histories.get(tag, [])
+    modules["failure_prediction_history"] = history_module
+    for name, module in modules.items():
+        monkeypatch.setitem(sys.modules, name, module)
+
+    pt = build_failure_prediction("Predict PT-303 failure risk")
+    tic = build_failure_prediction("Predict TIC-101A failure risk")
+    assert pt["status"] == "PREDICTION_AVAILABLE"
+    assert pt["trend"]["direction"] == "RISING"
+    assert tic["status"] == "INSUFFICIENT_EVIDENCE"
+    assert tic["evidence_summary"]["persisted_observation_count"] == 0
+    assert tic["trend"]["status"] == "UNAVAILABLE"

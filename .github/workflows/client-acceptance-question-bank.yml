@@ -1,0 +1,138 @@
+name: ANVIQO Client Acceptance Question Bank
+
+on:
+  pull_request:
+    branches: [main, audit/demo-readiness-pr80-20261103, client-acceptance-question-bank-20261103]
+    paths:
+      - "tests/data/anviqo_client_acceptance_questions.json"
+      - "tests/test_client_acceptance_question_bank.py"
+      - "test_plant_scoped_auth.py"
+      - "anvi_chat_stability_v2.py"
+      - "anvi_critical_point_report.py"
+      - "anvi_tenant_context_autofix.py"
+      - "tests/test_critical_point_membership_wrapper.py"
+      - "tests/test_critical_point_report.py"
+      - "anvi_universal_command_centre.py"
+      - "test_universal_command_centre_tenant.py"
+      - "anviqo_public_website_index.html"
+      - "anviqo-app.webmanifest"
+      - "tests/test_public_login_links.py"
+      - "tests/test_reports_module.py"
+      - "field_report_persistent_bridge.py"
+      - ".github/workflows/client-acceptance-question-bank.yml"
+  push:
+    branches: [client-acceptance-question-bank-20261103]
+    paths:
+      - "tests/data/anviqo_client_acceptance_questions.json"
+      - "tests/test_client_acceptance_question_bank.py"
+      - "test_plant_scoped_auth.py"
+      - "anvi_chat_stability_v2.py"
+      - "anvi_critical_point_report.py"
+      - "tests/test_critical_point_report.py"
+      - "anvi_universal_command_centre.py"
+      - "test_universal_command_centre_tenant.py"
+      - "anviqo_public_website_index.html"
+      - "anviqo-app.webmanifest"
+      - "tests/test_public_login_links.py"
+      - ".github/workflows/client-acceptance-question-bank.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-question-bank:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
+      ANVIQO_SECRET_KEY: ci-test-secret
+      ANVIQO_ADMIN_USER: ci-admin
+      ANVIQO_ADMIN_PASSWORD: ci-password
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test runner
+        run: python -m pip install --upgrade pip pytest && python -m pip install -r requirements.txt
+      - name: Validate complete client acceptance corpus
+        run: >-
+          pytest -q tests/test_critical_point_report.py
+          tests/test_critical_point_membership_wrapper.py
+          tests/test_client_acceptance_question_bank.py
+          test_plant_scoped_auth.py
+          test_universal_command_centre_tenant.py
+          tests/test_public_login_links.py
+      - name: Compile active product modules
+        run: |
+          python - <<'PY'
+          import pathlib, py_compile
+          excluded = ("backup", "before_", ".anviqo_backup", ".anviqo_backups", "integration_backup")
+          failures = []
+          for path in pathlib.Path(".").rglob("*.py"):
+              normalized = str(path).replace("\\", "/").lower()
+              if any(token in normalized for token in excluded):
+                  continue
+              try:
+                  py_compile.compile(str(path), doraise=True)
+              except Exception as exc:
+                  failures.append((str(path), str(exc)))
+          if failures:
+              for path, error in failures:
+                  print(path, error)
+              raise SystemExit(1)
+          print("Active product Python compilation PASS")
+          PY
+      - name: Capability and core intelligence regression
+        run: >-
+          pytest -q tests/test_anvi_capability_engine.py
+          tests/test_anvi_intelligence_orchestrator.py
+          test_phase2_v5_freeze.py tests/test_event_correlation.py
+          test_root_cause_intelligence_v1.py test_root_cause_correlation_v1_3.py
+          test_root_cause_conversational_v1.py test_failure_prediction_v1.py
+          test_failure_prediction_history_v1_1.py test_failure_prediction_demo_api.py
+          test_failure_prediction_demo_loader.py test_failure_prediction_dashboard_v1.py
+      - name: Tenant, onboarding, field-report and spares regression
+        run: >-
+          pytest -q tests/test_universal_command_centre_tenant_scope.py
+          tests/test_universal_plant_scope.py tests/test_field_report_tenant_isolation.py
+          tests/test_spare_inventory_independence.py tests/test_tenant_spares.py
+          test_universal_io_spares.py
+          test_phase2_tenant_foundation.py test_phase2_api_boundary.py
+          test_universal_data_ingestion.py test_field_report_natural_language_spare.py
+          test_field_report_persistent_bridge.py test_field_report_persistent_sync.py
+          test_field_report_query_routing.py test_field_report_spare_sync.py
+          test_maintenance_action_memory_v1.py
+      - name: Phase 4 advanced intelligence regression
+        run: pytest -q test_phase4_advanced_intelligence_v1.py
+      - name: Phase 4 runtime API regression
+        run: pytest -q test_phase4_runtime_api_v1.py
+      - name: Phase 5 management intelligence regression
+        run: pytest -q test_phase5_human_management_intelligence_v1.py
+      - name: Phase 5 Command Centre regression
+        run: pytest -q test_phase5_command_centre_v1.py
+      - name: Phase 5 live evidence regression
+        run: pytest -q test_phase5_live_evidence_hod_v1.py
+      - name: Phase 6 enterprise foundation regression
+        run: pytest -q test_phase6_enterprise_foundation_v1.py
+      - name: Phase 6 enterprise Command Centre V2 regression
+        run: pytest -q test_phase6_enterprise_command_centre_v2.py
+      - name: Phase 6 enterprise Command Centre V3 regression
+        run: pytest -q test_phase6_enterprise_command_centre_v3.py
+      - name: Phase 6 enterprise Command Centre V4 regression
+        run: pytest -q test_phase6_enterprise_command_centre_v4.py
+      - name: Phase 6 enterprise context V5 regression
+        run: pytest -q test_phase6_enterprise_context_v5.py
+      - name: BF2 PCI resolver regression
+        run: pytest -q tests/test_bf2_pci_resolver.py
+      - name: Dashboard demo wiring regression
+        run: pytest -q tests/test_dashboard_demo_wiring.py tests/test_reports_module.py
+      - name: V2 Command Centre stream regression
+        run: pytest -q tests/test_v2_command_centre_stream.py
+      - name: Integrated product and safety release gates
+        run: |
+          pytest -q tests/test_integrated_product_completion.py
+          python release_gate_v2.py
+
+# Keep the critical-point membership wrapper regression in the acceptance gate.

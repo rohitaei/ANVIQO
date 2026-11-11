@@ -100,6 +100,48 @@ def _install_live_answer_patch():
             try:
                 snapshot = stability._selected_pci_snapshot()
                 low_intent = str(text or "").strip().lower()
+
+                # Critical-point prompts must bypass this membership wrapper's
+                # legacy CRITICAL-state-only shortcut. The authoritative report
+                # includes every selected-plant PCI instrument configured HIGH,
+                # even when it has no active alarm state. Keep all enrichment
+                # selected-plant and preserve unavailable values as UNAVAILABLE.
+                try:
+                    from anvi_critical_point_report import (
+                        is_critical_point_request, build_critical_point_report
+                    )
+                    if is_critical_point_request(low_intent):
+                        critical_snapshot = stability._selected_critical_point_snapshot(pid, oid)
+                        critical_report = build_critical_point_report(
+                            critical_snapshot, plant_id=pid, plant_name=plant.get("name", "")
+                        )
+                        return stability._safe(
+                            critical_report.get("answer", "Critical-point evidence is unavailable."),
+                            domain="critical_equipment",
+                            evidence_status="EVIDENCE_AVAILABLE" if critical_report.get("status") == "OK" else "NO_DATA",
+                            evidence_mode=critical_report.get("mode"),
+                            count=critical_report.get("count", 0),
+                            source_row_count=critical_report.get("source_row_count", 0),
+                            duplicate_rows_collapsed=critical_report.get("duplicate_rows_collapsed", 0),
+                            evidence=critical_report.get("evidence", []),
+                            blocked=critical_report.get("status") == "NO_DATA",
+                            reason="SELECTED_PLANT_DATA_UNAVAILABLE" if critical_report.get("status") == "NO_DATA" else None,
+                            plant_id=pid, plant_name=plant.get("name"),
+                        )
+                except Exception as critical_report_error:
+                    print(
+                        "ANVIQO_CRITICAL_POINT_REPORT_ERROR "
+                        f"error={type(critical_report_error).__name__}",
+                        flush=True,
+                    )
+                    return stability._safe(
+                        "ANVI could not build the critical-point report from the selected plant's onboarded PCI records. "
+                        "No other plant's data was used; unavailable fields remain UNAVAILABLE.",
+                        domain="critical_equipment", evidence_status="ERROR",
+                        reason="CRITICAL_POINT_REPORT_ERROR",
+                        error_type=type(critical_report_error).__name__,
+                        plant_id=pid, plant_name=plant.get("name"),
+                    )
                 if any(x in low_intent for x in (
                     "current plant health", "what is the current plant health",
                     "plant health", "overall plant health", "health of the plant"
@@ -260,23 +302,15 @@ def _install_live_answer_patch():
 
             candidate = stability._candidate(text)
             # Keep the universal PCI resolver on the actual live request path.
-            # Resolver input remains tenant-scoped. Plant ID is the
-            # authorization boundary; organization_id is retried without the
-            # redundant filter so older/imported rows remain readable when
-            # their organization metadata is stale. No cross-plant fallback
-            # is possible because every query still requires this plant_id.
+            # Both organization_id and plant_id are mandatory evidence
+            # boundaries. Never retry without organization scope: identical
+            # plant identifiers must not expose another organization's rows.
             if candidate:
                 rows = stability._pci_resolve_rows(pid, oid, candidate)
-                if not rows and oid:
-                    rows = stability._pci_resolve_rows(pid, None, candidate)
                 if not rows:
                     rows = stability._query_rows(pid, oid, identifier=candidate, limit=40)
-                if not rows and oid:
-                    rows = stability._query_rows(pid, None, identifier=candidate, limit=40)
             else:
                 rows = stability._query_rows(pid, oid, terms=stability._terms(text), limit=80)
-                if not rows and oid:
-                    rows = stability._query_rows(pid, None, terms=stability._terms(text), limit=80)
             return stability._exact_answer(text, rows, plant) if candidate else stability._summary_answer(text, rows, plant)
 
         # Tenant-scoped verified PCI adapter: when the selected plant has an

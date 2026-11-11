@@ -995,7 +995,7 @@ def answer_spare_query(question):
 
         answer = (
             "ANVI found 1 verified critical spare instrument record(s). "
-            "Source: critical spares in pci.xlsx.\n"
+            "Source: critical_spares.xlsx.\n"
             + _format_record(r)
         )
 
@@ -1032,7 +1032,7 @@ def answer_spare_query(question):
         lines = [
             "ANVI found "
             f"{len(results)} spare record(s) requiring attention.",
-            "Source: critical spares in pci.xlsx.",
+            "Source: critical_spares.xlsx.",
             "",
         ]
 
@@ -1057,7 +1057,7 @@ def answer_spare_query(question):
         lines = [
             f"ANVI found {len(results)} verified critical spare "
             "instrument record(s).",
-            "Source: critical spares in pci.xlsx.",
+            "Source: critical_spares.xlsx.",
             "",
         ]
 
@@ -1503,12 +1503,12 @@ def answer_spare_query(query):
         return None
     if not rows:
         return {
-            "answer": "ANVI found no verified critical spare records matching that filter. Source: critical spares in pci.xlsx.",
-            "domain": "critical_spares", "evidence": "critical spares in pci.xlsx", "count": 0,
+            "answer": "ANVI found no verified critical spare records matching that filter. Source: critical_spares.xlsx.",
+            "domain": "critical_spares", "evidence": "critical_spares.xlsx", "count": 0,
             "records": [], "read_only": True, "plc_write": False, "scada_control": False,
             "human_decision_required": True,
         }
-    lines = [f"ANVI found {len(rows)} verified critical spare instrument record(s). Source: critical spares in pci.xlsx."]
+    lines = [f"ANVI found {len(rows)} verified critical spare instrument record(s). Source: critical_spares.xlsx."]
     for r in rows:
         qty = r.get("qty_available")
         req = r.get("qty_required")
@@ -1522,7 +1522,7 @@ def answer_spare_query(query):
         if r.get("specification"):
             lines.append(f"Specification: {r['specification']}")
     return {
-        "answer": "\n".join(lines), "domain": "critical_spares", "evidence": "critical spares in pci.xlsx",
+        "answer": "\n".join(lines), "domain": "critical_spares", "evidence": "critical_spares.xlsx",
         "count": len(rows), "records": rows, "read_only": True, "plc_write": False,
         "scada_control": False, "human_decision_required": True,
     }
@@ -1901,7 +1901,10 @@ def _v18_identifier(q):
     # PT-304 and PT304 (and MCV-205/MCV205, etc.) resolve identically.
     explicit_tag = _extract_tag(q)
     if explicit_tag:
-        return explicit_tag.replace("_", "-")
+        canonical = explicit_tag.replace("_", "-")
+        # The critical-spares register uses PT-### identifiers while MCV
+        # identifiers retain the compact MCV### form.
+        return re.sub(r"^PT(?=\d)", "PT-", canonical)
 
     # Exact PCI inventory item.
     pos = q.find("PCI_")

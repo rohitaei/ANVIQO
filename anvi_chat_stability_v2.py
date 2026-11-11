@@ -127,6 +127,16 @@ def _query_rows(plant_id,organization_id,identifier=None,terms=None,limit=120):
     if organization_id: clauses.append(f"organization_id={p}"); params.append(organization_id)
     if identifier:
         n=_norm(identifier)
+        if store._is_sqlite():
+            # SQLite is used by local installs and isolated acceptance tests.
+            # Keep the same tenant predicates while avoiding PostgreSQL-only
+            # regexp_replace and JSON/text casts.
+            exact=" OR ".join(f"upper(coalesce({c},''))={p}" for c in ("tag","external_id","name","service"))
+            sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND ({exact}) ORDER BY created_at DESC LIMIT {min(int(limit),80)}"
+            rows=_execute(sql,params+[str(identifier).strip().upper()]*4)
+            if rows: return rows
+            sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND (upper(coalesce(content,'')) LIKE {p} OR upper(coalesce(metadata,'')) LIKE {p}) ORDER BY created_at DESC LIMIT {min(int(limit),40)}"
+            return _execute(sql,params+[f"%{str(identifier).strip().upper()}%",f"%{str(identifier).strip().upper()}%"])
         exact=" OR ".join(f"regexp_replace(upper(coalesce({c},'')), '[^A-Z0-9]', '', 'g')={p}" for c in ("tag","external_id","name","service"))
         sql=f"SELECT {fields} FROM anviqo_plant_knowledge WHERE {' AND '.join(clauses)} AND ({exact}) ORDER BY created_at DESC LIMIT {min(int(limit),80)}"
         rows=_execute(sql,params+[n]*4)
@@ -344,6 +354,66 @@ def _selected_pci_snapshot():
     except Exception:
         return {}
 
+def _selected_critical_point_snapshot(plant_id, organization_id):
+    """Build the critical-point view from selected-plant HIGH-criticality PCI
+    records, enriching each record only with a same-tag selected-plant snapshot.
+    """
+    store = _store()
+    if not store:
+        raise RuntimeError("SELECTED_PLANT_TENANT_STORE_UNAVAILABLE")
+    p = store._placeholder()
+    fields = ",".join(NAMES)
+    clauses = [f"plant_id={p}", f"record_type={p}",
+               "upper(coalesce(metadata->>'criticality',''))='HIGH'"]
+    params = [plant_id, "INSTRUMENT"]
+    if organization_id:
+        clauses.append(f"organization_id={p}")
+        params.append(organization_id)
+    rows = _execute(
+        f"SELECT {fields} FROM anviqo_plant_knowledge "
+        f"WHERE {' AND '.join(clauses)} ORDER BY upper(coalesce(nullif(tag,''),external_id))",
+        params,
+    )
+
+    snapshot = dict(_selected_pci_snapshot() or {})
+    live_points = snapshot.get("points") or snapshot.get("records") or []
+    live_by_tag = {}
+    for live in live_points:
+        if isinstance(live, dict):
+            key = _norm(live.get("tag") or live.get("external_id"))
+            if key and key not in live_by_tag:
+                live_by_tag[key] = live
+
+    points = []
+    seen = set()
+    for row in rows:
+        meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        tag = str(row.get("tag") or row.get("external_id") or "").strip()
+        key = _norm(tag)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        live = live_by_tag.get(key, {})
+        point = dict(live)
+        point.update({
+            "tag": tag,
+            "external_id": row.get("external_id") or tag,
+            "description": row.get("name") or row.get("service") or meta.get("description") or "",
+            "area": row.get("area") or meta.get("area") or "",
+            "source": row.get("source") or "SELECTED_PLANT_PCI_KNOWLEDGE",
+            "metadata": {**meta, "criticality": "HIGH"},
+        })
+        if not live.get("state") and not live.get("status"):
+            point["state"] = "HIGH_CRITICALITY"
+        point["simulation_source"] = live.get("source") if live else ""
+        points.append(point)
+
+    snapshot["points"] = points
+    snapshot["critical_count"] = len(points)
+    snapshot["source"] = "SELECTED_PLANT_HIGH_CRITICALITY_PCI_KNOWLEDGE"
+    snapshot["mode"] = snapshot.get("mode") or "ONBOARDING_DATA"
+    return snapshot
+
 
 def _exact_answer(text,rows,plant):
     requested=_candidate(text)
@@ -472,35 +542,42 @@ def _answer(text):
         except Exception:
             pass
 
-    if any(x in low_text for x in (
-        "show critical equipment", "critical equipment",
-        "which equipment is critical"
-    )):
+    # Critical-point reporting is an evidence request, not generic RAG.
+    # Route every common wording to the same selected-plant snapshot used by
+    # the health summary. The formatter deduplicates tags and never truncates.
+    try:
+        from anvi_critical_point_report import is_critical_point_request
+        critical_point_request = is_critical_point_request(low_text)
+    except Exception:
+        critical_point_request = False
+    if critical_point_request:
         try:
-            snap = _selected_pci_snapshot()
-            points = [
-                p for p in (snap.get("points") or [])
-                if isinstance(p,dict) and str(p.get("state","")).upper()=="CRITICAL"
-            ]
-            points.sort(key=lambda p: str(p.get("tag","")))
-            lines = [
-                "ANVI — Critical Equipment (SIMULATION)",
-                f"Equipment currently in simulated CRITICAL state: {len(points)}."
-            ]
-            for p in points[:15]:
-                lines.append(
-                    f"{p.get('tag','UNKNOWN')} — {p.get('description','No description')} "
-                    f"— Area: {p.get('area','UNKNOWN')} — Value: {p.get('value','N/A')}."
-                )
-            if not points:
-                lines.append("No equipment is in simulated CRITICAL state in this snapshot.")
-            lines.append("Evidence source: PCI DEMO STREAM. Critical here means current simulated condition, not permanent equipment criticality.")
-            lines.append("Safety: ANVI is read-only; no PLC/SCADA write. Human decision required.")
-            return _safe("\\n".join(lines), domain="critical_equipment", evidence_status="EVIDENCE_AVAILABLE",
-                evidence_mode="SIMULATION", count=len(points), evidence=points[:15],
-                plant_id=pid, plant_name=plant.get("name"))
-        except Exception:
-            pass
+            from anvi_critical_point_report import build_critical_point_report
+            snap = _selected_critical_point_snapshot(pid, oid)
+            report = build_critical_point_report(
+                snap, plant_id=pid, plant_name=plant.get("name", "")
+            )
+            return _safe(
+                report.get("answer", "Critical-point evidence is unavailable."),
+                domain="critical_equipment",
+                evidence_status="EVIDENCE_AVAILABLE" if report.get("status") == "OK" else "NO_DATA",
+                evidence_mode=report.get("mode"),
+                count=report.get("count", 0),
+                source_row_count=report.get("source_row_count", 0),
+                duplicate_rows_collapsed=report.get("duplicate_rows_collapsed", 0),
+                evidence=report.get("evidence", []),
+                blocked=report.get("status") == "NO_DATA",
+                reason="SELECTED_PLANT_DATA_UNAVAILABLE" if report.get("status") == "NO_DATA" else None,
+                plant_id=pid, plant_name=plant.get("name"),
+            )
+        except Exception as exc:
+            return _safe(
+                "ANVI could not build the critical-point report from the selected plant snapshot. "
+                "No other plant's data was used; report fields are unavailable.",
+                domain="critical_equipment", evidence_status="ERROR",
+                reason="CRITICAL_POINT_REPORT_ERROR", error_type=type(exc).__name__,
+                plant_id=pid, plant_name=plant.get("name"),
+            )
 
     # Broad What Changed is a Command Centre evidence request.
     # Read only the selected plant's process-local simulation evidence.
