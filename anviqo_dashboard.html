@@ -680,7 +680,30 @@ async function refresh(){
 
 async function loadPage(name){
  if(name==='overview')return refresh();
- if(name==='pci'||name==='plc'){
+ if(name==='plc'){
+  const el=document.getElementById('plcData');
+  if(!el)return;
+  el.innerHTML='<div class="empty">Checking the approved read-only PLC gateway...</div>';
+  try{
+   const d=await api('/api/plc/live');
+   const points=Array.isArray(d.points)?d.points:[];
+   let html='<div class="row"><span>PLC DATA MODE</span><b class="'+(d.status==='LIVE'?'green':'amber')+'">'+escapeHtml(d.mode||d.status||'UNKNOWN')+'</b></div>'+
+    '<div class="row"><span>Source</span><b>'+escapeHtml(d.source||'Not reported')+'</b></div>'+
+    '<div class="row"><span>Received tags</span><b>'+escapeHtml(d.point_count??points.length)+'</b></div>';
+   if(!points.length)html+='<div class="empty">No PLC telemetry received yet. The connector is prepared, but this plant has not established an approved gateway session.</div>';
+   points.forEach(p=>{
+    html+='<div class="row"><span><b>'+escapeHtml(p.tag)+'</b><br>'+escapeHtml(p.source_timestamp||'Timestamp unavailable')+
+     '<br><small>Quality: '+escapeHtml(p.quality)+' · Age: '+escapeHtml(p.age_seconds)+' s</small></span><b>'+
+     escapeHtml(p.value)+' '+escapeHtml(p.unit||'')+'<br><small class="'+(p.fresh?'green':'amber')+'">'+(p.fresh?'FRESH':'STALE / NOT GOOD')+'</small></b></div>';
+   });
+   html+='<div class="row"><span>Safety</span><b>READ ONLY · PLC WRITE BLOCKED · SCADA CONTROL BLOCKED</b></div>';
+   el.innerHTML=html;
+  }catch(e){
+   el.innerHTML='<div class="empty">Live PLC data is not available: '+escapeHtml(e.message||e)+'. The gateway remains disabled until tenant, token and approved tag mapping are configured.</div>';
+  }
+  return;
+ }
+ if(name==='pci'){
   const ids={pci:'pciData',plc:'plcData'};
   const el=document.getElementById(ids[name]);
   if(el)el.innerHTML='<div class="empty">Loading selected-plant instrumentation data...</div>';
