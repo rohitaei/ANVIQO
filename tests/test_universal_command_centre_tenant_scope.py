@@ -165,8 +165,8 @@ def test_same_plant_id_isolated_between_organizations_and_cache(monkeypatch):
     assert {point["tag"] for point in org_b["points"]} == {"PT-B01"}
     assert "PT-B01" not in {point["tag"] for point in org_a["points"]}
     assert "PT-A01" not in {point["tag"] for point in org_b["points"]}
-    assert ("shared-plant-id", "org-a") in adapter._TENANT_SNAPSHOT_CACHE
-    assert ("shared-plant-id", "org-b") in adapter._TENANT_SNAPSHOT_CACHE
+    assert ("org-a", "shared-plant-id") in adapter._TENANT_SNAPSHOT_CACHE
+    assert ("org-b", "shared-plant-id") in adapter._TENANT_SNAPSHOT_CACHE
     assert all("WHERE plant_id=? AND organization_id=?" in sql for sql, _ in queried)
     assert [params for _, params in queried] == [
         ("shared-plant-id", "org-a"),
