@@ -102,17 +102,26 @@ jobs:
           test_field_report_persistent_bridge.py test_field_report_persistent_sync.py
           test_field_report_query_routing.py test_field_report_spare_sync.py
           test_maintenance_action_memory_v1.py
-      - name: Phase 4, 5 and enterprise management regression
-        run: >-
-          pytest -q test_phase4_advanced_intelligence_v1.py
-          test_phase4_runtime_api_v1.py test_phase5_command_centre_v1.py
-          test_phase5_human_management_intelligence_v1.py
-          test_phase5_live_evidence_hod_v1.py
-          test_phase6_enterprise_foundation_v1.py
-          test_phase6_enterprise_command_centre_v2.py
-          test_phase6_enterprise_command_centre_v3.py
-          test_phase6_enterprise_command_centre_v4.py
-          test_phase6_enterprise_context_v5.py
+      - name: Phase 4 advanced intelligence regression
+        run: pytest -q test_phase4_advanced_intelligence_v1.py
+      - name: Phase 4 runtime API regression
+        run: pytest -q test_phase4_runtime_api_v1.py
+      - name: Phase 5 management intelligence regression
+        run: pytest -q test_phase5_human_management_intelligence_v1.py
+      - name: Phase 5 Command Centre regression
+        run: pytest -q test_phase5_command_centre_v1.py
+      - name: Phase 5 live evidence regression
+        run: pytest -q test_phase5_live_evidence_hod_v1.py
+      - name: Phase 6 enterprise foundation regression
+        run: pytest -q test_phase6_enterprise_foundation_v1.py
+      - name: Phase 6 enterprise Command Centre V2 regression
+        run: pytest -q test_phase6_enterprise_command_centre_v2.py
+      - name: Phase 6 enterprise Command Centre V3 regression
+        run: pytest -q test_phase6_enterprise_command_centre_v3.py
+      - name: Phase 6 enterprise Command Centre V4 regression
+        run: pytest -q test_phase6_enterprise_command_centre_v4.py
+      - name: Phase 6 enterprise context V5 regression
+        run: pytest -q test_phase6_enterprise_context_v5.py
       - name: Integrated product and safety release gates
         run: |
           pytest -q tests/test_integrated_product_completion.py
