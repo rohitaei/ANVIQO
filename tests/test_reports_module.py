@@ -22,7 +22,7 @@ def test_reports_module_has_filters_generation_and_download_exports():
 def test_reports_prompt_is_selected_plant_scoped_and_evidence_gated():
     html = (ROOT / "anviqo_dashboard.html").read_text(encoding="utf-8")
     start = html.index("async function generateReport(){")
-    end = html.index("\\nfunction exportReport(", start)
+    end = html.index("\nfunction exportReport(", start)
     generator = html[start:end]
     assert "authenticated selected plant only" in generator
     assert "Never invent measurements" in generator
