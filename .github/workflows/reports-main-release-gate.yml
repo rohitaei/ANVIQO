@@ -1,0 +1,32 @@
+name: Main Reports Release Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "anviqo_dashboard.html"
+      - "field_report_persistent_bridge.py"
+      - "test_failure_prediction_v1.py"
+      - "tests/test_reports_module.py"
+      - ".github/workflows/reports-main-release-gate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "anviqo_dashboard.html"
+      - "field_report_persistent_bridge.py"
+      - "test_failure_prediction_v1.py"
+      - "tests/test_reports_module.py"
+      - ".github/workflows/reports-main-release-gate.yml"
+
+jobs:
+  reports-and-prediction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt pytest
+      - run: python -m py_compile field_report_persistent_bridge.py failure_prediction.py
+      - run: pytest -q tests/test_reports_module.py test_failure_prediction_v1.py
