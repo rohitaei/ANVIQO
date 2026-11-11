@@ -17,6 +17,8 @@ on:
       - "anviqo_public_website_index.html"
       - "anviqo-app.webmanifest"
       - "tests/test_public_login_links.py"
+      - "tests/test_reports_module.py"
+      - "field_report_persistent_bridge.py"
       - ".github/workflows/client-acceptance-question-bank.yml"
   push:
     branches: [client-acceptance-question-bank-20261103]
@@ -125,7 +127,7 @@ jobs:
       - name: BF2 PCI resolver regression
         run: pytest -q tests/test_bf2_pci_resolver.py
       - name: Dashboard demo wiring regression
-        run: pytest -q tests/test_dashboard_demo_wiring.py
+        run: pytest -q tests/test_dashboard_demo_wiring.py tests/test_reports_module.py
       - name: V2 Command Centre stream regression
         run: pytest -q tests/test_v2_command_centre_stream.py
       - name: Integrated product and safety release gates
