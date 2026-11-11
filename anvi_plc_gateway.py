@@ -61,12 +61,16 @@ def register(app):
         points = body.get("points")
         if not gateway or len(gateway) > 80 or not isinstance(points, list) or not 1 <= len(points) <= 2000:
             return jsonify(status="INVALID", reason="GATEWAY_AND_1_TO_2000_POINTS_REQUIRED"), 400
+        allowed_tags = {x.strip().upper() for x in os.getenv("ANVIQO_PLC_ALLOWED_TAGS", "").split(",") if x.strip()}
+        if not allowed_tags:
+            return jsonify(status="DISABLED", reason="PLC_TAG_ALLOWLIST_NOT_CONFIGURED"), 503
         clean = []
         try:
             for item in points:
                 if not isinstance(item, dict): raise ValueError("point must be object")
                 tag = str(item.get("tag") or "").strip()
                 if not _TAG.fullmatch(tag): raise ValueError("invalid tag")
+                if tag.upper() not in allowed_tags: raise ValueError("tag is not approved for this plant")
                 value = item.get("value")
                 if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
                     raise ValueError("value must be finite numeric measurement")
