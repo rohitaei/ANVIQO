@@ -9,6 +9,10 @@ from anviqo_spare_query_guard import app
 import anvi_plant_auth_routes as auth
 import anvi_tenant_store as tenant_store
 
+# Read-only customer OT gateway endpoints; disabled until tenant secrets and tag allowlist exist.
+import anvi_plc_gateway as plc_gateway
+plc_gateway.register(app)
+
 _PAGE = Path(__file__).resolve().with_name("plant_user_admin.html")
 
 # Safe production diagnostic: never logs DATABASE_URL itself.
