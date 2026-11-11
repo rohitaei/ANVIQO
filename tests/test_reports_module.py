@@ -5,6 +5,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 os.environ.setdefault('ANVIQO_SECRET_KEY', 'ci-only-not-a-real-secret')
+os.environ.setdefault('ANVIQO_ADMIN_USER', 'ci-only-admin')
+os.environ.setdefault('ANVIQO_ADMIN_PASSWORD', 'ci-only-password')
 
 import field_report_persistent_bridge as bridge
 
