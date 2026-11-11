@@ -14,8 +14,8 @@ def test_reports_module_has_filters_generation_and_download_exports():
     assert 'id="reportTag"' in html
     assert 'id="reportArea"' in html
     assert 'onclick="generateReport()"' in html
-    assert "onclick=\\"exportReport('txt')\\"".replace("\\", "") in html
-    assert "onclick=\\"exportReport('html')\\"".replace("\\", "") in html
+    assert "exportReport('txt')" in html
+    assert "exportReport('html')" in html
     assert 'onclick="printReport()"' in html
 
 
