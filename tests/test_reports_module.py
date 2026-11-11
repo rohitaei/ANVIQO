@@ -1,8 +1,10 @@
 from pathlib import Path
+import os
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+os.environ.setdefault('ANVIQO_SECRET_KEY', 'ci-only-not-a-real-secret')
 
 import field_report_persistent_bridge as bridge
 
