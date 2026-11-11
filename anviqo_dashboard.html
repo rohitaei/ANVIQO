@@ -290,14 +290,14 @@ input,select{
 
  <div class="metrics">
   <div class="card metric"><label>PLANT HEALTH</label><strong id="health" class="cyan">—</strong><small>SIMULATED</small></div>
-  <div class="card metric"><label>ACTIVE ALARMS</label><strong id="alarms" class="red">—</strong><small>LIVE</small></div>
+  <div class="card metric"><label>ACTIVE ALARMS</label><strong id="alarms" class="red">—</strong><small id="alarmMode">MODE: UNKNOWN</small></div>
   <div class="card metric"><label>EQUIPMENT RISK</label><strong id="critical" class="amber">—</strong><small>PRIORITY</small></div>
   <div class="card metric"><label>EVENT CHAINS</label><strong id="events" class="cyan">—</strong><small>CORRELATED</small></div>
   <div class="card metric"><label id="ioLabel">I/O</label><strong id="ioCount">—</strong><small id="ioMode">PLANT DATA</small></div>
  </div>
 
  <div class="grid3">
-  <div class="card"><div class="card-head"><b>LIVE PLANT SITUATION</b><span>REAL-TIME</span></div><div class="card-body" id="overviewSituation">Loading...</div></div>
+  <div class="card"><div class="card-head"><b>SELECTED-PLANT SITUATION</b><span id="situationMode">MODE: UNKNOWN</span></div><div class="card-body" id="overviewSituation">Loading...</div></div>
   <div class="card"><div class="card-head"><b>INTELLIGENCE STATUS</b><span>V5</span></div><div class="card-body">
    <div class="row"><span>ANVI orchestrator</span><b class="green">ONLINE</b></div>
    <div class="row"><span>Evidence layer</span><b class="green">READY</b></div>
@@ -658,6 +658,9 @@ async function refresh(){
   const ioCount=document.getElementById('ioCount'); if(ioCount) ioCount.textContent=d.total_io??'—';
   const ioMode=document.getElementById('ioMode'); if(ioMode) ioMode.textContent=(d.mode||'ONBOARDED_DATA').replace(/_/g,' ');
   document.getElementById('alarms').textContent=(d.warning||0)+(d.critical||0);
+  const modeLabel=String(d.mode||'UNKNOWN').replace(/_/g,' ');
+  const alarmMode=document.getElementById('alarmMode'); if(alarmMode) alarmMode.textContent='MODE: '+modeLabel;
+  const situationMode=document.getElementById('situationMode'); if(situationMode) situationMode.textContent='MODE: '+modeLabel;
   document.getElementById('critical').textContent=d.critical??0;
   document.getElementById('events').textContent=d.active_events??0;
   document.getElementById('overviewSituation').innerHTML=
