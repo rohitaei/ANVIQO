@@ -386,11 +386,50 @@ input,select{
 </div>
 
 <div class="page" id="page-reports">
- <div class="card"><div class="card-head"><b>REPORTS</b></div><div class="card-body">
-  <button class="btn" onclick="askQuick('Generate the latest plant intelligence report')">Plant Report</button>
-  <button class="btn" onclick="go('shift')">Shift Report</button>
-  <button class="btn" onclick="askQuick('Generate a maintenance intelligence report')">Maintenance Report</button>
- </div></div>
+ <div class="hero">
+  <div class="card"><div class="kicker">EVIDENCE-BACKED REPORTING</div><h1>Plant intelligence reports.</h1>
+   <p>Generate a selected-plant report from ANVI's authorized evidence. Missing data is identified—not estimated. Reports are decision support and require human review.</p>
+  </div>
+  <div class="card brain"><div class="orb">▤</div><b>REPORT CENTRE</b><small class="muted">SELECTED PLANT ONLY</small></div>
+ </div>
+ <div class="card">
+  <div class="card-head"><b>REPORT BUILDER</b><span>HUMAN-GOVERNED · READ-ONLY</span></div>
+  <div class="card-body">
+   <div class="filters">
+    <select id="reportType" aria-label="Report type">
+     <option value="Plant intelligence">Plant intelligence report</option>
+     <option value="Plant health and alarms">Plant health &amp; alarms</option>
+     <option value="Events and changes">Events &amp; changes report</option>
+     <option value="Maintenance intelligence">Maintenance report</option>
+     <option value="Equipment evidence">Equipment report</option>
+     <option value="Shift handover">Shift handover report</option>
+    </select>
+    <input id="reportFrom" type="date" aria-label="From date">
+    <input id="reportTo" type="date" aria-label="To date">
+    <input id="reportTag" placeholder="Equipment tag (optional)" aria-label="Equipment tag">
+    <input id="reportArea" placeholder="Area (optional)" aria-label="Area">
+   </div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn primary" id="generateReportBtn" onclick="generateReport()">Generate report</button>
+    <button class="btn" onclick="exportReport('txt')" id="exportReportTxt" disabled>Export TXT</button>
+    <button class="btn" onclick="exportReport('html')" id="exportReportHtml" disabled>Export HTML</button>
+    <button class="btn" onclick="printReport()" id="printReportBtn" disabled>Print / Save PDF</button>
+   </div>
+   <div id="reportStatus" class="empty">Choose a report type and generate a report. Export becomes available after a successful response from ANVI.</div>
+   <div id="reportResult" class="card-body" style="white-space:pre-wrap;line-height:1.8;font-size:11px"></div>
+   <div id="reportProvenance" class="muted" style="font-size:9px;line-height:1.7"></div>
+  </div>
+ </div>
+ <div class="card" style="margin-top:14px">
+  <div class="card-head"><b>REPORTING SAFETY &amp; EVIDENCE RULES</b></div>
+  <div class="card-body">
+   <div class="row"><span>Plant scope</span><b>Authenticated selected plant only</b></div>
+   <div class="row"><span>Missing evidence</span><b>Reported as unavailable</b></div>
+   <div class="row"><span>Simulation / live provenance</span><b>Must remain explicitly labelled</b></div>
+   <div class="row"><span>Control authority</span><b class="red">PLC WRITE BLOCKED · SCADA CONTROL BLOCKED</b></div>
+   <div class="row"><span>Approval</span><b class="amber">HUMAN REVIEW REQUIRED</b></div>
+  </div>
+ </div>
 </div>
 
 <!-- ASK ANVI -->
@@ -895,6 +934,76 @@ async function loadShift(){
  }catch(e){
   document.getElementById('shiftResult').innerHTML='<div class="empty">Unable to generate report.</div>';
  }
+}
+
+let generatedReportText='';
+let generatedReportMeta=null;
+
+async function generateReport(){
+ const type=document.getElementById('reportType').value;
+ const from=document.getElementById('reportFrom').value;
+ const to=document.getElementById('reportTo').value;
+ const tag=document.getElementById('reportTag').value.trim();
+ const area=document.getElementById('reportArea').value.trim();
+ const status=document.getElementById('reportStatus');
+ const result=document.getElementById('reportResult');
+ const button=document.getElementById('generateReportBtn');
+ ['exportReportTxt','exportReportHtml','printReportBtn'].forEach(id=>document.getElementById(id).disabled=true);
+ generatedReportText='';
+ generatedReportMeta=null;
+ if(from && to && from>to){status.textContent='Invalid date range: From date must be on or before To date.';return;}
+ const filters=[];
+ if(from)filters.push('From date: '+from);
+ if(to)filters.push('To date: '+to);
+ if(tag)filters.push('Equipment tag: '+tag);
+ if(area)filters.push('Area: '+area);
+ const prompt='Generate a '+type+' for the authenticated selected plant only.'+
+  (filters.length?' Apply these filters: '+filters.join('; ')+'.':'')+
+  ' Use only authorized selected-plant evidence available to this session. Include report title, generation timestamp, evidence scope, reporting period, concise executive summary, observed conditions, relevant tags and values with units and timestamps when actually available, alarms/events/changes, maintenance actions, evidence sources and provenance, evidence gaps, recommended human review/actions, and explicit safety boundary. Distinguish LIVE, ONBOARDED, and SIMULATION data exactly as returned. Never invent measurements, timestamps, limits, history, events, actions, root causes, or confidence. If a requested category has no evidence, state NOT AVAILABLE / NO MATCHING EVIDENCE. Do not use another plant or global fallback. PLC writes and SCADA control remain blocked; human decision required.';
+ status.textContent='Generating '+type+' from selected-plant evidence...';
+ result.textContent='';
+ button.disabled=true;
+ try{
+  const data=await askAPI(prompt);
+  const answer=String(data.answer||data.response||data.message||'');
+  if(!answer.trim())throw Error('ANVI returned an empty report.');
+  const stamp=new Date().toISOString();
+  generatedReportMeta={type,from,to,tag,area,generatedAt:stamp,scope:'AUTHENTICATED SELECTED PLANT ONLY'};
+  generatedReportText='ANVIQO — '+type.toUpperCase()+'\nGenerated: '+stamp+'\nEvidence scope: AUTHENTICATED SELECTED PLANT ONLY\nFilters: '+(filters.join(' | ')||'None')+'\n\n'+answer+'\n\nSAFETY: READ-ONLY · PLC WRITE BLOCKED · SCADA CONTROL BLOCKED · HUMAN DECISION REQUIRED';
+  result.textContent=answer;
+  document.getElementById('reportProvenance').textContent='Generated '+stamp+' · Scope: authenticated selected plant only · '+(filters.join(' · ')||'No additional filters')+' · ANVI response: '+(data.status||'status not supplied')+' · Review evidence and provenance before operational use.';
+  status.textContent='Report generated. Review the evidence and provenance before export or circulation.';
+  ['exportReportTxt','exportReportHtml','printReportBtn'].forEach(id=>document.getElementById(id).disabled=false);
+ }catch(e){
+  status.textContent='Report generation failed: '+(e.message||e)+'. No report was exported.';
+  result.textContent='';
+ }finally{button.disabled=false;}
+}
+
+function exportReport(format){
+ if(!generatedReportText||!generatedReportMeta)return;
+ const safeName=('ANVIQO_'+generatedReportMeta.type+'_'+(generatedReportMeta.generatedAt||'').slice(0,10)).replace(/[^A-Za-z0-9_-]+/g,'_');
+ let blob,name;
+ if(format==='html'){
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const body=generatedReportText.split('\n').map(line=>'<p>'+esc(line)+'</p>').join('');
+  blob=new Blob(['<!doctype html><html><head><meta charset="utf-8"><title>'+esc(safeName)+'</title><style>body{font:14px Arial;line-height:1.6;max-width:900px;margin:40px auto;padding:0 24px;color:#17232b}p{white-space:pre-wrap}</style></head><body>'+body+'</body></html>'],{type:'text/html;charset=utf-8'});
+  name=safeName+'.html';
+ }else{
+  blob=new Blob([generatedReportText],{type:'text/plain;charset=utf-8'});
+  name=safeName+'.txt';
+ }
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+
+function printReport(){
+ if(!generatedReportText)return;
+ const w=window.open('','_blank');
+ if(!w){document.getElementById('reportStatus').textContent='Popup blocked. Use Export HTML or TXT instead.';return;}
+ const escaped=generatedReportText.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ w.document.write('<!doctype html><html><head><title>ANVIQO Report</title><style>body{font:12pt Arial;line-height:1.6;margin:28mm;white-space:pre-wrap}</style></head><body>'+escaped+'</body></html>');
+ w.document.close();w.focus();w.print();
 }
 
 async function loadSystem(){
