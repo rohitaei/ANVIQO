@@ -1,0 +1,25 @@
+name: ANVIQO PLC Gateway Safety Tests
+
+on:
+  push:
+    branches: [feature/read-only-plc-gateway-20261111]
+  pull_request:
+    branches: [client-acceptance-question-bank-20261103]
+
+jobs:
+  gateway-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: python -m pip install pytest flask
+      - name: Compile gateway modules
+        run: python -m py_compile anvi_plc_gateway.py gateway/anviqo_opcua_gateway.py
+      - name: Test tenant binding, ingest and read-only contract
+        env:
+          PYTHONPATH: .
+        run: pytest -q tests/test_plc_gateway_ingest.py
