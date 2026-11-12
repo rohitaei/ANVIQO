@@ -121,7 +121,7 @@ def _rows(plant_id, terms=None, tag=None, limit=2500):
         variants = [raw_tag, compact_tag, underscored_tag, dashed_tag, spaced_tag]
         clauses.append(
             "(" + " OR ".join(
-                f"upper(coalesce({column},'')) LIKE {p}"
+                f"upper(coalesce(CAST({column} AS TEXT),'')) LIKE {p}"
                 for column in ("tag", "external_id", "metadata", "content")
                 for _ in variants
             ) + ")"
@@ -154,7 +154,7 @@ def _rows(plant_id, terms=None, tag=None, limit=2500):
             identities=[item.get("tag"), item.get("external_id")]
             meta_obj=item.get("metadata") if isinstance(item.get("metadata"),dict) else {}
             identities.extend(meta_obj.get(k) for k in (
-                "tag","tag_no","tag_number","instrument_tag","external_id"
+                "tag","tag_no","tag_number","instrument_tag","external_id","plc_tag","fox_plc_tag","original_tag"
             ))
             if not any(_normalize(v)==target for v in identities if v):
                 continue
