@@ -493,6 +493,12 @@ def parse_field_report(text, filename=""):
 def store_field_report(text, filename=""):
     record = parse_field_report(text, filename)
 
+    from anvi_neon_store import neon_enabled, upsert_field_report
+    if not neon_enabled():
+        raise RuntimeError(
+            "Durable field-report storage is unavailable. The report was not confirmed saved."
+        )
+
     import plant_memory
 
     # Existing Plant Memory remains authoritative.
@@ -542,25 +548,30 @@ def store_field_report(text, filename=""):
 
     record["inventory_update"] = inventory_update
 
-    # ANVIQO_NEON_FIELD_REPORT_HOOK_V2
-    try:
-        from anvi_neon_store import upsert_field_report
-        upsert_field_report({
-            "report_id": str(memory.get("memory_id","")),
-            "tag": record.get("tag",""),
-            "equipment": record.get("equipment",""),
-            "event": record.get("event",""),
-            "source": record.get("source",""),
-            "raw_report": record.get("raw_report",""),
-            "parsed_report": record,
-            "memory": memory,
-            "verification_status": "PENDING_VERIFICATION",
-        })
-    except Exception:
-        pass
+    # Durable persistence is mandatory for a successful save response.
+    # Any database error propagates to the API as SAVE_FAILED; never silently
+    # report success when the Neon write/read-back did not complete.
+    report_id = str(memory.get("memory_id", "") or "").strip()
+    if not report_id:
+        import uuid
+        report_id = "FR-" + uuid.uuid4().hex
+    upsert_field_report({
+        "report_id": report_id,
+        "tag": record.get("tag", ""),
+        "equipment": record.get("equipment", ""),
+        "event": record.get("event", ""),
+        "source": record.get("source", ""),
+        "raw_report": record.get("raw_report", ""),
+        "parsed_report": record,
+        "memory": memory,
+        "verification_status": "PENDING_VERIFICATION",
+    })
+
 
     return {
         "status": "PENDING_VERIFICATION",
+        "persistence_confirmed": True,
+        "report_id": report_id,
         "domain": "plant_memory",
         "memory": memory,
         "parsed_report": record,
