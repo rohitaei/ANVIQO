@@ -114,12 +114,17 @@ def _has_report_details(report):
     return any(str(report.get(k) or "").strip() for k in ("observation","finding","maintenance_action","outcome","recovery_status","spare_used","raw_report","notes"))
 
 def _authenticated_tenant():
-    """Return authenticated tenant context for report reads, or no tenant."""
+    """Return authenticated tenant context; never infer auth from a UI-only flag."""
     try:
         from flask import has_request_context, session
-        if not has_request_context() or not session.get("authenticated"):
+        if not has_request_context() or not session.get("user_id"):
             return None, None
-        return session.get("plant_id"), session.get("organization_id")
+        # Empty strings deliberately remain tenant-scoped: an authenticated
+        # user with incomplete context must get no report, never global memory.
+        return (
+            str(session.get("plant_id") or "").strip(),
+            str(session.get("organization_id") or "").strip(),
+        )
     except Exception:
         return None, None
 
