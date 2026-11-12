@@ -186,28 +186,33 @@ def get_memory(tag="",equipment=""):
     return [r[0] for r in rows]
 
 def upsert_field_report(record):
-    if not neon_enabled(): return False
+    """Persist a field report and confirm it can be read back for this tenant."""
+    if not neon_enabled():
+        raise RuntimeError("Durable field-report storage is unavailable: DATABASE_URL is not configured.")
     init_neon()
 
-    # Persist the active Phase 2 tenant context inside the report payload so
-    # durable retrieval can enforce organization + plant isolation after a
-    # Render restart. This is metadata only; it does not alter report content
-    # or inventory behavior.
-    record = dict(record or {})
-    try:
-        from flask import session
-        org_id = str(session.get("organization_id", "")).strip()
-        plant_id = str(session.get("plant_id", "")).strip()
-        if org_id:
-            record.setdefault("organization_id", org_id)
-        if plant_id:
-            record.setdefault("plant_id", plant_id)
-    except Exception:
-        pass
+    # The authenticated session is authoritative. Never accept tenant identity
+    # supplied by report text or a client payload.
+    from flask import session
+    org_id = str(session.get("organization_id", "")).strip()
+    plant_id = str(session.get("plant_id", "")).strip()
+    if not org_id or not plant_id:
+        raise RuntimeError("Cannot save field report: authenticated organization and plant context are missing.")
 
-    rid=str(record.get("report_id","")).strip()
+    record = dict(record or {})
+    record["organization_id"] = org_id
+    record["plant_id"] = plant_id
+
+    rid = str(record.get("report_id", "")).strip()
     if not rid:
-        rid="FR-"+str(abs(hash(_json(record))))
+        import uuid
+        rid = "FR-" + uuid.uuid4().hex
+        record["report_id"] = rid
+
+    tag = str(record.get("tag", "") or "").strip()
+    equipment = str(record.get("equipment", "") or "").strip()
+    payload = _json(record)
+
     _exec("""
       INSERT INTO anviqo_field_reports(report_id,tag,equipment,payload)
       VALUES(%s,%s,%s,%s::jsonb)
@@ -215,7 +220,26 @@ def upsert_field_report(record):
       SET tag=EXCLUDED.tag,
           equipment=EXCLUDED.equipment,
           payload=EXCLUDED.payload
-    """,(rid,record.get("tag",""),record.get("equipment",""),_json(record)))
+    """, (rid, tag, equipment, payload))
+
+    # A successful INSERT call alone is not enough: confirm the exact row is
+    # durably readable under the same organization + plant boundary.
+    rows = _exec("""
+      SELECT payload
+      FROM anviqo_field_reports
+      WHERE report_id=%s
+        AND payload->>'organization_id'=%s
+        AND payload->>'plant_id'=%s
+      LIMIT 1
+    """, (rid, org_id, plant_id), True)
+    if not rows or not isinstance(rows[0][0], dict):
+        raise RuntimeError("Field report write was not confirmed by durable read-back; report is NOT marked saved.")
+
+    saved = rows[0][0]
+    if str(saved.get("report_id", "")) != rid:
+        raise RuntimeError("Field report read-back verification failed: report ID mismatch.")
+    if str(saved.get("tag", "") or "").strip().upper() != tag.upper():
+        raise RuntimeError("Field report read-back verification failed: equipment tag mismatch.")
     return True
 
 def upsert_critical_spare(spare_key, tag, payload):
