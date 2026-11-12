@@ -12,9 +12,7 @@ from __future__ import annotations
 
 import re
 
-from flask import jsonify, request, session
-
-from anviqo_api_phase2 import app
+from flask import session
 
 
 _TAG_RE = re.compile(r"\b([A-Z]{1,8}[-_ ]?\d{1,5})\b", re.I)
@@ -144,50 +142,3 @@ def _best_report(question, reports, tag=""):
     if not candidates:
         return None
     return max(candidates, key=score)
-
-
-@app.before_request
-def persistent_field_report_query_bridge():
-    """Fallback for /api/ask when local Plant Memory has no report."""
-    # Phase 2 establishes authenticated tenant context using user_id. Keep
-    # this bridge aligned with that boundary; do not invent a second auth flag.
-    if not session.get("user_id") or request.path != "/api/ask" or request.method != "POST":
-        return None
-
-    payload = request.get_json(silent=True) or {}
-    question = str(
-        payload.get("question")
-        or payload.get("query")
-        or payload.get("message")
-        or payload.get("text")
-        or ""
-    ).strip()
-    if not question:
-        return None
-
-    from field_report_runtime import _report_query
-    if not _report_query(question):
-        return None
-
-    tag_match = _TAG_RE.search(question)
-    tag = tag_match.group(1).upper().replace("_", "-").replace(" ", "-") if tag_match else ""
-    reports = _field_reports_from_neon(tag=tag, limit=20)
-    report = _best_report(question, reports, tag=tag)
-    if not report:
-        return None
-
-    view = _report_view(report)
-    answer = _format_report_answer(view)
-
-    return jsonify({
-        "answer": answer,
-        "status": "OK",
-        "domain": "plant_memory",
-        "source": "technician field report",
-        "memory_id": view.get("memory_id") or view.get("report_id", ""),
-        "verification_status": view.get("verification_status", "PENDING_VERIFICATION"),
-        "evidence": report,
-        "read_only": True,
-        "plc_write": False,
-        "scada_control": False,
-    })
