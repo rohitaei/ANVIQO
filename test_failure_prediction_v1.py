@@ -81,7 +81,7 @@ def test_authenticated_tenant_never_reads_global_prediction_sources(monkeypatch)
     import failure_prediction as fp
 
     monkeypatch.setattr(fp, "_authenticated_tenant", lambda: ("plant-b", "org-b"))
-    monkeypatch.setattr(fp, "_tenant_rows", lambda tag, plant_id: [])
+    monkeypatch.setattr(fp, "_tenant_rows", lambda tag, plant_id, organization_id=None: [])
     monkeypatch.setattr(fp, "_pci", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global PCI path used")))
     monkeypatch.setattr(fp, "_history", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global history path used")))
     monkeypatch.setattr(fp, "_memory", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global memory path used")))
@@ -89,7 +89,7 @@ def test_authenticated_tenant_never_reads_global_prediction_sources(monkeypatch)
     monkeypatch.setattr(fp, "_health", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global health path used")))
 
     result = fp.build_failure_prediction("Predict TIC_101A failure risk")
-    assert result["status"] == "INSUFFICIENT_EVIDENCE"
+    assert result["status"] == "EQUIPMENT_IDENTITY_UNAVAILABLE"
     assert result["evidence_summary"]["pci_identity_available"] is False
     assert result["safety"]["plc_write"] is False
     assert result["decision_status"] == "HUMAN_DECISION_REQUIRED"
@@ -99,7 +99,7 @@ def test_authenticated_missing_history_fails_closed_for_multiple_equipment_tags(
     import failure_prediction as fp
 
     monkeypatch.setattr(fp, "_authenticated_tenant", lambda: ("plant-selected", "org-selected"))
-    monkeypatch.setattr(fp, "_tenant_rows", lambda tag, plant_id: [])
+    monkeypatch.setattr(fp, "_tenant_rows", lambda tag, plant_id, organization_id=None: [])
     monkeypatch.setattr(fp, "_pci", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global PCI fallback used")))
     monkeypatch.setattr(fp, "_history", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global history fallback used")))
     monkeypatch.setattr(fp, "_memory", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("global memory fallback used")))
@@ -109,7 +109,7 @@ def test_authenticated_missing_history_fails_closed_for_multiple_equipment_tags(
     for tag in ("PT-303", "TIC-101A", "FT-204"):
         result = fp.build_failure_prediction(f"Predict {tag} failure risk")
         assert result["tag"] == tag
-        assert result["status"] == "INSUFFICIENT_EVIDENCE"
+        assert result["status"] == "EQUIPMENT_IDENTITY_UNAVAILABLE"
         assert result["trend"]["status"] == "UNAVAILABLE"
         assert result["evidence_summary"]["numeric_observation_count"] == 0
         assert result["safety"]["plc_write"] is False
