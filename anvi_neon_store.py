@@ -220,6 +220,8 @@ def upsert_field_report(record):
       SET tag=EXCLUDED.tag,
           equipment=EXCLUDED.equipment,
           payload=EXCLUDED.payload
+      WHERE anviqo_field_reports.payload->>'organization_id'=EXCLUDED.payload->>'organization_id'
+        AND anviqo_field_reports.payload->>'plant_id'=EXCLUDED.payload->>'plant_id'
     """, (rid, tag, equipment, payload))
 
     # A successful INSERT call alone is not enough: confirm the exact row is
