@@ -133,17 +133,31 @@ def answer_field_report_query(question):
 
     if tenant_plant_id:
         # Authenticated tenants must never read bundled/global Plant Memory.
-        # The persistent tenant bridge is the authoritative source here.
+        # Durable rows store parsed fields under payload["parsed_report"], so
+        # flatten the payload before checking for report details. The previous
+        # implementation checked only top-level fields and discarded valid
+        # saved reports after a Render restart.
         try:
-            from field_report_persistent_bridge import _field_reports_from_neon
-            results = _field_reports_from_neon(tag=tag, limit=10)
+            from field_report_persistent_bridge import (
+                _field_reports_from_neon,
+                _report_view,
+                _best_report,
+            )
+            stored = _field_reports_from_neon(tag=tag, limit=20)
+            selected = _best_report(question, stored, tag=tag)
+            report = _report_view(selected) if selected else {}
+            reports = [report] if (
+                report
+                and report.get("source") == "technician field report"
+                and _has_report_details(report)
+            ) else []
         except Exception:
-            results = []
+            reports = []
     else:
         import plant_memory
         results=plant_memory.search_all_memory(query=question,tag=tag,limit=10)
+        reports=[r for r in results if r.get("source")=="technician field report" and _has_report_details(r)]
 
-    reports=[r for r in results if r.get("source")=="technician field report" and _has_report_details(r)]
     if not reports: return None
     report=reports[0]
     pending=report.get("verification_status")!="VERIFIED"
