@@ -92,10 +92,17 @@ def _authenticated_tenant() -> Tuple[Optional[str], Optional[str]]:
         return None, None
 
 
-def _tenant_rows(tag: str, plant_id: str) -> List[Dict[str, Any]]:
+def _tenant_rows(tag: str, plant_id: str, organization_id: str) -> List[Dict[str, Any]]:
     try:
         from anvi_tenant_chat_boundary import _rows
-        return _rows(plant_id, tag=tag, limit=250)
+        rows = _rows(plant_id, tag=tag, limit=250)
+        # Require both tenant keys even though plant_id is globally unique.
+        return [
+            row for row in rows
+            if isinstance(row, dict)
+            and str(row.get("organization_id") or "") == str(organization_id or "")
+            and str(row.get("plant_id") or "") == str(plant_id or "")
+        ]
     except Exception:
         return []
 
@@ -259,7 +266,7 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
 
     if authenticated_request:
         # Exact tenant+plant scope only. No global/local JSON fallback.
-        tenant_rows = _tenant_rows(tag, plant_id) if tag else []
+        tenant_rows = _tenant_rows(tag, plant_id, organization_id) if tag else []
         # Equipment identity comes only from this selected plant's knowledge rows.
         identity = tenant_rows[0] if tenant_rows else None
         live = None
