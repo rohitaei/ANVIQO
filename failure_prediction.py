@@ -238,7 +238,7 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
     plant_id, organization_id = _authenticated_tenant()
     try:
         from flask import has_request_context, session
-        authenticated_request = bool(has_request_context() and session.get("authenticated"))
+        authenticated_request = bool((has_request_context() and session.get("authenticated")) or (plant_id and organization_id))
     except Exception:
         authenticated_request = False
 
@@ -260,9 +260,9 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
     if authenticated_request:
         # Exact tenant+plant scope only. No global/local JSON fallback.
         tenant_rows = _tenant_rows(tag, plant_id) if tag else []
-        identity, live = _pci(tag, plant_id, organization_id) if tag else (None, None)
-        if identity is None and tenant_rows:
-            identity = tenant_rows[0]
+        # Equipment identity comes only from this selected plant's knowledge rows.
+        identity = tenant_rows[0] if tenant_rows else None
+        live = None
         if live is None:
             for row in tenant_rows:
                 metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
