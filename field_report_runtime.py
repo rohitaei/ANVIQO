@@ -140,7 +140,7 @@ def answer_field_report_query(question):
 
     tenant_plant_id, tenant_org_id = _authenticated_tenant()
 
-    if tenant_plant_id:
+    if tenant_plant_id is not None or tenant_org_id is not None:
         # Authenticated tenants must never read bundled/global Plant Memory.
         # Durable rows store parsed fields under payload["parsed_report"], so
         # flatten the payload before checking for report details. The previous
