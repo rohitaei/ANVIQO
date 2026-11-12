@@ -236,28 +236,50 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
     query = str(query or "").strip()
     tag = extract_tag(tag or query) or str(tag or "").strip().upper()
     plant_id, organization_id = _authenticated_tenant()
+    try:
+        from flask import has_request_context, session
+        authenticated_request = bool(has_request_context() and session.get("authenticated"))
+    except Exception:
+        authenticated_request = False
 
-    if plant_id:
-        # Authenticated production requests are strictly tenant-scoped.
-        # Do not read global PCI, memory, event, health or prediction stores.
+    if authenticated_request and (not plant_id or not organization_id):
+        return {
+            "prediction_version": VERSION,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "query": query, "tag": tag, "status": "TENANT_CONTEXT_UNAVAILABLE",
+            "risk_signal": "UNAVAILABLE",
+            "prediction": "Prediction unavailable: authenticated organization and selected-plant context could not be established. No other plant or global history was consulted.",
+            "confidence": "INSUFFICIENT_EVIDENCE",
+            "reasoning": "The request failed closed because tenant context is incomplete.",
+            "trend": {"status": "UNAVAILABLE", "reason": "Exact organization and plant context are required."},
+            "evidence_summary": {"pci_identity_available": False, "live_available": False, "persisted_observation_count": 0, "numeric_observation_count": 0, "evidence_basis": []},
+            "evidence": {"pci_identity": None, "persisted_observations": [], "numeric_observations": []},
+            "safety": dict(SAFETY), "decision_status": "HUMAN_DECISION_REQUIRED",
+        }
+
+    if authenticated_request:
+        # Exact tenant+plant scope only. No global/local JSON fallback.
         tenant_rows = _tenant_rows(tag, plant_id) if tag else []
-        identity = tenant_rows[0] if tenant_rows else None
-        live = None
-        for row in tenant_rows:
-            metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
-            for container in (row, metadata):
-                if isinstance(container, dict) and container.get("value") is not None:
-                    try:
-                        live = dict(row)
-                        live["value"] = float(container.get("value"))
-                        live["timestamp"] = container.get("timestamp") or row.get("created_at")
-                        live["source"] = container.get("source") or row.get("source")
-                    except (TypeError, ValueError):
-                        pass
+        identity, live = _pci(tag, plant_id, organization_id) if tag else (None, None)
+        if identity is None and tenant_rows:
+            identity = tenant_rows[0]
+        if live is None:
+            for row in tenant_rows:
+                metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+                for container in (row, metadata):
+                    if isinstance(container, dict) and container.get("value") is not None:
+                        try:
+                            live = dict(row)
+                            live["value"] = float(container.get("value"))
+                            live["timestamp"] = container.get("timestamp") or row.get("created_at")
+                            live["source"] = container.get("source") or row.get("source")
+                        except (TypeError, ValueError):
+                            pass
+                        break
+                if live:
                     break
-            if live:
-                break
-        history = []
+        history_module = _load("failure_prediction_history")
+        history = _call(history_module, "get_tenant_observations", organization_id, plant_id, tag, limit=500) or []
         memory = []
         events = []
         health = None
@@ -293,7 +315,12 @@ def build_failure_prediction(query: str, tag: Optional[str] = None) -> Dict[str,
     reasoning = "ANVIQO will not infer a future failure from a single live value, an event_active flag, a risk score, or an assumed threshold."
     status = "INSUFFICIENT_EVIDENCE"
 
-    if trend["status"] == "AVAILABLE":
+    if identity is None and authenticated_request:
+        status = "EQUIPMENT_IDENTITY_UNAVAILABLE"
+        prediction = "Prediction unavailable: this equipment tag is not confirmed in the selected plant's onboarded equipment identity."
+        confidence = "INSUFFICIENT_EVIDENCE"
+        reasoning = "No matching equipment identity was found in the selected plant. ANVIQO will not infer identity or use another plant's records."
+    elif trend["status"] == "AVAILABLE":
         direction = trend["direction"]
         if direction == "RISING":
             risk_signal = "TREND_RISING"
