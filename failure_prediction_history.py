@@ -145,3 +145,114 @@ def history_summary(tag: str) -> Dict[str, Any]:
         "sources": sorted({str(row.get("source") or "") for row in rows if row.get("source")}),
         "observations": rows,
     }
+
+
+def record_tenant_observation(
+    organization_id: str, plant_id: str, user_id: str, tag: str, value: float,
+    timestamp: Optional[str], source_type: str, source: str, unit: str = "",
+    state: str = "", area: str = "", provenance: str = "",
+) -> Dict[str, Any]:
+    """Persist an observation under an exact authenticated organization+plant."""
+    organization_id = str(organization_id or "").strip()
+    plant_id = str(plant_id or "").strip()
+    user_id = str(user_id or "").strip()
+    if not organization_id or not plant_id or not user_id:
+        raise ValueError("authenticated organization, plant and user context are required")
+    normalized_tag = _norm_tag(tag)
+    if not normalized_tag:
+        raise ValueError("valid equipment tag is required")
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        raise ValueError("numeric observation value is required")
+    if not __import__("math").isfinite(numeric):
+        raise ValueError("observation value must be finite")
+    source_type = str(source_type or "").strip().upper()
+    if source_type not in _ALLOWED_SOURCE_TYPES:
+        raise ValueError("source_type must be a supported non-simulation plant source")
+    source = str(source or "").strip()
+    provenance = str(provenance or "").strip()
+    if not source or not provenance:
+        raise ValueError("source and provenance are required")
+    if "SIMULATION" in source_type or "SIMULATION" in source.upper() or "DEMO" in source.upper():
+        raise ValueError("simulation/demo observations are not eligible for Failure Prediction history")
+    ts = str(timestamp or _now()).strip()
+    try:
+        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            raise ValueError
+    except ValueError:
+        raise ValueError("timestamp must be ISO-8601 with timezone")
+    import anvi_tenant_store as store
+    if not store.enabled():
+        raise RuntimeError("tenant persistence is unavailable")
+    store.init_schema()
+    observation_id = "FPO-" + uuid.uuid4().hex[:12].upper()
+    p = store._placeholder()
+    sql = (
+        "INSERT INTO anviqo_failure_prediction_observations "
+        "(observation_id,organization_id,plant_id,tag,value,observed_at,source_type,source,unit,state,area,provenance,simulation,recorded_by) "
+        f"VALUES({','.join([p]*14)}) "
+        "ON CONFLICT (organization_id,plant_id,tag,observed_at,source) DO NOTHING"
+    )
+    values = (observation_id, organization_id, plant_id, normalized_tag, numeric, parsed, source_type, source,
+              str(unit or "").strip(), str(state or "").strip().upper(), str(area or "").strip(),
+              provenance, False, user_id)
+    with store._connect() as conn:
+        cur = conn.cursor()
+        cur.execute(sql, values)
+        cur.execute(
+            "SELECT observation_id,tag,value,observed_at,source_type,source,unit,state,area,provenance,recorded_at "
+            f"FROM anviqo_failure_prediction_observations WHERE organization_id={p} AND plant_id={p} AND tag={p} AND observed_at={p} AND source={p}",
+            (organization_id, plant_id, normalized_tag, parsed, source),
+        )
+        row = cur.fetchone()
+    if not row:
+        raise RuntimeError("tenant observation persistence could not be confirmed")
+    keys = ("observation_id","tag","value","timestamp","source_type","source","unit","state","area","provenance","recorded_at")
+    record = dict(zip(keys, row))
+    record["timestamp"] = record["timestamp"].isoformat() if hasattr(record["timestamp"], "isoformat") else str(record["timestamp"])
+    record["simulation"] = False
+    return record
+
+
+def get_tenant_observations(organization_id: str, plant_id: str, tag: str, limit: int = 500) -> List[Dict[str, Any]]:
+    """Read only observations belonging to the exact selected tenant and plant."""
+    organization_id = str(organization_id or "").strip()
+    plant_id = str(plant_id or "").strip()
+    normalized_tag = _norm_tag(tag)
+    if not organization_id or not plant_id or not normalized_tag:
+        return []
+    import anvi_tenant_store as store
+    if not store.enabled():
+        return []
+    p = store._placeholder()
+    with store._connect() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT observation_id,tag,value,observed_at,source_type,source,unit,state,area,provenance,recorded_at "
+            "FROM anviqo_failure_prediction_observations "
+            f"WHERE organization_id={p} AND plant_id={p} AND tag={p} AND simulation=FALSE "
+            "ORDER BY observed_at ASC LIMIT " + str(max(1, min(int(limit), 2000))),
+            (organization_id, plant_id, normalized_tag),
+        )
+        rows = cur.fetchall()
+    result = []
+    for row in rows:
+        item = dict(zip(("observation_id","tag","value","timestamp","source_type","source","unit","state","area","provenance","recorded_at"), row))
+        item["timestamp"] = item["timestamp"].isoformat() if hasattr(item["timestamp"], "isoformat") else str(item["timestamp"])
+        item["simulation"] = False
+        result.append(item)
+    return result
+
+
+def tenant_history_summary(organization_id: str, plant_id: str, tag: str) -> Dict[str, Any]:
+    rows = get_tenant_observations(organization_id, plant_id, tag)
+    return {
+        "version": VERSION, "tag": _norm_tag(tag), "organization_id": organization_id,
+        "plant_id": plant_id, "count": len(rows),
+        "first_timestamp": rows[0].get("timestamp") if rows else None,
+        "last_timestamp": rows[-1].get("timestamp") if rows else None,
+        "sources": sorted({str(row.get("source") or "") for row in rows if row.get("source")}),
+        "observations": rows,
+    }
