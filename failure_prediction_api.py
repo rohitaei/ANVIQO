@@ -114,9 +114,15 @@ def failure_prediction_observation_api():
     if missing:
         return jsonify({"status":"BAD_REQUEST","message":"Missing required fields: " + ", ".join(missing)}), 400
     try:
-        from failure_prediction_history import record_observation
-        record = record_observation(tag=payload.get("tag"), value=payload.get("value"), timestamp=payload.get("timestamp"), source_type=payload.get("source_type"), source=payload.get("source"), unit=payload.get("unit"), state=payload.get("state"), area=payload.get("area"), provenance=payload.get("provenance"))
-        return jsonify({"status":"RECORDED","observation":record,"prediction_history_changed":True,"plc_write":False,"scada_control":False,"automatic_execution":False,"human_decision_required":True})
+        from failure_prediction_history import record_tenant_observation
+        record = record_tenant_observation(
+            organization_id=actor["organization_id"], plant_id=actor["plant_id"], user_id=actor["user_id"],
+            tag=payload.get("tag"), value=payload.get("value"), timestamp=payload.get("timestamp"),
+            source_type=payload.get("source_type"), source=payload.get("source"),
+            unit=payload.get("unit"), state=payload.get("state"), area=payload.get("area"),
+            provenance=payload.get("provenance"),
+        )
+        return jsonify({"status":"RECORDED","observation":record,"organization_id":actor["organization_id"],"plant_id":actor["plant_id"],"prediction_history_changed":True,"plc_write":False,"scada_control":False,"automatic_execution":False,"human_decision_required":True})
     except ValueError as exc:
         return jsonify({"status":"BAD_REQUEST","message":str(exc),"prediction_history_changed":False,"plc_write":False,"scada_control":False}), 400
     except Exception as exc:
@@ -135,7 +141,7 @@ def failure_prediction_history_api():
     if not tag:
         return jsonify({"status":"BAD_REQUEST","message":"tag is required."}), 400
     try:
-        from failure_prediction_history import history_summary
-        return jsonify(history_summary(tag))
+        from failure_prediction_history import tenant_history_summary
+        return jsonify(tenant_history_summary(actor["organization_id"], actor["plant_id"], tag))
     except Exception as exc:
         return jsonify({"status":"ERROR","message":str(exc),"plc_write":False,"scada_control":False}), 500
