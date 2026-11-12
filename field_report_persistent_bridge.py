@@ -129,6 +129,13 @@ def _best_report(question, reports, tag=""):
         s = len(q_tokens & _tokens(text)) * 10
         if wanted and wanted == _tag_norm(view.get("tag")):
             s += 100
+        # Prefer a substantive report over a newer one-line capture when
+        # several historical reports exist for the same equipment tag.
+        for field in ("observation", "finding", "maintenance_action", "outcome"):
+            if str(view.get(field) or "").strip():
+                s += 30
+        if len(str(view.get("raw_report") or "").strip()) >= 80:
+            s += 10
         if view.get("source") == "technician field report":
             s += 5
         return s
