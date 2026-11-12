@@ -326,7 +326,7 @@ def _extract_spare(text):
 
     if labeled:
         m = re.search(
-            r"(?i)\b([A-Z]{1,8}-\d{1,5})\s*x\s*(\d+(?:\.\d+)?)\b",
+            r"(?i)\b([A-Z]{1,8}-\d{1,5})\s*[x×]\s*(\d+(?:\.\d+)?)\b",
             labeled
         )
         if m:
