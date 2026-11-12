@@ -482,6 +482,8 @@ def field_report():
 
         return jsonify({
             "status": result.get("status", "PENDING_VERIFICATION"),
+            "persistence_confirmed": bool(result.get("persistence_confirmed", False)),
+            "report_id": result.get("report_id", ""),
             "domain": "plant_memory",
             "message": (
                 "Field report captured and stored in Plant Memory "
@@ -494,10 +496,14 @@ def field_report():
 
     except Exception as exc:
         return jsonify({
-            "status": "ERROR",
-            "message": str(exc),
+            "status": "SAVE_FAILED",
+            "persistence_confirmed": False,
+            "message": (
+                "Field report was NOT confirmed saved. "
+                + str(exc)
+            ),
             "safety": SAFETY,
-        }), 400
+        }), 503
 
 
 @app.route("/api/ask", methods=["POST"])
