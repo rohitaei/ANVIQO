@@ -34,3 +34,29 @@ def test_observation_history_is_idempotent(tmp_path, monkeypatch):
     second = history.record_observation(**kwargs)
     assert first["observation_id"] == second["observation_id"]
     assert len(history.get_observations("PT-303")) == 1
+
+
+def test_tenant_observation_history_is_isolated_by_org_and_plant(tmp_path, monkeypatch):
+    import anvi_tenant_store as store
+    import failure_prediction_history as history
+
+    monkeypatch.setattr(store, "TENANT_DB_URL", "sqlite:///" + str(tmp_path / "tenant.db"))
+    monkeypatch.setattr(store, "DATABASE_URL", "")
+    store.init_schema()
+
+    common = dict(
+        plant_id="plant-shared-test", tag="PT-303", value=42.0,
+        timestamp="2026-11-12T10:00:00+00:00", source_type="LIVE_TELEMETRY",
+        source="read-only gateway", unit="bar", state="HEALTHY",
+        area="PCI", provenance="signed gateway sample",
+    )
+    history.record_tenant_observation(organization_id="org-a", user_id="user-a", **common)
+    other = dict(common)
+    other["value"] = 99.0
+    history.record_tenant_observation(organization_id="org-b", user_id="user-b", **other)
+
+    a = history.get_tenant_observations("org-a", "plant-shared-test", "PT-303")
+    b = history.get_tenant_observations("org-b", "plant-shared-test", "PT-303")
+    assert len(a) == 1 and a[0]["value"] == 42.0
+    assert len(b) == 1 and b[0]["value"] == 99.0
+    assert history.get_tenant_observations("org-c", "plant-shared-test", "PT-303") == []
