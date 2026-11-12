@@ -117,10 +117,14 @@ def _authenticated_tenant():
     """Return authenticated tenant context; never infer auth from a UI-only flag."""
     try:
         from flask import has_request_context, session
-        if not has_request_context() or not session.get("user_id"):
+        if not has_request_context():
             return None, None
-        # Empty strings deliberately remain tenant-scoped: an authenticated
-        # user with incomplete context must get no report, never global memory.
+        if not session.get("authenticated"):
+            return None, None
+        # An authenticated session with a missing user ID or incomplete tenant
+        # context must remain tenant-scoped and fail closed, never use global memory.
+        if not session.get("user_id"):
+            return "", ""
         return (
             str(session.get("plant_id") or "").strip(),
             str(session.get("organization_id") or "").strip(),
