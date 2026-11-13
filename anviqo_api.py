@@ -744,7 +744,7 @@ def ask_anvi():
         # before ANVI's general language reasoning. The Primary Plant demo workbook is
         # used only for its explicitly configured demo tenant; BF-2 uses its own registry.
         spare_intent = bool(_re.search(
-            r"\\b(spares?|spare stock|stock of|inventory|zero stock|shortage of)\\b",
+            r"\b(spares?|spare stock|stock of|inventory|zero stock|shortage of)\b",
             q, _re.IGNORECASE,
         ))
         selected_slug = str(session.get("plant_slug") or "").strip().lower()
