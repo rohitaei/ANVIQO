@@ -590,6 +590,39 @@ def ask_anvi():
 
     try:
         q=(request.get_json(silent=True) or {}).get("question","").strip()
+        # Evidence-backed Plant Truth answers use one exact selected-plant snapshot.
+        # No generic agent, global simulator or cross-plant fallback is allowed here.
+        try:
+            from anvi_plant_truth_answers import answer_plant_truth
+            truth_answer = answer_plant_truth(q, None, None)
+        except Exception:
+            truth_answer = None
+        if truth_answer is not None:
+            plant_id = str(session.get("plant_id") or "").strip()
+            organization_id = str(session.get("organization_id") or "").strip()
+            if not plant_id or not organization_id:
+                return _regression_safety_contract(q, {
+                    "answer": "Plant Truth is unavailable because the authenticated session has no unique selected-plant context.",
+                    "domain": "plant_truth",
+                    "evidence_status": "TENANT_CONTEXT_UNAVAILABLE",
+                    "read_only": True, "plc_write": False, "scada_control": False,
+                    "human_decision_required": True,
+                })
+            from anvi_universal_command_centre import _tenant_snapshot
+            from anvi_evidence_assurance import build_evidence_assurance
+            selected_snapshot = _tenant_snapshot(plant_id)
+            assurance = build_evidence_assurance(
+                selected_snapshot,
+                plant_id=plant_id,
+                organization_id=organization_id,
+            )
+            truth_answer = answer_plant_truth(q, selected_snapshot, assurance)
+            truth_answer["evidence_assurance"] = assurance
+            truth_answer["plant_id"] = plant_id
+            truth_answer["organization_id"] = organization_id
+            truth_answer["scope"] = "SELECTED_PLANT_ONLY"
+            return _regression_safety_contract(q, truth_answer)
+
 
         # Family-level spare questions (for example, "Spares of PT") must not
         # fall through to the external conversational agent. Use the existing
