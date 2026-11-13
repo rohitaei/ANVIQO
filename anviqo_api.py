@@ -354,6 +354,46 @@ def pci_data():
         }), 500
 
 
+@app.route("/api/intelligence/equipment/<tag>/decision-brief")
+@login_required
+def equipment_decision_brief(tag):
+    """Evidence-first, exact-tag decision brief; no dashboard or control changes."""
+    try:
+        plant_id = str(session.get("plant_id") or "").strip()
+        plant_slug = str(session.get("plant_slug") or "").strip().lower()
+        demo_slug = os.environ.get("ANVIQO_SIMULATION_PLANT_SLUG", "primary-plant").strip().lower()
+        if not plant_id or not plant_slug:
+            return jsonify({
+                "status": "TENANT_CONTEXT_UNAVAILABLE",
+                "scope": "SELECTED_PLANT_ONLY",
+                "read_only": True, "plc_write": False, "scada_control": False,
+                "human_decision_required": True,
+            }), 409
+        if plant_slug != demo_slug:
+            return jsonify({
+                "status": "NO_APPROVED_OBSERVATION_SOURCE",
+                "scope": "SELECTED_PLANT_ONLY",
+                "plant_id": plant_id,
+                "read_only": True, "plc_write": False, "scada_control": False,
+                "human_decision_required": True,
+            }), 200
+        from pci_live_simulator import get_live_pci_snapshot
+        from anvi_decision_brief import build_equipment_brief
+        result = build_equipment_brief(get_live_pci_snapshot(), tag)
+        result["plant_id"] = plant_id
+        result["organization_id"] = session.get("organization_id")
+        result["scope"] = "SELECTED_PLANT_ONLY"
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({
+            "status": "DECISION_BRIEF_UNAVAILABLE",
+            "error_type": type(exc).__name__,
+            "scope": "SELECTED_PLANT_ONLY",
+            "read_only": True, "plc_write": False, "scada_control": False,
+            "human_decision_required": True,
+        }), 503
+
+
 @app.route("/api/intelligence/consistency")
 @login_required
 def intelligence_consistency():
