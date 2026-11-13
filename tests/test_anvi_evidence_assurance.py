@@ -58,7 +58,7 @@ def test_onboarding_data_is_never_described_as_live_telemetry():
         snapshot,
         now=datetime(2026, 11, 14, 0, 0, 5, tzinfo=timezone.utc),
     )
-    assert result["assurance_status"] == "CONSISTENT_ONBOARDING_EVIDENCE"
+    assert result["assurance_status"] == "CONSISTENT_ONBOARDING_DATA"
     assert "ONBOARDING_DATA_NOT_LIVE_TELEMETRY" in result["findings"]
 
 
@@ -109,3 +109,16 @@ def test_selected_plant_snapshot_cache_is_tenant_scoped_and_returns_copies(monke
             assert len(calls) == 2
     finally:
         adapter._TENANT_SNAPSHOT_CACHE.clear()
+
+
+
+def test_reported_state_totals_must_match_point_level_evidence():
+    snapshot = _snapshot()
+    snapshot["critical"] = 7
+    result = build_evidence_assurance(
+        snapshot,
+        now=datetime(2026, 11, 14, 0, 0, 5, tzinfo=timezone.utc),
+    )
+    assert result["checks"]["state_counts_reconciled"] is False
+    assert "STATE_COUNT_MISMATCH" in result["findings"]
+    assert result["assurance_status"] == "PARTIAL_OR_INCONSISTENT_EVIDENCE"
