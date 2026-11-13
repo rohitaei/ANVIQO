@@ -18,8 +18,8 @@ jobs:
       - name: Compile changed intelligence modules
         run: |
           python -m py_compile anviqo_api.py
-          python -m py_compile anvi_decision_brief.py anvi_evidence_assurance.py
+          python -m py_compile anvi_decision_brief.py anvi_evidence_assurance.py anvi_plant_truth_answers.py
       - name: Run evidence assurance and decision brief tests
         env:
           PYTHONPATH: .
-        run: pytest -q tests/test_anvi_evidence_assurance.py tests/test_anvi_inventory_intent.py tests/test_anvi_decision_brief.py
+        run: pytest -q tests/test_anvi_evidence_assurance.py tests/test_anvi_inventory_intent.py tests/test_anvi_decision_brief.py tests/test_anvi_plant_truth_answers.py
