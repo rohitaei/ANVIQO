@@ -19,7 +19,8 @@ jobs:
         run: |
           python -m py_compile anviqo_api.py anvi_universal_command_centre.py
           python -m py_compile anvi_decision_brief.py anvi_evidence_assurance.py anvi_plant_truth_answers.py
-      # Includes regression coverage for instrument-versus-spare tag collisions.\n      - name: Run evidence assurance and decision brief tests
+      # Includes regression coverage for instrument-versus-spare tag collisions.
+      - name: Run evidence assurance and decision brief tests
         env:
           PYTHONPATH: .
         run: pytest -q tests tests/test_integrated_product_completion.py tests/test_reports_module.py test_universal_command_centre_tenant.py
