@@ -1,5 +1,8 @@
 import unittest
 
+# Register all production Flask routes before any test client handles a request.
+import phase5_command_centre_runtime  # noqa: F401
+
 from anviqo_intelligence_fabric import extract_tag
 from anvi_intelligence_orchestrator import _tenant_only
 
