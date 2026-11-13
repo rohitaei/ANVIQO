@@ -23,6 +23,7 @@ PCI_DB = os.path.join(
 )
 
 _rng = random.Random(20260813)
+_SIMULATION_WINDOW_TIMESTAMP = None
 # Keep one deterministic simulation snapshot stable briefly so conversational
 # questions in the same observation window see the same plant state.
 _SNAPSHOT_CACHE = None
@@ -72,6 +73,19 @@ def _state():
     return "CRITICAL"
 
 
+def reset_simulation_window(window=None):
+    """Reset demo values to a repeatable seed for one UTC minute window."""
+    global _rng, _SIMULATION_WINDOW_TIMESTAMP
+    if window is None:
+        window = int(time.time() // 60)
+    window = int(window)
+    _rng = random.Random(20260813 + window)
+    _SIMULATION_WINDOW_TIMESTAMP = datetime.fromtimestamp(
+        window * 60, timezone.utc
+    ).isoformat()
+    return window, _SIMULATION_WINDOW_TIMESTAMP
+
+
 def simulate_point(record):
     state = _state()
 
@@ -87,13 +101,14 @@ def simulate_point(record):
         "changed": _rng.random() < 0.06,
         "event_active": state in ("WARNING", "CRITICAL")
         and _rng.random() < 0.55,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": _SIMULATION_WINDOW_TIMESTAMP or datetime.now(timezone.utc).isoformat(),
         "mode": "SIMULATION",
         "source": "PCI DEMO STREAM",
     }
 
 
 def simulate_snapshot():
+    window, snapshot_timestamp = reset_simulation_window()
     records = load_pci_records()
 
     points = [
@@ -168,9 +183,11 @@ def simulate_snapshot():
     ) * 100 if points else 0
 
     return {
+        "snapshot_id": f"PCI-DEMO-{window}",
+        "observation_window_seconds": 60,
         "mode": "SIMULATION",
         "source": "PCI DEMO STREAM",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": snapshot_timestamp,
         "total_io": len(points),
         "healthy": healthy,
         "warning": warning,
