@@ -354,6 +354,82 @@ def pci_data():
         }), 500
 
 
+@app.route("/api/intelligence/evidence-assurance")
+@login_required
+def intelligence_evidence_assurance():
+    """Expose the Plant Truth quality passport for the exact selected tenant."""
+    try:
+        plant_id = str(session.get("plant_id") or "").strip()
+        organization_id = str(session.get("organization_id") or "").strip()
+        if not plant_id or not organization_id:
+            return jsonify({
+                "status": "TENANT_CONTEXT_UNAVAILABLE",
+                "scope": "SELECTED_PLANT_ONLY",
+                "read_only": True, "plc_write": False, "scada_control": False,
+                "human_decision_required": True,
+            }), 409
+        from anvi_universal_command_centre import _tenant_snapshot
+        from anvi_evidence_assurance import build_evidence_assurance
+        snapshot = _tenant_snapshot(plant_id)
+        result = build_evidence_assurance(
+            snapshot,
+            plant_id=plant_id,
+            organization_id=organization_id,
+        )
+        result["scope"] = "SELECTED_PLANT_ONLY"
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({
+            "status": "EVIDENCE_ASSURANCE_UNAVAILABLE",
+            "error_type": type(exc).__name__,
+            "scope": "SELECTED_PLANT_ONLY",
+            "read_only": True, "plc_write": False, "scada_control": False,
+            "human_decision_required": True,
+        }), 503
+
+
+@app.route("/api/intelligence/equipment/<tag>/decision-brief")
+@login_required
+def equipment_decision_brief(tag):
+    """Evidence-first decision brief built only from the selected tenant snapshot."""
+    try:
+        plant_id = str(session.get("plant_id") or "").strip()
+        organization_id = str(session.get("organization_id") or "").strip()
+        if not plant_id or not organization_id:
+            return jsonify({
+                "status": "TENANT_CONTEXT_UNAVAILABLE",
+                "scope": "SELECTED_PLANT_ONLY",
+                "read_only": True, "plc_write": False, "scada_control": False,
+                "human_decision_required": True,
+            }), 409
+        from anvi_universal_command_centre import _tenant_snapshot
+        from anvi_decision_brief import build_equipment_brief
+        snapshot = _tenant_snapshot(plant_id)
+        if not isinstance(snapshot, dict) or not (snapshot.get("points") or snapshot.get("records")):
+            return jsonify({
+                "status": "NO_EQUIPMENT_OBSERVATION",
+                "requested_tag": tag,
+                "plant_id": plant_id,
+                "scope": "SELECTED_PLANT_ONLY",
+                "message": "No observation is available for this selected plant. No other plant or demo source was used.",
+                "read_only": True, "plc_write": False, "scada_control": False,
+                "human_decision_required": True,
+            }), 200
+        result = build_equipment_brief(snapshot, tag)
+        result["plant_id"] = plant_id
+        result["organization_id"] = organization_id
+        result["scope"] = "SELECTED_PLANT_ONLY"
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({
+            "status": "DECISION_BRIEF_UNAVAILABLE",
+            "error_type": type(exc).__name__,
+            "scope": "SELECTED_PLANT_ONLY",
+            "read_only": True, "plc_write": False, "scada_control": False,
+            "human_decision_required": True,
+        }), 503
+
+
 @app.route("/api/pci/live")
 @login_required
 def pci_live_data():
