@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install test dependencies
-        run: python -m pip install pytest flask openpyxl
+        run: python -m pip install -r requirements.txt pytest
       - name: Compile changed intelligence modules
         run: |
           python -m py_compile anviqo_api.py anvi_universal_command_centre.py
@@ -22,4 +22,4 @@ jobs:
       - name: Run evidence assurance and decision brief tests
         env:
           PYTHONPATH: .
-        run: pytest -q tests/test_anvi_evidence_assurance.py tests/test_anvi_inventory_intent.py tests/test_anvi_decision_brief.py tests/test_anvi_plant_truth_answers.py tests/test_anvi_plant_truth_api.py tests/test_anvi_decision_brief_conversation.py tests/test_pci_simulation_repeatability.py tests/test_integrated_product_completion.py tests/test_reports_module.py test_universal_command_centre_tenant.py
+        run: pytest -q tests tests/test_integrated_product_completion.py tests/test_reports_module.py test_universal_command_centre_tenant.py
