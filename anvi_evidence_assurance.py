@@ -66,6 +66,23 @@ def build_evidence_assurance(
         event_count += int(bool(point.get("event_active")))
         changed_count += int(bool(point.get("changed")))
 
+    reported_state_counts = {}
+    for key in ("healthy", "warning", "critical"):
+        raw_count = data.get(key)
+        try:
+            reported_state_counts[key] = int(raw_count) if raw_count is not None else None
+        except (TypeError, ValueError):
+            reported_state_counts[key] = None
+    if reported_state_counts["critical"] is None and data.get("critical_count") is not None:
+        try:
+            reported_state_counts["critical"] = int(data.get("critical_count"))
+        except (TypeError, ValueError):
+            pass
+    state_counts_reconciled = all(
+        reported_state_counts[key] is None or reported_state_counts[key] == state_counts[key]
+        for key in state_counts
+    )
+
     status_coverage = sum(state_counts.values())
     coverage_pct = round((status_coverage / len(points)) * 100, 2) if points else 0.0
     counts_reconciled = (
@@ -124,6 +141,8 @@ def build_evidence_assurance(
         findings.append("POINT_TOTAL_MISMATCH")
     if unknown_state_count:
         findings.append("UNKNOWN_OR_UNRATED_POINT_STATES")
+    if not state_counts_reconciled:
+        findings.append("STATE_COUNT_MISMATCH")
     if not event_count_reconciled:
         findings.append("ACTIVE_EVENT_COUNT_MISMATCH")
     if not changed_count_reconciled:
@@ -144,6 +163,8 @@ def build_evidence_assurance(
     structurally_consistent = (
         bool(points)
         and counts_reconciled
+        and state_counts_reconciled
+        and (mode != "SIMULATION" or unknown_state_count == 0)
         and event_count_reconciled
         and changed_count_reconciled
         and health_reconciled
@@ -152,7 +173,7 @@ def build_evidence_assurance(
     )
     assurance_status = (
         "CONSISTENT_SIMULATION_EVIDENCE" if structurally_consistent and mode == "SIMULATION"
-        else "CONSISTENT_ONBOARDING_EVIDENCE" if structurally_consistent and mode in ("ONBOARDING", "ONBOARDING_DATA")
+        else "CONSISTENT_ONBOARDING_DATA" if structurally_consistent and mode in ("ONBOARDING", "ONBOARDING_DATA")
         else "PARTIAL_OR_INCONSISTENT_EVIDENCE"
     )
     canonical = {
@@ -184,6 +205,8 @@ def build_evidence_assurance(
         "reported_total_points": total_reported,
         "observed_total_points": len(points),
         "state_counts": state_counts,
+        "reported_state_counts": reported_state_counts,
+        "state_counts_reconciled": state_counts_reconciled,
         "unknown_state_points": unknown_state_count,
         "state_coverage_pct": coverage_pct,
         "reported_active_events": reported_event_count,
@@ -194,6 +217,7 @@ def build_evidence_assurance(
         "recomputed_health_score": recomputed_health,
         "checks": {
             "point_total_reconciled": counts_reconciled,
+            "state_counts_reconciled": state_counts_reconciled,
             "event_count_reconciled": event_count_reconciled,
             "changed_count_reconciled": changed_count_reconciled,
             "health_score_reconciled": health_reconciled,
