@@ -17,8 +17,23 @@ def _norm(value: Any) -> str:
     return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
 
+def _is_inventory_only_record(point: Dict[str, Any]) -> bool:
+    """Keep spare/store rows out of operational equipment identity matching."""
+    values = (
+        point.get("record_type"),
+        point.get("asset_type"),
+        (point.get("metadata") or {}).get("record_type")
+        if isinstance(point.get("metadata"), dict) else None,
+    )
+    markers = ("SPARE", "INVENTORY", "STOCK", "STORE")
+    return any(
+        any(marker in str(value or "").upper() for marker in markers)
+        for value in values
+    )
+
+
 def build_equipment_brief(snapshot: Dict[str, Any], requested_tag: str) -> Dict[str, Any]:
-    """Summarize one exact equipment observation; never fuzzy-match or invent data."""
+    """Summarize one exact operational observation; never fuzzy-match or invent data."""
     tag = str(requested_tag or "").strip()
     if not tag:
         raise ValueError("An exact equipment tag is required.")
@@ -28,15 +43,22 @@ def build_equipment_brief(snapshot: Dict[str, Any], requested_tag: str) -> Dict[
     if not isinstance(points, list):
         raise ValueError("Observation points are unavailable.")
 
-    matches = [
+    tag_matches = [
         point for point in points
         if isinstance(point, dict) and _norm(point.get("tag")) == _norm(tag)
     ]
+    # A plant may legitimately contain an instrument and a stores/spares row
+    # with the same tag. Only operational observations can identify equipment
+    # for a condition/decision brief; inventory remains available to the
+    # dedicated spares workflow and must not create false ambiguity.
+    matches = [point for point in tag_matches if not _is_inventory_only_record(point)]
+    excluded_inventory_matches = len(tag_matches) - len(matches)
     if len(matches) != 1:
         return {
             "status": "EQUIPMENT_NOT_FOUND" if not matches else "AMBIGUOUS_EQUIPMENT_IDENTITY",
             "requested_tag": tag,
             "match_count": len(matches),
+            "excluded_inventory_match_count": excluded_inventory_matches,
             "scope": "EXACT_SELECTED_PLANT_EVIDENCE",
             **SAFETY,
         }
@@ -85,6 +107,11 @@ def build_equipment_brief(snapshot: Dict[str, Any], requested_tag: str) -> Dict[
             else "SOURCE_REQUIRES_SITE_VALIDATION"
         ),
         "evidence_scope": "ONE_EXACT_SELECTED_PLANT_OBSERVATION",
+        "identity_resolution": (
+            "ONE_OPERATIONAL_OBSERVATION_MATCHED"
+            + (f"; {excluded_inventory_matches} inventory-only record(s) excluded" if excluded_inventory_matches else "")
+        ),
+        "excluded_inventory_match_count": excluded_inventory_matches,
         "limitations": [
             "A state label is not a confirmed physical fault diagnosis.",
             "No root cause, failure probability, or remaining useful life is inferred.",
