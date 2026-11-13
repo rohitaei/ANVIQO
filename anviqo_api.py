@@ -674,9 +674,9 @@ def ask_anvi():
 
         # Conversational equipment decision brief: requires an explicit brief intent
         # and one exact tag. It uses only the authenticated selected-plant snapshot.
-        if _re.search(r"\\b(?:decision|equipment|engineering)\\s+brief\\b|\\bdecision\\s+card\\b", q, _re.I):
+        if _re.search(r"\b(?:decision|equipment|engineering)\s+brief\b|\bdecision\s+card\b", q, _re.I):
             tag_match = _re.search(
-                r"\\b(?:PT|FT|TT|LT|AT|CV|FV|XV|PIC|FIC|TIC|LIC|TE|WT|PCV|FSV|SOV)[-_ ]?\\d{1,6}[A-Z]?\\b",
+                r"\b(?:PT|FT|TT|LT|AT|CV|FV|XV|PIC|FIC|TIC|LIC|TE|WT|PCV|FSV|SOV)[-_ ]?\d{1,6}[A-Z]?\b",
                 q, _re.I
             )
             if not tag_match:
@@ -714,13 +714,13 @@ def ask_anvi():
             if brief.get("status") == "BRIEF_READY":
                 equipment = brief.get("equipment") or {}
                 brief["answer"] = (
-                    f"ANVI equipment decision brief — {equipment.get('tag') or tag_match.group(0)}\\n"
+                    f"ANVI equipment decision brief — {equipment.get('tag') or tag_match.group(0)}\n"
                     f"Observed state: {equipment.get('state') or equipment.get('status') or 'UNKNOWN'}. "
                     f"Priority: {brief.get('decision_priority')}. "
-                    f"{brief.get('what_matters')}.\\n"
+                    f"{brief.get('what_matters')}.\n"
                     f"Evidence quality: {brief.get('evidence_quality')}. "
-                    f"Source value: {equipment.get('value') if equipment.get('value') is not None else 'not recorded'}.\\n"
-                    f"Recommended human review: {brief.get('recommended_human_review')}\\n"
+                    f"Source value: {equipment.get('value') if equipment.get('value') is not None else 'not recorded'}.\n"
+                    f"Recommended human review: {brief.get('recommended_human_review')}\n"
                     "No physical root cause, failure probability or remaining useful life is inferred."
                 )
             else:
