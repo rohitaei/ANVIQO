@@ -27,6 +27,7 @@ _rng = random.Random(20260813)
 # questions in the same observation window see the same plant state.
 _SNAPSHOT_CACHE = None
 _SNAPSHOT_CACHE_AT = 0.0
+_SNAPSHOT_CACHE_WINDOW = None
 _SNAPSHOT_CACHE_TTL = 60.0
 
 
@@ -200,11 +201,17 @@ def simulate_snapshot():
 
 
 def get_live_pci_snapshot():
-    global _SNAPSHOT_CACHE, _SNAPSHOT_CACHE_AT
+    global _SNAPSHOT_CACHE, _SNAPSHOT_CACHE_AT, _SNAPSHOT_CACHE_WINDOW
     now = time.monotonic()
-    if _SNAPSHOT_CACHE is None or (now - _SNAPSHOT_CACHE_AT) >= _SNAPSHOT_CACHE_TTL:
+    window = int(time.time() // 60)
+    if (
+        _SNAPSHOT_CACHE is None
+        or _SNAPSHOT_CACHE_WINDOW != window
+        or (now - _SNAPSHOT_CACHE_AT) >= _SNAPSHOT_CACHE_TTL
+    ):
         _SNAPSHOT_CACHE = simulate_snapshot()
         _SNAPSHOT_CACHE_AT = now
+        _SNAPSHOT_CACHE_WINDOW = window
     return _SNAPSHOT_CACHE
 
 
