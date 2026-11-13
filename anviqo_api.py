@@ -672,6 +672,64 @@ def ask_anvi():
             spare_result.setdefault("human_decision_required", True)
             return _regression_safety_contract(q, spare_result)
 
+        # Conversational equipment decision brief: requires an explicit brief intent
+        # and one exact tag. It uses only the authenticated selected-plant snapshot.
+        if _re.search(r"\\b(?:decision|equipment|engineering)\\s+brief\\b|\\bdecision\\s+card\\b", q, _re.I):
+            tag_match = _re.search(
+                r"\\b(?:PT|FT|TT|LT|AT|CV|FV|XV|PIC|FIC|TIC|LIC|TE|WT|PCV|FSV|SOV)[-_ ]?\\d{1,6}[A-Z]?\\b",
+                q, _re.I
+            )
+            if not tag_match:
+                return _regression_safety_contract(q, {
+                    "answer": "Please include one exact equipment tag so ANVI can prepare an evidence-scoped decision brief.",
+                    "domain": "equipment_decision_brief",
+                    "evidence_status": "EXACT_EQUIPMENT_TAG_REQUIRED",
+                    "scope": "SELECTED_PLANT_ONLY",
+                    "read_only": True, "plc_write": False, "scada_control": False,
+                    "human_decision_required": True,
+                })
+            plant_id = str(session.get("plant_id") or "").strip()
+            organization_id = str(session.get("organization_id") or "").strip()
+            if not plant_id or not organization_id:
+                return _regression_safety_contract(q, {
+                    "answer": "ANVI cannot prepare this brief because the authenticated session has no unique selected-plant context.",
+                    "domain": "equipment_decision_brief",
+                    "evidence_status": "TENANT_CONTEXT_UNAVAILABLE",
+                    "scope": "SELECTED_PLANT_ONLY",
+                    "read_only": True, "plc_write": False, "scada_control": False,
+                    "human_decision_required": True,
+                })
+            from anvi_universal_command_centre import _tenant_snapshot
+            from anvi_decision_brief import build_equipment_brief
+            from anvi_evidence_assurance import build_evidence_assurance
+            snapshot = _tenant_snapshot(plant_id)
+            brief = build_equipment_brief(snapshot or {}, tag_match.group(0))
+            assurance = build_evidence_assurance(
+                snapshot, plant_id=plant_id, organization_id=organization_id
+            )
+            brief["evidence_assurance"] = assurance
+            brief["plant_id"] = plant_id
+            brief["organization_id"] = organization_id
+            brief["scope"] = "SELECTED_PLANT_ONLY"
+            if brief.get("status") == "BRIEF_READY":
+                equipment = brief.get("equipment") or {}
+                brief["answer"] = (
+                    f"ANVI equipment decision brief — {equipment.get('tag') or tag_match.group(0)}\\n"
+                    f"Observed state: {equipment.get('state') or equipment.get('status') or 'UNKNOWN'}. "
+                    f"Priority: {brief.get('decision_priority')}. "
+                    f"{brief.get('what_matters')}.\\n"
+                    f"Evidence quality: {brief.get('evidence_quality')}. "
+                    f"Source value: {equipment.get('value') if equipment.get('value') is not None else 'not recorded'}.\\n"
+                    f"Recommended human review: {brief.get('recommended_human_review')}\\n"
+                    "No physical root cause, failure probability or remaining useful life is inferred."
+                )
+            else:
+                brief["answer"] = (
+                    f"ANVI could not prepare a unique evidence-backed brief for {tag_match.group(0)}. "
+                    f"Evidence status: {brief.get('status')}."
+                )
+            return _regression_safety_contract(q, brief)
+
         # V2 What Changed / simulation is an explicit command intent. Route it
         # at the API entry point before every generic tenant/PCI identity path.
         # This prevents any wrapper installation order from consuming
