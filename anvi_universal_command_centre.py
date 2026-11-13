@@ -10,6 +10,9 @@ Safety: read-only; no PLC/SCADA writes; no automatic execution.
 from __future__ import annotations
 
 import json
+import copy
+import threading
+import time
 from typing import Any
 
 
@@ -33,7 +36,7 @@ def _active_plant() -> str:
     return ""
 
 
-def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
+def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
     """Build a dashboard-compatible snapshot from tenant-scoped knowledge.
 
     Return None when the selected plant has no indexed data so callers can
@@ -173,6 +176,42 @@ def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
         "plc_write": False,
         "scada_control": False,
     }
+
+
+
+# A single selected-plant simulation snapshot must feed every read surface.
+# This prevents health, alarms, events and What Changed from describing
+# different randomly generated plant states in adjacent requests.
+_TENANT_SNAPSHOT_CACHE: dict[tuple[str, str], tuple[float, dict[str, Any]]] = {}
+_TENANT_SNAPSHOT_CACHE_LOCK = threading.RLock()
+_TENANT_SNAPSHOT_CACHE_TTL = 60.0
+
+
+def _tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
+    organization_id = ""
+    try:
+        from flask import has_request_context, session
+        if has_request_context():
+            organization_id = str(session.get("organization_id") or "").strip()
+    except Exception:
+        pass
+    key = (organization_id, str(plant_id or "").strip())
+    now = time.monotonic()
+    with _TENANT_SNAPSHOT_CACHE_LOCK:
+        cached = _TENANT_SNAPSHOT_CACHE.get(key)
+        if cached and now - cached[0] < _TENANT_SNAPSHOT_CACHE_TTL:
+            return copy.deepcopy(cached[1])
+        snapshot = _build_tenant_snapshot(plant_id)
+        if snapshot and str(snapshot.get("mode") or "").upper() == "SIMULATION":
+            _TENANT_SNAPSHOT_CACHE[key] = (now, copy.deepcopy(snapshot))
+            # Bound memory if many customer plants are visited by one worker.
+            if len(_TENANT_SNAPSHOT_CACHE) > 128:
+                oldest = sorted(_TENANT_SNAPSHOT_CACHE, key=lambda item: _TENANT_SNAPSHOT_CACHE[item][0])[:32]
+                for old_key in oldest:
+                    _TENANT_SNAPSHOT_CACHE.pop(old_key, None)
+        else:
+            _TENANT_SNAPSHOT_CACHE.pop(key, None)
+        return copy.deepcopy(snapshot) if snapshot is not None else None
 
 
 def get_live_pci_snapshot(original_getter):
