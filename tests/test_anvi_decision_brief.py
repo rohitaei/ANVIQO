@@ -52,3 +52,33 @@ def test_onboarding_points_are_not_presented_as_live_telemetry():
         "points": [{"tag": "PT-304", "state": "ONBOARDED_DATA"}],
     }, "PT-304")
     assert result["evidence_quality"] == "ONBOARDING_DATA_NOT_LIVE_TELEMETRY"
+
+
+
+def test_same_tag_spare_inventory_row_does_not_make_instrument_identity_ambiguous():
+    result = _load().build_equipment_brief({
+        "mode": "SIMULATION",
+        "points": [
+            {"tag": "PT_303", "record_type": "INSTRUMENT", "name": "Mill outlet gas pressure", "state": "CRITICAL", "value": 34.15},
+            {"tag": "PT-303", "record_type": "CRITICAL_SPARE", "asset_type": "CRITICAL_SPARE", "name": "PT spare", "state": "WARNING", "value": 9},
+        ],
+    }, "PT-303")
+    assert result["status"] == "BRIEF_READY"
+    assert result["equipment"]["tag"] == "PT_303"
+    assert result["equipment"]["state"] == "CRITICAL"
+    assert result["excluded_inventory_match_count"] == 1
+    assert "1 inventory-only record(s) excluded" in result["identity_resolution"]
+
+
+def test_two_operational_records_with_same_normalized_tag_remain_ambiguous():
+    result = _load().build_equipment_brief({
+        "mode": "SIMULATION",
+        "points": [
+            {"tag": "PT-303", "record_type": "INSTRUMENT"},
+            {"tag": "PT_303", "record_type": "INSTRUMENT"},
+            {"tag": "PT-303", "record_type": "CRITICAL_SPARE"},
+        ],
+    }, "PT-303")
+    assert result["status"] == "AMBIGUOUS_EQUIPMENT_IDENTITY"
+    assert result["match_count"] == 2
+    assert result["excluded_inventory_match_count"] == 1
