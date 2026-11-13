@@ -144,6 +144,96 @@ def phase2_field_report_query_bridge():
     return None
 
 
+
+@app.before_request
+def phase2_evidence_assurance_query_bridge():
+    """Answer explicit evidence-quality questions from one canonical plant snapshot."""
+    if not _api_authenticated() or request.path != "/api/ask" or request.method != "POST":
+        return None
+    payload = request.get_json(silent=True) or {}
+    question = str(payload.get("question") or payload.get("query") or payload.get("message") or "").strip()
+    q = " ".join(question.lower().split())
+    triggers = (
+        "evidence quality", "data quality", "plant truth", "snapshot consistency",
+        "are these numbers consistent", "is this data reliable", "how reliable is this data",
+        "confidence of this data", "evidence assurance",
+    )
+    if not any(term in q for term in triggers):
+        return None
+    actor = _actor()
+    if not authorize(actor, "plant:read", actor["organization_id"], actor["plant_id"]):
+        return jsonify({"status": "FORBIDDEN", "message": "plant:read permission is required.", "read_only": True, "plc_write": False, "scada_control": False}), 403
+    try:
+        from pci_live_simulator import get_live_pci_snapshot
+        from anvi_evidence_assurance import build_evidence_assurance
+        snapshot = get_live_pci_snapshot() or {}
+        result = build_evidence_assurance(
+            snapshot,
+            plant_id=actor["plant_id"],
+            organization_id=actor["organization_id"],
+        )
+        result["answer"] = (
+            "ANVI Plant Truth Evidence Assurance — "
+            + result["assurance_status"]
+            + ". Snapshot "
+            + result["snapshot_id"]
+            + "; source "
+            + result["source"]
+            + "; mode "
+            + result["mode"]
+            + "; point coverage "
+            + str(result["state_coverage_pct"])
+            + "%. "
+            + result["interpretation"]
+            + (" Findings: " + ", ".join(result["findings"]) + "." if result["findings"] else "")
+        )
+        result["domain"] = "evidence_assurance"
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({
+            "status": "EVIDENCE_ASSURANCE_UNAVAILABLE",
+            "answer": "ANVI could not complete the evidence assurance check. No plant-health conclusion was inferred.",
+            "error": type(exc).__name__,
+            "plant_id": actor["plant_id"],
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "human_decision_required": True,
+        })
+
+
+
+@app.route("/api/evidence/assurance", methods=["GET"])
+def evidence_assurance_api():
+    """Authenticated selected-plant consistency and freshness report."""
+    if not session.get("authenticated"):
+        return jsonify({"status": "UNAUTHORIZED", "message": "ANVIQO authentication required"}), 401
+    actor = _actor()
+    if not authorize(actor, "plant:read", actor["organization_id"], actor["plant_id"]):
+        return jsonify({"status": "FORBIDDEN", "message": "plant:read permission is required.", "plc_write": False, "scada_control": False}), 403
+    try:
+        from pci_live_simulator import get_live_pci_snapshot
+        from anvi_evidence_assurance import build_evidence_assurance
+        snapshot = get_live_pci_snapshot() or {}
+        return jsonify(build_evidence_assurance(
+            snapshot,
+            plant_id=actor["plant_id"],
+            organization_id=actor["organization_id"],
+        ))
+    except Exception as exc:
+        return jsonify({
+            "status": "EVIDENCE_ASSURANCE_UNAVAILABLE",
+            "message": "Evidence assurance could not be calculated.",
+            "error": type(exc).__name__,
+            "plant_id": actor["plant_id"],
+            "read_only": True,
+            "plc_write": False,
+            "scada_control": False,
+            "human_decision_required": True,
+        }), 503
+
+
+
 @app.route("/api/tenant/context")
 def tenant_context():
     if not session.get("authenticated"):
