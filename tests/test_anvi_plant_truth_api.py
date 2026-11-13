@@ -1,4 +1,6 @@
 import os
+
+import pytest
 from datetime import datetime, timezone
 
 os.environ.setdefault("ANVIQO_SECRET_KEY", "ci-only-not-a-real-secret")
@@ -8,6 +10,12 @@ os.environ.setdefault("ANVIQO_ADMIN_PASSWORD", "ci-only-password")
 import anviqo_api
 import anvi_universal_command_centre as adapter
 
+
+
+@pytest.fixture(autouse=True)
+def _allow_test_tenant_permissions(monkeypatch):
+    import anviqo_api_phase2
+    monkeypatch.setattr(anviqo_api_phase2, "authorize", lambda *args, **kwargs: True)
 
 def _snapshot():
     now = datetime.now(timezone.utc).isoformat()
