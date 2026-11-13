@@ -74,3 +74,38 @@ def test_missing_snapshot_returns_partial_not_fake_health():
     assert result["assurance_status"] == "PARTIAL_OR_INCONSISTENT_EVIDENCE"
     assert result["recomputed_health_score"] is None
     assert "NO_POINT_EVIDENCE" in result["findings"]
+
+
+
+def test_selected_plant_snapshot_cache_is_tenant_scoped_and_returns_copies(monkeypatch):
+    import anvi_universal_command_centre as adapter
+    from flask import Flask, session
+
+    app = Flask(__name__)
+    app.secret_key = "test-only"
+    calls = []
+
+    def fake_builder(plant_id):
+        calls.append((session.get("organization_id"), plant_id))
+        return {
+            "mode": "SIMULATION",
+            "source": "TEST",
+            "points": [{"tag": "PT-1", "state": "HEALTHY"}],
+        }
+
+    monkeypatch.setattr(adapter, "_build_tenant_snapshot", fake_builder)
+    adapter._TENANT_SNAPSHOT_CACHE.clear()
+    try:
+        with app.test_request_context("/"):
+            session["organization_id"] = "org-a"
+            first = adapter._tenant_snapshot("plant-a")
+            first["points"][0]["state"] = "MUTATED"
+            second = adapter._tenant_snapshot("plant-a")
+            assert second["points"][0]["state"] == "HEALTHY"
+            assert len(calls) == 1
+
+            session["organization_id"] = "org-b"
+            adapter._tenant_snapshot("plant-a")
+            assert len(calls) == 2
+    finally:
+        adapter._TENANT_SNAPSHOT_CACHE.clear()
