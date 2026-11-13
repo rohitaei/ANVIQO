@@ -111,6 +111,60 @@ def build_evidence_assurance(
         reported_changed is None or reported_changed == changed_count
     )
 
+    # Reconcile the area roll-up with point-level evidence. Area rows in the
+    # tenant adapter use name/count; older demo snapshots may use area/total.
+    observed_areas: dict[str, dict[str, int]] = {}
+    for point in points:
+        area_name = str(point.get("area") or "GENERAL").strip().upper() or "GENERAL"
+        bucket = observed_areas.setdefault(
+            area_name, {"count": 0, "healthy": 0, "warning": 0, "critical": 0}
+        )
+        bucket["count"] += 1
+        state = str(point.get("state") or point.get("status") or "").upper()
+        if state in ("HEALTHY", "WARNING", "CRITICAL"):
+            bucket[state.lower()] += 1
+
+    reported_area_rows = [
+        row for row in (data.get("areas") or []) if isinstance(row, dict)
+    ]
+    area_total_reconciled = None
+    area_state_counts_reconciled = None
+    if reported_area_rows:
+        reported_areas = {}
+        for row in reported_area_rows:
+            name = str(row.get("name") or row.get("area") or "GENERAL").strip().upper()
+            reported_areas[name] = row
+        try:
+            reported_area_total = sum(
+                int(row.get("count", row.get("total", 0)) or 0)
+                for row in reported_area_rows
+            )
+            area_total_reconciled = reported_area_total == len(points)
+        except (TypeError, ValueError):
+            area_total_reconciled = False
+
+        area_state_counts_reconciled = True
+        for name, observed in observed_areas.items():
+            row = reported_areas.get(name)
+            if row is None:
+                area_state_counts_reconciled = False
+                continue
+            for state_key in ("healthy", "warning", "critical"):
+                if state_key not in row:
+                    continue
+                try:
+                    if int(row.get(state_key) or 0) != observed[state_key]:
+                        area_state_counts_reconciled = False
+                except (TypeError, ValueError):
+                    area_state_counts_reconciled = False
+        if any(name not in observed_areas for name in reported_areas):
+            area_state_counts_reconciled = False
+
+    if area_total_reconciled is False:
+        findings.append("AREA_TOTAL_MISMATCH")
+    if area_state_counts_reconciled is False:
+        findings.append("AREA_STATE_COUNT_MISMATCH")
+
     recomputed_health = None
     if points and status_coverage == len(points):
         recomputed_health = round(
@@ -162,6 +216,8 @@ def build_evidence_assurance(
         findings.append("SOURCE_MODE_UNCONFIRMED")
 
     structurally_consistent = (
+        (area_total_reconciled is not False)
+        and (area_state_counts_reconciled is not False)
         bool(points)
         and counts_reconciled
         and state_counts_reconciled
@@ -222,6 +278,8 @@ def build_evidence_assurance(
             "event_count_reconciled": event_count_reconciled,
             "changed_count_reconciled": changed_count_reconciled,
             "health_score_reconciled": health_reconciled,
+            "area_total_reconciled": area_total_reconciled,
+            "area_state_counts_reconciled": area_state_counts_reconciled,
             "timestamp_valid": timestamp is not None,
             "snapshot_fresh": fresh,
             "single_snapshot_basis": True,
