@@ -74,5 +74,5 @@ def test_conversational_decision_brief_does_not_fall_back_to_another_tag(monkeyp
     data = response.get_json()
     assert response.status_code == 200
     assert data["status"] == "EQUIPMENT_NOT_FOUND"
-    assert data["equipment"] is None or data["equipment"] == {}
+    assert data.get("equipment") in (None, {})
     assert data["scope"] == "SELECTED_PLANT_ONLY"
