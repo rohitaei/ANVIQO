@@ -68,3 +68,24 @@ def test_simulation_reseeding_is_explicit_in_runtime_adapter():
     from pathlib import Path
     source = (Path(__file__).resolve().parents[1] / "anvi_universal_command_centre.py").read_text(encoding="utf-8")
     assert "simulator.reset_simulation_window()" in source
+
+
+
+def test_simulation_point_values_repeat_after_same_window_reset():
+    from pathlib import Path
+    import importlib.util
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("pci_simulator_repeat_test", root / "pci_live_simulator.py")
+    simulator = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(simulator)
+    record = {
+        "tag": "PT-303", "description": "Mill outlet gas pressure",
+        "area": "VRM/MILL", "io_type": "AI", "plc_address": "PIW 260",
+    }
+    simulator.reset_simulation_window(30000000)
+    first = simulator.simulate_point(record)
+    simulator.reset_simulation_window(30000000)
+    second = simulator.simulate_point(record)
+    assert first == second
+    assert first["mode"] == "SIMULATION"
+    assert first["source"] == "PCI DEMO STREAM"
