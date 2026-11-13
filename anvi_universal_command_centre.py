@@ -79,6 +79,7 @@ def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
         simulation_enabled = pci_adapter.is_bound(plant_id, organization_id or None)
         if simulation_enabled:
             import pci_live_simulator as simulator
+            simulator.reset_simulation_window()
     except Exception:
         simulator = None
         simulation_enabled = False
