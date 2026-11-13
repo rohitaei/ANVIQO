@@ -84,6 +84,8 @@ def answer_plant_truth(
             and checks.get("health_score_reconciled") is True
             and checks.get("event_count_reconciled") is True
             and checks.get("changed_count_reconciled") is True
+            and checks.get("area_total_reconciled") is not False
+            and checks.get("area_state_counts_reconciled") is not False
             and assurance_status in ("CONSISTENT_SIMULATION_EVIDENCE", "CONSISTENT_ONBOARDING_DATA")
             and checks.get("timestamp_valid") is True
             and checks.get("snapshot_fresh") is True
