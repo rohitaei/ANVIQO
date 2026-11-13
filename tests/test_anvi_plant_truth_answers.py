@@ -9,6 +9,8 @@ def _assurance():
         "checks": {
             "point_total_reconciled": True,
             "state_counts_reconciled": True,
+            "event_count_reconciled": True,
+            "changed_count_reconciled": True,
             "health_score_reconciled": True,
             "timestamp_valid": True,
             "snapshot_fresh": True,
@@ -41,7 +43,7 @@ def test_plant_health_answer_uses_reconciled_assurance_score():
 
 def test_inconsistent_health_evidence_does_not_publish_a_score():
     assurance = _assurance()
-    assurance["checks"]["active_event_count_reconciled"] = False
+    assurance["checks"]["event_count_reconciled"] = False
     assurance["assurance_status"] = "PARTIAL_OR_INCONSISTENT_EVIDENCE"
     assurance["recomputed_health_score"] = None
     result = answer_plant_truth("Plant health", _snapshot(), assurance)
