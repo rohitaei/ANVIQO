@@ -217,7 +217,7 @@ def build_evidence_assurance(
     structurally_consistent = (
         (area_total_reconciled is not False)
         and (area_state_counts_reconciled is not False)
-        bool(points)
+        and bool(points)
         and counts_reconciled
         and state_counts_reconciled
         and (mode != "SIMULATION" or unknown_state_count == 0)
