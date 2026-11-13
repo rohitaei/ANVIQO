@@ -61,8 +61,11 @@ def test_ask_alarm_and_critical_equipment_answers_use_same_point_evidence(monkey
     client = _client()
     alarms = client.post("/api/ask", json={"question": "Show active alarms"}).get_json()
     critical = client.post("/api/ask", json={"question": "Show critical equipment"}).get_json()
+    changed = client.post("/api/ask", json={"question": "What changed?"}).get_json()
     assert alarms["matched_count"] == 2
     assert critical["matched_count"] == 1
+    assert changed["matched_count"] == 1
+    assert "PT-202" in changed["answer"]
     assert "PT-304" in critical["answer"]
 
 
