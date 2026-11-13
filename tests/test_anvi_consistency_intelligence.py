@@ -54,3 +54,19 @@ def test_consistency_endpoint_is_read_only_and_tenant_scoped():
     assert '/api/intelligence/consistency' in source
     assert 'SELECTED_PLANT_ONLY' in source
     assert 'ANVIQO_SIMULATION_PLANT_SLUG' in source
+
+def test_simulator_produces_repeatable_evidence_within_same_minute(monkeypatch):
+    spec = importlib.util.spec_from_file_location("pci_live_simulator_test", ROOT / "pci_live_simulator.py")
+    simulator = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(simulator)
+    monkeypatch.setattr(simulator.time, "time", lambda: 1794614400.0)
+    first = simulator.simulate_snapshot()
+    second = simulator.simulate_snapshot()
+    assert first["snapshot_id"] == second["snapshot_id"]
+    assert first["timestamp"] == second["timestamp"]
+    assert first["healthy"] == second["healthy"]
+    assert first["warning"] == second["warning"]
+    assert first["critical"] == second["critical"]
+    assert [(p["tag"], p["value"], p["state"]) for p in first["points"]] == [
+        (p["tag"], p["value"], p["state"]) for p in second["points"]
+    ]
