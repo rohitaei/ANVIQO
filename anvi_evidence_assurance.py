@@ -160,11 +160,6 @@ def build_evidence_assurance(
         if any(name not in observed_areas for name in reported_areas):
             area_state_counts_reconciled = False
 
-    if area_total_reconciled is False:
-        findings.append("AREA_TOTAL_MISMATCH")
-    if area_state_counts_reconciled is False:
-        findings.append("AREA_STATE_COUNT_MISMATCH")
-
     recomputed_health = None
     if points and status_coverage == len(points):
         recomputed_health = round(
@@ -190,6 +185,10 @@ def build_evidence_assurance(
     fresh = age_seconds is not None and age_seconds <= max(1, int(freshness_seconds))
 
     findings = []
+    if area_total_reconciled is False:
+        findings.append("AREA_TOTAL_MISMATCH")
+    if area_state_counts_reconciled is False:
+        findings.append("AREA_STATE_COUNT_MISMATCH")
     if not points:
         findings.append("NO_POINT_EVIDENCE")
     if total_reported != len(points):
