@@ -515,6 +515,54 @@ def ask_anvi():
     try:
         q=(request.get_json(silent=True) or {}).get("question","").strip()
 
+        # Family-level spare questions (for example, "Spares of PT") must not
+        # fall through to the external conversational agent. Use the existing
+        # deterministic spare engine only for its explicitly bound demo plant;
+        # every other plant receives an honest no-tenant-inventory response.
+        try:
+            from anvi_inventory_intent import classify_spare_family_query
+            spare_family = classify_spare_family_query(q)
+        except Exception:
+            spare_family = None
+        if spare_family:
+            demo_slug = _re.sub(
+                r"[^a-z0-9-]+", "-", 
+                str(os.environ.get("ANVIQO_SIMULATION_PLANT_SLUG", "primary-plant")).strip().lower()
+            ).strip("-")
+            selected_slug = str(session.get("plant_slug") or "").strip().lower()
+            if selected_slug != demo_slug:
+                return _regression_safety_contract(q, {
+                    "answer": (
+                        f"No tenant-scoped {spare_family} spare inventory is connected "
+                        "for the selected plant. ANVI cannot confirm available or zero stock "
+                        "without that plant's inventory evidence."
+                    ),
+                    "domain": "critical_spares",
+                    "inventory_family": spare_family,
+                    "evidence_status": "TENANT_INVENTORY_NOT_CONFIGURED",
+                    "plant_id": session.get("plant_id"),
+                    "read_only": True,
+                    "plc_write": False,
+                    "scada_control": False,
+                    "human_decision_required": True,
+                })
+            from pci_spares import answer_spare_query
+            spare_result = answer_spare_query(q) or {
+                "answer": f"No verified {spare_family} spare records were found in the selected plant inventory.",
+                "domain": "critical_spares",
+                "count": 0,
+                "records": [],
+                "evidence": "critical_spares.xlsx",
+            }
+            spare_result["inventory_family"] = spare_family
+            spare_result["plant_id"] = session.get("plant_id")
+            spare_result["evidence_status"] = "SELECTED_PLANT_INVENTORY"
+            spare_result.setdefault("read_only", True)
+            spare_result.setdefault("plc_write", False)
+            spare_result.setdefault("scada_control", False)
+            spare_result.setdefault("human_decision_required", True)
+            return _regression_safety_contract(q, spare_result)
+
         # V2 What Changed / simulation is an explicit command intent. Route it
         # at the API entry point before every generic tenant/PCI identity path.
         # This prevents any wrapper installation order from consuming
