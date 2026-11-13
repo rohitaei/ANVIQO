@@ -247,7 +247,7 @@ def test_authenticated_product_facade_never_uses_global_equipment_relationships_
 
 def test_hod_management_routes_require_authenticated_tenant(monkeypatch):
     from flask import Flask
-    import phase5_command_centre_runtime as runtime
+    runtime = phase5_command_centre_runtime
 
     app = runtime.app
     with app.test_client() as client:
