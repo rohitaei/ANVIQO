@@ -15,7 +15,10 @@ import anvi_universal_command_centre as adapter
 @pytest.fixture(autouse=True)
 def _allow_test_tenant_permissions(monkeypatch):
     import anviqo_api_phase2
-    monkeypatch.setattr(anviqo_api_phase2, "authorize", lambda *args, **kwargs: True)
+    import anvi_tenant_store
+    allow = lambda *args, **kwargs: True
+    monkeypatch.setattr(anviqo_api_phase2, "authorize", allow)
+    monkeypatch.setattr(anvi_tenant_store, "authorize", allow)
 
 def _snapshot():
     now = datetime.now(timezone.utc).isoformat()
