@@ -27,7 +27,7 @@ _rng = random.Random(20260813)
 # questions in the same observation window see the same plant state.
 _SNAPSHOT_CACHE = None
 _SNAPSHOT_CACHE_AT = 0.0
-_SNAPSHOT_CACHE_TTL = 15.0
+_SNAPSHOT_CACHE_TTL = 60.0
 
 
 def load_pci_records():
@@ -94,12 +94,21 @@ def simulate_point(record):
 
 
 def simulate_snapshot():
+    global _rng
+    # Stable, reproducible demo evidence within each one-minute observation window.
+    # Repeated dashboard and ANVI questions therefore see the same evidence.
+    window = int(time.time() // 60)
+    _rng = random.Random(20260813 + window)
+    snapshot_timestamp = datetime.fromtimestamp(window * 60, timezone.utc).isoformat()
     records = load_pci_records()
 
     points = [
         simulate_point(record)
         for record in records
     ]
+
+    for point in points:
+        point["timestamp"] = snapshot_timestamp
 
     healthy = sum(
         1 for p in points if p["state"] == "HEALTHY"
@@ -168,9 +177,11 @@ def simulate_snapshot():
     ) * 100 if points else 0
 
     return {
+        "snapshot_id": f"PCI-DEMO-{window}",
+        "observation_window_seconds": 60,
         "mode": "SIMULATION",
         "source": "PCI DEMO STREAM",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": snapshot_timestamp,
         "total_io": len(points),
         "healthy": healthy,
         "warning": warning,
