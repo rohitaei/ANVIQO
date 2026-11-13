@@ -64,3 +64,21 @@ def test_consistency_endpoint_is_read_only_and_tenant_scoped():
     assert '/api/intelligence/consistency' in source
     assert 'SELECTED_PLANT_ONLY' in source
     assert 'ANVIQO_SIMULATION_PLANT_SLUG' in source
+
+def test_pt_family_query_uses_critical_spares_evidence():
+    spec = importlib.util.spec_from_file_location("pci_spares_test", ROOT / "pci_spares.py")
+    spares = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(spares)
+    result = spares.answer_spare_query("Spares of PT")
+    assert result is not None
+    assert result["domain"] == "critical_spares"
+    assert result["count"] > 0
+    assert all(row.get("sheet") == "PT" for row in result["records"])
+
+
+def test_spare_query_route_is_selected_demo_plant_scoped():
+    source = (ROOT / "anviqo_api.py").read_text(encoding="utf-8")
+    assert "spare_intent" in source
+    assert "selected_slug == demo_slug" in source
+    assert "answer_spare_query" in source
+    assert "SPARE_EVIDENCE_UNAVAILABLE" in source
