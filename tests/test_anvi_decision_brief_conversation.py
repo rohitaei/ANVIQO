@@ -87,3 +87,29 @@ def test_conversational_decision_brief_does_not_fall_back_to_another_tag(monkeyp
     assert data["status"] == "EQUIPMENT_NOT_FOUND"
     assert data.get("equipment") in (None, {})
     assert data["scope"] == "SELECTED_PLANT_ONLY"
+
+
+
+def test_conversational_brief_ignores_same_tag_spare_inventory_row(monkeypatch):
+    snapshot = _snapshot()
+    snapshot["points"].append({
+        "tag": "PT-303",
+        "name": "PCI_PT 3051L5A-0.15-0Kg/cm²",
+        "record_type": "CRITICAL_SPARE",
+        "asset_type": "CRITICAL_SPARE",
+        "state": "WARNING",
+        "value": 9,
+        "mode": "SIMULATION",
+        "source": "critical_spares.xlsx",
+    })
+    monkeypatch.setattr(adapter, "_tenant_snapshot", lambda plant_id: snapshot)
+    response = _client().post(
+        "/api/ask",
+        json={"question": "Prepare an equipment decision brief for PT-303"},
+    )
+    data = response.get_json()
+    assert response.status_code == 200
+    assert data["status"] == "BRIEF_READY"
+    assert data["equipment"]["tag"] == "PT-303"
+    assert data["excluded_inventory_match_count"] == 1
+    assert "Observed state: WARNING" in data["answer"]
