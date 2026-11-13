@@ -87,7 +87,7 @@ def simulate_point(record):
         "changed": _rng.random() < 0.06,
         "event_active": state in ("WARNING", "CRITICAL")
         and _rng.random() < 0.55,
-        "timestamp": snapshot_timestamp,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "mode": "SIMULATION",
         "source": "PCI DEMO STREAM",
     }
@@ -182,7 +182,7 @@ def simulate_snapshot():
         "observation_window_seconds": 60,
         "mode": "SIMULATION",
         "source": "PCI DEMO STREAM",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": snapshot_timestamp,
         "total_io": len(points),
         "healthy": healthy,
         "warning": warning,
