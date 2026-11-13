@@ -740,6 +740,39 @@ def ask_anvi():
                 result.setdefault("human_decision_required", True)
             return result
 
+        # Inventory questions are routed to the selected plant's authoritative spare source
+        # before ANVI's general language reasoning. The Primary Plant demo workbook is
+        # used only for its explicitly configured demo tenant; BF-2 uses its own registry.
+        spare_intent = bool(_re.search(
+            r"\\b(spares?|spare stock|stock of|inventory|zero stock|shortage of)\\b",
+            q, _re.IGNORECASE,
+        ))
+        selected_slug = str(session.get("plant_slug") or "").strip().lower()
+        demo_slug = os.environ.get("ANVIQO_SIMULATION_PLANT_SLUG", "primary-plant").strip().lower()
+        if spare_intent and selected_slug == demo_slug:
+            try:
+                from pci_spares import answer_spare_query
+                spare_result = answer_spare_query(q)
+                if spare_result:
+                    spare_result.setdefault("inventory_query", True)
+                    spare_result.setdefault("inventory_mutation", False)
+                    spare_result.setdefault("source_scope", "SELECTED_PLANT_ONLY")
+                    spare_result.setdefault("read_only", True)
+                    spare_result.setdefault("plc_write", False)
+                    spare_result.setdefault("scada_control", False)
+                    spare_result.setdefault("human_decision_required", True)
+                    return jsonify(spare_result)
+            except Exception as spare_exc:
+                return jsonify({
+                    "status": "SPARE_EVIDENCE_UNAVAILABLE",
+                    "message": "The selected plant's spare register could not be read.",
+                    "error_type": type(spare_exc).__name__,
+                    "source_scope": "SELECTED_PLANT_ONLY",
+                    "inventory_mutation": False,
+                    "read_only": True, "plc_write": False, "scada_control": False,
+                    "human_decision_required": True,
+                }), 503
+
         # Inventory questions must read the BF-2 spare registry before plant knowledge.
         inventory_query = _re.search(r"\b(how many|how much|spares? of|spare stock|stock of|available spares?)\b.*?\b([A-Za-z]{1,12}[-_ ]?\d{1,6})\b", q, _re.IGNORECASE)
         if inventory_query:
