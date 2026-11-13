@@ -13,6 +13,7 @@ import json
 import copy
 import threading
 import time
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -157,6 +158,7 @@ def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
         "status": "OK",
         "mode": "SIMULATION" if is_simulation else "ONBOARDING_DATA",
         "source": "PCI DEMO STREAM" if is_simulation else "ANVIQO TENANT PLANT KNOWLEDGE",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "total_io": len(points),
         "healthy": healthy if is_simulation else 0,
         "warning": warning if is_simulation else 0,
