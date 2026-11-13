@@ -122,3 +122,33 @@ def test_reported_state_totals_must_match_point_level_evidence():
     assert result["checks"]["state_counts_reconciled"] is False
     assert "STATE_COUNT_MISMATCH" in result["findings"]
     assert result["assurance_status"] == "PARTIAL_OR_INCONSISTENT_EVIDENCE"
+
+
+
+def test_area_rollups_must_reconcile_with_point_evidence():
+    snapshot = _snapshot()
+    snapshot["areas"] = [{
+        "name": "GENERAL", "count": 5,
+        "healthy": 2, "warning": 1, "critical": 1,
+    }]
+    result = build_evidence_assurance(
+        snapshot,
+        now=datetime(2026, 11, 14, 0, 0, 5, tzinfo=timezone.utc),
+    )
+    assert result["checks"]["area_total_reconciled"] is False
+    assert "AREA_TOTAL_MISMATCH" in result["findings"]
+    assert result["assurance_status"] == "PARTIAL_OR_INCONSISTENT_EVIDENCE"
+
+
+def test_area_state_counts_must_match_each_area():
+    snapshot = _snapshot()
+    snapshot["areas"] = [{
+        "name": "GENERAL", "count": 4,
+        "healthy": 2, "warning": 0, "critical": 2,
+    }]
+    result = build_evidence_assurance(
+        snapshot,
+        now=datetime(2026, 11, 14, 0, 0, 5, tzinfo=timezone.utc),
+    )
+    assert result["checks"]["area_state_counts_reconciled"] is False
+    assert "AREA_STATE_COUNT_MISMATCH" in result["findings"]
