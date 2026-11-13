@@ -79,7 +79,8 @@ def build_evidence_assurance(
         except (TypeError, ValueError):
             pass
     state_counts_reconciled = all(
-        reported_state_counts[key] is None or reported_state_counts[key] == state_counts[key]
+        reported_state_counts[key.lower()] is None
+        or reported_state_counts[key.lower()] == state_counts[key]
         for key in state_counts
     )
 
