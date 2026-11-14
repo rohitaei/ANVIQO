@@ -90,7 +90,7 @@ def build_equipment_brief(snapshot: Dict[str, Any], requested_tag: str) -> Dict[
             "tag", "name", "description", "area", "service", "io_type",
             "plc_address", "panel", "value", "state", "status",
             "changed", "event_active", "timestamp", "mode", "source",
-            "metadata",
+            "metadata", "assessment_basis", "value_basis",
         )
     }
     mode = str(snapshot.get("mode") or point.get("mode") or "UNKNOWN").upper()
@@ -116,6 +116,7 @@ def build_equipment_brief(snapshot: Dict[str, Any], requested_tag: str) -> Dict[
             "A state label is not a confirmed physical fault diagnosis.",
             "No root cause, failure probability, or remaining useful life is inferred.",
             "Values and units are shown exactly as supplied by the source.",
+            "Synthetic demo values are not measured plant telemetry and have no engineering interpretation.",
             "A qualified person must verify evidence and follow site procedures.",
         ],
         **SAFETY,
