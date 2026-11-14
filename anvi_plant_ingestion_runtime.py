@@ -43,8 +43,11 @@ def _pdf(raw):
 def _xlsx_records(raw):
  from openpyxl import load_workbook
  wb=load_workbook(io.BytesIO(raw),read_only=True,data_only=True)
+ records=[]
+ sheet_types={"PLANT_PROFILE":"PLANT_PROFILE","EQUIPMENT":"EQUIPMENT","INSTRUMENTS_IO":"INSTRUMENT","ALARM_LIMITS":"ALARM_LIMIT","SPARES":"SPARE","SPARE_COMPATIBILITY":"SPARE_COMPATIBILITY","DIGITAL_SEMANTICS":"DIGITAL_SEMANTICS","MAINTENANCE_HISTORY":"MAINTENANCE_EVENT"}
  try:
   for ws in wb.worksheets:
+   if ws.title.strip().upper() in {"FIELD_GUIDE","README","DATA_DICTIONARY"}:continue
    rows=ws.iter_rows(values_only=True)
    try: first=next(rows)
    except StopIteration: continue
@@ -54,10 +57,13 @@ def _xlsx_records(raw):
     if not any(v is not None and str(v).strip() for v in row):continue
     rec={headers[i]:row[i] for i in range(min(len(headers),len(row)))}
     rec={str(k).strip():v for k,v in rec.items() if str(k).strip()}
-    rec["external_id"]=str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or hashlib.sha256((ws.title+str(idx)+json.dumps(rec,sort_keys=True,default=str)).encode()).hexdigest()[:20])
-    rec["source"]=ws.title;rec["record_type"]=str(rec.get("record_type") or rec.get("entity_type") or rec.get("type") or "ASSET")
-    yield rec
+    rec["external_id"]=str(rec.get("external_id") or rec.get("id") or rec.get("tag") or rec.get("asset_id") or rec.get("equipment_id") or rec.get("spare_id") or rec.get("report_id") or hashlib.sha256((ws.title+str(idx)+json.dumps(rec,sort_keys=True,default=str)).encode()).hexdigest()[:20])
+    rec["source"]=ws.title
+    rec["record_type"]=str(rec.get("record_type") or rec.get("entity_type") or sheet_types.get(ws.title.strip().upper()) or "ASSET")
+    records.append(rec)
  finally:wb.close()
+ from universal_plant_data import enrich_workbook_records
+ return iter(enrich_workbook_records(records))
 def _xlsx(raw): return list(_xlsx_records(raw))
 def _records(filename,raw):
  ext=filename.lower().rsplit('.',1)[-1] if '.' in filename else ''
