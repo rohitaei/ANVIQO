@@ -55,12 +55,15 @@ def build_evidence_assurance(
 
     state_counts = {"HEALTHY": 0, "WARNING": 0, "CRITICAL": 0}
     unknown_state_count = 0
+    unassessed_state_count = 0
     event_count = 0
     changed_count = 0
     for point in points:
         state = str(point.get("state") or point.get("status") or "").upper()
         if state in state_counts:
             state_counts[state] += 1
+        elif state == "UNASSESSED":
+            unassessed_state_count += 1
         else:
             unknown_state_count += 1
         event_count += int(bool(point.get("event_active")))
@@ -89,7 +92,7 @@ def build_evidence_assurance(
     counts_reconciled = (
         total_reported >= 0
         and total_reported == len(points)
-        and status_coverage + unknown_state_count == len(points)
+        and status_coverage + unknown_state_count + unassessed_state_count == len(points)
     )
     reported_events = data.get("active_events")
     if isinstance(reported_events, list):
@@ -161,7 +164,7 @@ def build_evidence_assurance(
             area_state_counts_reconciled = False
 
     recomputed_health = None
-    if points and status_coverage == len(points):
+    if points and status_coverage == len(points) and unknown_state_count == 0 and unassessed_state_count == 0:
         recomputed_health = round(
             ((state_counts["HEALTHY"] + state_counts["WARNING"] * 0.5) / len(points)) * 100,
             2,
@@ -195,6 +198,8 @@ def build_evidence_assurance(
         findings.append("POINT_TOTAL_MISMATCH")
     if unknown_state_count:
         findings.append("UNKNOWN_OR_UNRATED_POINT_STATES")
+    if unassessed_state_count:
+        findings.append("POINTS_UNASSESSED_NO_APPROVED_LIMITS_OR_SEMANTICS")
     if not state_counts_reconciled:
         findings.append("STATE_COUNT_MISMATCH")
     if not event_count_reconciled:
@@ -220,7 +225,7 @@ def build_evidence_assurance(
         and bool(points)
         and counts_reconciled
         and state_counts_reconciled
-        and (mode != "SIMULATION" or unknown_state_count == 0)
+        and unknown_state_count == 0
         and event_count_reconciled
         and changed_count_reconciled
         and health_reconciled
@@ -240,6 +245,8 @@ def build_evidence_assurance(
         "source": source,
         "total_points": len(points),
         "counts": state_counts,
+        "unassessed_state_points": unassessed_state_count,
+        "unknown_state_points": unknown_state_count,
         "event_count": event_count,
         "changed_count": changed_count,
     }
@@ -264,6 +271,7 @@ def build_evidence_assurance(
         "reported_state_counts": reported_state_counts,
         "state_counts_reconciled": state_counts_reconciled,
         "unknown_state_points": unknown_state_count,
+        "unassessed_state_points": unassessed_state_count,
         "state_coverage_pct": coverage_pct,
         "reported_active_events": reported_event_count,
         "observed_active_events": event_count,
