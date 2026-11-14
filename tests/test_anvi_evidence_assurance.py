@@ -152,3 +152,33 @@ def test_area_state_counts_must_match_each_area():
     )
     assert result["checks"]["area_state_counts_reconciled"] is False
     assert "AREA_STATE_COUNT_MISMATCH" in result["findings"]
+
+
+
+def test_unassessed_simulation_points_are_consistent_but_have_no_health_score():
+    now = datetime(2026, 11, 14, 0, 0, 5, tzinfo=timezone.utc)
+    snapshot = {
+        "mode": "SIMULATION",
+        "source": "PCI DEMO STREAM",
+        "timestamp": now.isoformat(),
+        "total_io": 3,
+        "healthy": 0,
+        "warning": 0,
+        "critical": 0,
+        "unassessed": 3,
+        "active_events": 0,
+        "changed": 0,
+        "plant_health_score": None,
+        "points": [
+            {"tag": "PT-1", "state": "UNASSESSED"},
+            {"tag": "PT-2", "state": "UNASSESSED"},
+            {"tag": "DI-1", "state": "UNASSESSED"},
+        ],
+    }
+    result = build_evidence_assurance(snapshot, now=now)
+    assert result["assurance_status"] == "CONSISTENT_SIMULATION_EVIDENCE"
+    assert result["unknown_state_points"] == 0
+    assert result["unassessed_state_points"] == 3
+    assert result["state_coverage_pct"] == 0.0
+    assert result["recomputed_health_score"] is None
+    assert "POINTS_UNASSESSED_NO_APPROVED_LIMITS_OR_SEMANTICS" in result["findings"]
