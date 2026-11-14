@@ -95,6 +95,7 @@ def test_unassessed_equipment_brief_does_not_claim_routine_healthy_state():
             "name": "Mill outlet gas pressure",
             "state": "UNASSESSED",
             "value": 12.24,
+            "value_basis": "SYNTHETIC_DEMO_VALUE_NOT_ENGINEERING_MEASUREMENT",
             "source": "PCI DEMO STREAM",
         }],
     }, "PT-303")
