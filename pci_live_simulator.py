@@ -233,7 +233,7 @@ def simulate_snapshot():
         "assessed": assessed_count,
         "changed": changed,
         "active_events": active_events,
-        "plant_health_score": round(plant_score, 2),
+        "plant_health_score": round(plant_score, 2) if plant_score is not None else None,
         "area_count": len(areas),
         "areas": list(areas.values()),
         "points": points,
