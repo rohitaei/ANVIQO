@@ -61,6 +61,7 @@ jobs:
           PYTHONPATH: .
         run: >-
           pytest -q tests/test_pci_simulation_repeatability.py
+          tests/test_anvi_decision_brief.py
           tests/test_anvi_plant_truth_answers.py
           tests/test_anvi_evidence_assurance.py
 
