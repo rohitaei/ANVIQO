@@ -89,3 +89,39 @@ def test_simulation_point_values_repeat_after_same_window_reset():
     assert first == second
     assert first["mode"] == "SIMULATION"
     assert first["source"] == "PCI DEMO STREAM"
+
+
+
+def test_plant_health_answer_explains_unassessed_simulation_points():
+    snapshot = {
+        "plant_id": "p-1",
+        "mode": "SIMULATION",
+        "source": "PCI DEMO STREAM",
+        "points": [
+            {"tag": "PT-303", "state": "UNASSESSED"},
+            {"tag": "DI-1", "state": "UNASSESSED"},
+        ],
+    }
+    assurance = {
+        "assurance_status": "CONSISTENT_SIMULATION_EVIDENCE",
+        "recomputed_health_score": None,
+        "state_counts": {"HEALTHY": 0, "WARNING": 0, "CRITICAL": 0},
+        "unassessed_state_points": 2,
+        "checks": {
+            "point_total_reconciled": True,
+            "state_counts_reconciled": True,
+            "health_score_reconciled": True,
+            "event_count_reconciled": True,
+            "changed_count_reconciled": True,
+            "area_total_reconciled": None,
+            "area_state_counts_reconciled": None,
+            "timestamp_valid": True,
+            "snapshot_fresh": True,
+        },
+        "findings": ["SIMULATION_NOT_LIVE_TELEMETRY", "POINTS_UNASSESSED_NO_APPROVED_LIMITS_OR_SEMANTICS"],
+    }
+    result = answer_plant_truth("What is the current plant health?", snapshot, assurance)
+    assert result["plant_health_score"] is None
+    assert result["counts"]["UNASSESSED"] == 2
+    assert "cannot calculate a plant-health score" in result["answer"]
+    assert "approved engineering limits" in result["answer"]
