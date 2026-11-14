@@ -129,6 +129,8 @@ def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
                     "event_active": sim["event_active"],
                     "timestamp": sim["timestamp"],
                     "simulation_source": sim["source"],
+                    "assessment_basis": sim.get("assessment_basis"),
+                    "value_basis": sim.get("value_basis"),
                 })
             except Exception:
                 pass
