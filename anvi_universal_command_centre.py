@@ -92,6 +92,17 @@ def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
             except Exception:
                 metadata = {}
         metadata = metadata if isinstance(metadata, dict) else {}
+        # The universal workbook contains equipment, alarms, spares and
+        # maintenance rows as well as I/O. Only actual signal rows belong in
+        # the live/simulated point snapshot; other records remain available
+        # through the tenant knowledge API and their domain resolvers.
+        record_kind = str(record_type or "").strip().upper()
+        is_signal_record = (
+            record_kind in {"INSTRUMENT", "IO", "I/O", "PCI_VERIFIED"}
+            or bool(metadata.get("io_type") or metadata.get("plc_address"))
+        )
+        if not is_signal_record:
+            continue
         point = {
             "id": str(external_id or ""),
             "tag": str(tag or ""),
