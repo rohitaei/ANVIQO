@@ -82,3 +82,21 @@ def test_two_operational_records_with_same_normalized_tag_remain_ambiguous():
     assert result["status"] == "AMBIGUOUS_EQUIPMENT_IDENTITY"
     assert result["match_count"] == 2
     assert result["excluded_inventory_match_count"] == 1
+
+
+
+def test_unassessed_equipment_brief_does_not_claim_routine_healthy_state():
+    result = _load().build_equipment_brief({
+        "mode": "SIMULATION",
+        "points": [{
+            "tag": "PT_303",
+            "name": "Mill outlet gas pressure",
+            "state": "UNASSESSED",
+            "value": 12.24,
+            "source": "PCI DEMO STREAM",
+        }],
+    }, "PT-303")
+    assert result["status"] == "BRIEF_READY"
+    assert result["decision_priority"] == "EVIDENCE_REVIEW"
+    assert result["what_matters"] == "Validate the observation before drawing a conclusion"
+    assert result["evidence_quality"] == "SIMULATION_ONLY_NOT_LIVE_TELEMETRY"
