@@ -75,6 +75,18 @@ def answer_plant_truth(
         "CRITICAL": sum(1 for p in points if str(p.get("state") or p.get("status") or "").upper() == "CRITICAL"),
     }
     assurance_status = quality.get("assurance_status") or "ASSURANCE_NOT_AVAILABLE"
+    unassessed = quality.get("unassessed_state_points")
+    if unassessed is None:
+        unassessed = sum(
+            1 for p in points
+            if str(p.get("state") or p.get("status") or "").upper() == "UNASSESSED"
+        )
+    try:
+        unassessed = int(unassessed)
+    except (TypeError, ValueError):
+        unassessed = 0
+    counts = dict(counts)
+    counts["UNASSESSED"] = unassessed
     if "plant health" in q or "how healthy is the plant" in q:
         score = quality.get("recomputed_health_score")
         can_report = (
@@ -97,6 +109,16 @@ def answer_plant_truth(
                 f"Points: {len(points)}; healthy: {counts.get('HEALTHY', 0)}; "
                 f"warning: {counts.get('WARNING', 0)}; critical: {counts.get('CRITICAL', 0)}. "
                 f"Evidence status: {assurance_status}. Source: {source}. {data_note}"
+            )
+        elif unassessed > 0 and assurance_status == "CONSISTENT_SIMULATION_EVIDENCE":
+            answer = (
+                "ANVI cannot calculate a plant-health score: "
+                f"{unassessed} point(s) are UNASSESSED because approved engineering limits "
+                "or signal-state semantics are not configured. No healthy, warning or critical "
+                "condition is inferred for those points. "
+                f"Observed points: {len(points)}; assessed healthy: {counts.get('HEALTHY', 0)}; "
+                f"warning: {counts.get('WARNING', 0)}; critical: {counts.get('CRITICAL', 0)}. "
+                f"Source: {source}. {data_note}"
             )
         else:
             answer = (
