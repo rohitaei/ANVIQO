@@ -61,16 +61,47 @@ def _value_for_io(record):
     return round(_rng.uniform(0, 100), 2)
 
 
-def _state():
-    n = _rng.random()
+def _state(record, value):
+    """Assess only against explicitly approved signal configuration.
 
-    if n < 0.88:
+    Missing limits/semantics are not evidence of a healthy or failed point.
+    """
+    io_type = str(record.get("io_type", "")).upper()
+    if io_type in ("AI", "AO") or "4-20MA" in io_type or "RTD" in io_type:
+        limits = record.get("approved_engineering_limits")
+        if not isinstance(limits, dict) or limits.get("approved") is not True:
+            return "UNASSESSED"
+        try:
+            low = float(limits["low"])
+            high = float(limits["high"])
+            critical_low = float(limits.get("critical_low", low))
+            critical_high = float(limits.get("critical_high", high))
+            warning_low = float(limits.get("warning_low", low))
+            warning_high = float(limits.get("warning_high", high))
+            measured = float(value)
+        except (KeyError, TypeError, ValueError):
+            return "UNASSESSED"
+        if not (low <= critical_low <= warning_low <= warning_high <= critical_high <= high):
+            return "UNASSESSED"
+        if measured < critical_low or measured > critical_high:
+            return "CRITICAL"
+        if measured < warning_low or measured > warning_high:
+            return "WARNING"
         return "HEALTHY"
 
-    if n < 0.975:
-        return "WARNING"
-
-    return "CRITICAL"
+    if io_type in ("DI", "DO"):
+        semantics = record.get("approved_signal_semantics")
+        if not isinstance(semantics, dict) or semantics.get("approved") is not True:
+            return "UNASSESSED"
+        normal_states = semantics.get("normal_states")
+        alarm_states = semantics.get("alarm_states")
+        if not isinstance(normal_states, list) or not isinstance(alarm_states, list):
+            return "UNASSESSED"
+        if value in normal_states:
+            return "HEALTHY"
+        if value in alarm_states:
+            return "WARNING"
+    return "UNASSESSED"
 
 
 def reset_simulation_window(window=None):
@@ -87,7 +118,8 @@ def reset_simulation_window(window=None):
 
 
 def simulate_point(record):
-    state = _state()
+    value = _value_for_io(record)
+    state = _state(record, value)
 
     return {
         "tag": record.get("tag", ""),
@@ -96,11 +128,17 @@ def simulate_point(record):
         "io_type": record.get("io_type", ""),
         "plc_address": record.get("plc_address", ""),
         "panel": record.get("panel", ""),
-        "value": _value_for_io(record),
+        "value": value,
         "state": state,
-        "changed": _rng.random() < 0.06,
-        "event_active": state in ("WARNING", "CRITICAL")
-        and _rng.random() < 0.55,
+        "changed": False,
+        # Synthetic values are not event/alarm evidence. A separate,
+        # explicitly configured event source is required for these flags.
+        "event_active": False,
+        "assessment_basis": (
+            "APPROVED_SIGNAL_CONFIGURATION"
+            if state in ("HEALTHY", "WARNING", "CRITICAL")
+            else "NO_APPROVED_SIGNAL_LIMITS_OR_STATE_SEMANTICS"
+        ),
         "timestamp": _SIMULATION_WINDOW_TIMESTAMP or datetime.now(timezone.utc).isoformat(),
         "mode": "SIMULATION",
         "source": "PCI DEMO STREAM",
@@ -127,6 +165,7 @@ def simulate_snapshot():
     critical = sum(
         1 for p in points if p["state"] == "CRITICAL"
     )
+    unassessed = sum(1 for p in points if p["state"] == "UNASSESSED")
 
     changed = sum(
         1 for p in points if p["changed"]
@@ -149,6 +188,7 @@ def simulate_snapshot():
                 "healthy": 0,
                 "warning": 0,
                 "critical": 0,
+                "unassessed": 0,
             },
         )
 
@@ -158,29 +198,26 @@ def simulate_snapshot():
             areas[area]["healthy"] += 1
         elif point["state"] == "WARNING":
             areas[area]["warning"] += 1
-        else:
+        elif point["state"] == "CRITICAL":
             areas[area]["critical"] += 1
+        else:
+            areas[area]["unassessed"] += 1
 
     for area in areas.values():
         total = area["total"]
 
+        assessed = area["healthy"] + area["warning"] + area["critical"]
         score = (
-            (
-                area["healthy"]
-                + area["warning"] * 0.5
-            )
-            / total
-        ) * 100 if total else 0
-
-        area["health_score"] = round(score, 2)
-
-    plant_score = (
-        (
-            healthy
-            + warning * 0.5
+            (area["healthy"] + area["warning"] * 0.5) / assessed * 100
+            if total and assessed == total else None
         )
-        / len(points)
-    ) * 100 if points else 0
+        area["health_score"] = round(score, 2) if score is not None else None
+
+    assessed_count = healthy + warning + critical
+    plant_score = (
+        ((healthy + warning * 0.5) / assessed_count) * 100
+        if points and assessed_count == len(points) else None
+    )
 
     return {
         "snapshot_id": f"PCI-DEMO-{window}",
@@ -192,6 +229,8 @@ def simulate_snapshot():
         "healthy": healthy,
         "warning": warning,
         "critical": critical,
+        "unassessed": unassessed,
+        "assessed": assessed_count,
         "changed": changed,
         "active_events": active_events,
         "plant_health_score": round(plant_score, 2),
@@ -224,6 +263,7 @@ if __name__ == "__main__":
     print("HEALTHY:", snapshot["healthy"])
     print("WARNING:", snapshot["warning"])
     print("CRITICAL:", snapshot["critical"])
+    print("UNASSESSED:", snapshot["unassessed"])
     print("CHANGED:", snapshot["changed"])
     print("ACTIVE EVENTS:", snapshot["active_events"])
     print("AREAS:", snapshot["area_count"])
