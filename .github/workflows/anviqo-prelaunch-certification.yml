@@ -56,6 +56,14 @@ jobs:
           test_root_cause_conversational_v1.py test_failure_prediction_v1.py
           test_failure_prediction_history_v1_1.py test_failure_prediction_demo_api.py
           test_failure_prediction_demo_loader.py
+      - name: Simulator and evidence-assessment regression
+        env:
+          PYTHONPATH: .
+        run: >-
+          pytest -q tests/test_pci_simulation_repeatability.py
+          tests/test_anvi_plant_truth_answers.py
+          tests/test_anvi_evidence_assurance.py
+
       - name: Universal and tenant regression
         env:
           PYTHONPATH: .
