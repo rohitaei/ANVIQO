@@ -136,7 +136,17 @@ def simulate_point(record):
         "event_active": False,
         "value_basis": "SYNTHETIC_DEMO_VALUE_NOT_ENGINEERING_MEASUREMENT",
         "assessment_basis": (
-            "APPROVED_SIGNAL_CONFIGURATION"
+            (
+                "DEMO_PROFILE_NOT_ENGINEERING_APPROVAL"
+                if (
+                    isinstance(record.get("approved_engineering_limits"), dict)
+                    and record["approved_engineering_limits"].get("approval_basis") == "DEMO_PROFILE"
+                ) or (
+                    isinstance(record.get("approved_signal_semantics"), dict)
+                    and record["approved_signal_semantics"].get("approval_basis") == "DEMO_PROFILE"
+                )
+                else "APPROVED_SIGNAL_CONFIGURATION"
+            )
             if state in ("HEALTHY", "WARNING", "CRITICAL")
             else "NO_APPROVED_SIGNAL_LIMITS_OR_STATE_SEMANTICS"
         ),
