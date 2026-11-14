@@ -26,7 +26,7 @@ def test_exact_tag_brief_preserves_source_and_safety():
     assert result["equipment"]["tag"] == "PT_303"
     assert result["decision_priority"] == "P2_ENGINEERING_REVIEW"
     assert result["evidence_quality"] == "SIMULATION_ONLY_NOT_LIVE_TELEMETRY"
-    assert "Synthetic demo values are not measured plant telemetry" in result["limitations"][-1]
+    assert any("Synthetic demo values are not measured plant telemetry" in item for item in result["limitations"])
     assert result["plc_write"] is False and result["scada_control"] is False
     assert result["automatic_execution"] is False
 
