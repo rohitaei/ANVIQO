@@ -46,16 +46,24 @@ def load_pci_records():
 def _value_for_io(record):
     io_type = str(record.get("io_type", "")).upper()
 
-    if io_type == "DI":
+    if io_type in ("DI", "DO"):
         return _rng.choice([0, 1])
 
-    if io_type == "DO":
-        return _rng.choice([0, 1])
+    # When an explicit approved/demo profile exists, generate a synthetic
+    # value in a band around that profile so demo alarm states exercise the
+    # configured limits instead of using an unrelated 0..100 scale.
+    limits = record.get("approved_engineering_limits")
+    if isinstance(limits, dict) and limits.get("approved") is True:
+        try:
+            low = float(limits["low"])
+            high = float(limits["high"])
+            if high > low:
+                margin = (high - low) * 0.10
+                return round(_rng.uniform(low - margin, high + margin), 2)
+        except (KeyError, TypeError, ValueError):
+            pass
 
-    if io_type == "AI":
-        return round(_rng.uniform(0, 100), 2)
-
-    if io_type == "AO":
+    if io_type == "AI" or io_type == "AO" or "4-20MA" in io_type or "RTD" in io_type:
         return round(_rng.uniform(0, 100), 2)
 
     return round(_rng.uniform(0, 100), 2)
