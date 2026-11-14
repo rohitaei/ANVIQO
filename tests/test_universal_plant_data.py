@@ -57,3 +57,37 @@ def test_digital_semantics_are_explicit_and_separate_from_analog_limits():
     out=enrich_workbook_records(rows)
     assert out[0]["approved_signal_semantics"]["normal_states"]==[1]
     assert out[0]["approved_signal_semantics"]["alarm_states"]==[0]
+
+def test_xlsx_template_tabs_are_parsed_and_alarm_limits_joined():
+    from io import BytesIO
+    from openpyxl import Workbook
+    from anvi_plant_ingestion_runtime import _xlsx_records
+    wb=Workbook()
+    ws=wb.active
+    ws.title="Instruments_IO"
+    ws.append(["record_type","tag","description","io_type","range_min","range_max","range_unit","data_mode","configuration_status"])
+    ws.append(["INSTRUMENT","PT_303","Demo pressure","AI (4-20mA)",0,10,"bar","SIMULATION","DEMO_ONLY"])
+    alarm=wb.create_sheet("Alarm_Limits")
+    alarm.append(["record_type","tag","alarm_class","direction","setpoint","unit","configuration_status"])
+    alarm.append(["ALARM_LIMIT","PT_303","WARNING","LOW",1,"bar","DEMO_ONLY"])
+    alarm.append(["ALARM_LIMIT","PT_303","WARNING","HIGH",9,"bar","DEMO_ONLY"])
+    alarm.append(["ALARM_LIMIT","PT_303","CRITICAL","LOW",0,"bar","DEMO_ONLY"])
+    alarm.append(["ALARM_LIMIT","PT_303","CRITICAL","HIGH",10,"bar","DEMO_ONLY"])
+    guide=wb.create_sheet("Field_Guide")
+    guide.append(["field_group","field_name"])
+    guide.append(["Identity","tag"])
+    raw=BytesIO()
+    wb.save(raw)
+    records=list(_xlsx_records(raw.getvalue()))
+    instrument=next(r for r in records if r["tag"]=="PT_303")
+    assert instrument["record_type"]=="INSTRUMENT"
+    assert instrument["approved_engineering_limits"]["approval_basis"]=="DEMO_PROFILE"
+    assert len(records)==5
+
+def test_synthetic_values_respect_demo_engineering_span():
+    import pci_live_simulator as simulator
+    simulator.reset_simulation_window(654321)
+    record={"io_type":"AI (4-20mA)","approved_engineering_limits":{"approved":True,"low":0,"high":10}}
+    values=[simulator._value_for_io(record) for _ in range(100)]
+    assert min(values) >= -1
+    assert max(values) <= 11
