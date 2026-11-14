@@ -63,17 +63,30 @@ def enrich_workbook_records(records):
         approver=str(_value(row,"approver") or "").strip()
         approval_ref=str(_value(row,"approval_reference") or "").strip()
         limits_by_class={}
-        for alarm in alarms.get(tag,[]):
+        alarm_rows=alarms.get(tag,[])
+        alarm_rows_eligible=True
+        expected_unit=str(_value(row,"range_unit") or "").strip().lower()
+        for alarm in alarm_rows:
             cls=str(_value(alarm,"alarm_class") or "").strip().upper()
             direction=str(_value(alarm,"direction") or "").strip().upper()
             value=_num(_value(alarm,"setpoint"))
+            alarm_status=str(_value(alarm,"configuration_status") or "PENDING_REVIEW").strip().upper()
+            alarm_approver=str(_value(alarm,"approver") or "").strip()
+            alarm_ref=str(_value(alarm,"approval_reference") or "").strip()
+            alarm_demo=alarm_status=="DEMO_ONLY"
+            alarm_approved=alarm_status=="APPROVED" and bool(alarm_approver and alarm_ref)
+            alarm_unit=str(_value(alarm,"unit") or "").strip().lower()
+            if expected_unit and alarm_unit and expected_unit != alarm_unit:
+                alarm_rows_eligible=False
+            if not (alarm_demo and status=="DEMO_ONLY" and mode=="SIMULATION") and not (alarm_approved and status=="APPROVED" and approver and approval_ref):
+                alarm_rows_eligible=False
             if cls in {"WARNING","CRITICAL"} and direction in {"LOW","HIGH"} and value is not None:
                 limits_by_class[(cls,direction)]=value
         low=_num(_value(row,"range_min"))
         high=_num(_value(row,"range_max"))
         if low is not None and high is not None and low < high:
             required={(c,d) for c in ("WARNING","CRITICAL") for d in ("LOW","HIGH")}
-            if required.issubset(limits_by_class):
+            if required.issubset(limits_by_class) and alarm_rows_eligible:
                 demo=status=="DEMO_ONLY" and mode=="SIMULATION"
                 approved=status=="APPROVED" and bool(approver and approval_ref)
                 if demo or approved:
