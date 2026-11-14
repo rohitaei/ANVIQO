@@ -83,7 +83,7 @@ def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
     except Exception:
         simulator = None
         simulation_enabled = False
-    healthy = warning = critical = changed = active_events = 0
+    healthy = warning = critical = unassessed = changed = active_events = 0
     for row in rows:
         record_type, external_id, name, area, service, asset_type, tag, parent_id, source, metadata, content = row
         if isinstance(metadata, str):
@@ -116,6 +116,8 @@ def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
                     "io_type": metadata.get("io_type") or metadata.get("I/O") or point["asset_type"],
                     "plc_address": metadata.get("plc_address") or metadata.get("plc"),
                     "panel": metadata.get("panel"),
+                    "approved_engineering_limits": metadata.get("approved_engineering_limits"),
+                    "approved_signal_semantics": metadata.get("approved_signal_semantics"),
                 }
                 sim = simulator.simulate_point(sim_record)
                 point.update({
@@ -138,12 +140,14 @@ def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
             warning += 1
         elif state == "CRITICAL":
             critical += 1
+        elif state == "UNASSESSED":
+            unassessed += 1
         if point.get("changed"):
             changed += 1
         if point.get("event_active"):
             active_events += 1
         area_name = str(area or "GENERAL") or "GENERAL"
-        bucket = areas.setdefault(area_name, {"name": area_name, "count": 0, "healthy": 0, "warning": 0, "critical": 0})
+        bucket = areas.setdefault(area_name, {"name": area_name, "count": 0, "healthy": 0, "warning": 0, "critical": 0, "unassessed": 0})
         bucket["count"] += 1
         if state == "HEALTHY":
             bucket["healthy"] += 1
@@ -151,10 +155,13 @@ def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
             bucket["warning"] += 1
         elif state == "CRITICAL":
             bucket["critical"] += 1
+        elif state == "UNASSESSED":
+            bucket["unassessed"] += 1
 
     area_list = list(areas.values())
     is_simulation = bool(points) and any(p.get("mode") == "SIMULATION" for p in points)
-    plant_score = ((healthy + warning * 0.5) / len(points)) * 100 if points and is_simulation else None
+    assessed_count = healthy + warning + critical
+    plant_score = ((healthy + warning * 0.5) / assessed_count) * 100 if points and is_simulation and assessed_count == len(points) else None
     return {
         "status": "OK",
         "mode": "SIMULATION" if is_simulation else "ONBOARDING_DATA",
@@ -165,6 +172,8 @@ def _build_tenant_snapshot(plant_id: str) -> dict[str, Any] | None:
         "warning": warning if is_simulation else 0,
         "critical": critical if is_simulation else 0,
         "critical_count": critical if is_simulation else 0,
+        "unassessed": unassessed if is_simulation else 0,
+        "assessed": assessed_count if is_simulation else 0,
         "changed": changed if is_simulation else 0,
         "active_events": active_events if is_simulation else [],
         "plant_health_score": round(plant_score, 2) if plant_score is not None else None,
