@@ -134,6 +134,7 @@ def simulate_point(record):
         # Synthetic values are not event/alarm evidence. A separate,
         # explicitly configured event source is required for these flags.
         "event_active": False,
+        "value_basis": "SYNTHETIC_DEMO_VALUE_NOT_ENGINEERING_MEASUREMENT",
         "assessment_basis": (
             "APPROVED_SIGNAL_CONFIGURATION"
             if state in ("HEALTHY", "WARNING", "CRITICAL")
