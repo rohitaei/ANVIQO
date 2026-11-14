@@ -45,9 +45,9 @@ def test_active_tenant_uses_tenant_scoped_knowledge(monkeypatch):
         snapshot = adapter._tenant_snapshot("plant_new")
 
     assert snapshot["plant_id"] == "plant_new"
-    assert snapshot["total_io"] == 2
+    assert snapshot["total_io"] == 1
     assert snapshot["mode"] == "ONBOARDING_DATA"
-    assert {p["tag"] for p in snapshot["points"]} == {"PT-901", ""}
+    assert {p["tag"] for p in snapshot["points"]} == {"PT-901"}
     assert snapshot["safety"]["plc_write"] is False
     assert snapshot["safety"]["scada_control"] is False
 
